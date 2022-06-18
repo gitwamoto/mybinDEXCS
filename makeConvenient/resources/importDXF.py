@@ -1,1 +1,1 @@
-/Users/iwamoto/openfoam/bin/importDXF.py
+../../importDXF.py
