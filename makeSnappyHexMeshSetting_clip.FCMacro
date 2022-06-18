@@ -1,0 +1,465 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# makeSnappyHexMeshSetting_clip.FCMacro
+# by Yukiharu Iwamoto
+# 2022/5/11 7:20:37 PM
+
+import os
+import shutil
+import tempfile
+import re
+import sys
+
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+if path_binDEXCS not in ([i.encode('UTF-8') if type(i) is unicode else i
+    for i in sys.path] if sys.version_info.major <= 2 else sys.path):
+    sys.path.append(path_binDEXCS)
+
+class SnappyHexMeshRunner:
+    BASHRC_PATH_4_OPENFOAM = os.path.join(os.sep, 'opt', 'OpenFOAM', 'OpenFOAM-v1906', 'etc', 'bashrc')
+    SOLVER_PATH_TEMPLATE = os.path.join(os.sep, 'opt', 'DEXCS', 'template', 'dexcs')
+
+    def __init__(self, case_dir, objects, max_cell_size, features_level = 1, feature_angle = 30.0):
+        # case_dir: (文字列) 解析フォルダへのフルパス
+        # objects: SnappyHexMeshで用いるパッチや領域を表す辞書のタプルまたはリスト
+        #   辞書のキーと値の説明
+        #   'OjbectName': (文字列) Freecadファイル内でのパッチや領域の名前
+        #   'Type': (文字列) タイプ
+        #           以下のどれか:
+        #           'patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
+        #           'BoxRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'
+        #   'RefinementLevel': (整数) メッシュを細かくするレベル．大きいほど細かい．0だと細かくしない．
+        #   'BoundaryLayer': (論理値) 境界層を解像するために壁面近傍メッシュを分割するかどうか．TrueまたはFalse．
+        #   'nLayers': (整数) 境界層を解像するための壁面近傍メッシュの分割数．BoundaryLayerが用いられていない時は使用しない．
+        #   'Ratio/Thickness for SurfaceRefine': (実数) 壁面近傍のメッシュ高さを増加させる公比
+        #                                        またはSurfaceRefineの時のメッシュを細かくする部分の厚さ
+        #                                        SurfaceRefineまたはBoundaryLayerが用いられていない時は使用しない
+        #   例
+        #   objects = (
+        #      {'OjbectName': 'upstream', 'Type': 'patch', 'RefinementLevel': 1, 'BoundaryLayer': False, 'nLayers': 2,
+        #       'Ratio/Thickness for SurfaceRefine': 1.2},
+        #      {'OjbectName': 'wall',     'Type': 'wall',  'RefinementLevel': 0, 'BoundaryLayer': True,  'nLayers': 2,
+        #       'Ratio/Thickness for SurfaceRefine': 1.2},
+        #      .....
+        #   )
+        # max_cell_size: 基本メッシュの大きさ．単位はmm．
+        # features_level: (整数) 角部のメッシュを細かくするレベル．大きいほど細かい．1以上．
+        # feature_angle: (実数) これ以上折れ曲がる部分は角部と認識する．単位は度．
+
+        import FreeCAD
+        if App.ActiveDocument.FileName == '':
+            print('Error: The active document has never been saved. Save the document and retry.')
+            sys.exit(1) # 異常終了
+        self.case_dir = case_dir
+        self.objects = objects
+        self.max_cell_size = max_cell_size
+        self.features_level = features_level
+        self.feature_angle = feature_angle
+
+    def prepare(self):
+        # 準備
+        assert os.path.isdir(self.case_dir)
+        has_LocationInMesh = False
+        for i in self.objects:
+            if i['type'] == 'LocationInMesh':
+                has_LocationInMesh = True
+                break
+        assert has_LocationInMesh
+        # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
+        if not os.path.isdir(os.path.join(self.case_dir, 'constant')):
+            os.system('rsync -a ' + os.path.join(SnappyHexMeshRunner.SOLVER_PATH_TEMPLATE, 'constant') + ' ' +
+                self.case_dir + ' --exclude polyMesh')
+        if not os.path.isdir(os.path.join(self.case_dir, 'system')):
+            os.system('cp -r ' + os.path.join(SnappyHexMeshRunner.SOLVER_PATH_TEMPLATE, 'system') + ' ' + self.case_dir)
+        if not os.path.isdir(os.path.join(self.case_dir, '0')):
+            os.system('cp -r ' + os.path.join(SnappyHexMeshRunner.SOLVER_PATH_TEMPLATE, '0') + ' ' + self.case_dir)
+        triSurface = os.path.join(self.case_dir, 'constant', 'triSurface')
+        if os.path.isdir(triSurface):
+            shutil.rmtree(triSurface)
+        elif os.path.isfile(triSurface):
+            os.remove(triSurface)
+        os.mkdir(triSurface)
+        extendedFeatureEdgeMesh = os.path.join(self.case_dir, 'constant', 'extendedFeatureEdgeMesh')
+        if os.path.isdir(extendedFeatureEdgeMesh):
+            shutil.rmtree(extendedFeatureEdgeMesh)
+        elif os.path.isfile(extendedFeatureEdgeMesh):
+            os.remove(extendedFeatureEdgeMesh)
+        # STLファイルを出力
+        stl_file_name = os.path.join(triSurface, re.sub('^([0-9])', r'_\1', os.path.basename(self.case_dir)) + '.stl')
+        box = self.exportStl(stl_file_name)
+        # surfaceFeatureExtractを実行
+        self.makeSurfFeatExtDict(surface_file_name = stl_file_name)
+        cwd = os.getcwd()
+        os.chdir(self.case_dir)
+        command = '. ' + SnappyHexMeshRunner.BASHRC_PATH_4_OPENFOAM + ' && ' + 'surfaceFeatureExtract'
+        if os.system(command) != 0:
+            print('Error: ' + command + ' was not succeed.')
+            sys.exit(1) # 異常終了
+        os.chdir(cwd)
+        # snappyHexMeshDictファイルを作成
+        self.makeSHMeshDict(surface_file_name = stl_file_name, bounding_box = box)
+
+    def run(self, option = '-N'):
+        # snappyHexMeshを実行
+        # option: snappyHexMeshを実行.pyに与えるオプション文字列．複数ある場合はスペースで区切る．
+        assert os.path.isfile(os.path.join(self.case_dir, 'system', 'snappyHexMeshDict'))
+        cwd = os.getcwd()
+        os.chdir(self.case_dir)
+        command = ('. ' + SnappyHexMeshRunner.BASHRC_PATH_4_OPENFOAM + ' && ' +
+            os.path.join(path_binDEXCS, 'snappyHexMeshを実行.py') + ' ' + option)
+        if os.system(command) != 0:
+            print('Error: ' + command + ' was not succeed.')
+            sys.exit(1) # 異常終了
+        os.chdir(cwd)
+
+    def threeEdgesOfCadObjects(self):
+        # 物体が存在する領域の最大，最小座標を返す
+        xmin = ymin = zmin = float('inf')
+        xmax = ymax = zmax = float('-inf')
+        for obj in App.ActiveDocument.Objects:
+            try:
+                if obj.ViewObject.Visibility and obj.Shape is not None:
+                    xmin = min(xmin, obj.Shape.BoundBox.XMin)
+                    ymin = min(ymin, obj.Shape.BoundBox.YMin)
+                    zmin = min(zmin, obj.Shape.BoundBox.ZMin)
+                    xmax = max(xmax, obj.Shape.BoundBox.XMax)
+                    ymax = max(ymax, obj.Shape.BoundBox.YMax)
+                    zmax = max(zmax, obj.Shape.BoundBox.ZMax)
+            except:
+                pass
+        return xmin, ymin, zmin, xmax, ymax, zmax
+
+    def exportStl(self, file_name):
+        import Mesh
+        # STLファイルを出力
+        tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
+        dir_name = os.path.dirname(file_name)
+        xmin = ymin = zmin = float('inf')
+        xmax = ymax = zmax = float('-inf')
+        with open(file_name, 'w') as f:
+            for i in self.objects:
+                if i['type'] not in ('BoxRefine', 'LocationInMesh', 'N/A'):
+                    for obj in App.ActiveDocument.Objects:
+                        if i['OjbectName'] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                            if i['type'] == 'SurfaceRefine':
+                                name = os.path.join(dir_name, i['OjbectName'])
+                                Mesh.export([obj], name + '.ast') # ascii format
+                                os.rename(name + '.ast', name + '.stl') # can overwrite
+                            else:
+                                Mesh.export([obj], tmp_stl)
+                                for line in open(tmp_stl, 'r'):
+                                    if 'endsolid' in line:
+                                        f.write('endsolid ' + i['OjbectName'] + '\n')
+                                    elif 'solid' in line:
+                                        f.write('solid ' + i['OjbectName'] + '\n')
+                                    else:
+                                        f.write(line)
+                                        if line.lstrip().startswith('vertex'):
+                                            x, y, z = [float(j) for j in line.split()[1:]]
+                                            xmin, ymin, zmin = min(xmin, x), min(ymin, y), min(zmin, z)
+                                            xmax, ymax, zmax = max(xmax, x), max(ymax, y), max(zmax, z)
+                                os.remove(tmp_stl)
+                            break
+        return xmin, ymin, zmin, xmax, ymax, zmax # STLファイルに含まれている点の最大，最小座標
+
+    def makeSurfFeatExtDict(self, surface_file_name):
+        # surfaceFeatureExtractDictファイルを作成
+        dict_name = os.path.join(self.case_dir, 'system', 'surfaceFeatureExtractDict')
+        with open(dict_name, 'w') as f:
+            f.write('FoamFile\n{')
+            f.write('\n\tversion\t2.0;\n')
+            f.write('\tformat\tascii;\n')
+            f.write('\tclass\tdictionary;\n')
+            f.write('\tlocation\t"system";\n')
+            f.write('\tobject\tsurfaceFeatureExtractDict;\n')
+            f.write('}\n') # FoamFile
+            f.write('\n' + os.path.basename(surface_file_name) + '\n{\n')
+            f.write('\textractionMethod\textractFromSurface;\n\n')
+            f.write('\t// Mark edges whose adjacent surface normals are at an angle less\n')
+            f.write('\t// than includedAngle as features\n')
+            f.write('\t// - 0  : selects no edges\n')
+            f.write('\t// - 180: selects all edges\n')
+            f.write('\tincludedAngle\t{};\n\n'.format(180.0 - self.feature_angle))
+            f.write('\t// Write options\n')
+            f.write('\twriteFeatureEdgeMesh\tyes;\n\n')
+            f.write('\t// Write features to obj format for postprocessing\n')
+            f.write('\twriteObj\tyes;\n}\n')
+        os.chmod(dict_name, 0o0666) # 読み書き権限を与え，実行権限は与えない
+
+    def makeSHMeshDict(self, surface_file_name, bounding_box):
+        # snappyHexMeshDictファイルを作成
+        dict_name = os.path.join(self.case_dir, 'system', 'snappyHexMeshDict')
+        if os.path.isfile(dict_name):
+            shutil.copy(dict_name, dict_name + '_bak')
+        with open(dict_name, 'w') as f:
+            f.write('FoamFile\n{')
+            f.write('\n\tversion\t2.0;\n')
+            f.write('\tformat\tascii;\n')
+            f.write('\tclass\tdictionary;\n')
+            f.write('\tlocation\t"system";\n')
+            f.write('\tobject\tsnappyHexMeshDict;\n')
+            f.write('}\n') # FoamFile
+            f.write('\n// A manual is available on\n')
+            f.write('// https://www.openfoam.com/documentation/guides/latest/doc/guide-meshing-snappyhexmesh.html\n')
+            f.write('\n// Which of the steps to run\n')
+            for i in ('castellatedMesh', 'snap', 'addLayers'):
+                f.write(i + '\ttrue; // true or false\n')
+            objects = [i['OjbectName'] for i in self.objects]
+            surface_file_name = os.path.basename(surface_file_name)
+            surface_file_name_wo_ext = os.path.splitext(surface_file_name)[0]
+            f.write('\nCUSTOM_OPTIONS\n{\n')
+            f.write('\tmaxCellSize\t{}; // used to generate blockMeshDict\n'.format(self.max_cell_size))
+            f.write('\tboundingBox\t(({} {} {}) ({} {} {})); // used to generate blockMeshDict\n'.format(*bounding_box))
+            f.write('}\n') # CUSTOM_OPTIONS
+            f.write('\n// Geometry. Definition of all surfaces. All surfaces are of class\n')
+            f.write('// searchableSurface.\n')
+            f.write('// Surfaces are used\n')
+            f.write('// - to specify refinement for any mesh cell intersecting it\n')
+            f.write('// - to specify refinement for any mesh cell inside/outside/near\n')
+            f.write("// - to 'snap' the mesh boundary to the surface\n")
+            f.write('geometry\n{\n')
+            f.write('\t' + surface_file_name + ' // in constant/triSurface\n')
+            f.write('\t{\n')
+            f.write('\t\ttype\ttriSurfaceMesh;\n')
+            f.write('\t\tname\t' + surface_file_name_wo_ext + ';\n')
+            f.write('\t}\n')
+            for i in self.objects:
+                if i['RefinementLevel'] != 0 and i['type'] == 'BoxRefine':
+                    for obj in App.ActiveDocument.Objects:
+                        if i['OjbectName'] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                            xmax, xmin = obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.XMin
+                            ymax, ymin = obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.YMin
+                            zmax, zmin = obj.Shape.BoundBox.ZMax, obj.Shape.BoundBox.ZMin
+                            f.write('\n\t' + i['OjbectName'] + '\n\t{\n')
+                            f.write('\t\ttype\tsearchableBox;\n')
+                            f.write('\t\tmin\t({} {} {});\n'.format(xmin, ymin, zmin))
+                            f.write('\t\tmax\t({} {} {});\n'.format(xmax, ymax, zmax))
+                            f.write('\t}\n')
+                            break
+                elif i['RefinementLevel'] != 0 and i['type'] == 'SurfaceRefine':
+                    f.write('\n\t' + i['OjbectName'] + '.stl // in constant/triSurface\n')
+                    f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t}\n')
+                    f.write('\n\t' + i['OjbectName'] + '\n\t{\n')
+                    f.write('\t\ttype\tsearchableSurfaceWithGaps;\n')
+                    f.write('\t\tsurface\t' + i['OjbectName'] + '.stl;\n')
+                    f.write('\t\tgap\t0;\n')
+                    f.write('\t}\n')
+            f.write('\n//\tboxExample\n//\t{\n')
+            f.write('//\t\ttype\tsearchableBox;\n')
+            f.write('//\t\tmin\t(1.5 1 -0.5);\n')
+            f.write('//\t\tmax\t(3.5 2 0.5);\n')
+            f.write('//\t}\n')
+            f.write('\n//\tconeExample\n//\t{\n')
+            f.write('//\t\ttype\tsearchableCone;\n')
+            f.write('//\t\tpoint1\t(0 0 0);\n')
+            f.write('//\t\tradius1\t1.5;\n')
+            f.write('//\t\tinnerRadius1\t0.25;\n')
+            f.write('//\t\tpoint2\t(10 0 0);\n')
+            f.write('//\t\tradius2\t3.0;\n')
+            f.write('//\t\tinnerRadius2\t1.0;\n')
+            f.write('//\t}\n')
+            f.write('\n//\tcylinderExample\n//\t{\n')
+            f.write('//\t\ttype\tsearchableCylinder;\n')
+            f.write('//\t\tpoint1\t(1.5 1 -0.5);\n')
+            f.write('//\t\tpoint2\t(3.5 2 0.5);\n')
+            f.write('//\t\tradius\t0.05;\n')
+            f.write('//\t}\n')
+            f.write('\n//\tdiskExample\n//\t{\n')
+            f.write('//\t\ttype\tsearchableDisk;\n')
+            f.write('//\t\torigin\t(0 0 0);\n')
+            f.write('//\t\tnormal\t(0 1 0);\n')
+            f.write('//\t\tradius\t0.314;\n')
+            f.write('//\t}\n')
+            f.write('\n//\tsphereExample\n//\t{\n')
+            f.write('//\t\ttype\tsearchableSphere;\n')
+            f.write('//\t\tcentre\t(0 0 0);\n')
+            f.write('//\t\tradius\t3;\n')
+            f.write('//\t}\n')
+            f.write('}\n') # geometry
+            f.write('\n// Settings for the castellatedMesh generation.\n')
+            f.write('castellatedMeshControls\n{\n')
+            f.write('\t// ----- Refinement parameters -----\n')
+            f.write('\n\t// Maximum number of cells per processor during refinement\n')
+            f.write('\tmaxLocalCells\t100000;\n')
+            f.write('\n\t// Overall cell limit during refinement (i.e. before removal)\n')
+            f.write('\tmaxGlobalCells\t2000000;\n')
+            f.write('\n\t// The refinement along the surfaces may spend many iterations on refinement\n')
+            f.write('\t// of only few cells. Whenever the number of cells to be refined is less than\n')
+            f.write('\t// or equal to the minRefinementCells parameter, the refinement will stop.\n')
+            f.write('\t// be performed.\n')
+            f.write('\tminRefinementCells\t2;\n')
+            f.write('\n\t// Number of buffer layers of cells between different levels of refinement\n')
+            f.write('\tnCellsBetweenLevels\t3;\n')
+            f.write('\n\t// ----- Explicit feature edge refinement -----\n')
+            f.write('\n\t// Specifies a level for any cell intersected by its edges.\n')
+            f.write('\tfeatures\n\t(\n\t\t{\n')
+            f.write('\t\t\tfile\t"' + surface_file_name_wo_ext + '.extendedFeatureEdgeMesh";\n')
+            f.write('\t\t\tlevel\t{};\n'.format(self.features_level))
+            f.write('\t\t}\n\t);\n')
+            f.write('\n\t// ----- Surface based refinement -----\n')
+            f.write('\n\trefinementSurfaces\n\t{\n')
+            f.write('\t\t' + surface_file_name_wo_ext + '\n\t\t{\n');
+            f.write('\t\t\tlevel\t(0 1); // (min max)\n');
+            f.write('\t\t\tregions\n\t\t\t{\n');
+            for i in self.objects:
+                if i['type'] not in ('BoxRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
+                    f.write('\t\t\t\t' + i['OjbectName'] + '\n\t\t\t\t{\n')
+                    f.write('\t\t\t\t\tlevel\t({} {}); // (min max)\n'.format(i['RefinementLevel'], i['RefinementLevel'] + 1))
+                    f.write('\t\t\t\t\tpatchInfo\t{type\t' + i['type'] + ';}\n\t\t\t\t}\n')
+            f.write('\t\t\t}\n')
+            f.write('\t\t}\n')
+            f.write('\t}\n') # refinementSurfaces
+            f.write('\n\tresolveFeatureAngle\t{};\n'.format(self.feature_angle))
+            f.write('\n\t// ----- Region-wise refinement -----\n')
+            f.write('\n\trefinementRegions\n\t{\n')
+            first = True
+            for i in self.objects:
+                if i['RefinementLevel'] != 0 and i['type'] in ('BoxRefine', 'SurfaceRefine'):
+                    if not first:
+                        f.write('\n')
+                    f.write('\t\t' + i['OjbectName'] + '\n\t\t{\n')
+                    if i['type'] == 'BoxRefine':
+                        f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
+                        f.write('\t\t\tlevels\t((1.0 {})); // (distance level)\n'.format(i['RefinementLevel']))
+                    else: # SurfaceRefine
+                        f.write('\t\t\tmode\tdistance;\n')
+                        f.write('\t\t\tlevels\t(({} {})); // (distance level)\n'.format(
+                            i['Ratio/Thickness for SurfaceRefine'], i['RefinementLevel']))
+                    f.write('\t\t}\n')
+                    first = False
+            f.write('\t}\n') # refinementRegions
+            f.write('\n\t// ----- Mesh selection -----\n')
+            cellZone = []
+            for i in self.objects:
+                if i['type'] == 'LocationInMesh':
+                    for obj in App.ActiveDocument.Objects:
+                        if i['OjbectName'] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                            xmax, xmin = obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.XMin
+                            ymax, ymin = obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.YMin
+                            zmax, zmin = obj.Shape.BoundBox.ZMax, obj.Shape.BoundBox.ZMin
+                            cellZone.append((0.5*(xmax + xmin), 0.5*(ymax + ymin), 0.5*(zmax + zmin), i['OjbectName']))
+                            break
+            if len(cellZone) == 1:
+                f.write('\n\tlocationInMesh\t({} {} {});\n'.format(*cellZone[0][:-1]))
+                f.write('\n//\tlocationsInMesh\n//\t(\n//\t\t((0.0 0.0 0.0) zone1)\n//\t\t((0.1 0.1 0.1) zone2)\n//\t);\n')
+            else:
+                f.write('\n//\tlocationInMesh\t(0.0 0.0 0.0)\n')
+                f.write('\n\tlocationsInMesh\n\t(\n')
+                for i in cellZone:
+                    f.write('\t\t(({} {} {}) {})\n'.format(*i))
+                f.write('\t);\n')
+                f.write('\n\t// Whether any faceZones (as specified in the refinementSurfaces)\n')
+                f.write('\t// are only on the boundary of corresponding cellZones or also allow\n')
+                f.write('\t// free-standing zone faces. Not used if there are no faceZones.\n')
+            f.write('\n\t// allowFreeStandingZoneFaces allowing zone faces that share the same\n')
+            f.write('\t// owner and neighbour cell zone. Not used if there are no faceZones.\n')
+            f.write('\tallowFreeStandingZoneFaces\ttrue;\n')
+            f.write('}\n') # castellatedMeshControls
+            f.write('\n// Settings for the snapping.\n')
+            f.write('snapControls\n{\n')
+            f.write('\t// Number of smoothing iterations along the surface\n')
+            f.write('\tnSmoothPatch\t3;\n')
+            f.write('\n\t// Number of iterations for internal smoothing to reduce non-orthogonality\n')
+            f.write('\t// at the face of refinement (effectively making the faces non-planar).\n')
+            f.write('\t// Default value is 0.\n')
+            f.write('\tnSmoothInternal\t1;\n')
+            f.write('\n\t// Multiplied by local cell-edge length specifies region along the surface\n')
+            f.write('\t// within which the points are attracted by the surface\n')
+            f.write('\ttolerance\t1.0;\n')
+            f.write('\n\t// Number of mesh displacement iterations\n')
+            f.write('\tnSolveIter\t30;\n')
+            f.write('\n\t// Number of relaxation iterations during the snapping. If the mesh does not\n')
+            f.write('\t// conform the geometry and all the iterations are spend, user may try to\n')
+            f.write('\t// increase the number of iterations.\n')
+            f.write('\tnRelaxIter\t5;\n')
+            f.write('\n\t// Number of relaxation iterations used for snapping onto the features.\n')
+            f.write('\t// If not specified, feature snapping will be disabled.\n')
+            f.write('\tnFeatureSnapIter\t10;\n')
+            f.write('}\n') # snapControls
+            f.write('\n// Settings for the layer addition.\n')
+            f.write('addLayersControls\n{\n')
+            f.write('\t// Layer thickness is set in a relative (true) or absolute (false) scale.\n')
+            f.write('\trelativeSizes\ttrue;\n')
+            f.write('\n\t// Layer information per final patch (so not geometry!)\n')
+            f.write('\tlayers\n\t{\n')
+            for i in self.objects:
+                if i['BoundaryLayer'] and i['type'] not in ('BoxRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
+                    f.write('\t\t' + surface_file_name_wo_ext + '_' + i['OjbectName'] + '\n\t\t{\n')
+                    f.write('\t\t\tnSurfaceLayers\t{};\n'.format(i['nLayers']))
+                    f.write('\t\t\texpansionRatio\t{};\n'.format(i['Ratio/Thickness for SurfaceRefine']))
+                    f.write('\t\t}\n')
+            f.write('\t}\n') # layers
+            f.write('\n\texpansionRatio\t1; // mandatory\n')
+            f.write('\n\t// Thickness of the layer furthest away from the wall\n')
+            f.write('\tfinalLayerThickness\t1;\n')
+            f.write('\n\t// Minimum thickness of cell layer\n')
+            f.write('\tminThickness\t0.1;\n')
+            f.write('\n\t// Number of layers of cells where point extrusion is cancelled\n')
+            f.write('\tnGrow\t0;\n')
+            f.write('\n\t// ----- Advanced settings -----\n')
+            f.write('\n\t// When not to extrude surface. 0 is flat surface, 90 is when two faces\n')
+            f.write('\t// are perpendicular\n')
+            f.write('\tfeatureAngle\t{};\n'.format(self.feature_angle))
+            f.write('\n\t// Number of relaxation steps (where relaxed mesh quality parameters are used)\n')
+            f.write('\tnRelaxIter\t3;\n')
+            f.write('\n\t// Number of smoothing iterations of surface normals\n')
+            f.write('\tnSmoothSurfaceNormals\t1;\n')
+            f.write('\n\t// Number of smoothing iterations of interior mesh movement direction\n')
+            f.write('\tnSmoothNormals\t3;\n')
+            f.write('\n\t// Smooth layer thickness over surface patches\n')
+            f.write('\tnSmoothThickness\t10;\n')
+            f.write('\n\t// Stop layer growth on highly warped cells\n')
+            f.write('\tmaxFaceThicknessRatio\t0.5;\n')
+            f.write('\n\t// Reduce layer growth where ratio thickness to medial distance is large\n')
+            f.write('\tmaxThicknessToMedialRatio\t1;\n')
+            f.write('\n\t// Angle used to select medial axis points\n')
+            f.write('\tminMedialAxisAngle\t90;\n')
+            f.write('\n\t// Create buffer region for new layer terminations\n')
+            f.write('\tnBufferCellsNoExtrude\t0;\n')
+            f.write('\n\t// Overall max number of layer addition iterations\n')
+            f.write('\tnLayerIter\t50;\n')
+            f.write('\n\t// Max number of iterations after which relaxed meshQuality controls\n')
+            f.write('\t// get used. Up to nRelaxIter it uses the settings in meshQualityControls,\n')
+            f.write('\t// after nRelaxIter it uses the values in meshQualityControls::relaxed.\n')
+            f.write('\tnRelaxedIter\t50;\n')
+            f.write('}\n') # addLayersControls
+            f.write('\n// Generic mesh quality settings. At any undoable phase these determine\n')
+            f.write('// where to undo.\n')
+            f.write('meshQualityControls\n{\n')
+            f.write('\t#includeEtc "caseDicts/meshQualityDict"\n')
+            f.write('\n\t// Optional: some meshing phases allow usage of relaxed rules.\n')
+            f.write('\t// See e.g. addLayersControls.nRelaxedIter.\n')
+            f.write('\trelaxed\n\t{\n')
+            f.write('\t\t// Maximum non-orthogonality allowed. Set to 180 to disable.\n')
+            f.write('\t\tmaxNonOrtho\t75;\n')
+            f.write('\t}\n') # relaxed
+            f.write('\n\t// ----- Advanced -----\n')
+            f.write('\n\t// Smoothing iterations. Used in combination with errorReduction.\n')
+            f.write('\tnSmoothScale\t4;\n')
+            f.write('\t\n// Error reduction. Used in combination with nSmoothScale.\n')
+            f.write('\terrorReduction\t0.75;\n')
+            f.write('}\n') # meshQualityControls
+            f.write('\n// ----- Advanced -----\n')
+            f.write('\n// Merge tolerance. Is fraction of overall bounding box of initial mesh.\n')
+            f.write('// Note: the write tolerance needs to be higher than this.\n')
+            f.write('mergeTolerance\t1.0e-6;\n')
+        os.chmod(dict_name, 0o0666) # 読み書き権限を与え，実行権限は与えない
+
+if __name__ == '__main__':
+    # 実行例
+    shmr = SnappyHexMeshRunner(
+        case_dir = os.path.expanduser(os.path.join('~', 'my_analysis', 'analysys1')),
+        objects = (
+           {'OjbectName': 'inlet', 'Type': 'patch', 'RefinementLevel': 1, 'BoundaryLayer': False, 'nLayers': 2,
+            'Ratio/Thickness for SurfaceRefine': 1.2},
+           {'OjbectName': 'wall', 'Type': 'wall',  'RefinementLevel': 0, 'BoundaryLayer': True, 'nLayers': 2,
+            'Ratio/Thickness for SurfaceRefine': 1.2},
+           {'OjbectName': 'outlet', 'Type': 'patch', 'RefinementLevel': 1, 'BoundaryLayer': False, 'nLayers': 2,
+            'Ratio/Thickness for SurfaceRefine': 1.2},
+        ),
+        max_cell_size = 3.0,
+        features_level = 0,
+        feature_angle = 30.0
+    )
+    shmr.prepare() # 準備
+    shmr.run() # snappyHexMeshを実行

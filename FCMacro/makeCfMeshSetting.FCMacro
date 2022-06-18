@@ -1,0 +1,790 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# makeCfMeshSetting.FCMacro
+# by Yukiharu Iwamoto
+# 2022/6/11 4:46:29 PM
+
+from PySide import QtCore, QtGui
+from functools import partial
+import os
+import shutil
+import tempfile
+import Mesh
+import re
+import sys
+
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+if path_binDEXCS not in [i.encode('UTF-8') if type(i) is unicode else i
+    for i in sys.path] if sys.version_info.major <= 2 else sys.path:
+    sys.path.append(path_binDEXCS)
+from utilities.dictParse import DictParser
+from utilities.dictParse import DictParserList
+
+class FreeCadFileGrid(QtGui.QTableWidget):
+    OBJECT_NAME = 0
+    TYPE = 1
+    CELL_SIZE = 2
+    BOUNDARY_LAYER = 3
+    N_LAYERS = 4
+    RATIO = 5
+
+    COL_LABELS = [
+        'OjbectName',
+        'Type',
+        'CellSize',
+        'Boundary\nLayer',
+        'nLayers',
+        'Ratio/Thickness\nfor SurfaceRefine'
+    ]
+
+    def __init__(self, parent, freecad_objects):
+        super(FreeCadFileGrid, self).__init__(parent)
+        self.table = []
+        for obj in freecad_objects:
+            try:
+                if obj.ViewObject.Visibility and hasattr(obj, 'Shape'):
+                    self.table.append([
+                        obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label,
+                        None,
+                        '',
+                        False,
+                        2,
+                        1.2
+                    ])
+            except:
+                print(sys.exc_info())
+                pass
+        self.setRowCount(len(self.table))
+        self.setColumnCount(len(self.table[0]))
+        self.setHorizontalHeaderLabels(FreeCadFileGrid.COL_LABELS)
+        self.horizontalHeader().setResizeMode(QtGui.QHeaderView.ResizeToContents)
+        self.horizontalHeader().setResizeMode(FreeCadFileGrid.OBJECT_NAME, QtGui.QHeaderView.Stretch)
+        for i in range(self.rowCount()):
+            item = QtGui.QTableWidgetItem(str(self.table[i][FreeCadFileGrid.OBJECT_NAME]))
+            item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
+            item.setTextAlignment(QtCore.Qt.AlignCenter)
+            self.setItem(i, FreeCadFileGrid.OBJECT_NAME, item)
+            for j in (FreeCadFileGrid.CELL_SIZE, FreeCadFileGrid.N_LAYERS, FreeCadFileGrid.RATIO):
+                item = QtGui.QTableWidgetItem(str(self.table[i][j]))
+                item.setTextAlignment(QtCore.Qt.AlignRight)
+                self.setItem(i, j, item)
+            combo = QtGui.QComboBox()
+            combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
+                'BoxRefine', 'SurfaceRefine', 'N/A'])
+            self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
+            self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
+            combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
+            check = QtGui.QCheckBox()
+            self.setCellWidget(i, FreeCadFileGrid.BOUNDARY_LAYER, check)
+            self.table[i][FreeCadFileGrid.BOUNDARY_LAYER] = check.isChecked()
+            check.stateChanged.connect(partial(self.actionOnStateChanged, i))
+        self.cellChanged.connect(self.actionOnCellChanged)
+
+    def actionOnCurrentIndexChanged(self, row, index):
+        self.updateTable(row, FreeCadFileGrid.TYPE,
+            self.cellWidget(row, FreeCadFileGrid.TYPE).itemText(index))
+
+    def actionOnStateChanged(self, row, state):
+        self.updateTable(row, FreeCadFileGrid.BOUNDARY_LAYER, state == QtCore.Qt.Checked)
+
+    def actionOnCellChanged(self, row, col):
+        try:
+            self.updateTable(row, col, self.item(row, col).text())
+        except:
+            self.item(row, col).setText(str(self.table[row][col]))
+
+    def updateTable(self, row, col, value):
+        try:
+            if col == FreeCadFileGrid.CELL_SIZE:
+                if value == '':
+                    self.table[row][col] = value
+                else:
+                    self.table[row][col] = float(value)
+            elif col == FreeCadFileGrid.N_LAYERS:
+                self.table[row][col] = int(value)
+            elif col == FreeCadFileGrid.RATIO:
+                self.table[row][col] = float(value)
+            else:
+                self.table[row][col] = value
+        except:
+            raise
+
+    def setCellValue(self, row, col, value):
+        try:
+            self.updateTable(row, col, value)
+            if col == FreeCadFileGrid.TYPE:
+                self.cellWidget(row, FreeCadFileGrid.TYPE).setCurrentIndex(
+                    self.cellWidget(row, FreeCadFileGrid.TYPE).findText(value))
+            elif col == FreeCadFileGrid.BOUNDARY_LAYER:
+                self.cellWidget(row, FreeCadFileGrid.BOUNDARY_LAYER).setCheckState(
+                    QtCore.Qt.Checked if value else QtCore.Qt.Unchecked)
+            else:
+                self.item(row, col).setText(value)
+        except:
+            pass
+
+class CfMeshFrame(QtGui.QDialog):
+    def __init__(self, controller, freecad_objects, case_dir_path, max_cell_size, feature_angle):
+        super(CfMeshFrame, self).__init__(parent = None)
+        self.setWindowTitle('cfMesh settings from FreeCAD Model (.fcstd)')
+
+        self.controller = controller
+
+        box_V = QtGui.QVBoxLayout()
+        self.setLayout(box_V)
+
+        box_H = QtGui.QHBoxLayout()
+        box_V.addLayout(box_H)
+        self.caseButton = QtGui.QPushButton('Case directory:')
+        self.caseButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.caseButton.clicked.connect(self.controller.actionOnCaseButton)
+        box_H.addWidget(self.caseButton)
+        self.caseDirST = QtGui.QLabel(case_dir_path)
+        box_H.addWidget(self.caseDirST)
+        self.openButton = QtGui.QPushButton('xdg-open')
+        self.openButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.openButton.clicked.connect(self.controller.actionOnOpenButton)
+        box_H.addWidget(self.openButton)
+
+        box_H = QtGui.QHBoxLayout()
+        box_V.addLayout(box_H)
+        box_H.addWidget(QtGui.QLabel('maxCellSize:'))
+        self.maxCellSizeCRL = QtGui.QLineEdit('{:.2f}'.format(max_cell_size))
+        self.maxCellSizeCRL.setAlignment(QtCore.Qt.AlignRight)
+        self.maxCellSizeCRL.setValidator(QtGui.QDoubleValidator())
+        box_H.addWidget(self.maxCellSizeCRL)
+        box_H.addItem(QtGui.QSpacerItem(12, 0))
+        box_H.addWidget(QtGui.QLabel('minCellSize:'))
+        self.minCellSizeCRL = QtGui.QLineEdit()
+        self.minCellSizeCRL.setAlignment(QtCore.Qt.AlignRight)
+        self.minCellSizeCRL.setValidator(QtGui.QDoubleValidator())
+        box_H.addWidget(self.minCellSizeCRL)
+        box_H.addItem(QtGui.QSpacerItem(12, 0))
+        box_H.addWidget(QtGui.QLabel('featureAngle:'))
+        self.featureAngleCRL = QtGui.QLineEdit('{}'.format(feature_angle))
+        self.featureAngleCRL.setAlignment(QtCore.Qt.AlignRight)
+        self.featureAngleCRL.setValidator(QtGui.QDoubleValidator())
+        box_H.addWidget(self.featureAngleCRL)
+
+        self.grid = FreeCadFileGrid(self, freecad_objects)
+        box_V.addWidget(self.grid)
+        box_V.addWidget(QtGui.QLabel("*** The table above contains all the visible objects.\n" +
+            "       Object's visibility can be changed by space key after selection of the object."))
+
+        box_H = QtGui.QHBoxLayout()
+        box_V.addLayout(box_H)
+        self.exportButton = QtGui.QPushButton('Export')
+        self.exportButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.exportButton.clicked.connect(self.controller.actionOnExportButton)
+        box_H.addWidget(self.exportButton)
+        box_H.addWidget(QtGui.QLabel('->'))
+        self.cartesianMeshButton = QtGui.QPushButton('cartesianMesh')
+        self.cartesianMeshButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.cartesianMeshButton.clicked.connect(self.controller.actionOnCartesianMeshButton)
+        box_H.addWidget(self.cartesianMeshButton)
+        box_H.addWidget(QtGui.QLabel('( ->'))
+        self.improveMeshQualityButton = QtGui.QPushButton('improveMeshQuality')
+        self.improveMeshQualityButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.improveMeshQualityButton.clicked.connect(self.controller.actionOnImproveMeshQualityButton)
+        box_H.addWidget(self.improveMeshQualityButton)
+        box_H.addWidget(QtGui.QLabel(','))
+        self.flattenPatchButton = QtGui.QPushButton('Flatten patch')
+        self.flattenPatchButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.flattenPatchButton.clicked.connect(self.controller.actionOnFlattenPatchButton)
+        box_H.addWidget(self.flattenPatchButton)
+        box_H.addWidget(QtGui.QLabel(')'))
+        box_H.addItem(QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
+
+        box_H = QtGui.QHBoxLayout()
+        box_V.addLayout(box_H)
+        self.loadButton = QtGui.QPushButton('Load')
+        self.loadButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.loadButton.clicked.connect(self.controller.actionOnLoadButton)
+        self.loadButton.setDefault(True)
+        box_H.addWidget(self.loadButton)
+        self.editButton = QtGui.QPushButton('Edit')
+        self.editButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.editButton.clicked.connect(self.controller.actionOnEditButton)
+        box_H.addWidget(self.editButton)
+        box_H.addItem(QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum))
+        self.exitButton = QtGui.QPushButton('Exit')
+        self.exitButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        self.exitButton.clicked.connect(self.actionOnExitButton)
+        box_H.addWidget(self.exitButton)
+
+    def setParametersFromMeshDictContents(self, meshDict):
+        try:
+            x = meshDict.getValueForKey(['maxCellSize'])
+            self.maxCellSizeCRL.setText(x[0])
+        except:
+            pass
+        try:
+            x = meshDict.getValueForKey(['minCellSize'])
+            self.minCellSizeCRL.setText(x[0])
+        except:
+            pass
+        try:
+            x = meshDict.getValueForKey(['CUSTOM_OPTIONS', 'featureAngle'])
+            self.featureAngleCRL.setText(x[0])
+        except:
+            pass
+        objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
+        remainder = objects[:]
+        try:
+            x = meshDict.getValueForKey(['renameBoundary', 'newPatchNames'])
+            for y in x:
+                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
+                    remainder.remove(y.key())
+                    for z in y.value():
+                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'type':
+                            self.grid.setCellValue(objects.index(y.key()), self.grid.TYPE, z.value()[0])
+        except:
+            pass
+        try:
+            x = meshDict.getValueForKey(['localRefinement'])
+            for y in x:
+                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
+                    for z in y.value():
+                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'cellSize':
+                            self.grid.setCellValue(objects.index(y.key()), self.grid.CELL_SIZE, z.value()[0])
+        except:
+            pass
+        try:
+            x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers'])
+            for y in x:
+                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
+                    i = objects.index(y.key())
+                    for z in y.value():
+                        if DictParserList.isType(z, DictParserList.DICT):
+                            if z.key() == 'nLayers':
+                                self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
+                                self.grid.setCellValue(i, self.grid.N_LAYERS, z.value()[0])
+                            elif z.key() == 'thicknessRatio':
+                                self.grid.setCellValue(i, self.grid.RATIO, z.value()[0])
+        except:
+            pass
+        try:
+            x = meshDict.getValueForKey(['objectRefinements'])
+            for y in x:
+                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
+                    i = objects.index(y.key())
+                    remainder.remove(y.key())
+                    for z in y.value():
+                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'cellSize':
+                            self.grid.setCellValue(i, self.grid.CELL_SIZE, z.value()[0])
+                            self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
+        except:
+            pass
+        try:
+            x = meshDict.getValueForKey(['surfaceMeshRefinement'])
+            for y in x:
+                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
+                    i = objects.index(y.key())
+                    remainder.remove(y.key())
+                    for z in y.value():
+                        if DictParserList.isType(z, DictParserList.DICT):
+                            if z.key() == 'cellSize':
+                                self.grid.setCellValue(i, self.grid.CELL_SIZE, z.value()[0])
+                                self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
+                            elif z.key() == 'refinementThickness':
+                                self.grid.setCellValue(i, self.grid.RATIO, z.value()[0])
+        except:
+            pass
+        for i in remainder:
+            self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'N/A')
+
+    def actionOnExitButton(self):
+        self.close()
+
+class MyController:
+    FEATURE_ANGLE = 30
+    BASHRC_PATH_4_OPENFOAM = os.path.join(os.sep, 'opt', 'OpenFOAM', 'OpenFOAM-v1906', 'etc', 'bashrc')
+    if not os.path.exists(BASHRC_PATH_4_OPENFOAM):
+        BASHRC_PATH_4_OPENFOAM = os.path.join(os.sep, 'usr', 'lib', 'openfoam', 'openfoam2106', 'etc', 'bashrc')
+    SOLVER_PATH_TEMPLATE = os.path.join(os.sep, 'opt', 'DEXCS', 'template', 'dexcs')
+
+    def __init__(self):
+        import FreeCAD
+        import Part
+        self.doc = App.ActiveDocument
+        self.model = MyModel()
+        self.meshDict = None
+        if self.doc.FileName == '':
+            QtGui.QMessageBox.critical(None, 'Error',
+                'This document has never been saved. Save the document and retry.', QtGui.QMessageBox.Close)
+            return
+        self.cfMeshFrame = CfMeshFrame(controller = self,
+            freecad_objects = self.doc.Objects,
+            case_dir_path = os.path.dirname(self.doc.FileName),
+            max_cell_size = self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)/60.0,
+            feature_angle = MyController.FEATURE_ANGLE)
+        self.cfMeshFrame.show()
+
+    def actionOnCaseButton(self):
+        dir_name = QtGui.QFileDialog.getExistingDirectory(self.cfMeshFrame, 'Choose a directory.',
+            os.path.expanduser(os.path.join('~', 'Desktop')))
+        if dir_name != '':
+            self.cfMeshFrame.caseDirST.setText(dir_name)
+
+    def actionOnOpenButton(self):
+        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        if os.path.isdir(case_dir_path):
+            os.system("xdg-open '" + case_dir_path + "'")
+
+    def actionOnExportButton(self):
+        if not os.path.isdir(self.cfMeshFrame.caseDirST.text()):
+            QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error',
+                self.sHMeshFrame.caseDirST.text() + ' is not a directory.', QtGui.QMessageBox.Close)
+            return
+        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        file_stem = os.path.join(case_dir_path, os.path.basename(case_dir_path))
+        stl_file_name = file_stem + '.stl'
+        self.model.exportStl(self.doc.Objects, self.cfMeshFrame.grid, stl_file_name)
+        fms_file_name = file_stem + '.fms'
+        command = ('. ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
+            'surfaceFeatureEdges -angle ' + self.cfMeshFrame.featureAngleCRL.text() + ' ' +
+            stl_file_name + ' ' + fms_file_name)
+        if os.system(command) != 0:
+            QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error', command + ' was not succeed.', QtGui.QMessageBox.Close)
+            return
+        # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
+        if not os.path.isdir(os.path.join(case_dir_path, 'constant')):
+            os.system('rsync -a ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'constant') + ' ' +
+                case_dir_path + ' --exclude polyMesh')
+        if not os.path.isdir(os.path.join(case_dir_path, 'system')):
+            os.system('cp -r ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'system') + ' ' + case_dir_path)
+        if not os.path.isdir(os.path.join(case_dir_path, '0')):
+            os.system('cp -r ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, '0') + ' ' + case_dir_path)
+        self.model.makeMeshDict(case_dir_path = case_dir_path,
+            surface_file_name = fms_file_name,
+            max_cell_size = self.cfMeshFrame.maxCellSizeCRL.text(),
+            min_cell_size = self.cfMeshFrame.minCellSizeCRL.text(),
+            freecad_objects = self.doc.Objects,
+            grid = self.cfMeshFrame.grid,
+            featureAngle = self.cfMeshFrame.featureAngleCRL.text(),
+            meshDict = self.meshDict)
+        QtGui.QMessageBox.information(self.cfMeshFrame, 'Done',
+            'File system/meshDict for cfMesh has been created.', QtGui.QMessageBox.Close)
+
+    def actionOnCartesianMeshButton(self):
+        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        if not os.path.isfile(os.path.join(case_dir_path, 'system', 'meshDict')):
+            QtGui.QMessageBox.warning(self.cfMeshFrame, 'No meshDict',
+                "File system/meshDict doesn't exist.", QtGui.QMessageBox.Close)
+            return
+        if QtGui.QMessageBox.question(self.cfMeshFrame, 'cartesianMesh',
+            'Really exicute cartesianMesh?',
+            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
+            cwd = os.getcwd()
+            os.chdir(case_dir_path)
+            os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
+                os.path.join(path_binDEXCS, 'cartesianMeshを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
+            os.chdir(cwd)
+
+    def actionOnImproveMeshQualityButton(self):
+        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        if QtGui.QMessageBox.question(self.cfMeshFrame, 'improveMeshQuality',
+            'Really exicute improveMeshQuality?',
+            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
+            cwd = os.getcwd()
+            os.chdir(case_dir_path)
+            os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
+                os.path.join(path_binDEXCS, 'improveMeshQualityを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
+            os.chdir(cwd)
+
+    def actionOnFlattenPatchButton(self):
+        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        if QtGui.QMessageBox.question(self.cfMeshFrame, 'Flatten patch',
+            'Really flatten patch?',
+            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
+            cwd = os.getcwd()
+            os.chdir(case_dir_path)
+            os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
+                os.path.join(path_binDEXCS, 'patchを平面に.py') + '; exec bash"') # exec bashで画面が消えなくなる
+            os.chdir(cwd)
+
+    def actionOnLoadButton(self):
+        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        if os.path.isdir(case_dir_path):
+            file_name = QtGui.QFileDialog.getOpenFileName(self.cfMeshFrame, 'Choose a meshDict file.',
+                os.path.join(case_dir_path, 'system'))[0]
+            if file_name == '':
+                return
+            try:
+                self.meshDict = DictParser(file_name = file_name)
+                if (self.meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                    self.meshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                    self.meshDict.getValueForKey(['FoamFile', 'object'])[0] == 'meshDict'):
+                    self.cfMeshFrame.setParametersFromMeshDictContents(self.meshDict)
+                else:
+                    self.meshDict = None
+                    QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error',
+                        file_name + ' is not a meshDict file.', QtGui.QMessageBox.Close)
+            except:
+                self.meshDict = None
+                QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error',
+                    file_name + ' is not a meshDict file.', QtGui.QMessageBox.Close)
+
+    def actionOnEditButton(self):
+        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        meshDict_path = os.path.join(case_dir_path, 'system', 'meshDict')
+        if not os.path.isfile(meshDict_path):
+            QtGui.QMessageBox.warning(self.cfMeshFrame, 'No meshDict',
+                "File system/meshDict doesn't exist.", QtGui.QMessageBox.Close)
+            return
+        if QtGui.QMessageBox.question(self.cfMeshFrame, 'Edit',
+            'The file system/meshDict last exported/saved will be edited.\n' +
+            'Really edit?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
+            os.system('gedit ' + meshDict_path)
+
+class MyModel:
+    def threeEdgesOfCadObjects(self, freecad_objects):
+        xmin = ymin = zmin = float('inf')
+        xmax = ymax = zmax = float('-inf')
+        for obj in freecad_objects:
+            try:
+                if obj.ViewObject.Visibility and obj.Shape is not None:
+                    xmin = min(xmin, obj.Shape.BoundBox.XMin)
+                    ymin = min(ymin, obj.Shape.BoundBox.YMin)
+                    zmin = min(zmin, obj.Shape.BoundBox.ZMin)
+                    xmax = max(xmax, obj.Shape.BoundBox.XMax)
+                    ymax = max(ymax, obj.Shape.BoundBox.YMax)
+                    zmax = max(zmax, obj.Shape.BoundBox.ZMax)
+            except:
+                pass
+        return xmin, ymin, zmin, xmax, ymax, zmax
+
+    def sumOfThreeEdgesOfCadObjects(self, freecad_objects):
+        xmin, ymin, zmin, xmax, ymax, zmax = self.threeEdgesOfCadObjects(freecad_objects)
+        return xmax - xmin + ymax - ymin + zmax - zmin
+
+    def exportStl(self, freecad_objects, grid, file_name):
+        tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
+        dir_name = os.path.dirname(file_name)
+        with open(file_name, 'w') as f:
+            for i in grid.table:
+                if i[grid.TYPE] not in ('BoxRefine', 'N/A'):
+                    for obj in freecad_objects:
+                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                            if i[grid.TYPE] == 'SurfaceRefine':
+                                name = os.path.join(dir_name, i[grid.OBJECT_NAME])
+                                Mesh.export([obj], name + '.ast') # ascii format
+                                os.rename(name + '.ast', name + '.stl') # can overwrite
+                            else:
+                                Mesh.export([obj], tmp_stl)
+                                for line in open(tmp_stl, 'r'):
+                                    if 'endsolid' in line:
+                                        f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
+                                    elif 'solid' in line:
+                                        f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
+                                    else:
+                                        f.write(line)
+                                os.remove(tmp_stl)
+                            break
+
+    def makeMeshDict(self, case_dir_path, surface_file_name, max_cell_size, min_cell_size,
+        freecad_objects, grid, featureAngle, meshDict):
+        dict_name = os.path.join(case_dir_path, 'system', 'meshDict')
+        if os.path.isfile(dict_name):
+            shutil.copy(dict_name, dict_name + '_bak')
+        with open(dict_name, 'w') as f:
+            f.write('FoamFile\n{')
+            f.write('\n\tversion\t2.0;\n')
+            f.write('\tformat\tascii;\n')
+            f.write('\tclass\tdictionary;\n')
+            f.write('\tlocation\t"system";\n')
+            f.write('\tobject\tmeshDict;\n')
+            f.write('}\n') # FoamFile
+            f.write('\n// A manual is available on\n')
+            f.write('// http://cfmesh.com/wp-content/uploads/2015/09/User_Guide-cfMesh_v1.1.pdf\n')
+            f.write('\nCUSTOM_OPTIONS\n{\n')
+            f.write('\tfeatureAngle\t' + featureAngle + '; // used in surfaceFeatureEdges utility\n')
+            f.write('}\n') # CUSTOM_OPTIONS
+            f.write('\n// Keep all the cells intersecting the surface template.\n')
+            f.write('// Useful in capturing small gaps in a geometry. (default: 0)\n')
+            try:
+                x = meshDict.getValueForKey(['keepCellsIntersectingBoundary'])
+                f.write('keepCellsIntersectingBoundary\t' + x[0] + '; // 1 active or 0 inactive\n')
+            except:
+                f.write('keepCellsIntersectingBoundary\t1; // 1 active or 0 inactive\n')
+            f.write('\n// Remove cells where distinct parts of the mesh are joined together.\n')
+            f.write('// Valid only when keepCellsIntersectingBoundary is active. (default: 0)\n')
+            try:
+                x = meshDict.getValueForKey(['checkForGluedMesh'])
+                f.write('checkForGluedMesh\t' + x[0] + '; // 1 active or 0 inactive\n')
+            except:
+                f.write('checkForGluedMesh\t0; // 1 active or 0 inactive\n')
+            f.write('\nmaxCellSize\t' + max_cell_size + '; // (mandatory)\n')
+            try:
+                x = meshDict.getValueForKey(['boundaryCellSize'])
+                f.write('\nboundaryCellSize\t' + x[0] + '; // (optional)\n')
+            except:
+                f.write('\n//boundaryCellSize\t0.5; // (optional)\n')
+            try:
+                x = meshDict.getValueForKey(['boundaryCellSizeRefinementThickness'])
+                f.write('boundaryCellSizeRefinementThickness\t' + x[0] + '; // (optional)\n')
+            except:
+                f.write('//boundaryCellSizeRefinementThickness\t5.0; // (optional)\n')
+            if min_cell_size != '':
+                f.write('\nminCellSize\t' + min_cell_size + '; // (optional)\n')
+            else:
+                try:
+                    min_cell_size = meshDict.getValueForKey(['minCellSize'])[0]
+                except:
+                    min_cell_size = '1'
+                f.write('\n//minCellSize\t' + min_cell_size + '; // (optional)\n')
+            f.write('\nsurfaceFile\t"' + os.path.basename(surface_file_name) + '"; // (mandatory)\n')
+            f.write('\nboundaryLayers\n{')
+            f.write('\n\t// Smoothing of boundary layers (default: 0)\n')
+            try:
+                x = meshDict.getValueForKey(['boundaryLayers', 'optimiseLayer'])
+                f.write('\toptimiseLayer\t' + x[0] + '; // 1 active or 0 inactive\n')
+            except:
+                f.write('\toptimiseLayer\t1; // 1 active or 0 inactive\n')
+            try:
+                x = meshDict.getValueForKey(['boundaryLayers'])
+                for y in x:
+                    if DictParserList.isType(y, DictParserList.DICT) and y.key() != 'optimiseLayer':
+                        f.write('\n')
+                        meshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        f.write('\n')
+            except:
+                pass
+            f.write('\n\toptimisationParameters\n\t{')
+            f.write('\n\t\t// Ratio between the maximum boundary layer thickness and the patch size\n')
+            f.write('\t\t// Ued to limit layer thickness in the regions dominated by curvature. (default: 0.3)\n')
+            try:
+                x = meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters', 'featureSizeFactor'])
+                f.write('\t\tfeatureSizeFactor\t' + x[0] + ';\n')
+            except:
+                f.write('\t\tfeatureSizeFactor\t0.3;\n')
+            f.write('\n\t\t// Maximum difference of the layer thickness between two neighboring points\n')
+            f.write('\t\t// divided by the distance between the points (optional)\n')
+            try:
+                x = meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters', 'relThicknessTol'])
+                f.write('\t\trelThicknessTol\t' + x[0] + ';\n')
+            except:
+                f.write('\t\trelThicknessTol\t0.2;\n')
+            try:
+                x = meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters'])
+                for y in x:
+                    if (DictParserList.isType(y, DictParserList.DICT) and
+                        y.key() not in ['featureSizeFactor', 'relThicknessTol']):
+                        f.write('\n')
+                        meshDict.writeContents(y, f, indent = '\t\t', last_char = '\n')
+                        f.write('\n')
+            except:
+                pass
+            f.write('\t}\n') # optimisationParameters
+            f.write('\n\tpatchBoundaryLayers\n\t{')
+            for i in grid.table:
+                if i[grid.BOUNDARY_LAYER] and i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'N/A'):
+                    f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
+                    f.write('\n\t\t\tnLayers\t{}; // (optional)\n'.format(i[grid.N_LAYERS]))
+                    f.write('\t\t\tthicknessRatio\t{};\n'.format(i[grid.RATIO]))
+                    try:
+                        x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
+                            i[grid.OBJECT_NAME], 'maxFirstLayerThickness'])
+                        f.write('\t\t\tmaxFirstLayerThickness\t' + x[0] + '; // (optional)\n')
+                    except:
+                        f.write('//\t\t\tmaxFirstLayerThickness\t0.5; // (optional)\n')
+                    try:
+                        x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
+                            i[grid.OBJECT_NAME], 'allowDiscontinuity'])
+                        f.write('\t\t\tallowDiscontinuity\t' + x[0] + '; // 1 active or 0 inactive\n')
+                    except:
+                        f.write('\t\t\tallowDiscontinuity\t0; // 1 active or 0 inactive\n')
+                    f.write('\t\t}\n')
+            f.write('\t}\n') # patchBoundaryLayers
+            f.write('}\n') # boundaryLayers
+            f.write('\n// Valid only when keepCellsIntersectingBoundary is not active. (optional)\n')
+            f.write('keepCellsIntersectingPatches\n{')
+            f.write('\n//\t"patch.*" // accepts regex\n//\t{')
+            f.write('\n//\t\tkeepCells\t1; // 1 active or 0 inactive\n')
+            f.write('//\t}\n') # "patch.*"
+            f.write('}\n') #keepCellsIntersectingPatches
+            f.write('\n// Valid only when keepCellsIntersectingBoundary is active. (optional)\n')
+            f.write('removeCellsIntersectingPatches\n{')
+            f.write('\n//\t"patch.*" // accepts regex\n//\t{')
+            f.write('\n//\t\tkeepCells\t0; // 0 remove or 1 keep\n')
+            f.write('//\t}\n') # "patch.*"
+            f.write('}\n') # removeCellsIntersectingPatches
+            f.write('\nlocalRefinement\n{')
+            for i in grid.table:
+                if i[grid.CELL_SIZE] != '' and i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'N/A'):
+                    ref_thickness = i[grid.CELL_SIZE]
+                    ref_level = 0
+                    ref_value = float(max_cell_size)/ref_thickness
+                    while ref_value > 1.0:
+                        ref_level += 1
+                        ref_value /= 2
+                    f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
+                    f.write('\n\t\tcellSize\t' + str(ref_thickness) + ';\n')
+                    f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
+                        '; // Relative to the maximum cell size\n')
+                    f.write('//\t\trefinementThickness\t' + str(5*ref_thickness) + ';\n')
+                    f.write('\t}\n')
+            f.write('\n//\t"patch.*" // accepts regex\n//\t{')
+            f.write('\n//\t\tcellSize 1;\n')
+            f.write('//\t\tadditionalRefinementLevels\t1;\n')
+            f.write('//\t\trefinementThickness\t1.2;\n')
+            f.write('//\t}\n') # "patch.*"
+            f.write('}\n') # localRefinement
+            objects = [i[grid.OBJECT_NAME] for i in grid.table]
+            f.write('\nobjectRefinements\n{')
+            for i in grid.table:
+                if i[grid.CELL_SIZE] != '' and i[grid.TYPE] == 'BoxRefine':
+                    ref_thickness = i[grid.CELL_SIZE]
+                    ref_level = 0
+                    ref_value = float(max_cell_size)/ref_thickness
+                    while ref_value > 1.0:
+                        ref_level += 1
+                        ref_value /= 2
+                    for obj in freecad_objects:
+                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                            xmax, xmin = obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.XMin
+                            ymax, ymin = obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.YMin
+                            zmax, zmin = obj.Shape.BoundBox.ZMax, obj.Shape.BoundBox.ZMin
+                            f.write('\n\t' + i[grid.OBJECT_NAME] + '\n')
+                            f.write('\t{\n')
+                            f.write('\t\ttype\tbox;\n')
+                            f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
+                            f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
+                                '; // Relative to the maximum cell size\n')
+                            f.write('\t\tcentre\t(' +
+                                str(0.5*(xmax + xmin)) + ' ' +
+                                str(0.5*(ymax + ymin)) + ' ' +
+                                str(0.5*(zmax + zmin)) + ');\n')
+                            f.write('\t\tlengthX\t' + str(xmax - xmin) + ';\n')
+                            f.write('\t\tlengthY\t' + str(ymax - ymin) + ';\n')
+                            f.write('\t\tlengthZ\t' + str(zmax - zmin) + ';\n')
+                            f.write('\t}\n')
+                            break
+            try:
+                x = meshDict.getValueForKey(['objectRefinements'])
+                for y in x:
+                    if DictParserList.isType(y, DictParserList.BLOCK) and y.key() not in objects:
+                        f.write('\n')
+                        meshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        f.write('\n')
+            except:
+                pass
+            f.write('\n//\tboxExample\n')
+            f.write('//\t{\n')
+            f.write('//\t\ttype\tbox;\n')
+            f.write('//\t\tcellSize\t7.51;\n')
+            f.write('//\t\tcentre\t(500 500 150);\n')
+            f.write('//\t\tlengthX\t100;\n')
+            f.write('//\t\tlengthY\t150;\n')
+            f.write('//\t\tlengthZ\t200;\n')
+            f.write('//\t}\n')
+            f.write('\n//\tconeExample\n')
+            f.write('//\t{\n')
+            f.write('//\t\ttype\tcone;\n')
+            f.write('//\t\tcellSize\t7.51;\n')
+            f.write('//\t\tp0\t(-100 1873 -320);\n')
+            f.write('//\t\tp1\t(-560 1400 0);\n')
+            f.write('//\t\tradius0\t200;\n')
+            f.write('//\t\tradius1\t300;\n')
+            f.write('//\t}\n')
+            f.write('\n//\thollowConeExample\n')
+            f.write('//\t{\n')
+            f.write('//\t\ttype\thollowCone;\n')
+            f.write('//\t\tadditionalRefinementLevels\t2; // Relative to the maximum cell size\n')
+            f.write('//\t\tp0\t(-100 1873 -320);\n')
+            f.write('//\t\tp1\t(-560 1400 0);\n')
+            f.write('//\t\tradius0_Inner\t200;\n')
+            f.write('//\t\tradius0_Outer\t300;\n')
+            f.write('//\t\tradius1_Inner\t200;\n')
+            f.write('//\t\tradius1_Outer\t300;\n')
+            f.write('//\t}\n')
+            f.write('\n//\tsphereExample\n')
+            f.write('//\t{\n')
+            f.write('//\t\ttype\tsphere;\n')
+            f.write('//\t\tcellSize\t7.51;\n')
+            f.write('//\t\tcentre\t(0 700 0);\n')
+            f.write('//\t\tradius\t50;\n')
+            f.write('//\t\trefinementThickness\t50;\n')
+            f.write('//\t}\n')
+            f.write('\n//\tlineExample\n')
+            f.write('//\t{\n')
+            f.write('//\t\ttype\tline;\n')
+            f.write('//\t\tcellSize\t7.51;\n')
+            f.write('//\t\tp0\t(-750 1000 450);\n')
+            f.write('//\t\tp1\t(-750 1500 450);\n')
+            f.write('//\t\trefinementThickness\t40;\n')
+            f.write('//\t}\n')
+            f.write('}\n') # objectRefinements
+            f.write('\nsurfaceMeshRefinement\n{')
+            for i in grid.table:
+                if i[grid.CELL_SIZE] != '' and i[grid.TYPE] == 'SurfaceRefine':
+                    ref_thickness = i[grid.CELL_SIZE]
+                    ref_level = 0
+                    ref_value = float(max_cell_size)/ref_thickness
+                    while ref_value > 1.0:
+                        ref_level += 1
+                        ref_value /= 2
+                    f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
+                    f.write('\n\t\tsurfaceFile\t"' + i[grid.OBJECT_NAME] + '.stl";\n')
+                    f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
+                    f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
+                        '; // Relative to the maximum cell size\n')
+                    f.write('\t\trefinementThickness\t' + str(i[grid.RATIO]) + ';\n')
+                    f.write('\t}\n')
+            try:
+                x = meshDict.getValueForKey(['surfaceMeshRefinement'])
+                for y in x:
+                    if DictParserList.isType(y, DictParserList.BLOCK) and y.key() not in objects:
+                        f.write('\n')
+                        meshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        f.write('\n')
+            except:
+                pass
+            f.write('}\n') # surfaceMeshRefinement
+            f.write('\nanisotropicSources\n{')
+            f.write('\n//\tboxExample\n//\t{')
+            f.write('\n//\t\ttype\tbox;\n')
+            f.write('//\t\tcentre\t(0 0 0);\n')
+            f.write('//\t\tlengthX\t1000;\n')
+            f.write('//\t\tlengthY\t1000;\n')
+            f.write('//\t\tlengthZ\t200;\n')
+            f.write('//\t\tscaleX\t1;\n')
+            f.write('//\t\tscaleY\t1;\n')
+            f.write('//\t\tscaleZ\t0.3;\n')
+            f.write('//\t}\n') # boxExample
+            f.write('\n//\tplaneExample\n//\t{')
+            f.write('\n//\t\ttype\tplane;\n')
+            f.write('//\t\tnormal\t(0 0 1);\n')
+            f.write('//\t\torigin\t(0 0 250);\n')
+            f.write('//\t\tscalingDistance\t125;\n')
+            f.write('//\t\tscalingFactor\t0.5;\n')
+            f.write('//\t}\n') # planeExample
+            f.write('}\n') # anisotropicSource
+            f.write('\nrenameBoundary\n{')
+            f.write('\n\tnewPatchNames\n\t{')
+            for i in grid.table:
+                if i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'N/A'):
+                    f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
+                    f.write('\n\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
+                    f.write('\t\t\ttype\t'+ i[grid.TYPE] + ';\n')
+                    f.write('\t\t}\n') # i[grid.OBJECT_NAME]
+            f.write('\t}\n') # newPatchNames
+            f.write('}\n') # renameBoundary
+            try:
+                for x in meshDict.contents:
+                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                        x.key() not in ('FoamFile', 'CUSTOM_OPTIONS', 'keepCellsIntersectingBoundary',
+                        'checkForGluedMesh', 'maxCellSize', 'boundaryCellSize',
+                        'boundaryCellSizeRefinementThickness', 'minCellSize', 'surfaceFile',
+                        'boundaryLayers', 'keepCellsIntersectingPatches', 'removeCellsIntersectingPatches',
+                        'localRefinement', 'objectRefinements', 'surfaceMeshRefinement',
+                        'anisotropicSources', 'renameBoundary')):
+                        f.write('\n')
+                        meshDict.writeContents(x, f, indent = '', last_char = '\n')
+                        f.write('\n')
+            except:
+                pass
+        os.chmod(dict_name, 0o0666)
+
+if __name__ == '__main__':
+    MyController()

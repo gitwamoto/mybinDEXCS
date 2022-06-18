@@ -1,0 +1,1 @@
+/Users/iwamoto/openfoam/bin/copybinDEXCS2019.sh

@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# exportStl.FCMacro
+# by Yukiharu Iwamoto
+# 2021/7/28 9:24:16 AM
+
+import os
+import sys
+from PySide import QtGui
+import tempfile
+import Mesh
+
+def exportStl(freecad_objects, file_name):
+    tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
+    with open(file_name, 'w') as f:
+        for obj in freecad_objects:
+            try:
+                if obj.ViewObject.Visibility and hasattr(obj, 'Shape') and not hasattr(obj, 'ResizeMode'):
+                    # DatumPlane has an attribute of 'ResizeMode'
+                    Mesh.export([obj], tmp_stl)
+                    for line in open(tmp_stl, 'r'):
+                        if 'endsolid' in line:
+                            f.write('endsolid ' + (obj.Label.encode('UTF-8')
+                                if sys.version_info.major <= 2 else obj.Label) + '\n')
+                        elif 'solid' in line:
+                            f.write('solid ' + (obj.Label.encode('UTF-8')
+                                if sys.version_info.major <= 2 else obj.Label) + '\n')
+                        else:
+                            f.write(line)
+                    os.remove(tmp_stl)
+            except:
+#                print(sys.exc_info())
+                pass
+
+if __name__ == '__main__':
+    doc = App.ActiveDocument
+    file_name = os.path.splitext(QtGui.QFileDialog.getSaveFileName(None,
+        'Save as STL file', os.path.dirname(doc.FileName))[0])[0] + '.stl'
+    if file_name != '.stl':
+        exportStl(doc.Objects, file_name)
+        QtGui.QMessageBox.information(None, 'Exported', file_name + ' is exported.')
+

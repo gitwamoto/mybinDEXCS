@@ -1,0 +1,249 @@
+// Cで始まるもの
+{
+	type calculated;
+	// 他の変数から計算可能であることを表す．
+	// 壁面でない境界におけるnutの境界条件としてよく使われる．
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type compressible::alphatWallFunction;
+	// alphat = mut/Prt（mut: 乱流粘性係数）から壁面乱流温度拡散率を計算する．
+	Prt 0.85; // 乱流プラントル数
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type compressible::turbulentTemperatureCoupledBaffleMixed;
+	// 境界の両側で熱流束が一致するように温度Tを決める．
+	// -kappa*(T_boundary - T)/delta =
+	//   -kappa_nbr*(T_nbr - T_boundary)/delta_nbr
+	Tnbr T; // 隣接する場の名前．普通はT．
+	kappaMethod fluidThermo; // 境界内側の熱伝導率を指定
+	// 流体側の境界ならfluidThermo，個体側の境界ならsolidThermo
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type compressible::turbulentTemperatureRadCoupledMixed;
+	// 熱ふく射も含めて，境界の両側で熱流束が一致するように温度Tを決める．
+	// -kappa*(T_boundary - T)/delta + qr =
+	//   -kappa_nbr*(T_nbr - T_boundary)/delta_nbr - qr_nbr +
+	//   (delta*rho*Cp + delta_nbr*rho_nbr*Cp_nbr)*
+	//   (T_boundary - T_old)/dt
+	kappaMethod fluidThermo; // 境界内側の熱伝導率を指定
+	// 流体側の境界ならfluidThermo，個体側の境界ならsolidThermo
+	thermalInertia false; // 境界付近の温度の時間的変化を考慮に入れるか
+	// falseだとdt = ∞（定常）またはCp = 0に相当する．
+}
+{
+	type cyclic;
+	// 周期境界
+	// constant/polyMesh/boundaryで
+	// neighbourPatchを指定しないといけない．
+	// http://penguinitis.g1.xrea.com/study/OpenFOAM/cyclic/cyclic.html
+}
+// Eで始まるもの
+{
+	type empty;
+	// 1次元または2次元解析の時に，計算しない方向に垂直な面であることを示す．
+}
+{
+	type epsilonWallFunction;
+	// epsilonの壁面境界条件
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type externalWallHeatFluxTemperature;
+	// 壁面からの熱伝達
+	mode flux;
+	// flux→熱流束q | power→熱量Q | coefficient→熱伝達率h = q/(T - Ta)
+	q uniform 100; // fluxの時に使用
+	// Q 100; // powerの時に使用
+	// h 10; // coefficientの時に使用
+	// Ta 500; // 外部温度, coefficientの時に使用
+	kappaMethod fluidThermo; // 境界内側の熱伝導率を指定
+	// 流体側の境界ならfluidThermo，個体側の境界ならsolidThermo
+	value $internalField; // 実際には使わないけど必要
+}
+// Fで始まるもの
+{
+	type fixedFluxPressure;
+	// 速度境界条件を満足するようにp_rghを設定
+}
+{
+	type fixedGradient;
+	// こう配をgradientで決めた値にする．
+	gradient uniform 1.2; // ベクトルの場合は(1.2 3.4 5.6)のように書く．
+}
+{
+	type fixedValue;
+	// valueで決めた値に固定
+	value uniform 1.2; // ベクトルの場合は(1.2 3.4 5.6)のように書く．
+}
+{
+	type flowRateInletVelocity;
+	// 体積流量または質量流量で流入速度を設定し，
+	// 境界に平行な方向の速度は0にする．
+	volumetricFlowRate 0.1; // 体積流量, massFlowRateとは併用できない．
+	// massFlowRate 0.1; // 質量流量, volumetricFlowRate併用できない．
+	// rhoInlet 1; // 密度, massFlowRateの場合に必要
+	extrapolateProfile false;
+	// true→内側と相似な速度分布で流入 | false→一様流入
+	value $internalField; // 実際には使わないけど必要
+}
+// Gで始まるもの
+{
+	type greyDiffusiveRadiationViewFactor;
+	// 形態係数を利用してふく射による熱流速を決定する．
+	// 壁面は灰色体（ふく射率にはconstant/radiationPropertiesの中にある
+	// emissivityを利用？）とする．
+	qro uniform 0; // 外部から入るふく射による熱流束
+}
+// Iで始まるもの
+{
+	type inletOutlet;
+	// 計算領域内に流入する場合→inletValueで決めた値に設定
+	// 計算領域外に流出する場合→zeroGradient
+	inletValue uniform 0; // ベクトルの場合は(1.2 3.4 5.6)のように書く．
+}
+// Kで始まるもの
+{
+	type kqRWallFunction;
+	// 高レイノルズ数型乱流モデルにおけるk, q, Rの壁面境界条件
+	// zeroGrdientのラッパー
+	value $internalField; // 実際には使わないけど必要
+}
+// Mで始まるもの
+{
+	type movingWallVelocity;
+	// Uに使用
+	// 移動壁面の場合のnoSlip条件，壁面が移動しなければnoSlipと同じ
+	value uniform (0 0 0); // 初期速度
+}
+// Nで始まるもの
+{
+	type nutkRoughWallFunction;
+	// 荒い壁面に対するnutの境界条件
+	// nutkWallFunctionで使っている式に，
+	// 壁面荒さ（凹凸の高さ）Ks，定数Csによる補正を加えている．
+	// https://dergipark.org.tr/en/download/article-file/202910
+	Ks uniform 0; // 単位はm，0だと滑面
+	Cs uniform 0.5; // 0.5 - 1.0，大きいほど荒さの影響大
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type nutkWallFunction;
+	// 壁面に対するnutの境界条件，標準的
+	// yPlus = C_mu^0.25*sqrt(k)*y/nuから格子中心のyPlusを求め，
+	// 対数則領域内に格子中心があるかどうかを判断する．
+	// ある場合，対数速度分布から得られる壁面せん断応力
+	// tau_w = mu*kappa*yPlus/log(E*yPlus)*(u/y)
+	// になるように乱流粘性係数を設定する．
+	// https://www.slideshare.net/fumiyanozaki96/openfoam-36426892
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type nutUWallFunction;
+	// 壁面に対するnutの境界条件
+	// 格子中心での速度u，壁からの距離y，対数速度分布から得られる関係
+	// yPlus*log(E*yPlus) = kappa*u*y/nuから格子中心のyPlusを求め，
+	// 対数則領域内に格子中心があるかどうかを判断する．
+	// ある場合，対数速度分布から得られる壁面せん断応力
+	// tau_w = mu*kappa*yPlus/log(E*yPlus)*(u/y)
+	// になるように乱流粘性係数を設定する．
+	// https://www.slideshare.net/fumiyanozaki96/openfoam-36426892
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type noSlip;
+	// U = (0 0 0)に規定
+}
+// Oで始まるもの
+{
+	type omegaWallFunction;
+	// 壁面に対するomegaの境界条件
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type outletInlet;
+	// 計算領域外に流出する場合→outletValueで決めた値に設定
+	// 計算領域内に流入する場合→zeroGradient
+	outletValue uniform 0; // ベクトルの場合は(1.2 3.4 5.6)のように書く．
+}
+{
+	type outletPhaseMeanVelocity;
+	// alphaで示す相の平均流出流速がUmeanになるように規定する．
+	// 典型的な例としては，曳航水槽による船周りの流れシミュレーションで，
+	// 入口と出口の水位が同じになるようにする場合に使う．
+	alpha alpha.water;
+	Umean 1.2;
+}
+// Pで始まるもの
+{
+	type pressureInletOutletVelocity;
+	// Uに使用
+	// 計算領域内に流入する場合→垂直方向成分はこう配が0，
+	// 接線方向成分はtangentialVelocityのうちの接線方向成分のみ
+	// 計算領域外に流出する場合→全成分でこう配が0
+	tangentialVelocity uniform (0 0 0);
+	value $internalField; // 実際には使わないけど必要
+}
+// Sで始まるもの
+{
+	type slip;
+	// 非粘性流れの壁面境界条件
+}
+{
+	type surfaceNormalFixedValue;
+	// 境界に垂直な方向の速度を外向きを正として設定し，平行方向の速度は0にする．
+	refValue uniform -10; // 垂直方向速度
+}
+{
+	type symmetry;
+	// 対称境界，境界が曲がっていても使える
+}
+{
+	type symmetryPlane;
+	// 対称境界，完全な平面にしか使えない
+}
+// Tで始まるもの
+{
+	type totalPressure;
+	// pまたはp_rghに使用
+	// p0で決めた値が全圧（p_rghの場合は全圧 + rho*g*z）になるように設定
+	p0 uniform 0;
+}
+{
+	type turbulentIntensityKineticEnergyInlet;
+	// 計算領域内に流入する場合→k = 1.5*(intensity*局所速度)^2に規定
+	// 計算領域外に流出する場合→zeroGradient
+	intensity 0.05;
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type turbulentMixingLengthDissipationRateInlet;
+	// 計算領域内に流入する場合→epsilon = C_mu^0.75*k^1.5/混合距離, C_mu = 0.09に規定
+	// 計算領域外に流出する場合→zeroGradient
+	mixingLength 0.001; // 混合距離，ふつうは0.07*管内径ぐらいの大きさ
+	value $internalField; // 実際には使わないけど必要
+}
+{
+	type turbulentMixingLengthFrequencyInlet;
+	// 計算領域内に流入する場合→omega = k^0.5/(C_mu^0.25*混合距離), C_mu = 0.09に規定
+	// 計算領域外に流出する場合→zeroGradient
+	mixingLength 0.001; // 混合距離，ふつうは0.07*管内径ぐらいの大きさ
+	value $internalField; // 実際には使わないけど必要
+}
+// Vで始まるもの
+{
+	type variableHeightFlowRate;
+	// alphaに使用
+	// alpha < lowerBoundの時→alpha = lowerBound，
+	// lowerBound < alpha < upperBoundの時→zeroGradient，
+	// upperBound < alpha の時→alpha = upperBound
+	lowerBound 0.0;
+	upperBound 1.0;
+}
+// Zで始まるもの
+{
+	type zeroGradient;
+	// こう配が0，境界での値 = セル中心での値にする．
+}
