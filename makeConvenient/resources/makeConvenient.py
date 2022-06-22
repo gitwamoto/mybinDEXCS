@@ -2,18 +2,23 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2022/6/9 8:14:20 PM
+# 2022/6/21 7:42:14 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
+import sys
 import os
 import subprocess
 import glob
 import shutil
 import socket
 
+user = os.getlogin()
+user_and_group = user + ':' + user
+
 applications_skel = '/etc/skel/.local/share/applications/'
-applications_home = os.path.expanduser('~/.local/share/applications/')
+applications_home = '/home/' + user + '/.local/share/applications/'
+# Ubuntu 20.0.4では，sudoでos.path.expanduserを使うと/rootに展開されてしまう．
 
 if os.path.exists('/opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc'):
     dexcs_version = '2019'
@@ -23,12 +28,9 @@ else:
     dexcs_version = None
 assert dexcs_version is not None
 
-user = os.getlogin()
-user_and_group = user + ':' + user
-
 def make_paraview_settings(imsudoer):
     config_paraview_skel = '/etc/skel/.config/ParaView/'
-    config_paraview_home = os.path.expanduser('~/.config/ParaView/')
+    config_paraview_home = '/home/' + user + '/.config/ParaView/'
     paraview_ini = 'ParaView5.6.0.ini' if dexcs_version == '2019' else 'ParaView5.9.1.ini'
     paraview_json = 'ParaView-UserSettings.json'
     paraview_ini_home = config_paraview_home + paraview_ini
@@ -109,7 +111,6 @@ def make_paraview_settings(imsudoer):
     if imsudoer:
         shutil.copyfile(paraview_json_home, config_paraview_skel + paraview_json)
 
---------------------------
 def makeFreecadSettings(macro_home, macro_skel, imsudoer):
     macro_home_user_cfg = os.path.join(macro_home, 'user.cfg')
     with open(macro_home_user_cfg, 'r') as f:
@@ -127,21 +128,16 @@ def makeFreecadSettings(macro_home, macro_skel, imsudoer):
             f.write(s)
         subprocess.call('chown ' + user_and_group + ' ' + macro_home_user_cfg, shell = True)
 
-mount_point = ('DEXCS2-6left_student', 'DEXCS2-6right_student', 'DEXCS2-6IS_student', 'DEXCS2-6left_ExtraHD', 'DEXCS2-6right_ExtraHD', 'DEXCS2-6IS_ExtraHD',
-               'Y_drive',              'Z_drive'       )
-mount_loc =   ('student',              'student',               'student',            'ExtraHD',              'ExtraHD',              'ExtraHD',
-               'Public',               'disk/ryuutai'  )
-mount_ip =    ('133.71.76.11',         '133.71.76.12',          '133.71.76.16',       '133.71.76.11',         '133.71.76.12',         '133.71.76.16',
-               '133.71.125.166',       '133.71.125.173')
-mount_user =  ('student',              'student',               'student',            'student',              'student',              'student',
-               'studentika',           'fluiddynamics' )
-mount_pass =  ('hello123',             'hello123',              'hello123',           'hello123',             'hello123',             'hello123',
-               '0909@nagare',          '0226nagare'    )
+mount_point = ('DEXCS2-6left_student', 'DEXCS2-6right_student', 'DEXCS2-6IS_student', 'DEXCS2-6left_ExtraHD', 'DEXCS2-6right_ExtraHD', 'DEXCS2-6IS_ExtraHD', 'Y_drive',        'Z_drive'       )
+mount_loc   = ('student',              'student',               'student',            'ExtraHD',              'ExtraHD',               'ExtraHD',            'Public',         'disk/ryuutai'  )
+mount_ip    = ('133.71.76.11',         '133.71.76.12',          '133.71.76.16',       '133.71.76.11',         '133.71.76.12',          '133.71.76.16',       '133.71.125.166', '133.71.125.173')
+mount_user  = ('student',              'student',               'student',            'student',              'student',               'student',            'studentika',     'fluiddynamics' )
+mount_pass  = ('hello123',             'hello123',              'hello123',           'hello123',             'hello123',              'hello123',           '0909@nagare',    '0226nagare'    )
 ip_self = socket.gethostbyname(socket.gethostname())
 
-def set_fstab():
+def set_fstab(): # Operations in this funchion needs sudo.
     fstab = '/etc/fstab'
-    print('\nDEXCS2-6を自動マウントする設定を' + fstab + 'に追加中...')
+    print('\nDEXCS2-6等を自動マウントする設定を' + fstab + 'に追加中...')
     for d in mount_point:
         if not os.path.exists('/mnt/' + d):
             os.mkdir('/mnt/' + d)
@@ -162,20 +158,22 @@ def make_bookmarks():
     bookmarks = '/home/' + user + '/.config/gtk-3.0/bookmarks'
     print('\nブックマーク' + bookmarks + 'に項目を追加中...')
     with open(bookmarks, 'r') as f:
-        s_orig = f.read().rstrip()
+        s_orig = f.read().rstrip() + '\n'
     s = s_orig.replace('dexcs', user)
-    if dexcs_version == '2019':
-        s += '\nfile:///opt/OpenFOAM/OpenFOAM-v1906/tutorials\n'
-    else:
-        s += '\nfile:///usr/lib/openfoam/openfoam2106/tutorials\n'
+    tut = ('file:///opt/OpenFOAM/OpenFOAM-v1906/tutorials\n' if dexcs_version == '2019' else
+        'file:///usr/lib/openfoam/openfoam2106/tutorials\n')
+    if tut not in s:
+        s += tut
     for i, d in zip(mount_ip, mount_point):
         if i != ip_self and d not in s:
-            s += '\nfile:///mnt/' + d
+            s += 'file:///mnt/' + d + '\n'
     if s != s_orig:
         with open(bookmarks, 'w') as f:
             f.write(s)
         subprocess.call('chown ' + user_and_group + ' ' + bookmarks, shell = True)
     for d in s.split('\n'):
+        if d == '':
+            continue
         d = d.split()[0].replace('file://', '')
         if d != '' and not os.path.exists(d):
             os.mkdir(d)
@@ -183,7 +181,7 @@ def make_bookmarks():
                 subprocess.call('chown ' + user_and_group + ' ' + d, shell = True)
 
 def join_dakuten(ustr):
-    if type(ustr) == str:
+    if sys.version_info.major <= 2 and type(ustr) == str:
         ustr = ustr.decode('UTF-8')
     dict3099 = {
         u'か': u'が', u'き': u'ぎ', u'く': u'ぐ', u'け': u'げ', u'こ': u'ご',
@@ -213,7 +211,7 @@ def join_dakuten(ustr):
     return s # unicode
 
 def join_dakuten_in(path):
-    if type(path) == str:
+    if sys.version_info.major <= 2 and type(path) == str:
         path = path.decode('UTF-8')
     r = join_dakuten(path)
     if path != r:
@@ -229,11 +227,14 @@ if __name__ == '__main__':
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-    source_command = '. ' + ('~/.bashrc-OF4v1906' if dexcs_version == '2019' else '~/.bashrc-OF4v2106') + '\n'
-    BD_alias = "alias BD='xdg-open ~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）'\n"
+    source_command = '. ~/.bashrc-OF4v' + ('1906' if dexcs_version == '2019' else '2106') + '\n'
+    BD_alias = 'alias BD=\'xdg-open ~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）'
+    if dexcs_version == '2021':
+        BD_alias += '*'
+    BD_alias += '\'\n'
     run_functions = '. $WM_PROJECT_DIR/bin/tools/RunFunctions\n'
-    print('\n~/.bashrcファイルにコマンド ' + source_command.rstrip() + ' を追加中...')
-    for bashrc in ('/etc/skel/.bashrc', os.path.expanduser('~/.bashrc')):
+    print('\n/home/' + user + '/.bashrcファイルにコマンド ' + source_command.rstrip() + ' を追加中...')
+    for bashrc in ('/etc/skel/.bashrc', '/home/' + user + '/.bashrc'):
         if not imsudoer and bashrc == '/etc/skel/.bashrc':
             continue
         with open(bashrc, 'r') as f:
@@ -248,14 +249,14 @@ if __name__ == '__main__':
             with open(bashrc, 'a') as f:
                 f.write(run_functions)
 
-        macro_home = os.path.expanduser('~/.FreeCAD')
+        macro_home = '/home/' + user + '/.FreeCAD'
         macro_skel = '/etc/skel/.FreeCAD'
         print('\nFreecadのマクロを' + macro_home + 'と' + macro_skel + 'に追加中...')
         for f in ('makeCfMeshSetting.FCMacro', 'exportStl.FCMacro', 'makeSnappyHexMeshSetting.FCMacro', 'sHM.png'):
             if os.path.isfile(f):
-                subprocess.call('rsync -a ' + f + ' ' + macro_home, shell = True)
+                shutil.copy2(f, macro_home) # can overwrite
                 if imsudoer:
-                    subprocess.call('rsync -a ' + f + ' ' + macro_skel, shell = True)
+                    shutil.copy2(f, macro_skel) # can overwrite
             else:
                 print(f + 'がこのファイルと同じ場所にありませんでした．')
         subprocess.call('chown -R ' + user_and_group + ' ' + macro_home, shell = True)
@@ -267,12 +268,12 @@ if __name__ == '__main__':
         shutil.copy2('importDXF.py', '/usr/local/Mod/Draft')
 
     join_dakuten_in('.')
-    join_dakuten_in(os.path.expanduser('~/Desktop'))
+    join_dakuten_in('/home/' + user + '/Desktop')
     for d in ('binDEXCS2019（解析フォルダを端末で開いてから）', 'matplotlibwx'):
         if os.path.isdir(d):
             print('\n' + d + 'をデスクトップにコピー中...')
-            subprocess.call('rsync -a ' + d + ' ~/Desktop', shell = True)
-            d_desktop = '~/Desktop/' + d
+            subprocess.call('rsync -a ' + d + ' /home/' + user + '/Desktop', shell = True)
+            d_desktop = '/home/' + user + '/Desktop/' + d
             subprocess.call('chown -R ' + user_and_group + ' ' + d_desktop, shell = True)
             subprocess.call('find ' + d_desktop + ' -name .*DS_Store -delete', shell = True)
             subprocess.call('find ' + d_desktop + ' -name ._* -delete', shell = True)
@@ -301,9 +302,9 @@ if __name__ == '__main__':
                 f.write(s)
             subprocess.call('update-grub', shell = True)
 
-    f = os.path.expanduser('~/Desktop/copybinDEXCS2019.sh')
+    f = '/home/' + user + '/Desktop/copybinDEXCS2019.sh'
     if os.path.isfile('copybinDEXCS2019.sh'):
-        shutil.copy('copybinDEXCS2019.sh', f)
+        shutil.copy2('copybinDEXCS2019.sh', f)
         subprocess.call('chown ' + user_and_group + ' ' + f, shell = True)
         subprocess.call('chmod +x ' + f, shell = True)
 

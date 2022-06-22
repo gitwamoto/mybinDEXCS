@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/6/12 4:57:47 PM
+# 2022/6/18 7:02:42 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -22,11 +22,11 @@ else
 	imsudoer=false
 fi
 
-if "$imsudoer" && [ "$dexcs_version" = '2021' ]; then
+if $imsudoer && [ "$dexcs_version" = '2021' ]; then
 	sudo ln -s /usr/bin/python3 /usr/bin/python
 fi
 
-if "$imsudoer"; then
+if $imsudoer; then
 	sudo python resources/makeConvenient.py
 else
 	python resources/makeConvenient.py imnotsudoer
@@ -41,10 +41,10 @@ apt_installed=$(apt list --installed)
 
 if [ "$dexcs_version" = '2019' ]; then
 	# aptでインストールして欲しくないもの
-	if "$imsudoer"; then
+	if $imsudoer; then
 		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt python-openpyxl python-requests; do
 			# installed in /usr/lib/python2.7/dist-packages
-			if echo "$apt_installed" | grep -q "$p"/ ; then
+			if echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -52,7 +52,7 @@ if [ "$dexcs_version" = '2019' ]; then
 	fi
 
 	# pipのインストール
-	if "$imsudoer" && ! echo "$apt_installed" | grep -q python-pip/ ; then
+	if $imsudoer && ! echo "$apt_installed" | grep --quiet python-pip/ ; then
 		sudo apt install -y python-pip
 		sudo apt autoremove -y
 	fi
@@ -62,14 +62,14 @@ if [ "$dexcs_version" = '2019' ]; then
 		if [ -e ~/.local/lib/python2.7/site-packages/"$p" ]; then
 			pip uninstall -y "$p"
 		fi
-		if "$imsudoer" && [ -e /usr/local/lib/python2.7/dist-packages/"$p" ]; then
+		if $imsudoer && [ -e /usr/local/lib/python2.7/dist-packages/"$p" ]; then
 			sudo pip uninstall -y "$p"
 		fi
 	done
 	if [ -e ~/.local/lib/python2.7/site-packages/PIL ]; then
 		pip uninstall -y pillow
 	fi
-	if "$imsudoer" && [ -e /usr/local/lib/python2.7/dist-packages/PIL ]; then
+	if $imsudoer && [ -e /usr/local/lib/python2.7/dist-packages/PIL ]; then
 		sudo pip uninstall -y pillow
 	fi
 
@@ -88,12 +88,12 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	# aptでインストールして欲しいもの
 	# 注意: notepadqはaptにないのでsnapでインストール
-	if "$imsudoer"; then
+	if $imsudoer; then
 		for p in python-tk \
 			python-pexpect python-pyperclip python-chardet python-xlrd python-pil python-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
 			gedit-plugins wxmaxima handbrake; do
-			if ! echo "$apt_installed" | grep -q "$p"/ ; then
+			if ! echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -101,7 +101,7 @@ if [ "$dexcs_version" = '2019' ]; then
 	fi
 
 	# sudo pipでインストールして欲しいもの
-	if "$imsudoer"; then
+	if $imsudoer; then
 		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests; do
 			if [ ! -e /usr/local/lib/python2.7/dist-packages/"$p" ]; then
 				sudo pip install "$p"
@@ -121,16 +121,16 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	snap_installed=$(snap list)
 
-	if ! echo $snap_installed | grep -q notepadqq ; then
+	if ! echo $snap_installed | grep --quiet notepadqq; then
 		sudo snap install notepadqq --devmode
 	fi
 
 else # 2021
 	# aptでインストールして欲しくないもの
-	if "$imsudoer"; then
+	if $imsudoer; then
 		for p in python3-numpy python3-scipy python3-matplotlib libwxgtk3.0-gtk3-0v5 python3-openpyxl python3-requests; do
 			# installed in /usr/local/lib/python3.8/dist-packages
-			if echo "$apt_installed" | grep -q "$p"/ ; then
+			if echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -138,7 +138,7 @@ else # 2021
 	fi
 
 	# pipのインストール
-	if "$imsudoer" && ! echo "$apt_installed" | grep -q python3-pip/ ; then
+	if $imsudoer && ! echo "$apt_installed" | grep --quiet python3-pip/; then
 		sudo apt install -y python3-pip
 		sudo apt autoremove -y
 	fi
@@ -148,14 +148,14 @@ else # 2021
 		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
 			pip uninstall -y "$p"
 		fi
-		if "$imsudoer" && [ -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
+		if $imsudoer && [ -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
 			sudo pip uninstall -y "$p"
 		fi
 	done
 	if [ -e ~/.local/lib/python3.8/site-packages/PIL ]; then
 		pip uninstall -y pillow
 	fi
-	if "$imsudoer" && [ -e /usr/local/lib/python3.8/dist-packages/PIL ]; then
+	if $imsudoer && [ -e /usr/local/lib/python3.8/dist-packages/PIL ]; then
 		sudo pip uninstall -y pillow
 	fi
 
@@ -173,12 +173,12 @@ else # 2021
 	fi
 
 	# aptでインストールして欲しいもの
-	if "$imsudoer"; then
+	if $imsudoer; then
 		for p in python3-tk \
 			python3-pexpect python3-pyperclip python3-chardet python3-xlrd python3-pil python3-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
 			gedit-plugins wxmaxima handbrake notepadqq; do
-			if ! echo "$apt_installed" | grep --quiet "$p"/ ; then
+			if ! echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -186,7 +186,7 @@ else # 2021
 	fi
 
 	# sudo pipでインストールして欲しいもの
-	if "$imsudoer"; then
+	if $imsudoer; then
 		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests; do
 			if [ ! -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
 				sudo pip install "$p"
@@ -196,7 +196,7 @@ else # 2021
 			sudo pip uninstall -y GPy
 			sudo pip install GPy==1.9.9
 		fi
-		if [ ! -e /usr/local/lib/python3.8/dist-packages/wx ]; then # ???
+		if [ ! -e /usr/local/lib/python3.8/dist-packages/wx ]; then
 			sudo pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-20.04 wxPython
 			sudo apt install libsdl2-2.0-0
 		fi
@@ -205,7 +205,7 @@ else # 2021
 		fi
 	fi
 
-fi # if [ "$dexcs_version" = '2019' ]; then
+fi # end of if [ "$dexcs_version" = '2019' ]; then
 
 # デスクトップアイコンの表示設定
 if [ "$dexcs_version" = '2019' ]; then
@@ -249,7 +249,7 @@ for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/in
 	fi
 done
 
-if "$imsudoer" && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
+if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
 	sudo apt update
 	sudo apt upgrade -y
 fi
