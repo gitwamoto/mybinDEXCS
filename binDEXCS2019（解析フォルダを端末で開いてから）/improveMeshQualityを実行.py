@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2021/7/19 10:06:30 AM
+# 2022/6/22 2:27:24 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         shutil.rmtree('dynamicCode')
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
-    with open(faces, 'rb') as f:
+    with open(faces, 'r') as f:
         s = f.read()
     if 'faceCompactList' in s:
         pl = s.find('(') + 1
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         for i in range(faces_ranges.shape[0] - 1):
             faces_data.append(points_indices[faces_ranges[i]:faces_ranges[i + 1]])
         os.rename(faces, faces + '_bak')
-        with open(faces, 'wb') as f:
+        with open(faces, 'w') as f:
             f.write(s[:ph].replace('faceCompactList', 'faceList'))
             f.write('{}\n(\n'.format(len(faces_data)))
             for i in faces_data:

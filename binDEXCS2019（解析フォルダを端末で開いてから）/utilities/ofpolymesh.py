@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # ofpolymesh.py
 # by Yukiharu Iwamoto
-# 2021/6/30 12:23:52 PM
+# 2022/6/22 2:27:54 PM
 
 import sys
 import os
@@ -270,7 +270,7 @@ class structure2D(object):
                     fo.write(')\n')
                 ff.write(')\n')
         else: # not self.ascii
-            with open(os.path.join(self.parent_dir_path, 'points'), 'wb') as fp:
+            with open(os.path.join(self.parent_dir_path, 'points'), 'w') as fp:
                 fp.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tvectorField;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tpoints;\n}\n')
                 fp.write('{}\n('.format(self.nPoints))
@@ -288,7 +288,7 @@ class structure2D(object):
                             n += 1
                 fp.write(')\n')
 
-            with open(os.path.join(self.parent_dir_path, 'faces'), 'wb') as ff:
+            with open(os.path.join(self.parent_dir_path, 'faces'), 'w') as ff:
                 ff.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tfaceCompactList;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tfaces;\n}\n')
                 ff.write('{}\n('.format(self.nFaces + 1))
@@ -331,13 +331,13 @@ class structure2D(object):
                             ff.write(pack('<I', n))
                 ff.write(')\n{}\n('.format(self.nFacePoints))
 
-                with open(os.path.join(self.parent_dir_path, 'owner'), 'wb') as fo:
+                with open(os.path.join(self.parent_dir_path, 'owner'), 'w') as fo:
                     fo.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                         '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                         '\tlocation\t"constant/polyMesh";\n\tobject\towner;\n}\n' %
                         (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
                     fo.write('{}\n('.format(self.nFaces))
-                    with open(os.path.join(self.parent_dir_path, 'neighbour'), 'wb') as fn:
+                    with open(os.path.join(self.parent_dir_path, 'neighbour'), 'w') as fn:
                         fn.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                             '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                             '\tlocation\t"constant/polyMesh";\n\tobject\tneighbour;\n}\n' %
@@ -733,7 +733,7 @@ class structured3D(object):
                     fo.write(')\n')
                 ff.write(')\n')
         else: # not self.ascii
-            with open(os.path.join(self.parent_dir_path, 'points'), 'wb') as fp:
+            with open(os.path.join(self.parent_dir_path, 'points'), 'w') as fp:
                 fp.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tvectorField;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tpoints;\n}\n')
                 fp.write('{}\n('.format(self.nPoints))
@@ -746,7 +746,7 @@ class structured3D(object):
                                 n += 1
                 fp.write(')\n')
 
-            with open(os.path.join(self.parent_dir_path, 'faces'), 'wb') as ff:
+            with open(os.path.join(self.parent_dir_path, 'faces'), 'w') as ff:
                 ff.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tfaceCompactList;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tfaces;\n}\n')
                 ff.write('{}\n('.format(self.nFaces + 1))
@@ -793,13 +793,13 @@ class structured3D(object):
                                     ff.write(pack('<I', n))
                 ff.write(')\n{}\n('.format(self.nFacePoints))
 
-                with open(os.path.join(self.parent_dir_path, 'owner'), 'wb') as fo:
+                with open(os.path.join(self.parent_dir_path, 'owner'), 'w') as fo:
                     fo.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                         '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                         '\tlocation\t"constant/polyMesh";\n\tobject\towner;\n}\n' %
                         (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
                     fo.write('{}\n('.format(self.nFaces))
-                    with open(os.path.join(self.parent_dir_path, 'neighbour'), 'wb') as fn:
+                    with open(os.path.join(self.parent_dir_path, 'neighbour'), 'w') as fn:
                         fn.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                             '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                             '\tlocation\t"constant/polyMesh";\n\tobject\tneighbour;\n}\n' %

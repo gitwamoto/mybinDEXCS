@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2022/6/11 4:55:46 PM
+# 2022/6/22 2:03:49 PM
 
 import glob
 import os
@@ -171,7 +171,7 @@ def convertLengthUnitInMillimeterToMeter():
     print('長さの単位をミリメートルからメートルに変換しました．')
 
 def box_size_of_calculation_range(points_path):
-    with open(points_path, 'rb') as f:
+    with open(points_path, 'r') as f:
         s = f.read()
     ph = s.find('(') + 1
     pf = s.rfind(')')

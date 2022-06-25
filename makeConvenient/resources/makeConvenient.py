@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2022/6/21 7:42:14 PM
+# 2022/6/22 12:06:05 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -224,6 +224,7 @@ def join_dakuten_in(path):
 
 if __name__ == '__main__':
     imsudoer = True if len(sys.argv) == 1 else False
+    print('{}を{}として実行開始します．'.format(os.path.basename(__file__), '管理者' if imsudoer else '一般ユーザー'))
 
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -233,7 +234,7 @@ if __name__ == '__main__':
         BD_alias += '*'
     BD_alias += '\'\n'
     run_functions = '. $WM_PROJECT_DIR/bin/tools/RunFunctions\n'
-    print('\n/home/' + user + '/.bashrcファイルにコマンド ' + source_command.rstrip() + ' を追加中...')
+    print('/home/' + user + '/.bashrcファイルにコマンド ' + source_command.rstrip() + ' を追加中...')
     for bashrc in ('/etc/skel/.bashrc', '/home/' + user + '/.bashrc'):
         if not imsudoer and bashrc == '/etc/skel/.bashrc':
             continue
@@ -251,7 +252,7 @@ if __name__ == '__main__':
 
         macro_home = '/home/' + user + '/.FreeCAD'
         macro_skel = '/etc/skel/.FreeCAD'
-        print('\nFreecadのマクロを' + macro_home + 'と' + macro_skel + 'に追加中...')
+        print('Freecadのマクロを' + macro_home + 'と' + macro_skel + 'に追加中...')
         for f in ('makeCfMeshSetting.FCMacro', 'exportStl.FCMacro', 'makeSnappyHexMeshSetting.FCMacro', 'sHM.png'):
             if os.path.isfile(f):
                 shutil.copy2(f, macro_home) # can overwrite
@@ -263,7 +264,7 @@ if __name__ == '__main__':
         makeFreecadSettings(macro_home, macro_skel, imsudoer)
 
     if dexcs_version == '2019' and imsudoer:
-        print('\nimportDXF.pyを新しいものに置き換え中...')
+        print('importDXF.pyを新しいものに置き換え中...')
         os.rename('/usr/local/Mod/Draft/importDXF.py', '/usr/local/Mod/Draft/importDXF.py.orig')
         shutil.copy2('importDXF.py', '/usr/local/Mod/Draft')
 
@@ -271,7 +272,7 @@ if __name__ == '__main__':
     join_dakuten_in('/home/' + user + '/Desktop')
     for d in ('binDEXCS2019（解析フォルダを端末で開いてから）', 'matplotlibwx'):
         if os.path.isdir(d):
-            print('\n' + d + 'をデスクトップにコピー中...')
+            print('{}をデスクトップにコピー中...'.format(d))
             subprocess.call('rsync -a ' + d + ' /home/' + user + '/Desktop', shell = True)
             d_desktop = '/home/' + user + '/Desktop/' + d
             subprocess.call('chown -R ' + user_and_group + ' ' + d_desktop, shell = True)
@@ -289,7 +290,7 @@ if __name__ == '__main__':
 
     make_bookmarks()
 
-    print('\nその他を設定中...')
+    print('その他を設定中...')
     if imsudoer:
         if dexcs_version == '2019':
             subprocess.call('find /opt/OpenFOAM/OpenFOAM-v1906/tutorials -type f -not -name "All*" -print | xargs chmod a-x', shell = True)
@@ -308,4 +309,4 @@ if __name__ == '__main__':
         subprocess.call('chown ' + user_and_group + ' ' + f, shell = True)
         subprocess.call('chmod +x ' + f, shell = True)
 
-    print('\n終わりました．\n')
+    print('{}を終了します．\n'.format(os.path.basename(__file__)))

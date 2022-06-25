@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dakuten.py
 # by Yukiharu Iwamoto
-# 2021/3/11 1:28:43 PM
+# 2022/6/22 2:03:43 PM
 
 import os
 import glob
@@ -130,7 +130,7 @@ if __name__ == '__main__':
         else:
             print('Not changed.')
     elif 'file' in operation:
-        with open(path, 'rb') as f:
+        with open(path, 'r') as f:
             s = f.read()
         if s == '':
             print('Not changed.')

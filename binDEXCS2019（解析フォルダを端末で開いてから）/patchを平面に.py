@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2021/7/21 2:45:14 PM
+# 2022/6/22 2:03:35 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -137,7 +137,7 @@ if __name__ == '__main__':
         with open(boundary, 'w') as f:
             f.write(s)
 
-    with open(faces, 'rb') as f:
+    with open(faces, 'r') as f:
         s = f.read()
     ph = s.find('(') + 1
     pf = s.rfind(')')
@@ -172,7 +172,7 @@ if __name__ == '__main__':
             faces_data.append(np.fromstring(i, dtype = 'u4', sep = ' '))
     faces_data = list(set([j for i in faces_data[startFace:startFace + nFaces] for j in i]))
 
-    with open(points, 'rb') as f:
+    with open(points, 'r') as f:
         s = f.read()
     ph = s.find('(') + 1
     pf = s.rfind(')')

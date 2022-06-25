@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/6/18 7:02:42 PM
+# 2022/6/22 3:16:21 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -43,8 +43,8 @@ if [ "$dexcs_version" = '2019' ]; then
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt python-openpyxl python-requests; do
-			# installed in /usr/lib/python2.7/dist-packages
 			if echo "$apt_installed" | grep --quiet "$p"/; then
+				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -128,9 +128,9 @@ if [ "$dexcs_version" = '2019' ]; then
 else # 2021
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
-		for p in python3-numpy python3-scipy python3-matplotlib libwxgtk3.0-gtk3-0v5 python3-openpyxl python3-requests; do
-			# installed in /usr/local/lib/python3.8/dist-packages
+		for p in python3-openpyxl python3-requests; do
 			if echo "$apt_installed" | grep --quiet "$p"/; then
+				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -144,7 +144,7 @@ else # 2021
 	fi
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
-	for p in pexpect pyperclip chardet xlrd Pillow urllib3; do
+	for p in pexpect pyperclip chardet xlrd Pillow urllib3 numpy scipy matplotlib; do
 		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -160,7 +160,7 @@ else # 2021
 	fi
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
-	for p in numpy scipy matplotlib zenhan GPyOpt GPy geomdl openpyxl requests; do
+	for p in zenhan GPyOpt GPy geomdl openpyxl requests; do
 		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -173,12 +173,15 @@ else # 2021
 	fi
 
 	# aptでインストールして欲しいもの
+	# python3-numpy python3-scipy python3-matplotlibはfreecad-daily-python3で必要
 	if $imsudoer; then
 		for p in python3-tk \
 			python3-pexpect python3-pyperclip python3-chardet python3-xlrd python3-pil python3-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
+			python3-numpy python3-scipy python3-matplotlib \
 			gedit-plugins wxmaxima handbrake notepadqq; do
 			if ! echo "$apt_installed" | grep --quiet "$p"/; then
+				# wxmaxima
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -187,7 +190,7 @@ else # 2021
 
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
-		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests; do
+		for p in zenhan GPyOpt geomdl openpyxl requests; do
 			if [ ! -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
 				sudo pip install "$p"
 			fi
@@ -255,9 +258,9 @@ if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
 fi
 
 # 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-if [ "$dexcs_version" = '2021' -a -d "~/.config/FreeCAD" -a ! -e "~/.config/FreeCAD/user.cfg_orig" ]; then
-	mv "~/.config/FreeCAD/user.cfg" "~/.config/FreeCAD/user.cfg_orig"
-	cp -f "~/.FreeCAD/user.cfg" "~/.config/FreeCAD/user.cfg"
+if [ "$dexcs_version" = '2021' -a -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
+	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 fi
 
 # ----------------------------------------------------------
