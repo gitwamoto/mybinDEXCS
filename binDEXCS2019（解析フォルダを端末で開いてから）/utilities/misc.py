@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2022/6/22 2:03:49 PM
+# 2022/6/25 7:17:14 PM
 
 import glob
 import os
 import sys
+import re
 import subprocess
 import numpy as np
 # {
@@ -149,15 +150,28 @@ def removePatchesHavingNoFaces():
 
 def isConvertedMillimeterIntoMeter():
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    for line in open(boundary, 'r'):
-        if line.startswith( '// converted millimeter into meter'):
-            return True
-    return False
+    with open(boundary, 'r') as f:
+        s = f.read()
+    #           01234567890123456789012345678901234
+    i = s.find('// converted millimeter into meter')
+    if i != -1:
+        if i == 0:
+            with open(boundary, 'w') as f:
+                f.write(s = s[34:].lstrip())
+            writeConvertedMillimeterIntoMeter()
+        return True
+    else:
+        return False
 
 def writeConvertedMillimeterIntoMeter():
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     with open(boundary, 'r') as f:
-        s = '// converted millimeter into meter\n' + f.read()
+        s = f.read()
+    m = re.search(r'// (\* )+//\n', s)
+    if m is not None:
+        s = s[:m.end()] + '// converted millimeter into meter\n' + s[m.end():]
+    else:
+        s = s.rstrip() + '\n// converted millimeter into meter\n'
     with open(boundary, 'w') as f:
         f.write(s)
 
