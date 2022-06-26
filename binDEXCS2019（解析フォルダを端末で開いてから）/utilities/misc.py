@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2022/6/25 7:17:14 PM
+# 2022/6/26 4:59:27 PM
 
 import glob
 import os
@@ -99,10 +99,17 @@ def setTimeBeginEnd(action):
                 pass
     return time_begin, time_end
 
+def getApplication():
+    if sys.version_info.major <= 2:
+        return subprocess.check_output('foamDictionary -entry application -value system/controlDict',
+            shell = True).rstrip()
+    else:
+        return subprocess.check_output('foamDictionary -entry application -value system/controlDict',
+            shell = True, encoding = 'UTF-8').rstrip()
+
 def execPostProcess(time_begin = '-inf', time_end = 'inf', func = None, region = None, solver = True):
     if solver:
-        command = subprocess.check_output('foamDictionary -entry application -value system/controlDict',
-            shell = True).rstrip() + ' -postProcess'
+        command = getApplication() + ' -postProcess'
     else:
         command = 'postProcess'
     if func is not None:
@@ -157,7 +164,7 @@ def isConvertedMillimeterIntoMeter():
     if i != -1:
         if i == 0:
             with open(boundary, 'w') as f:
-                f.write(s = s[34:].lstrip())
+                f.write(s[34:].lstrip())
             writeConvertedMillimeterIntoMeter()
         return True
     else:
@@ -183,6 +190,44 @@ def convertLengthUnitInMillimeterToMeter():
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     writeConvertedMillimeterIntoMeter()
     print('長さの単位をミリメートルからメートルに変換しました．')
+
+def wasRenumberMeshDone():
+    boundary = os.path.join('constant', 'polyMesh', 'boundary')
+    with open(boundary, 'r') as f:
+        s = f.read()
+    #           0123456789012345678901234
+    i = s.find('// renumberMesh was done')
+    if i != -1:
+        if i == 0:
+            with open(boundary, 'w') as f:
+                f.write(s[24:].lstrip())
+            writeRenumberMeshWasDone()
+        return True
+    else:
+        return False
+
+def writeRenumberMeshWasDone():
+    boundary = os.path.join('constant', 'polyMesh', 'boundary')
+    with open(boundary, 'r') as f:
+        s = f.read()
+    m = re.search(r'// (\* )+//\n', s)
+    if m is not None:
+        s = s[:m.end()] + '// renumberMesh was done\n' + s[m.end():]
+    else:
+        s = s.rstrip() + '\n// renumberMesh was done\n'
+    with open(boundary, 'w') as f:
+        f.write(s)
+
+def renumberMesh():
+    converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
+    command = 'renumberMesh -overwrite'
+    if subprocess.call(command, shell = True) != 0:
+        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        sys.exit(1)
+    boundary = os.path.join('constant', 'polyMesh', 'boundary')
+    writeRenumberMeshWasDone()
+    if converted_millimeter_into_meter:
+        writeConvertedMillimeterIntoMeter()
 
 def box_size_of_calculation_range(points_path):
     with open(points_path, 'r') as f:

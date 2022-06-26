@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2022/6/11 4:55:58 PM
+# 2022/6/26 3:00:42 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -166,9 +166,7 @@ def calculate():
         '--frequency=10.0 ')
     if domains != 1:
         command += '--autosense-parallel '
-    application = subprocess.check_output('foamDictionary -entry application -value system/controlDict',
-        shell = True).rstrip()
-    command += application
+    command += misc.getApplication()
     if not with_function_objects:
         command += ' -noFunctionObjects'
     subprocess.call(command, shell = True)
@@ -472,24 +470,9 @@ if __name__ == '__main__':
             rmObjects.removeProcessorDirs('' if not os.path.isdir(os.path.join('processor0', latest_time))
                 else 'noLatest')
 
-    renumberMesh_was_done = False
-    for line in open(boundary, 'r'):
-        if line.startswith( '// renumberMesh was done'):
-            renumberMesh_was_done = True
-            break
+    renumberMesh_was_done = misc.wasRenumberMeshDone()
     if not renumberMesh_was_done:
-        command = 'renumberMesh -overwrite'
-        if subprocess.call(command, shell = True) != 0:
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
-            if os.path.isdir('0_bak'):
-                if os.path.isdir('0'):
-                    shutil.rmtree('0')
-                shutil.move('0_bak', '0')
-            sys.exit(1)
-        with open(boundary, 'r') as f:
-            s = '// renumberMesh was done\n' + f.read()
-        with open(boundary, 'w') as f:
-            f.write(s)
+        misc.renumberMesh()
 
     for i in ('dynamicCode', 'postProcessing', 'logs'):
         if os.path.isdir(i):

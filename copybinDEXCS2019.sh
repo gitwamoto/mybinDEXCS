@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2022/6/26 1:56:06 PM
+# 2022/6/26 5:37:58 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -557,10 +557,30 @@ if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
 	sudo apt upgrade -y
 fi
 
-# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-if [ "$dexcs_version" = '2021' -a -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
-	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
-	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
+if [ "$dexcs_version" = '2021' ]; then
+	# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
+	if [ -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
+		mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+		cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
+	fi
+	# ParaView-5.9.1-MPI-Linux-Python3.8-64bitだと，U=0の壁面でも0の色を表示しないバグがある．
+	if $imsudoer && [ ! -d /opt/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64 ]; then
+		((trial = 0))
+		for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
+			if [ -d "$d" -a $(ls -l "$d" | wc -l) -ne 1 ]; then
+				sudo tar zxvf "$d"/マニュアル/bin/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /opt
+				break
+			fi
+			((++trial))
+		done
+		if [ "$trial" -eq 2 ]; then
+			sudo wget 'https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.10&type=binary&os=Linux&downloadFile=ParaView-5.10.1-MPI-Linux-Python3.9-x86_64.tar.gz' -O - | sudo tar zxvf - -C /opt/
+		fi
+		if [ -e /opt/paraview ]; then
+			sudo rm /opt/paraview
+		fi
+		sudo ln -s ./ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/ /opt/paraview
+	fi
 fi
 
 # ----------------------------------------------------------
