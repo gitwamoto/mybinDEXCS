@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/6/26 5:38:00 PM
+# 2022/6/27 3:59:56 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -228,21 +228,6 @@ for key in 'computer-icon-visible' 'network-icon-visible' 'volumes-visible' 'hom
 	fi
 done
 
-# 壁紙の設定
-key=/org/gnome/desktop/background/picture-uri
-if [ "$dexcs_version" = '2019' ]; then
-	dexcs_wall_paper="'file:///usr/share/backgrounds/dexcs-desktop-1.jpg'"
-else # 2021
-	dexcs_wall_paper="'file:///opt/DEXCS/backgrounds/dexcs-desktop-1.jpeg'"
-fi
-if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
-	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
-fi
-key=/org/gnome/desktop/screensaver/picture-uri
-if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
-	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
-fi
-
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
 if [ $(dconf read $key) -gt 24 ]; then
@@ -261,32 +246,27 @@ if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
 	sudo apt upgrade -y
 fi
 
-if [ "$dexcs_version" = '2021' ]; then
-	# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-	if [ -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
-		mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
-		cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
-	fi
-	# ParaView-5.9.1-MPI-Linux-Python3.8-64bitだと，U=0の壁面でも0の色を表示しないバグがある．
-	if $imsudoer && [ ! -d /opt/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64 ]; then
-		((trial = 0))
-		for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-			if [ -d "$d" -a $(ls -l "$d" | wc -l) -ne 1 ]; then
-				sudo tar zxvf "$d"/マニュアル/bin/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /opt
-				break
-			fi
-			((++trial))
-		done
-		if [ "$trial" -eq 2 ]; then
-			sudo wget 'https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.10&type=binary&os=Linux&downloadFile=ParaView-5.10.1-MPI-Linux-Python3.9-x86_64.tar.gz' -O - | sudo tar zxvf - -C /opt/
-		fi
-		if [ -e /opt/paraview ]; then
-			sudo rm /opt/paraview
-		fi
-		sudo ln -s ./ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/ /opt/paraview
-	fi
+# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
+if [ "$dexcs_version" = '2021' -a -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
+	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 fi
 
 # ----------------------------------------------------------
+
+# 壁紙の設定
+key=/org/gnome/desktop/background/picture-uri
+if [ "$dexcs_version" = '2019' ]; then
+	dexcs_wall_paper="'file:///usr/share/backgrounds/dexcs-desktop-1.jpg'"
+else # 2021
+	dexcs_wall_paper="'file:///opt/DEXCS/backgrounds/dexcs-desktop-1.jpeg'"
+fi
+if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
+	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
+fi
+key=/org/gnome/desktop/screensaver/picture-uri
+if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
+	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
+fi
 
 cd -

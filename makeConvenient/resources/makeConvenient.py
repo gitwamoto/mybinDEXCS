@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2022/6/22 12:06:05 PM
+# 2022/6/27 4:04:01 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -45,6 +45,10 @@ def make_paraview_settings(imsudoer):
     subprocess.call('chown ' + user_and_group + ' ' + paraview_ini_home, shell = True)
     if imsudoer:
         shutil.copyfile(paraview_ini_home, config_paraview_skel + paraview_ini)
+    if dexcs_version == '2021':
+        shutil.copyfile(paraview_ini_home, config_paraview_home + 'ParaView5.10.1.ini')
+        if imsudoer:
+            shutil.copyfile(paraview_ini_home, config_paraview_skel + 'ParaView5.10.1.ini')
     with open(paraview_json_home, 'w') as f:
         f.write('{\n' +
             '\t"lookup_tables" : \n' +
@@ -267,6 +271,13 @@ if __name__ == '__main__':
         print('importDXF.pyを新しいものに置き換え中...')
         os.rename('/usr/local/Mod/Draft/importDXF.py', '/usr/local/Mod/Draft/importDXF.py.orig')
         shutil.copy2('importDXF.py', '/usr/local/Mod/Draft')
+
+    if dexcs_version == '2021' and imsudoer:
+        # ParaView-5.9.1-MPI-Linux-Python3.8-64bitだと，U=0の壁面でも0の色を表示しないバグがある．
+        print('ParaViewを新しいものに置き換え中...')
+        subprocess.call('tar zxvf ParaView-5.10.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /opt', shell = True)
+        os.remove('/opt/paraview')
+        subprocess.call('ln -s ./ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/ /opt/paraview', shell = True)
 
     join_dakuten_in('.')
     join_dakuten_in('/home/' + user + '/Desktop')
