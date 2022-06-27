@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2022/6/22 12:06:05 PM
+# 2022/6/27 3:21:49 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -45,6 +45,10 @@ def make_paraview_settings(imsudoer):
     subprocess.call('chown ' + user_and_group + ' ' + paraview_ini_home, shell = True)
     if imsudoer:
         shutil.copyfile(paraview_ini_home, config_paraview_skel + paraview_ini)
+    if dexcs_version == '2021':
+        shutil.copyfile(paraview_ini_home, config_paraview_home + 'ParaView5.10.1.ini')
+        if imsudoer:
+            shutil.copyfile(paraview_ini_home, config_paraview_skel + 'ParaView5.10.1.ini')
     with open(paraview_json_home, 'w') as f:
         f.write('{\n' +
             '\t"lookup_tables" : \n' +
