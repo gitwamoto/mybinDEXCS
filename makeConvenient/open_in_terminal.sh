@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/6/26 5:38:00 PM
+# 2022/6/27 3:49:31 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -228,21 +228,6 @@ for key in 'computer-icon-visible' 'network-icon-visible' 'volumes-visible' 'hom
 	fi
 done
 
-# 壁紙の設定
-key=/org/gnome/desktop/background/picture-uri
-if [ "$dexcs_version" = '2019' ]; then
-	dexcs_wall_paper="'file:///usr/share/backgrounds/dexcs-desktop-1.jpg'"
-else # 2021
-	dexcs_wall_paper="'file:///opt/DEXCS/backgrounds/dexcs-desktop-1.jpeg'"
-fi
-if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
-	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
-fi
-key=/org/gnome/desktop/screensaver/picture-uri
-if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
-	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
-fi
-
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
 if [ $(dconf read $key) -gt 24 ]; then
@@ -288,5 +273,20 @@ if [ "$dexcs_version" = '2021' ]; then
 fi
 
 # ----------------------------------------------------------
+
+# 壁紙の設定
+key=/org/gnome/desktop/background/picture-uri
+if [ "$dexcs_version" = '2019' ]; then
+	dexcs_wall_paper="'file:///usr/share/backgrounds/dexcs-desktop-1.jpg'"
+else # 2021
+	dexcs_wall_paper="'file:///opt/DEXCS/backgrounds/dexcs-desktop-1.jpeg'"
+fi
+if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
+	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
+fi
+key=/org/gnome/desktop/screensaver/picture-uri
+if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
+	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
+fi
 
 cd -
