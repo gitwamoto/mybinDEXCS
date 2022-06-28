@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/6/27 3:59:56 PM
+# 2022/6/28 2:11:03 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -174,12 +174,16 @@ else # 2021
 	fi
 
 	# aptでインストールして欲しいもの
-	# python3-numpy python3-scipy python3-matplotlibはfreecad-daily-python3で必要
+	# python3-numpy python3-scipy python3-matplotlib python3-pyside2.qtnetwork python3-pyside2.qtwebengine
+	# python3-pyside2.qtwebenginecore python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchanne
+	# はfreecad-daily-python3で必要
 	if $imsudoer; then
 		for p in python3-tk \
 			python3-pexpect python3-pyperclip python3-chardet python3-xlrd python3-pil python3-urllib3 \
 			python3-openpyxl python3-requests libsdl2-2.0-0 libgtk-3-dev \
 			python3-numpy python3-scipy python3-matplotlib \
+			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
+			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
 			gedit-plugins wxmaxima handbrake notepadqq; do
 			if ! echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt install -y "$p"
