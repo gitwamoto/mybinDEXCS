@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2022/6/27 4:04:01 PM
+# 2022/6/28 12:02:12 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -272,13 +272,6 @@ if __name__ == '__main__':
         os.rename('/usr/local/Mod/Draft/importDXF.py', '/usr/local/Mod/Draft/importDXF.py.orig')
         shutil.copy2('importDXF.py', '/usr/local/Mod/Draft')
 
-    if dexcs_version == '2021' and imsudoer:
-        # ParaView-5.9.1-MPI-Linux-Python3.8-64bitだと，U=0の壁面でも0の色を表示しないバグがある．
-        print('ParaViewを新しいものに置き換え中...')
-        subprocess.call('tar zxvf ParaView-5.10.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /opt', shell = True)
-        os.remove('/opt/paraview')
-        subprocess.call('ln -s ./ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/ /opt/paraview', shell = True)
-
     join_dakuten_in('.')
     join_dakuten_in('/home/' + user + '/Desktop')
     for d in ('binDEXCS2019（解析フォルダを端末で開いてから）', 'matplotlibwx'):
@@ -293,6 +286,13 @@ if __name__ == '__main__':
             subprocess.call('chmod -R +x ' + d_desktop + '/*.py', shell = True)
         else:
             print(d + 'がこのファイルと同じ場所にありませんでした．')
+
+    if dexcs_version == '2021' and imsudoer:
+        # ParaView-5.9.1-MPI-Linux-Python3.8-64bitだと，U=0の壁面でも0の色を表示しないバグがある．
+        print('ParaViewを新しいものに置き換え中...')
+        subprocess.call('tar zxvf ParaView-5.10.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /opt', shell = True)
+        os.remove('/opt/paraview')
+        subprocess.call('ln -s ./ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/ /opt/paraview', shell = True)
 
     make_paraview_settings(imsudoer)
 
@@ -309,7 +309,7 @@ if __name__ == '__main__':
         with open(grub, 'r') as f:
             s = f.read()
         if '#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"' not in s:
-            s.replace('GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"', '#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"\nGRUB_CMDLINE_LINUX_DEFAULT=""')
+            s = s.replace('GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"', '#GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"\nGRUB_CMDLINE_LINUX_DEFAULT=""')
             with open(grub, 'w') as f:
                 f.write(s)
             subprocess.call('update-grub', shell = True)
