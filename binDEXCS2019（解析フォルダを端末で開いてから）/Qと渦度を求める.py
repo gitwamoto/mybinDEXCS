@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 # Qと渦度を求める.py
 # by Yukiharu Iwamoto
-# 2021/6/8 3:59:55 PM
+# 2022/6/30 8:33:26 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行
 # -b time_begin: Qと渦度の計算を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
 # -e time_end: Qと渦度の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
 # -j: Qと渦度の計算を実行せず，過去に計算したQと渦度の結果を消去するだけ
 # -p -> paraFoamを実行する
 
@@ -33,8 +34,7 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = exec_paraFoam = False
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin, time_end, noZero = '-inf', 'inf', True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -45,6 +45,8 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
             elif sys.argv[i] == '-j':
                 just_delete_previous_files = True
             elif sys.argv[i] == '-p':
@@ -67,13 +69,13 @@ if __name__ == '__main__':
     print('*** ParaViewで見たいだけならば，ParaViewのフィルタGradient of Unstructured DataSetを使う事もできます．' +
         'Gradientsの成分は0が∂ u/∂ x，1が∂ u/∂ y，2が∂ u/∂ z，3が∂ v/∂ x，4が∂ v/∂ y，...の順です．')
     if interactive:
-        time_begin, time_end = misc.setTimeBeginEnd('Qと渦度の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd('Qと渦度の計算')
     # https://www.openfoam.com/documentation/guides/latest/doc/guide-fos-field-Q.html
     # Example by using the postProcess utility: postProcess -func Q
-    misc.execPostProcess(time_begin, time_end, func = 'Q', solver = False)
+    misc.execPostProcess(time_begin, time_end, noZero, func = 'Q', solver = False)
     # https://www.openfoam.com/documentation/guides/latest/doc/guide-fos-field-vorticity.html
     # Example by using the postProcess utility: postProcess -func vorticity
-    misc.execPostProcess(time_begin, time_end, func = 'vorticity', solver = False)
+    misc.execPostProcess(time_begin, time_end, noZero, func = 'vorticity', solver = False)
     print('\n結果は各時間のフォルダに書き出されます．')
 
     if interactive:

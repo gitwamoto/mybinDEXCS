@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 # 乱流量を求める.py
 # by Yukiharu Iwamoto
-# 2021/7/21 2:51:44 PM
+# 2022/6/30 8:25:21 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -b time_begin: Qと渦度の計算を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
 # -e time_end: Qと渦度の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
 # -f func: funcにk, epsilon, omega, Rのいずれかを指定して，求めたい乱流量を指定する
 # -p -> paraFoamを実行する
 
@@ -31,8 +32,7 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = exec_paraFoam = False
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin, time_end, noZero = '-inf', 'inf', True
         func = None
         i = 1
         while i < len(sys.argv):
@@ -42,6 +42,8 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
             elif sys.argv[i] == '-f':
                 i += 1
                 func = sys.argv[i]
@@ -74,10 +76,10 @@ if __name__ == '__main__':
             pass
 
     if interactive:
-        time_begin, time_end = misc.setTimeBeginEnd(func + 'の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd(func + 'の計算')
     # https://www.openfoam.com/documentation/guides/latest/doc/guide-fos-field-turbulenceFields.html
     # Example by using the postProcess utility: <solver> -postProcess -func turbulenceFields
-    misc.execPostProcess(time_begin, time_end, func = 'turbulenceFields(' + func + ')')
+    misc.execPostProcess(time_begin, time_end, noZero, func = 'turbulenceFields(' + func + ')')
     print('\n結果は各時間のフォルダに書き出されます．')
     print('乱流量を変えて計算を継続したい場合，constant/turbulencePropertiesや最新時間における' +
         func +'の境界条件を適切なものに変更しなければなりません．')

@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 # 壁面熱流束を求める.py
 # by Yukiharu Iwamoto
-# 2021/6/8 4:06:48 PM
+# 2022/6/30 8:35:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行
 # -b time_begin: 壁面熱流束の計算を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
 # -e time_end: 壁面熱流束の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
 # -j: 壁面熱流束の計算を実行せず，過去に計算した壁面熱流束の結果を消去するだけ
 # -p -> paraFoamを実行する
 
@@ -35,8 +36,7 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = exec_paraFoam = False
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin, time_end, noZero = '-inf', 'inf', True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -47,6 +47,8 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
             elif sys.argv[i] == '-j':
                 just_delete_previous_files = True
             elif sys.argv[i] == '-p':
@@ -74,15 +76,15 @@ if __name__ == '__main__':
 
     print('壁面から流入する熱流束を求めます．')
     if interactive:
-        time_begin, time_end = misc.setTimeBeginEnd('壁面熱流束の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd('壁面熱流束の計算')
 
     # https://www.openfoam.com/documentation/guides/latest/doc/guide-fos-field-wallHeatFlux.html
     # Example by using the postProcess utility: <solver> -postProcess -func wallHeatFlux
     if len(regions) == 0:
-        misc.execPostProcess(time_begin, time_end, func = 'wallHeatFlux')
+        misc.execPostProcess(time_begin, time_end, noZero, func = 'wallHeatFlux')
     else:
         for r in regions:
-            misc.execPostProcess(time_begin, time_end, func = 'wallHeatFlux', region = r)
+            misc.execPostProcess(time_begin, time_end, noZero, func = 'wallHeatFlux', region = r)
 
     print('\n結果はpostProcessingフォルダに保存されています．')
 

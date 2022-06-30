@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2021/6/8 4:06:35 PM
+# 2022/6/30 8:34:36 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行．system/controlDictのfunctionsにforcesに関する指示を書き込んでいることが前提
 # -b time_begin: 力の計算を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
 # -e time_end: 力の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
 # -j: 力の計算を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
 
 import math
@@ -96,9 +97,8 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = False
-        forces_is_written = True	# <- 書き込めていないと非インタラクティブにできるわけがない
-        time_begin = '-inf'
-        time_end = 'inf'
+        forces_is_written = True # <- 書き込めていないと非インタラクティブにできるわけがない
+        time_begin, time_end, noZero = '-inf', 'inf', True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -109,6 +109,8 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
             elif sys.argv[i] == '-j':
                 just_delete_previous_files = True
             i += 1
@@ -150,9 +152,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if interactive:
-        time_begin, time_end = misc.setTimeBeginEnd('力の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd('力の計算')
     # https://develop.openfoam.com/Development/openfoam/-/tree/maintenance-v1906/src/functionObjects/forces/forces
-    misc.execPostProcess(time_begin, time_end)
+    misc.execPostProcess(time_begin, time_end, noZero)
 
     with open(forces_related_folders_txt, 'w') as f:
         for forces_dir in forces_dir_list:

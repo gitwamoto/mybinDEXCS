@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2021/7/21 1:01:46 PM
+# 2022/6/30 8:33:38 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -10,6 +10,7 @@
 #                                             patch1 patch2 ...とfield1 field2 ...はスペース区切りで書いたものを'と'でくくる
 # -b time_begin: patchの面積平均または積分を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
 # -e time_end: patchの面積平均または積分を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
 # -i 'patch1 patch2 ...' 'field1 field2 ...': patch1 patch2 ...に対してパラメータfield1 field2 ...の面積積分を行う
 #                                             patch1 patch2 ...とfield1 field2 ...はスペース区切りで書いたものを'と'でくくる
 # -j: patchの面積平均または積分を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
@@ -39,8 +40,7 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = False
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin, time_end, noZero = '-inf', 'inf', True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-a':
@@ -52,6 +52,8 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
             elif sys.argv[i] == '-i':
                 integrate = [sys.argv[i + 1].split(), ','.join(sys.argv[i + 2].split())]
                 i += 2
@@ -85,13 +87,13 @@ if __name__ == '__main__':
             integrate.append(','.join(
                 (raw_input if sys.version_info.major <= 2 else input)(
                 'どのパラメータを面積積分しますか？ ' + fields + ' の中からスペース区切りで指定して下さい． > ').split()))
-        time_begin, time_end = misc.setTimeBeginEnd('面積平均または面積積分')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd('面積平均または面積積分')
 
     # http://penguinitis.g1.xrea.com/study/OpenFOAM/proc_results.html
     for i in average[0]:
-        misc.execPostProcess(time_begin, time_end, func = 'patchAverage(name=' + i + ',' + average[1] + ')')
+        misc.execPostProcess(time_begin, time_end, noZero, func = 'patchAverage(name=' + i + ',' + average[1] + ')')
     for i in integrate[0]:
-        misc.execPostProcess(time_begin, time_end, func = 'patchIntegrate(name=' + i + ',' + integrate[1] + ')')
+        misc.execPostProcess(time_begin, time_end, noZero, func = 'patchIntegrate(name=' + i + ',' + integrate[1] + ')')
 
     print('\n結果はpostProcessingフォルダに保存されています．')
 

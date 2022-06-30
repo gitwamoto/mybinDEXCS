@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2021/12/3 4:31:30 PM
+# 2022/6/30 8:38:53 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行．system/controlDictのfunctionsにsetsまたはsurfacesに関する指示を書き込んでいることが前提
 # -b time_begin: 抽出を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
 # -e time_end: 抽出を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
 # -j: 抽出を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
 
 import sys
@@ -157,8 +158,7 @@ if __name__ == '__main__':
     else:
         interactive = False
         sampling_is_written = True	# <- 書き込めていないと非インタラクティブにできるわけがない
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin, time_end, noZero = '-inf', 'inf', True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -169,6 +169,8 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
             elif sys.argv[i] == '-j':
                 just_delete_previous_files = True
             i += 1
@@ -214,9 +216,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if interactive:
-        time_begin, time_end = misc.setTimeBeginEnd('抽出')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd('抽出')
     # http://penguinitis.g1.xrea.com/study/OpenFOAM/sampling.html
-    misc.execPostProcess(time_begin, time_end)
+    misc.execPostProcess(time_begin, time_end, noZero)
 
     with open(sampling_related_folders_txt, 'w') as f:
         for sets_dir in sets_dir_list:

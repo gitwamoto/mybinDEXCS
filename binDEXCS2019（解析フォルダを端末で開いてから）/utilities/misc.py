@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2022/6/26 4:59:27 PM
+# 2022/6/30 8:24:07 PM
 
 import glob
 import os
@@ -97,7 +97,9 @@ def setTimeBeginEnd(action):
                 break
             except ValueError:
                 pass
-    return time_begin, time_end
+    noZero = (False if (raw_input if sys.version_info.major <= 2 else input)(
+        '0秒のデータを含めますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else True)
+    return time_begin, time_end, noZero
 
 def getApplication():
     if sys.version_info.major <= 2:
@@ -107,7 +109,7 @@ def getApplication():
         return subprocess.check_output('foamDictionary -entry application -value system/controlDict',
             shell = True, encoding = 'UTF-8').rstrip()
 
-def execPostProcess(time_begin = '-inf', time_end = 'inf', func = None, region = None, solver = True):
+def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func = None, region = None, solver = True):
     if solver:
         command = getApplication() + ' -postProcess'
     else:
@@ -116,6 +118,8 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', func = None, region =
         command += ' -func "' + func + '"'
     if region is not None:
         command += ' -region ' + region
+    if noZero:
+        command += ' -noZero'
     if float(time_begin) != float('-inf') or float(time_end) != float('inf'):
         command += " -time '"
         if float(time_begin) != float('-inf'):

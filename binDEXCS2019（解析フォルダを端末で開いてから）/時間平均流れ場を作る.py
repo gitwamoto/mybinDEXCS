@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2021/6/8 4:07:00 PM
+# 2022/6/30 8:37:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行．system/controlDictのfunctionsにfieldAverageに関する指示を書き込んでいることが前提
 # -b time_begin: 平均を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
-# -d: 最も大きい値を持つ時間以外の平均消去する．多くの場合必要
 # -e time_end: 平均を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
+# -d: 最も大きい値を持つ時間以外の平均を消去する．多くの場合必要
 # -j: 平均を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
 # -p -> paraFoamを実行する
 
@@ -91,8 +92,7 @@ if __name__ == '__main__':
     else:
         interactive = delete_except_for_newest_folder = exec_paraFoam = False
         fieldAverage_is_written = True	# <- 書き込めていないと非インタラクティブにできるわけがない
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin, time_end, noZero = '-inf', 'inf', True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -100,11 +100,13 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-b':
                 i += 1
                 time_begin = sys.argv[i]
-            elif sys.argv[i] == '-d':
-                delete_except_for_newest_folder = True
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
+            elif sys.argv[i] == '-d':
+                delete_except_for_newest_folder = True
             elif sys.argv[i] == '-j':
                 just_delete_previous_files = True
             elif sys.argv[i] == '-p':
@@ -154,9 +156,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if interactive:
-        time_begin, time_end = misc.setTimeBeginEnd('平均')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd('平均')
     # https://develop.openfoam.com/Development/openfoam/-/tree/maintenance-v1906/src/functionObjects/field/fieldAverage
-    command = 'Exec: ' + misc.execPostProcess(time_begin, time_end) + '\n'
+    command = 'Exec: ' + misc.execPostProcess(time_begin, time_end, noZero) + '\n'
 
     if not os.path.isdir('postProcessing'):
         os.mkdir('postProcessing')
@@ -189,7 +191,7 @@ if __name__ == '__main__':
         x = x[:-1]
         if interactive:
             delete_except_for_newest_folder = True if (raw_input if sys.version_info.major <= 2 else input)(
-                '%s以外のフォルダにある平均データを消しますか？ ' % longest + '(y/n, 多くの場合yのはず) > '
+                '{}以外のフォルダにある平均データを消しますか？ '.format(longest) + '(y/n, 多くの場合yのはず) > '
                 ).strip().lower() == 'y' else False
         if delete_except_for_newest_folder:
             for d in x:

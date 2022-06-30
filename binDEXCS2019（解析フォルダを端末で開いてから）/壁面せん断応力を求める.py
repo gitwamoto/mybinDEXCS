@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 # 壁面せん断応力を求める.py
 # by Yukiharu Iwamoto
-# 2022/3/16 8:16:02 PM
+# 2022/6/30 8:35:07 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行
 # -b time_begin: 壁面せん断応力の計算を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
 # -e time_end: 壁面せん断応力の計算の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# -0: 0秒のデータを含める
 # -j: 壁面せん断応力の計算を実行せず，過去に計算した壁面せん断応力の結果を消去するだけ
 # -p -> paraFoamを実行する
 
@@ -34,8 +35,7 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = exec_paraFoam = False
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin, time_end, noZero = '-inf', 'inf', True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -46,6 +46,8 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-e':
                 i += 1
                 time_end = sys.argv[i]
+            elif sys.argv[i] == '-0':
+                noZero = False
             elif sys.argv[i] == '-j':
                 just_delete_previous_files = True
             elif sys.argv[i] == '-p':
@@ -76,14 +78,14 @@ if __name__ == '__main__':
 
     print('壁面せん断応力wallShearStressを求めます．ただし，非圧縮性流体の場合はwallShearStressは壁面せん断応力/密度に相当します．')
     if interactive:
-        time_begin, time_end = misc.setTimeBeginEnd('壁面せん断応力の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd('壁面せん断応力の計算')
     # hhttps://www.openfoam.com/documentation/guides/latest/doc/guide-fos-field-wallShearStress.html
     # Example by using the postProcess utility: <solver> -postProcess -func wallShearStress
     if len(regions) == 0:
-        misc.execPostProcess(time_begin, time_end, func = 'wallShearStress')
+        misc.execPostProcess(time_begin, time_end, noZero, func = 'wallShearStress')
     else:
         for r in regions:
-            misc.execPostProcess(time_begin, time_end, func = 'wallShearStress', region = r)
+            misc.execPostProcess(time_begin, time_end, noZero, func = 'wallShearStress', region = r)
 
     print('\n結果は各時間のフォルダに書き出され，さらにpostProcessingフォルダにまとめが保存されます．')
 
