@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2022/6/30 12:29:33 PM
+# 2022/7/6 10:31:02 AM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -137,7 +137,19 @@ mount_loc   = ('student',              'student',               'student',      
 mount_ip    = ('133.71.76.11',         '133.71.76.12',          '133.71.76.16',       '133.71.76.11',         '133.71.76.12',          '133.71.76.16',       '133.71.125.166', '133.71.125.173')
 mount_user  = ('student',              'student',               'student',            'student',              'student',               'student',            'studentika',     'fluiddynamics' )
 mount_pass  = ('hello123',             'hello123',              'hello123',           'hello123',             'hello123',              'hello123',           '0909@nagare',    '0226nagare'    )
-ip_self = socket.gethostbyname(socket.gethostname())
+
+# reference: https://www.delftstack.com/ja/howto/python/get-ip-address-python/
+def extract_ip():
+    st = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        st.connect(('10.255.255.255', 1))
+        IP = st.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        st.close()
+    return IP
+ip_self = extract_ip()
 
 def set_fstab(): # Operations in this funchion needs sudo.
     fstab = '/etc/fstab'
