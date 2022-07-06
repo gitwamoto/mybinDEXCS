@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2021/10/27 10:23:45 AM
+# 2022/7/6 4:22:10 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,7 +24,6 @@ import signal
 import subprocess
 import shutil
 import glob
-import multiprocessing
 from utilities import misc
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
@@ -150,7 +149,7 @@ if __name__ == '__main__':
         if os.path.isfile(f):
             os.remove(f)
 
-    threads = multiprocessing.cpu_count()
+    threads = misc.cpu_count()
     if interactive:
         while True:
             try:

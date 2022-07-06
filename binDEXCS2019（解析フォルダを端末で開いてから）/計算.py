@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2022/6/26 3:00:42 PM
+# 2022/7/6 4:22:27 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -30,7 +30,6 @@ import subprocess
 import re
 from datetime import datetime
 import filecmp
-import multiprocessing
 import GPyOpt
 import numpy as np
 from utilities import misc
@@ -480,7 +479,7 @@ if __name__ == '__main__':
     rmObjects.removeLogPlotPngs()
     rmObjects.removePyFoamPlots()
 
-    threads = multiprocessing.cpu_count()
+    threads = misc.cpu_count()
     if interactive:
         while True:
             try:

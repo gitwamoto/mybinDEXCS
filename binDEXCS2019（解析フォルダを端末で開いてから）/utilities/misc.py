@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2022/6/30 8:24:07 PM
+# 2022/7/6 4:25:11 PM
 
 import glob
 import os
@@ -30,6 +30,9 @@ elif os.path.exists('/usr/lib/openfoam/openfoam2106/etc/bashrc'):
 else:
     dexcs_version = None
 assert dexcs_version is not None
+
+if dexcs_version == '2019':
+    import multiprocessing
 
 def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
     # https://qiita.com/PruneMazui/items/8a023347772620025ad6
@@ -294,6 +297,9 @@ def correctLocation():
             for f in glob.iglob(os.path.join(d, '*')):
                 if os.path.isfile(f):
                     correctLocationIn(f)
+
+def cpu_count():
+    return multiprocessing.cpu_count() if dexcs_version == '2019' else len(os.sched_getaffinity(0))
 
 if __name__ == '__main__':
 #    showDirForPresentAnalysis()
