@@ -31,9 +31,6 @@ else:
     dexcs_version = None
 assert dexcs_version is not None
 
-if dexcs_version == '2019':
-    import multiprocessing
-
 def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
     # https://qiita.com/PruneMazui/items/8a023347772620025ad6
     print('\033[7;1m----- 現在の解析フォルダは {} です． -----\033[m'.format(path))
@@ -299,7 +296,11 @@ def correctLocation():
                     correctLocationIn(f)
 
 def cpu_count():
-    return multiprocessing.cpu_count() if dexcs_version == '2019' else len(os.sched_getaffinity(0))
+    if sys.version_info.major <= 2:
+        import multiprocessing
+        return multiprocessing.cpu_count()
+    else:
+        return len(os.sched_getaffinity(0))
 
 if __name__ == '__main__':
 #    showDirForPresentAnalysis()
