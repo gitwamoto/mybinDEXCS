@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2022/7/7 3:44:59 PM
+# 2022/7/7 7:33:05 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -66,7 +66,7 @@ fi
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-	if [ -d "$d" -a $(ls -l "$d" | wc -l) -ne 1 ]; then
+	if [ -d "$d" ] && [ $(ls -l "$d" | wc -l) -ne 1 ]; then
 		rsync -av "$RSYNC_OPTION" \
 			--exclude '.*DS_Store' \
 			--exclude '._*' \
@@ -174,11 +174,11 @@ fi
 cd -
 
 # update importDXF.py
-if [ "$dexcs_version" = '2019' -a ! -f /usr/local/Mod/Draft/importDXF.py.orig ]; then
+if [ "$dexcs_version" = '2019' ] && [ ! -f /usr/local/Mod/Draft/importDXF.py.orig ]; then
 	sudo mv /usr/local/Mod/Draft/importDXF.py /usr/local/Mod/Draft/importDXF.py.orig
 	((trial = 0))
 	for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-		if [ -d "$d" -a $(ls -l "$d" | wc -l) -ne 1 ]; then
+		if [ -d "$d" ] && [ $(ls -l "$d" | wc -l) -ne 1 ]; then
 			sudo rsync -av "$d"/マニュアル/bin/importDXF.py /usr/local/Mod/Draft/importDXF.py
 			break
 		fi
@@ -521,7 +521,7 @@ else # 2021
 	entry=org.nemo.desktop
 fi
 for key in 'computer-icon-visible' 'network-icon-visible' 'volumes-visible' 'home-icon-visible' 'trash-icon-visible'; do
-	if [ "$key" = 'computer-icon-visible' -a "$dexcs_version" = '2019' ]; then
+	if [ "$key" = 'computer-icon-visible' ] && [ "$dexcs_version" = '2019' ]; then
 		: # do nothing
 	elif [ "$(gsettings get $entry $key)" != 'true' ]; then
 		gsettings set $entry $key 'true'
@@ -530,13 +530,14 @@ done
 
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
-if [ $(dconf read $key) -gt 24 ]; then
+if [ -z $(dconf read $key) ] || [ $(dconf read $key) -gt 24 ]; then
 	dconf write $key 24
 fi
 
 # デスクトップ上の時計表示の設定
 for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/interface/clock-show-seconds'; do
-	if [ $(dconf read $key) != 'true' ]; then
+	# $(dconf read $key)が空白になる時のために""で括っている
+	if [ "$(dconf read $key)" != 'true' ]; then
 		dconf write $key 'true'
 	fi
 done
@@ -547,13 +548,14 @@ if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
 fi
 
 # 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-if [ "$dexcs_version" = '2021' -a -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
+if [ "$dexcs_version" = '2021' ] && [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
 	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
 	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 fi
 
 # Macから画面共有するための設定
-if [ $(gsettings get org.gnome.Vino require-encryption) != 'false' ]; then
+# $(gsettings get org.gnome.Vino require-encryption))が空白になる時のために""で括っている
+if [ "$(gsettings get org.gnome.Vino require-encryption)" != 'false' ]; then
 	gsettings set org.gnome.Vino require-encryption 'false'
 fi
 

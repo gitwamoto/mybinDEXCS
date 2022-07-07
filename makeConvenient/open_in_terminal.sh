@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/6/28 2:11:03 PM
+# 2022/7/7 7:33:08 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -225,7 +225,7 @@ else # 2021
 	entry=org.nemo.desktop
 fi
 for key in 'computer-icon-visible' 'network-icon-visible' 'volumes-visible' 'home-icon-visible' 'trash-icon-visible'; do
-	if [ "$key" = 'computer-icon-visible' -a "$dexcs_version" = '2019' ]; then
+	if [ "$key" = 'computer-icon-visible' ] && [ "$dexcs_version" = '2019' ]; then
 		: # do nothing
 	elif [ "$(gsettings get $entry $key)" != 'true' ]; then
 		gsettings set $entry $key 'true'
@@ -234,12 +234,13 @@ done
 
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
-if [ $(dconf read $key) -gt 24 ]; then
+if [ -z $(dconf read $key) ] || [ $(dconf read $key) -gt 24 ]; then
 	dconf write $key 24
 fi
 
 # デスクトップ上の時計表示の設定
 for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/interface/clock-show-seconds'; do
+	# $(dconf read $key)が空白になる時のために""で括っている
 	if [ "$(dconf read $key)" != 'true' ]; then
 		dconf write $key 'true'
 	fi
@@ -251,9 +252,15 @@ if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
 fi
 
 # 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-if [ "$dexcs_version" = '2021' -a -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
+if [ "$dexcs_version" = '2021' ] && [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
 	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
 	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
+fi
+
+# Macから画面共有するための設定
+# $(gsettings get org.gnome.Vino require-encryption))が空白になる時のために""で括っている
+if [ "$(gsettings get org.gnome.Vino require-encryption)" != 'false' ]; then
+	gsettings set org.gnome.Vino require-encryption 'false'
 fi
 
 # ----------------------------------------------------------
