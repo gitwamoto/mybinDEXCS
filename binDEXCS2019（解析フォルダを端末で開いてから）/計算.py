@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2022/7/6 4:22:27 PM
+# 2022/7/7 3:13:58 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -165,7 +165,8 @@ def calculate():
         '--frequency=10.0 ')
     if domains != 1:
         command += '--autosense-parallel '
-    command += misc.getApplication()
+    application = misc.getApplication()
+    command += application
     if not with_function_objects:
         command += ' -noFunctionObjects'
     subprocess.call(command, shell = True)
