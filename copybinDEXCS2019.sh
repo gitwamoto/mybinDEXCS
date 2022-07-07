@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2022/6/30 12:31:49 PM
+# 2022/7/7 2:40:28 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -536,7 +536,7 @@ fi
 
 # デスクトップ上の時計表示の設定
 for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/interface/clock-show-seconds'; do
-	if [ "$(dconf read $key)" != 'true' ]; then
+	if [ $(dconf read $key) != 'true' ]; then
 		dconf write $key 'true'
 	fi
 done
@@ -550,6 +550,11 @@ fi
 if [ "$dexcs_version" = '2021' -a -d ~/.config/FreeCAD -a ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
 	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
 	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
+fi
+
+# Macから画面共有するための設定
+if [ $(gsettings get org.gnome.Vino require-encryption) != 'false' ]; then
+	gsettings set org.gnome.Vino require-encryption 'false'
 fi
 
 # ----------------------------------------------------------
