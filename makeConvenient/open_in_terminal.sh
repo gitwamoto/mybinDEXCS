@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/7/7 7:33:08 PM
+# 2022/7/8 10:25:38 AM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -107,7 +107,7 @@ if [ "$dexcs_version" = '2019' ]; then
 				sudo pip install "$p"
 			fi
 		done
-		if [ ! -e /usr/local/lib/python2.7/dist-packages/GPy-1.9.9*-info ]; then
+		if [ -z "$(find /usr/local/lib/python2.7/dist-packages/GPy-1.9.9*-info)" ]; then
 			sudo pip uninstall -y GPy
 			sudo pip install GPy==1.9.9
 		fi
@@ -121,7 +121,7 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	snap_installed=$(snap list)
 
-	if ! echo $snap_installed | grep --quiet notepadqq; then
+	if ! echo "$snap_installed" | grep --quiet notepadqq; then
 		sudo snap install notepadqq --devmode
 	fi
 
@@ -203,7 +203,7 @@ else # 2021
 				sudo pip install "$p"
 			fi
 		done
-		if [ ! -e /usr/local/lib/python3.8/dist-packages/GPy-1.9.9*-info ]; then
+		if [ -z "$(find /usr/local/lib/python3.8/dist-packages/GPy-1.9.9*-info)" ]; then
 			sudo pip uninstall -y GPy
 			sudo pip install GPy==1.9.9
 		fi
@@ -234,7 +234,7 @@ done
 
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
-if [ -z $(dconf read $key) ] || [ $(dconf read $key) -gt 24 ]; then
+if [ -z "$(dconf read $key)" ] || [ "$(dconf read $key)" -gt 24 ]; then
 	dconf write $key 24
 fi
 
@@ -246,14 +246,16 @@ for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/in
 	fi
 done
 
-if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
+if $imsudoer && [ "$(apt list --upgradable | wc -l)" -gt 1 ]; then
 	sudo apt update
 	sudo apt upgrade -y
 fi
 
 # 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
 if [ "$dexcs_version" = '2021' ] && [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
-	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	if [ -e ~/.config/FreeCAD/user.cfg ]; then
+		mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	fi
 	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 fi
 

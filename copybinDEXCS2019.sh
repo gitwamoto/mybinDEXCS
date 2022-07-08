@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2022/7/7 7:33:05 PM
+# 2022/7/8 10:25:35 AM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -66,7 +66,7 @@ fi
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-	if [ -d "$d" ] && [ $(ls -l "$d" | wc -l) -ne 1 ]; then
+	if [ -d "$d" ] && [ -n "$(ls -A $d)" ]; then
 		rsync -av "$RSYNC_OPTION" \
 			--exclude '.*DS_Store' \
 			--exclude '._*' \
@@ -178,7 +178,7 @@ if [ "$dexcs_version" = '2019' ] && [ ! -f /usr/local/Mod/Draft/importDXF.py.ori
 	sudo mv /usr/local/Mod/Draft/importDXF.py /usr/local/Mod/Draft/importDXF.py.orig
 	((trial = 0))
 	for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-		if [ -d "$d" ] && [ $(ls -l "$d" | wc -l) -ne 1 ]; then
+		if [ -d "$d" ] && [ -n "$(ls -A $d)" ]; then
 			sudo rsync -av "$d"/マニュアル/bin/importDXF.py /usr/local/Mod/Draft/importDXF.py
 			break
 		fi
@@ -403,7 +403,7 @@ if [ "$dexcs_version" = '2019' ]; then
 				sudo pip install "$p"
 			fi
 		done
-		if [ ! -e /usr/local/lib/python2.7/dist-packages/GPy-1.9.9*-info ]; then
+		if [ -z "$(find /usr/local/lib/python2.7/dist-packages/GPy-1.9.9*-info)" ]; then
 			sudo pip uninstall -y GPy
 			sudo pip install GPy==1.9.9
 		fi
@@ -417,7 +417,7 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	snap_installed=$(snap list)
 
-	if ! echo $snap_installed | grep --quiet notepadqq; then
+	if ! echo "$snap_installed" | grep --quiet notepadqq; then
 		sudo snap install notepadqq --devmode
 	fi
 
@@ -499,7 +499,7 @@ else # 2021
 				sudo pip install "$p"
 			fi
 		done
-		if [ ! -e /usr/local/lib/python3.8/dist-packages/GPy-1.9.9*-info ]; then
+		if [ -z "$(find /usr/local/lib/python3.8/dist-packages/GPy-1.9.9*-info)" ]; then
 			sudo pip uninstall -y GPy
 			sudo pip install GPy==1.9.9
 		fi
@@ -530,7 +530,7 @@ done
 
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
-if [ -z $(dconf read $key) ] || [ $(dconf read $key) -gt 24 ]; then
+if [ -z "$(dconf read $key)" ] || [ "$(dconf read $key)" -gt 24 ]; then
 	dconf write $key 24
 fi
 
@@ -542,14 +542,16 @@ for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/in
 	fi
 done
 
-if $imsudoer && [ $(apt list --upgradable | wc -l) -gt 1 ]; then
+if $imsudoer && [ "$(apt list --upgradable | wc -l)" -gt 1 ]; then
 	sudo apt update
 	sudo apt upgrade -y
 fi
 
 # 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
 if [ "$dexcs_version" = '2021' ] && [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
-	mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	if [ -e ~/.config/FreeCAD/user.cfg ]; then
+		mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	fi
 	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 fi
 
@@ -572,7 +574,7 @@ if $imsudoer; then
 		needs_remount=true
 	fi
 	if ! grep -q "133.71.125.166" /etc/fstab ; then
-		sudo sed -i -e 's/\/\/133.71.125.173/\/\/133.71.125.166\/Public \/mnt\/Y_drive cifs vers=1.0,uid='$(whoami)',gid='$(whoami)',noperm,username=studentika,password=0909+nagare,domain=RYUUTAI 0 0\n\/\/133.71.125.173/' /etc/fstab
+		sudo sed -i -e 's/\/\/133.71.125.173/\/\/133.71.125.166\/Public \/mnt\/Y_drive cifs vers=1.0,uid='"$(whoami)"',gid='"$(whoami)"',noperm,username=studentika,password=0909+nagare,domain=RYUUTAI 0 0\n\/\/133.71.125.173/' /etc/fstab
 		needs_remount=true
 	fi
 	if grep -q "0909&nagare" /etc/fstab ; then
@@ -584,8 +586,8 @@ if $imsudoer; then
 		needs_remount=true
 	fi
 	if ! grep -q "133.71.76.16" /etc/fstab ; then
-		sudo sed -i -e 's/\/\/133.71.76.11\/ExtraHD/\/\/133.71.76.16\/student \/mnt\/DEXCS2-6IS_student cifs uid='$(whoami)',gid='$(whoami)',noperm,username=student,password=hello123,domain=RYUUTAI 0 0\n\/\/133.71.76.11\/ExtraHD/' \
-			-e 's/\/\/133.71.125.166/\/\/133.71.76.16\/ExtraHD \/mnt\/DEXCS2-6IS_ExtraHD cifs uid='$(whoami)',gid='$(whoami)',noperm,username=student,password=hello123,domain=RYUUTAI 0 0\n\/\/133.71.125.166/' /etc/fstab
+		sudo sed -i -e 's/\/\/133.71.76.11\/ExtraHD/\/\/133.71.76.16\/student \/mnt\/DEXCS2-6IS_student cifs uid='"$(whoami)"',gid='"$(whoami)"',noperm,username=student,password=hello123,domain=RYUUTAI 0 0\n\/\/133.71.76.11\/ExtraHD/' \
+			-e 's/\/\/133.71.125.166/\/\/133.71.76.16\/ExtraHD \/mnt\/DEXCS2-6IS_ExtraHD cifs uid='"$(whoami)"',gid='"$(whoami)"',noperm,username=student,password=hello123,domain=RYUUTAI 0 0\n\/\/133.71.125.166/' /etc/fstab
 		needs_remount=true
 	fi
 	if "$needs_remount"; then
@@ -596,6 +598,6 @@ fi
 #tips='\n\n[お知らせ] '
 tips=''
 if [ "$dexcs_version" = '2021' ]; then
-	tips='(変更点1) Pythonのバージョンは3です．\n(変更点2) 端末からfreecadを実行するコマンドは，freecad-dailyとfreecadcmd-dailyです．\n(変更点3) Paraviewで取り込むファイルの拡張子が.foamになりました.'
+	tips='(変更点1) Pythonのバージョンは3です．\n(変更点2) 端末からfreecadを実行するコマンドは，freecad-dailとfreecadcmd-dailyです．\n(変更点3) Paraviewで取り込むファイルの拡張子が.foamになりました.\n'
 fi
 zenity --title='終了' --info --text="$tips"'\n(DEXCS ver. '"$dexcs_version"')' --width=500
