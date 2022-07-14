@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2022/7/8 10:25:35 AM
+# 2022/7/14 4:58:12 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -598,6 +598,6 @@ fi
 #tips='\n\n[お知らせ] '
 tips=''
 if [ "$dexcs_version" = '2021' ]; then
-	tips='(変更点1) Pythonのバージョンは3です．\n(変更点2) 端末からfreecadを実行するコマンドは，freecad-dailとfreecadcmd-dailyです．\n(変更点3) Paraviewで取り込むファイルの拡張子が.foamになりました.\n'
+	tips='(変更点1) Pythonのバージョンは3です．\n(変更点2) 端末からfreecadを実行するコマンドは，freecad-dailyとfreecadcmd-dailyです．\n(変更点3) Paraviewで取り込むファイルの拡張子が.foamになりました.\n'
 fi
 zenity --title='終了' --info --text="$tips"'\n(DEXCS ver. '"$dexcs_version"')' --width=500

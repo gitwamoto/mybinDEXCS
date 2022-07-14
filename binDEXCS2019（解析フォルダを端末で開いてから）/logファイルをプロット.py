@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # logファイルをプロット.py
 # by Yukiharu Iwamoto
-# 2021/7/21 1:01:09 PM
+# 2022/7/14 4:53:23 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -30,19 +30,10 @@ def appropriate_tick(xmin, xmax, n):
             return i*tick
     return 10.0*tick
 
-mycompreg = re.compile('([^0-9]*)([0-9]+)$')
-def mycomp(x, y):
-    try:
-        x = mycompreg.match(x)
-        y = mycompreg.match(y)
-        if x.group(1) > y.group(1):
-            return 1
-        elif x.group(1) < y.group(1):
-            return -1
-        else:
-            return int(x.group(2)) - int(y.group(2))
-    except:
-        return 0
+mykeyreg = re.compile('([^0-9]*)([0-9]+)$')
+def mykey(x):
+    x = mykeyreg.match(x)
+    return (x.group(1), int(x.group(2))) if x is not None else ()
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
@@ -90,7 +81,7 @@ if __name__ == '__main__':
     rmObjects.removeLogPlotPngs()
 
     vars = [os.path.basename(i) for i in glob.iglob(os.path.join('logs', '*FinalRes_*'))]
-    vars.sort(cmp = mycomp)
+    vars.sort(key = mykey)
     i = 1
     while i < len(vars):
         if vars[i - 1][:vars[i - 1].find('FinalRes_')] == vars[i][:vars[i].find('FinalRes_')]:
