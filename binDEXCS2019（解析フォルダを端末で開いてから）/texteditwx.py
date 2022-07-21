@@ -341,7 +341,7 @@ class Maxima(object):
             raise
 
     def send_commands(self, commands, replace = False):
-        debug = True
+        debug = False
         if len(self.commands_list) > 0:
             commands_list_remain = self.commands_list
             self.commands_list = []
