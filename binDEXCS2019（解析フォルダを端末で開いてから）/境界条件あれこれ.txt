@@ -83,7 +83,7 @@
 	// 体積流量または質量流量で流入速度を設定し，
 	// 境界に平行な方向の速度は0にする．
 	volumetricFlowRate 0.1; // 体積流量, massFlowRateとは併用できない．
-	// massFlowRate 0.1; // 質量流量, volumetricFlowRate併用できない．
+	// massFlowRate 0.1; // 質量流量, volumetricFlowRateとは併用できない．
 	// rhoInlet 1; // 密度, massFlowRateの場合に必要
 	extrapolateProfile false;
 	// true→内側と相似な速度分布で流入 | false→一様流入
