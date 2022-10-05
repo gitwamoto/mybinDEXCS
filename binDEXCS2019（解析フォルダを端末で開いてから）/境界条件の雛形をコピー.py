@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 境界条件の雛形をコピー.py
 # by Yukiharu Iwamoto
-# 2021/7/26 11:10:19 AM
+# 2022/10/5 1:12:31 PM
 
 import os
 import sys
@@ -11,7 +11,7 @@ import pyperclip
 import tty
 import termios
 
-src = 'https://develop.openfoam.com/Development/openfoam/tree/maintenance-v1906/src/'
+src = 'https://develop.openfoam.com/Development/openfoam/tree/maintenance-v2106/src/'
 
 # fixedValueFvPatchFieldのデフォルトはvalueが必要
 # zeroGradientFvPatchFieldのデフォルトはvalueが不要
@@ -82,6 +82,22 @@ boundary_conditions = (
     'extrapolateProfile false;\n// true→内側と相似な速度分布で流入 | false→一様流入\n' +
     'value $internalField; // 実際には使わないけど必要',
     src + '/finiteVolume/fields/fvPatchFields/derived/flowRateInletVelocity'),
+    ('freestreamPressure',
+    'pに対する自由流入出条件．freestreamVelocityと併用する．\n' +
+    '境界垂直方向と流速方向が完全に同じ向きで\n' +
+    '流入する時はzeroGradienに規定し，\n' +
+    '流出する時はfreestreamValueにする．\n' +
+    '完全に同じでないときは，これらの間を連続的に変化させたものを使う．',
+    'freestreamValue uniform 1.0e+05;',
+    src + '/finiteVolume/fields/fvPatchFields/derived/freestreamPressure'),
+    ('freestreamVelocity',
+    'Uに対する自由流入出条件．freestreamPressureと併用する．\n' +
+    '境界垂直方向と流速方向が完全に同じ向きで\n' +
+    '流入する時はfreestreamValueに規定し，\n' +
+    '流出する時はzeroGradientにする．\n' +
+    '完全に同じでないときは，これらの間を連続的に変化させたものを使う．',
+    'freestreamValue uniform (100 0 0);',
+    src + '/finiteVolume/fields/fvPatchFields/derived/freestreamVelocity'),
     ('greyDiffusiveRadiationViewFactor',
     '形態係数を利用してふく射による熱流速を決定する．\n' +
     '壁面は灰色体（ふく射率にはconstant/radiationPropertiesの中にある\nemissivityを利用？）とする．',

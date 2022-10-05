@@ -89,6 +89,24 @@
 	// true→内側と相似な速度分布で流入 | false→一様流入
 	value $internalField; // 実際には使わないけど必要
 }
+{
+	type freestreamPressure;
+	// pに対する自由流入出条件．freestreamVelocityと併用する．
+	// 境界垂直方向と流速方向が完全に同じ向きで
+	// 流入する時はzeroGradienに規定し，
+	// 流出する時はfreestreamValueにする．
+	// 完全に同じでないときは，これらの間を連続的に変化させたものを使う．
+	freestreamValue uniform 1.0e+05;
+}
+{
+	type freestreamVelocity;
+	// Uに対する自由流入出条件．freestreamPressureと併用する．
+	// 境界垂直方向と流速方向が完全に同じ向きで
+	// 流入する時はfreestreamValueに規定し，
+	// 流出する時はzeroGradientにする．
+	// 完全に同じでないときは，これらの間を連続的に変化させたものを使う．
+	freestreamValue uniform (100 0 0);
+}
 // Gで始まるもの
 {
 	type greyDiffusiveRadiationViewFactor;
