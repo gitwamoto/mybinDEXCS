@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2022/7/14 4:58:12 PM
+# 2022/10/7 7:59:06 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -37,7 +37,7 @@ wget_from_google_drive() {
 	document=$(mktemp /tmp/document.XXXXXXX)
 	wget --no-check-certificate --save-cookies="$cookie" --output-document="$document" \
 		'https://drive.google.com/uc?export=download&id='"$1"
-	if grep -q 'Google Drive - Virus scan warning' "$document" ; then
+	if grep --quiet 'Google Drive - Virus scan warning' "$document" ; then
 		# https://qiita.com/IsHYuhi/items/e4afc0163019343d9664
 		code=$(awk '/_warning_/ {print $NF}' "$cookie")
 		if [ -z "$code" ]; then # zオプションは文字列の長さが0の時にtrueになります。
@@ -565,29 +565,33 @@ fi
 
 if $imsudoer; then
 	needs_remount=false
-	if grep -q "133.71.125.179" /etc/fstab ; then
+	if grep --quiet "133.71.125.179" /etc/fstab ; then
 		sudo sed -i -e 's/133.71.125.179/133.71.76.11/g' -e 's/133.71.125.197/133.71.76.12/g' /etc/fstab
 		needs_remount=true
 	fi
-	if ! grep -q ",noperm,username" /etc/fstab ; then
+	if ! grep --quiet ",noperm,username" /etc/fstab ; then
 		sudo sed -i -e 's/,username/,noperm,username/g' /etc/fstab
 		needs_remount=true
 	fi
-	if ! grep -q "133.71.125.166" /etc/fstab ; then
+	if ! grep --quiet "133.71.125.166" /etc/fstab ; then
 		sudo sed -i -e 's/\/\/133.71.125.173/\/\/133.71.125.166\/Public \/mnt\/Y_drive cifs vers=1.0,uid='"$(whoami)"',gid='"$(whoami)"',noperm,username=studentika,password=0909+nagare,domain=RYUUTAI 0 0\n\/\/133.71.125.173/' /etc/fstab
 		needs_remount=true
 	fi
-	if grep -q "0909&nagare" /etc/fstab ; then
+	if grep --quiet "0909&nagare" /etc/fstab ; then
 		sudo sed -i -e 's/0909&nagare/0909@nagare/g' /etc/fstab
 		needs_remount=true
 	fi
-	if grep -q "0909+nagare" /etc/fstab ; then
+	if grep --quiet "0909+nagare" /etc/fstab ; then
 		sudo sed -i -e 's/0909+nagare/0909@nagare/g' /etc/fstab
 		needs_remount=true
 	fi
-	if ! grep -q "133.71.76.16" /etc/fstab ; then
+	if ! grep --quiet "133.71.76.16" /etc/fstab ; then
 		sudo sed -i -e 's/\/\/133.71.76.11\/ExtraHD/\/\/133.71.76.16\/student \/mnt\/DEXCS2-6IS_student cifs uid='"$(whoami)"',gid='"$(whoami)"',noperm,username=student,password=hello123,domain=RYUUTAI 0 0\n\/\/133.71.76.11\/ExtraHD/' \
 			-e 's/\/\/133.71.125.166/\/\/133.71.76.16\/ExtraHD \/mnt\/DEXCS2-6IS_ExtraHD cifs uid='"$(whoami)"',gid='"$(whoami)"',noperm,username=student,password=hello123,domain=RYUUTAI 0 0\n\/\/133.71.125.166/' /etc/fstab
+		needs_remount=true
+	fi
+	if grep --quiet "Y_drive cifs vers=1.0," /etc/fstab ; then
+		sudo sed -i -e 's/Y_drive cifs vers=1.0,/Y_drive cifs /g' /etc/fstab
 		needs_remount=true
 	fi
 	if "$needs_remount"; then
