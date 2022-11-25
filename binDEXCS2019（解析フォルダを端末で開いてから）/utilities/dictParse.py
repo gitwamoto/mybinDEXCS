@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2022/11/25 5:40:35 PM
+# 2022/11/25 8:20:28 PM
 
 import sys
 import os
@@ -58,7 +58,7 @@ class DictParserList(list):
     def isType(cls, x, type_):
         if isinstance(type_, list):
             type_ = tuple(type_)
-        else:
+        elif not isinstance(type_, tuple):
             type_ = (type_,)
         return True if type(x) is cls and x.type in type_ else False
 
@@ -66,14 +66,14 @@ class DictParserList(list):
         super(DictParserList, self).__init__()
         if isinstance(items, tuple):
             items = list(items)
-        else:
+        elif not isinstance(items, list):
             items = [items]
         self.type = type_
         self.extend(items)
         if self.type in (DictParserList.BLOCK, DictParserList.DICT, DictParserList.LISTP):
             if isinstance(self[2], tuple):
                 self[2] = list(self[2])
-            else:
+            elif not isinstance(self[2], list):
                 self[2] = [self[2]]
 
     def key(self):
@@ -108,7 +108,7 @@ class DictParserList(list):
             DictParserList.LISTP, DictParserList.LISTB):
             if isinstance(value, tuple):
                 value = list(value)
-            else:
+            elif not isinstance(value, list):
                 value = [value]
             i = self.valueIndex()
             if i is not None:
@@ -505,7 +505,7 @@ class DictParser:
     def getItemAtIndex(self, index_list):
         if isinstance(index_list, tuple):
             index_list = list(index_list)
-        else:
+        elif not isinstance(index_list, list):
             index_list = [index_list]
         if len(index_list) > 0 and index_list[0] is None:
             return None
@@ -517,7 +517,7 @@ class DictParser:
     def getIndexOfItem(self, word_list, x = None):
         if isinstance(word_list, tuple):
             word_list = list(word_list)
-        else:
+        elif not isinstance(word_list, list):
             word_list = [word_list]
         if x is None:
             x = self.contents
