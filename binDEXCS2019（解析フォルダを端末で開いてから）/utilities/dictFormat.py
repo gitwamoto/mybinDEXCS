@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictFormat.py
 # by Yukiharu Iwamoto
-# 2022/6/9 1:52:39 PM
+# 2022/11/25 5:39:21 PM
 
 import sys
 # {
@@ -38,7 +38,7 @@ def moveLineToBottom(dp):
     return dp
 
 def insertEntryIntoBlockBottom(entry, block): # ブロック内のいちばん下の行に挿入
-    if hasattr(entry, '__iter__'):
+    if isinstance(entry, tuple):
         entry = list(entry)
     else:
         entry = [entry]
@@ -53,7 +53,7 @@ def insertEntryIntoBlockBottom(entry, block): # ブロック内のいちばん�
         block.extend(['\n'] + entry)
 
 def insertEntryIntoBlockTop(entry, block): # ブロック内のいちばん上の行に挿入
-    if hasattr(entry, '__iter__'):
+    if isinstance(entry, tuple):
         entry = list(entry)
     else:
         entry = [entry]
@@ -68,7 +68,7 @@ def insertEntryIntoBlockTop(entry, block): # ブロック内のいちばん上�
         block[:0] = ['\n'] + entry
 
 def insertEntryIntoTopLayerBottom(entry, contents): # 最上層のいちばん下の行に挿入
-    if hasattr(entry, '__iter__'):
+    if isinstance(entry, tuple):
         entry = list(entry)
     else:
         entry = [entry]

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2021/6/30 11:38:33 AM
+# 2022/11/25 5:40:35 PM
 
 import sys
 import os
@@ -56,7 +56,7 @@ class DictParserList(list):
 
     @classmethod
     def isType(cls, x, type_):
-        if hasattr(type_, '__iter__'):
+        if isinstance(type_, list):
             type_ = tuple(type_)
         else:
             type_ = (type_,)
@@ -64,14 +64,14 @@ class DictParserList(list):
 
     def __init__(self, type_, items = []):
         super(DictParserList, self).__init__()
-        if hasattr(items, '__iter__'):
+        if isinstance(items, tuple):
             items = list(items)
         else:
             items = [items]
         self.type = type_
         self.extend(items)
         if self.type in (DictParserList.BLOCK, DictParserList.DICT, DictParserList.LISTP):
-            if hasattr(self[2], '__iter__'):
+            if isinstance(self[2], tuple):
                 self[2] = list(self[2])
             else:
                 self[2] = [self[2]]
@@ -106,7 +106,7 @@ class DictParserList(list):
     def setValue(self, value):
         if self.type in (DictParserList.BLOCK, DictParserList.DICT,
             DictParserList.LISTP, DictParserList.LISTB):
-            if hasattr(value, '__iter__'):
+            if isinstance(value, tuple):
                 value = list(value)
             else:
                 value = [value]
@@ -503,7 +503,7 @@ class DictParser:
         del self.getItemAtIndex(index_list[:-2])[index_list[-2]]
 
     def getItemAtIndex(self, index_list):
-        if hasattr(index_list, '__iter__'):
+        if isinstance(index_list, tuple):
             index_list = list(index_list)
         else:
             index_list = [index_list]
@@ -515,7 +515,7 @@ class DictParser:
         return x
 
     def getIndexOfItem(self, word_list, x = None):
-        if hasattr(word_list, '__iter__'):
+        if isinstance(word_list, tuple):
             word_list = list(word_list)
         else:
             word_list = [word_list]

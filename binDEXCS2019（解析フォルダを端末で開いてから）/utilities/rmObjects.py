@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2021/10/27 10:26:52 AM
+# 2022/11/25 5:37:16 PM
 
 import os
 import glob
@@ -97,8 +97,8 @@ def removeResultDirsWithTimeGreaterThan(time, path = os.curdir):
             pass
 
 def removeDirsAndFilesWithName(dirs = None, files = None, path = os.curdir):
-    dirs = [t for t in (dirs if hasattr(dirs, '__iter__') else [dirs]) if t is not None]
-    files = [t for t in (files if hasattr(files, '__iter__') else [files]) if t is not None]
+    dirs = [t for t in (dirs if isinstance(dirs, (tuple, list)) else (dirs,)) if t is not None]
+    files = [t for t in (files if isinstance(files, (tuple, list)) else (files,)) if t is not None]
     for obj in os.listdir(path):
         pathobj = os.path.join(path, obj)
         if os.path.isdir(pathobj):
@@ -119,8 +119,8 @@ def removeDirsAndFilesWithName(dirs = None, files = None, path = os.curdir):
                         pass
 
 def removeDirsAndFilesWithNameRecursively(dirs = None, files = None, path = os.curdir):
-    dirs = [t for t in (dirs if hasattr(dirs, '__iter__') else [dirs]) if t is not None]
-    files = [t for t in (files if hasattr(files, '__iter__') else [files]) if t is not None]
+    dirs = [t for t in (dirs if isinstance(dirs, (tuple, list)) else (dirs,)) if t is not None]
+    files = [t for t in (files if isinstance(files, (tuple, list)) else (files,)) if t is not None]
     for dirpath, dirnames, filenames in os.walk(path):
         for obj in dirnames:
             for p in dirs:

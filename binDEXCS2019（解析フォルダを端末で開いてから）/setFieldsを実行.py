@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2021/7/2 8:47:09 PM
+# 2022/11/25 5:33:29 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -23,7 +23,7 @@ sys.path.append(path_binDEXCS)
 def find_fields(dpl):
     fields = []
     for x in dpl:
-        if hasattr(x, '__iter__'):
+        if isinstance(x, (tuple, list)):
             if DictParserList.isType(x, DictParserList.LISTP):
                 i = 0
                 y = x[2]
@@ -32,7 +32,7 @@ def find_fields(dpl):
                         i += 2
                         if i < len(y) and type(y[i]) is str:
                             fields.append(y[i])
-                    elif hasattr(y[i], '__iter__'):
+                    elif isinstance(y[i], (tuple, list)):
                         fields.extend(find_fields(y[i]))
                     i += 1
             else:
