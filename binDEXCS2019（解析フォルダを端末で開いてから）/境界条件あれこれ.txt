@@ -204,6 +204,15 @@
 	tangentialVelocity uniform (0 0 0);
 	value $internalField; // 実際には使わないけど必要
 }
+{
+	type prghPressure;
+	// p_rghに使用
+	// 設定したいpの値からp_rghを計算して設定する．
+	// 対応するパッチのpにはcalculatedを使う．
+	rho rhok; // 計算で用いる密度の変数名，rhoまたはrhok
+	// pの次元がPaの場合→rho，m^2/s^2にの場合→rhok
+	p uniform 0; // 設定したいpの値
+}
 // Sで始まるもの
 {
 	type slip;

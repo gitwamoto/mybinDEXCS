@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 境界条件の雛形をコピー.py
 # by Yukiharu Iwamoto
-# 2022/10/5 1:12:31 PM
+# 2023/1/18 8:48:09 PM
 
 import os
 import sys
@@ -81,7 +81,7 @@ boundary_conditions = (
     '// rhoInlet 1; // 密度, massFlowRateの場合に必要\n' +
     'extrapolateProfile false;\n// true→内側と相似な速度分布で流入 | false→一様流入\n' +
     'value $internalField; // 実際には使わないけど必要',
-    src + '/finiteVolume/fields/fvPatchFields/derived/flowRateInletVelocity'),
+    src + 'finiteVolume/fields/fvPatchFields/derived/flowRateInletVelocity'),
     ('freestreamPressure',
     'pに対する自由流入出条件．freestreamVelocityと併用する．\n' +
     '境界垂直方向と流速方向が完全に同じ向きで\n' +
@@ -89,7 +89,7 @@ boundary_conditions = (
     '流出する時はfreestreamValueにする．\n' +
     '完全に同じでないときは，これらの間を連続的に変化させたものを使う．',
     'freestreamValue uniform 1.0e+05;',
-    src + '/finiteVolume/fields/fvPatchFields/derived/freestreamPressure'),
+    src + 'finiteVolume/fields/fvPatchFields/derived/freestreamPressure'),
     ('freestreamVelocity',
     'Uに対する自由流入出条件．freestreamPressureと併用する．\n' +
     '境界垂直方向と流速方向が完全に同じ向きで\n' +
@@ -97,7 +97,7 @@ boundary_conditions = (
     '流出する時はzeroGradientにする．\n' +
     '完全に同じでないときは，これらの間を連続的に変化させたものを使う．',
     'freestreamValue uniform (100 0 0);',
-    src + '/finiteVolume/fields/fvPatchFields/derived/freestreamVelocity'),
+    src + 'finiteVolume/fields/fvPatchFields/derived/freestreamVelocity'),
     ('greyDiffusiveRadiationViewFactor',
     '形態係数を利用してふく射による熱流速を決定する．\n' +
     '壁面は灰色体（ふく射率にはconstant/radiationPropertiesの中にある\nemissivityを利用？）とする．',
@@ -158,11 +158,16 @@ boundary_conditions = (
     'Uに使用\n計算領域内に流入する場合→垂直方向成分はこう配が0，\n接線方向成分はtangentialVelocityのうちの接線方向成分のみ\n' +
     '計算領域外に流出する場合→全成分でこう配が0',
     'tangentialVelocity uniform (0 0 0);\nvalue $internalField; // 実際には使わないけど必要',
-    src + '/finiteVolume/fields/fvPatchFields/derived/pressureInletOutletVelocity'),
+    src + 'finiteVolume/fields/fvPatchFields/derived/pressureInletOutletVelocity'),
+    ('prghPressure',
+    'p_rghに使用\n設定したいpの値からp_rghを計算して設定する．\n対応するパッチのpにはcalculatedを使う．',
+    'rho rhok; // 計算で用いる密度の変数名，rhoまたはrhok\n// pの次元がPaの場合→rho，m^2/s^2にの場合→rhok\n' +
+    'p uniform 0; // 設定したいpの値',
+    src + 'finiteVolume/fields/fvPatchFields/derived/prghPressure'),
     ('slip',
     '非粘性流れの壁面境界条件',
     '',
-    src + '/finiteVolume/fields/fvPatchFields/derived/slip'),
+    src + 'finiteVolume/fields/fvPatchFields/derived/slip'),
     ('surfaceNormalFixedValue',
     '境界に垂直な方向の速度を外向きを正として設定し，平行方向の速度は0にする．',
     'refValue uniform -10; // 垂直方向速度',
