@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2022/6/22 2:27:24 PM
+# 2023/4/30 5:16:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         misc.writeConvertedMillimeterIntoMeter()
     else:
         if interactive:
-            box = misc.box_size_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))
+            box = misc.box_size_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
             print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
                 box[0][0], box[0][1], box[1][0], box[1][1], box[2][0], box[2][1]))
             scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2021/7/2 8:48:40 PM
+# 2023/4/30 5:16:05 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     print('xy平面に平行なpatchを押し出して2次元メッシュまたはwedge境界を作ります．')
 
-    box = misc.box_size_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))
+    box = misc.box_size_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
     z_back, z_front = box[2]
     plist = listFile.patchList()
     patches = ' '.join(plist)
