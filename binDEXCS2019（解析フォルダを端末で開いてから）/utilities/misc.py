@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2022/7/7 9:58:27 AM
+# 2023/4/30 5:31:38 PM
 
 import glob
 import os
@@ -247,7 +247,7 @@ def box_size_of_calculation_range(points_path):
         points_data = np.fromstring(s[ph:pf].replace('(', '').replace(')', ''), dtype = 'd', sep = ' ').reshape(-1, 3)
         p_min = np.min(points_data, axis = 0)
         p_max = np.max(points_data, axis = 0)
-    return tuple((p_min[i], p_max[i]) for i in range(3))
+    return n, tuple((p_min[i], p_max[i]) for i in range(3))
 
 def texteditwx_works_well():
     if subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' -h',
