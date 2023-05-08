@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:10:30 PM
+# 2023/5/8 1:02:20 PM
 
 import glob
 import os
@@ -79,7 +79,7 @@ def setTimeBeginEnd(action):
         if time_begin == '':
             time_begin = '-inf'
             break
-        elif time_begin.lower().startsWith('l'):
+        elif time_begin.lower().startswith('l'):
             time_begin = 'latestTime'
         else:
             try:
@@ -122,7 +122,7 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
         command += ' -region ' + region
     if noZero:
         command += ' -noZero'
-    if time_begin.lower().startsWith('l') or time_end.lower().startsWith('l'):
+    if time_begin.lower().startswith('l') or time_end.lower().startswith('l'):
         command += ' -latestTime'
     elif float(time_begin) != float('-inf') or float(time_end) != float('inf'):
         command += " -time '"
