@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2023/4/30 5:31:38 PM
+# 2023/5/8 12:10:30 PM
 
 import glob
 import os
@@ -74,11 +74,13 @@ def setTimeBeginEnd(action):
     latest_time = float(folderTime.latestTime())
     while True:
         time_begin = (raw_input if sys.version_info.major <= 2 else input)(
-            '{}を開始する時間を入力して下さい． ({} ~ {}, Enterのみ: {}) > '.format(
-            action, first_time, latest_time, first_time)).strip()
+            '{}を開始する時間を入力して下さい． ({} ~ {} または l (= {}), Enterのみ: {}) > '.format(
+            action, first_time, latest_time, latest_time, first_time)).strip()
         if time_begin == '':
             time_begin = '-inf'
             break
+        elif time_begin.lower().startsWith('l'):
+            time_begin = 'latestTime'
         else:
             try:
                 time_begin = str(float(time_begin))
@@ -120,7 +122,9 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
         command += ' -region ' + region
     if noZero:
         command += ' -noZero'
-    if float(time_begin) != float('-inf') or float(time_end) != float('inf'):
+    if time_begin.lower().startsWith('l') or time_end.lower().startsWith('l'):
+        command += ' -latestTime'
+    elif float(time_begin) != float('-inf') or float(time_end) != float('inf'):
         command += " -time '"
         if float(time_begin) != float('-inf'):
             command += time_begin

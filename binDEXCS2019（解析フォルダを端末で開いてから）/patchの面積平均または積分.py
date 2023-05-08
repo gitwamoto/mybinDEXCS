@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2022/6/30 8:33:38 PM
+# 2023/5/8 12:07:54 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -a 'patch1 patch2 ...' 'field1 field2 ...': patch1 patch2 ...に対してパラメータfield1 field2 ...の面積平均を行う
 #                                             patch1 patch2 ...とfield1 field2 ...はスペース区切りで書いたものを'と'でくくる
 # -b time_begin: patchの面積平均または積分を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
+#                time_beginにlを指定すると，最も大きい値を持つ時間になる
 # -e time_end: patchの面積平均または積分を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
 # -0: 0秒のデータを含める
 # -i 'patch1 patch2 ...' 'field1 field2 ...': patch1 patch2 ...に対してパラメータfield1 field2 ...の面積積分を行う
