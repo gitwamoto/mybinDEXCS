@@ -81,6 +81,7 @@ def setTimeBeginEnd(action):
             break
         elif time_begin.lower().startswith('l'):
             time_begin = 'latestTime'
+            break
         else:
             try:
                 time_begin = str(float(time_begin))
