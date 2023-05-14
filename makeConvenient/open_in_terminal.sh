@@ -92,7 +92,7 @@ if [ "$dexcs_version" = '2019' ]; then
 		for p in python-tk \
 			python-pexpect python-pyperclip python-chardet python-xlrd python-pil python-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
-			gedit-plugins wxmaxima handbrake; do
+			gedit-plugins wxmaxima handbrake xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
@@ -184,7 +184,7 @@ else # 2021
 			python3-numpy python3-scipy python3-matplotlib \
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
 			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
-			gedit-plugins wxmaxima handbrake notepadqq; do
+			gedit-plugins wxmaxima handbrake notepadqq xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y

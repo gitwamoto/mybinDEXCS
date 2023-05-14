@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2022/10/7 7:41:56 PM
+# 2023/5/14 4:04:15 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -250,6 +250,16 @@ if __name__ == '__main__':
         BD_alias += '*'
     BD_alias += '\'\n'
     run_functions = '. $WM_PROJECT_DIR/bin/tools/RunFunctions\n'
+    mc_definition = ('mc() {\n' +
+    '  if [ "$#" -eq 0 ]; then\n' +
+    '    eq="$(xsel --clipboard --output)"\n' +
+    '  else\n' +
+    '    eq="$1"\n' +
+    '  fi\n' +
+    '  r=$(maxima --very-quiet --batch-string="$eq;" | awk \'$0 != ""{sub("  - ", "  -"); print $0}\')\n' +
+    '  echo -e "$r" \n' +
+    '  echo -e "$r" | awk \'END{sub("^ *", ""); printf $0}\' | xsel --clipboard\n' +
+    '}\n')
     print('/home/' + user + '/.bashrcファイルにコマンド ' + source_command.rstrip() + ' を追加中...')
     for bashrc in ('/etc/skel/.bashrc', '/home/' + user + '/.bashrc'):
         if not imsudoer and bashrc == '/etc/skel/.bashrc':
@@ -265,6 +275,9 @@ if __name__ == '__main__':
         if run_functions not in s:
             with open(bashrc, 'a') as f:
                 f.write(run_functions)
+        if 'mc()' not in s:
+            with open(bashrc, 'a') as f:
+                f.write('\n# Append the inline calculator using maxima\n' + mc_definition)
 
         macro_home = '/home/' + user + '/.FreeCAD'
         macro_skel = '/etc/skel/.FreeCAD'

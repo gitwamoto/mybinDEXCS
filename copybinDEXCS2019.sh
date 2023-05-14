@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2022/10/7 7:59:06 PM
+# 2023/5/14 4:04:12 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -236,7 +236,17 @@ BD_alias = 'alias BD=\'xdg-open ~/Desktop/binDEXCS2019（解析フォルダを�
 if dexcs_version == '2021':
     BD_alias += '*'
 BD_alias += '\'\n'
-run_functions = '. "'$WM_PROJECT_DIR'"/bin/tools/RunFunctions\n'
+run_functions = '. \$WM_PROJECT_DIR/bin/tools/RunFunctions\n'
+mc_definition = ('mc() {\n' +
+'  if [ \"\$#\" -eq 0 ]; then\n' +
+'    eq=\"\$(xsel --clipboard --output)\"\n' +
+'  else\n' +
+'    eq=\"\$1\"\n' +
+'  fi\n' +
+'  r=\$(maxima --very-quiet --batch-string=\"\$eq;\" | awk \'\$0 != \"\"{sub(\"  - \", \"  -\"); print \$0}\')\n' +
+'  echo -e \"\$r\" \n' +
+'  echo -e \"\$r\" | awk \'END{sub(\"^ *\", \"\"); printf \$0}\' | xsel --clipboard\n' +
+'}\n')
 bashrc = os.path.expanduser('~/.bashrc')
 with open(bashrc, 'r') as f:
     s = f.read().rstrip() + '\n'
@@ -246,70 +256,73 @@ if BD_alias not in s:
 if run_functions not in s:
     with open(bashrc, 'a') as f:
         f.write(run_functions)
+if 'mc()' not in s:
+    with open(bashrc, 'a') as f:
+        f.write('\n' + mc_definition)
 
 paraview_json_home = os.path.expanduser('~/.config/ParaView/ParaView-UserSettings.json')
 with open(paraview_json_home, 'r') as f:
     s = f.read()
-if '"\""GeometryRepresentation"\""' not in s or '"\""UnstructuredGridRepresentation"\""' not in s or "\""sources"\"" not in s:
+if '\"GeometryRepresentation\"' not in s or '\"UnstructuredGridRepresentation\"' not in s or \"sources\" not in s:
     with open(paraview_json_home, 'w') as f:
         f.write('{\n' +
-            '\t"\""lookup_tables"\"" : \n' +
+            '\t\"lookup_tables\" : \n' +
             '\t{\n' +
-            '\t\t"\""PVLookupTable"\"" : \n' +
+            '\t\t\"PVLookupTable\" : \n' +
             '\t\t{\n' +
-            '\t\t\t"\""ColorSpace"\"" : 1,\n' +
-            '\t\t\t"\""NanColor"\"" : \n\t\t\t[\n' +
+            '\t\t\t\"ColorSpace\" : 1,\n' +
+            '\t\t\t\"NanColor\" : \n\t\t\t[\n' +
             '\t\t\t\t0.49803921568600001,\n' +
             '\t\t\t\t0.49803921568600001,\n' +
             '\t\t\t\t0.49803921568600001\n' +
             '\t\t\t],\n' +
-            '\t\t\t"\""RGBPoints"\"" : \n' +
+            '\t\t\t\"RGBPoints\" : \n' +
             '\t\t\t[\n' +
             '\t\t\t\t0.0,\n\t\t\t\t0.0,\n\t\t\t\t0.0,\n' +
             '\t\t\t\t1.0,\n\t\t\t\t1.0,\n\t\t\t\t1.0,\n' +
             '\t\t\t\t0.0,\n\t\t\t\t0.0\n\t\t\t]\n' +
             '\t\t}\n' +
             '\t},\n' +
-            '\t"\""misc"\"" : \n' +
+            '\t\"misc\" : \n' +
             '\t{\n' +
-            '\t\t"\""ColorPalette"\"" : \n' +
+            '\t\t\"ColorPalette\" : \n' +
             '\t\t{\n' +
-            '\t\t\t"\""BackgroundColor"\"" : \n' +
+            '\t\t\t\"BackgroundColor\" : \n' +
             '\t\t\t[\n\t\t\t\t1.0,\n\t\t\t\t1.0,\n\t\t\t\t1.0\n\t\t\t],\n' +
-            '\t\t\t"\""ForegroundColor"\"" : \n' +
+            '\t\t\t\"ForegroundColor\" : \n' +
             '\t\t\t[\n\t\t\t\t0.0,\n\t\t\t\t0.0,\n\t\t\t\t0.0\n\t\t\t],\n' +
-            '\t\t\t"\""TextAnnotationColor"\"" : \n' +
+            '\t\t\t\"TextAnnotationColor\" : \n' +
             '\t\t\t[\n\t\t\t\t0.0,\n\t\t\t\t0.0,\n\t\t\t\t0.0\n\t\t\t]\n' +
             '\t\t}\n' +
             '\t},\n' +
-            '\t"\""representations"\"" : \n' +
+            '\t\"representations\" : \n' +
             '\t{\n' +
-            '\t\t"\""GeometryRepresentation"\"" : \n' +
+            '\t\t\"GeometryRepresentation\" : \n' +
             '\t\t{\n' +
-            '\t\t\t"\""Ambient"\"" : 1.0,\n' +
-            '\t\t\t"\""AmbientColor"\"" : \n' +
+            '\t\t\t\"Ambient\" : 1.0,\n' +
+            '\t\t\t\"AmbientColor\" : \n' +
             '\t\t\t[\n\t\t\t\t0.0,\n\t\t\t\t0.0,\n\t\t\t\t0.0\n\t\t\t],\n' +
-            '\t\t\t"\""BlockColorsDistinctValues"\"" : 12,\n' +
-            '\t\t\t"\""Diffuse"\"" : 0.0,\n' +
-            '\t\t\t"\""SelectionCellLabelFontFile"\"" : "\"""\"",\n' +
-            '\t\t\t"\""SelectionPointLabelFontFile"\"" : "\"""\""\n' +
+            '\t\t\t\"BlockColorsDistinctValues\" : 12,\n' +
+            '\t\t\t\"Diffuse\" : 0.0,\n' +
+            '\t\t\t\"SelectionCellLabelFontFile\" : \"\",\n' +
+            '\t\t\t\"SelectionPointLabelFontFile\" : \"\"\n' +
             '\t\t},\n' +
-            '\t\t"\""UnstructuredGridRepresentation"\"" : \n' +
+            '\t\t\"UnstructuredGridRepresentation\" : \n' +
             '\t\t{\n' +
-            '\t\t\t"\""Ambient"\"" : 1.0,\n' +
-            '\t\t\t"\""AmbientColor"\"" : \n' +
+            '\t\t\t\"Ambient\" : 1.0,\n' +
+            '\t\t\t\"AmbientColor\" : \n' +
             '\t\t\t[\n\t\t\t\t0.0,\n\t\t\t\t0.0,\n\t\t\t\t0.0\n\t\t\t],\n' +
-            '\t\t\t"\""BlockColorsDistinctValues"\"" : 12,\n' +
-            '\t\t\t"\""Diffuse"\"" : 0.0,\n' +
-            '\t\t\t"\""SelectionCellLabelFontFile"\"" : "\"""\"",\n' +
-            '\t\t\t"\""SelectionPointLabelFontFile"\"" : "\"""\""\n' +
+            '\t\t\t\"BlockColorsDistinctValues\" : 12,\n' +
+            '\t\t\t\"Diffuse\" : 0.0,\n' +
+            '\t\t\t\"SelectionCellLabelFontFile\" : \"\",\n' +
+            '\t\t\t\"SelectionPointLabelFontFile\" : \"\"\n' +
             '\t\t}\n' +
             '\t},\n' +
-            '\t"\""sources"\"" : \n' +
+            '\t\"sources\" : \n' +
             '\t{\n' +
-            '\t\t"\""PVFoamReader"\"" : \n' +
+            '\t\t\"PVFoamReader\" : \n' +
             '\t\t{\n' +
-            '\t\t\t"\""ZeroTime"\"" : 0\n' +
+            '\t\t\t\"ZeroTime\" : 0\n' +
             '\t\t}\n' +
             '\t}\n' +
             '}')
@@ -388,7 +401,7 @@ if [ "$dexcs_version" = '2019' ]; then
 		for p in python-tk \
 			python-pexpect python-pyperclip python-chardet python-xlrd python-pil python-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
-			gedit-plugins wxmaxima handbrake; do
+			gedit-plugins wxmaxima handbrake xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
@@ -480,7 +493,7 @@ else # 2021
 			python3-numpy python3-scipy python3-matplotlib \
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
 			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
-			gedit-plugins wxmaxima handbrake notepadqq; do
+			gedit-plugins wxmaxima handbrake notepadqq xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p"/; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
