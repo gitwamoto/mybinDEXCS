@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2023/5/14 4:04:12 PM
+# 2023/5/17 8:56:09 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -139,6 +139,7 @@ if [ "$trial" -eq 2 ]; then
 	for f in 'exportStl.FCMacro' 'makeCfMeshSetting.FCMacro' \
 		'makeSnappyHexMeshSetting.FCMacro' 'sHM.png'; do
 		wget_from_github_public gitwamoto mybinDEXCS main FCMacro/"$f" .FreeCAD/"$f"
+	done
 	chmod -R +x .FreeCAD/*.FCMacro
 
 	wget_from_github_public gitwamoto mybinDEXCS main copybinDEXCS2019.sh Desktop/copybinDEXCS2019.sh
