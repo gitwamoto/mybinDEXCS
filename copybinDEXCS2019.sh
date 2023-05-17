@@ -30,30 +30,30 @@ else
 	imsudoer=false
 fi
 
-wget_from_google_drive() {
-	# $1: id
-	# $2: path to a file to save
-	cookie=$(mktemp /tmp/cookie.XXXXXXX)
-	document=$(mktemp /tmp/document.XXXXXXX)
-	wget --no-check-certificate --save-cookies="$cookie" --output-document="$document" \
-		'https://drive.google.com/uc?export=download&id='"$1"
-	if grep --quiet 'Google Drive - Virus scan warning' "$document" ; then
-		# https://qiita.com/IsHYuhi/items/e4afc0163019343d9664
-		code=$(awk '/_warning_/ {print $NF}' "$cookie")
-		if [ -z "$code" ]; then # zオプションは文字列の長さが0の時にtrueになります。
-			code=$(grep -E -o 'id='\"'downloadForm'\"' action='\"'[^'\"']+' "$document" | \
-			awk -F ';' '{for(i = 1; i <= NF; i++){if(substr($i, 1, 8) == '\"'confirm='\"') print substr($i, 9)}}')
-		fi
-		wget --no-check-certificate --load-cookies="$cookie" --output-document="$document" \
-			'https://drive.google.com/uc?export=download&confirm='"$code"'&id='"$1"
-	fi
-	if [ -s "$document" ]; then # -s -> True if a file size is greater than 0
-		mv -f "$document" "$2"
-	else
-		rm "$document"
-	fi
-	rm "$cookie"
-}
+#wget_from_google_drive() {
+#	# $1: id
+#	# $2: path to a file to save
+#	cookie=$(mktemp /tmp/cookie.XXXXXXX)
+#	document=$(mktemp /tmp/document.XXXXXXX)
+#	wget --no-check-certificate --save-cookies="$cookie" --output-document="$document" \
+#		'https://drive.google.com/uc?export=download&id='"$1"
+#	if grep --quiet 'Google Drive - Virus scan warning' "$document" ; then
+#		# https://qiita.com/IsHYuhi/items/e4afc0163019343d9664
+#		code=$(awk '/_warning_/ {print $NF}' "$cookie")
+#		if [ -z "$code" ]; then # zオプションは文字列の長さが0の時にtrueになります。
+#			code=$(grep -E -o 'id='\"'downloadForm'\"' action='\"'[^'\"']+' "$document" | \
+#			awk -F ';' '{for(i = 1; i <= NF; i++){if(substr($i, 1, 8) == '\"'confirm='\"') print substr($i, 9)}}')
+#		fi
+#		wget --no-check-certificate --load-cookies="$cookie" --output-document="$document" \
+#			'https://drive.google.com/uc?export=download&confirm='"$code"'&id='"$1"
+#	fi
+#	if [ -s "$document" ]; then # -s -> True if a file size is greater than 0
+#		mv -f "$document" "$2"
+#	else
+#		rm "$document"
+#	fi
+#	rm "$cookie"
+#}
 
 wget_from_github_public() {
 	# $1: user
@@ -114,76 +114,47 @@ done
 if [ "$trial" -eq 2 ]; then
 	[ ! -d Desktop/"$binDEXCS"/utilities ] && mkdir -p Desktop/"$binDEXCS"/utilities
 	[ ! -d Desktop/"$binDEXCS" ] && mkdir -p Desktop/"$binDEXCS"
-	wget_from_google_drive 1596JB5DuJCLQ5eNSR20wozdogL0PcdhH Desktop/$binDEXCS/0_OPENFOAMメモ.pdf
-	wget_from_google_drive 1O0xabYFdpEKFXWdik_kHgCW5kZCXMsqQ Desktop/$binDEXCS/0秒以外のフォルダを消す.py
-	wget_from_google_drive 1bUYUJyfJGNYVyMfxEL_B9cxR5OV9hCNs Desktop/$binDEXCS/乱流量を求める.py
-	wget_from_google_drive 1HfkMstMaSuLRuTRAPVrYL0WnQoT1TgIy Desktop/$binDEXCS/力と力のモーメントを求める.py
-	wget_from_google_drive 16Ke7AuF_CfwYS4scFLiIccvF2BWhzmfQ Desktop/$binDEXCS/logファイルをプロット.py
-	wget_from_google_drive 1NPeUGslGYdUQpv4rb69VzBhdZoBBUv7f Desktop/$binDEXCS/半角に出来る文字は全て半角に.py
-	wget_from_google_drive 1AZdFg1FXmKi0gtFjGmweOWYiZC8gkQ9t Desktop/$binDEXCS/improveMeshQualityを実行.py
-	wget_from_google_drive 1rdetKPUgTBUVOhO8i0JTBGX5uVxEMK68 Desktop/$binDEXCS/cartesianMeshを実行.py
-	wget_from_google_drive 1ctGaq95vPK0gYe8SFJyKVkEhq4Fqh0BM Desktop/$binDEXCS/snappyHexMeshを実行.py
-	wget_from_google_drive 1A6Syfx__Ngs3HttGsivLdeFDoNSi4vzn Desktop/$binDEXCS/0秒以外を除いてコピーを作る.py
-	wget_from_google_drive 1O7VAOuWV73jjCb-UEvfvACbe_tB4Iy6w Desktop/$binDEXCS/paraFoamを実行.py
-	wget_from_google_drive 1NPSVATLVMrlrFnYPDS2AKEZTGbB90vAS Desktop/$binDEXCS/Qと渦度を求める.py
-	wget_from_google_drive 1HeKQk3aluZfavHFqg3ft4_ECDt-dGrcw Desktop/$binDEXCS/patchを平面に.py
-	wget_from_google_drive 1aM4B3Ssc8Ub5UOEer3-bAjAQU2-LSK_T Desktop/$binDEXCS/2次元メッシュに.py
-	wget_from_google_drive 1gxHFYl56-hIl4CnmmFbTudsws_9WZxGE Desktop/$binDEXCS/格子点数と領域の大きさを調べる.py
-	wget_from_google_drive 1avGyL_QpvH_KtzxsUNSxIaQ1AE1QFfdy Desktop/$binDEXCS/メッシュを細かく.py
-	wget_from_google_drive 11_Qo45wsYY_IABYiFUmI4WE4bHGIk7vG Desktop/$binDEXCS/0秒フォルダにpatchを追加する.py
-	wget_from_google_drive 1SUqv8Z3s0PDyzBG_m6R57I-dSaBO8I-Q Desktop/$binDEXCS/blockMeshを実行.py
-	wget_from_google_drive 1QqbALVvOS8cakMudoW9eSZsgnN76XLtA Desktop/$binDEXCS/texteditwx.py
-	wget_from_google_drive 1MZhuezL1x9d1gNB1geL_Nz0R0Y44o4s5 Desktop/$binDEXCS/他の結果からコピー.py
-	wget_from_google_drive 1dIic7DHUKeKT7JNZxd_pLKCndGw4igXO Desktop/$binDEXCS/結果を抽出.py
-	wget_from_google_drive 1BPCkDUifcNN3tDd_gsYmllmzKPDps5D1 Desktop/$binDEXCS/流量を求める.py
-	wget_from_google_drive 1aHUD_HCg-9Ub3c35EnbG_mKhvn-89Ts6 Desktop/$binDEXCS/壁面熱流束を求める.py
-	wget_from_google_drive 1tvpjoVxYVoe3_Y-gZqX8x3OqZv6FRoUX Desktop/$binDEXCS/include文を取り除く.py
-	wget_from_google_drive 1CBeji5JEIo5xEpuq9a85FB0-KuwHgn5p Desktop/$binDEXCS/patchをまとめる.py
-	wget_from_google_drive 1VgsYV8_OsFEAXqfhy6o8kLeG1KFkvVly Desktop/$binDEXCS/patchの面積平均または積分.py
-	wget_from_google_drive 1pI_ZZiHm7XokV9IhOb77FHZ0CWSdG2Cu Desktop/$binDEXCS/yPlusを求める.py
-	wget_from_google_drive 1673HCAhKRkwSBkynqX8waeO-gYprh47g Desktop/$binDEXCS/並列計算結果をまとめる.py
-	wget_from_google_drive 13HSry5dA_2hywy2-nkNStXUOVuxwFagW Desktop/$binDEXCS/計算.py
-	wget_from_google_drive 1LfRALz1JvCaYok8huxudrgwUlYJ_60U_ Desktop/$binDEXCS/時間平均流れ場を作る.py
-	wget_from_google_drive 1vOLOZx8RZR0JylFtOpqjyf2S1_J0fV5Z Desktop/$binDEXCS/連続計算雛形.py
-	wget_from_google_drive 1AI0QrrdOwN5XggAW4J6Wfpk7tZa3Z1VQ Desktop/$binDEXCS/境界条件の雛形をコピー.py
-	wget_from_google_drive 1Du9xl7lobSfGBtVIimv8zQRV5ifu89dP Desktop/$binDEXCS/境界条件あれこれ.txt
-	wget_from_google_drive 1qbvXSlIu09F3dVOVETo5KSwuMNS4l0Ol Desktop/$binDEXCS/include文を差し込む.py
-	wget_from_google_drive 14Y4CGlgsN0qoFoSS7dGXiYhU67slrDwd Desktop/$binDEXCS/ミリをメートルに.py
-	wget_from_google_drive 1z7JPwhTj-26AbxTLmpl-7BpMp_XBUfOQ Desktop/$binDEXCS/壁面せん断応力を求める.py
-	wget_from_google_drive 18DWWfO_I2Gojpcby6FdFuk5cbIAGIp96 Desktop/$binDEXCS/インデント.py
-	wget_from_google_drive 1GHE33gBH1dHjDqDCxXnKF3EKdmOCAtRk Desktop/$binDEXCS/setFieldsを実行.py
-	wget_from_google_drive 1O0hrNP6bj-jwQjaXT69rtrSY1RglbWQa Desktop/$binDEXCS/utilities/misc.py
-	wget_from_google_drive 1S3pdWSIuSLUjEbuEIecaW042coH4LNVZ Desktop/$binDEXCS/utilities/setComment.py
-	wget_from_google_drive 1LhXjHS_0HNymORcpJIsYkYCKZ8Q7BCxl Desktop/$binDEXCS/utilities/showDir.py
-	wget_from_google_drive 1jb06YGS7OvfBT4ASGVAtXhn8Pw0dtnVR Desktop/$binDEXCS/utilities/folderTime.py
-	wget_from_google_drive 1PHerHpi3L7lOe18CQTogsqiiRJQzLC2e Desktop/$binDEXCS/utilities/listFile.py
-	wget_from_google_drive 1tyQMVVyLRPjA0N0iFZK8JPtgCBxV5KzF Desktop/$binDEXCS/utilities/dictFormat.py
-	wget_from_google_drive 1YZWTR8iblvrqhiWT1w44_KcndapNdHfe Desktop/$binDEXCS/utilities/appendEntries.py
-	wget_from_google_drive 1rh06w_zNtWWJ0Aag62MbDfyvALB2rzHu Desktop/$binDEXCS/utilities/__init__.py
-	wget_from_google_drive 1-ZEi-Ehd1ZYlFx-Z-OfaWsBi5IxJVztM Desktop/$binDEXCS/utilities/dakuten.py
-	wget_from_google_drive 10ofPlxneyeRgVzXZLxUdciTzgKk4VdLI Desktop/$binDEXCS/utilities/dictParse.py
-	wget_from_google_drive 1iuFE9qyxkGTxcPJKZzudm8Eh2rUkmJr- Desktop/$binDEXCS/utilities/setFuncsInCD.py
-	wget_from_google_drive 1hhFK8NCEZLPPF_vSeghXCQ-f46NjRHiJ Desktop/$binDEXCS/utilities/findMaxMin.py
-	wget_from_google_drive 1w0bsKNYeAVpRkvvnc-pSHIoopXX21fZ8 Desktop/$binDEXCS/utilities/ofpolymesh.py
-	wget_from_google_drive 1T9_ho0VzVybJWFNeXDNuEWj-uHDg76US Desktop/$binDEXCS/utilities/rmObjects.py
+	for f in '0_OPENFOAMメモ.pdf' '0秒フォルダにpatchを追加する.py' '0秒以外のフォルダを消す.py' \
+		'0秒以外を除いてコピーを作る.py' '2次元メッシュに.py' 'Qと渦度を求める.py' \
+		'blockMeshを実行.py' 'cartesianMeshを実行.py' 'improveMeshQualityを実行.py' \
+		'include文を取り除く.py' 'include文を差し込む.py' 'logファイルをプロット.py' \
+		'paraFoamを実行.py' 'patchを平面に.py' 'patchをまとめる.py' \
+		'patchの面積平均または積分.py' 'setFieldsを実行.py' 'snappyHexMeshを実行.py' \
+		'texteditwx.py' 'yPlusを求める.py' '計算.py' 'インデント.py' '結果を抽出.py' \
+		'流量を求める.py' '連続計算雛形.py' '乱流量を求める.py' 'ミリをメートルに.py' \
+		'メッシュを細かく.py' '境界条件あれこれ.txt' '他の結果からコピー.py' '壁面熱流束を求める.py' \
+		'時間平均流れ場を作る.py' '並列計算結果をまとめる.py' '境界条件の雛形をコピー.py' \
+		'壁面せん断応力を求める.py' '力と力のモーメントを求める.py' '半角に出来る文字は全て半角に.py' \
+		'格子点数と領域の大きさを調べる.py'; do
+		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS"/"$f" Desktop/"$binDEXCS"/"$f"
+	done
+	for f in '__init__.py' 'appendEntries.py' 'dakuten.py' 'dictFormat.py' 'dictParse.py' \
+		'findMaxMin.py' 'folderTime.py' 'listFile.py' 'misc.py' 'ofpolymesh.py' 'rmObjects.py' \
+		'setComment.py' 'setFuncsInCD.py' 'showDir.py'; do
+		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS"/utilities/"$f" \
+			Desktop/"$binDEXCS"/utilities/"$f"
+	done
 	chmod -R +x Desktop/"$binDEXCS"/*.py
 
-	wget_from_google_drive 1gytDK8yaXPUAvSGrb15Bkp2jZOZrB0Zj .FreeCAD/makeSnappyHexMeshSetting.FCMacro
-	wget_from_google_drive 1dj_Dr6y7NLrxJYgBcrtGFpkeiTR1xfYG .FreeCAD/exportStl.FCMacro
-	wget_from_google_drive 1cJG_D5inJlXUy8MBmAHz_XaUMAxn6ecO .FreeCAD/sHM.png
-	wget_from_google_drive 1yLCXnuKOfok0Tk_bAd4Jpgcm_H8wktfQ .FreeCAD/makeCfMeshSetting.FCMacro
+	for f in 'exportStl.FCMacro' 'makeCfMeshSetting.FCMacro' \
+		'makeSnappyHexMeshSetting.FCMacro' 'sHM.png'; do
+		wget_from_github_public gitwamoto mybinDEXCS main FCMacro/"$f" .FreeCAD/"$f"
 	chmod -R +x .FreeCAD/*.FCMacro
 
-	wget_from_google_drive 1jMzyuvw-LYFf7pu7gWm-UpT4wJAAP1Iu Desktop/copybinDEXCS2019.sh
+	wget_from_github_public gitwamoto mybinDEXCS main copybinDEXCS2019.sh Desktop/copybinDEXCS2019.sh
 	chmod +x Desktop/copybinDEXCS2019.sh
 
 	[ ! -d Desktop/matplotlibwx/locale/en/LC_MESSAGES ] && mkdir -p Desktop/matplotlibwx/locale/en/LC_MESSAGES
 	[ ! -d Desktop/matplotlibwx ] && mkdir -p Desktop/matplotlibwx
-
-	wget_from_google_drive 18jsRVeShgjhvKi_X6m9z-JQKlHkedDnT Desktop/matplotlibwx/matplotlibwx.py
-	wget_from_google_drive 1tf9r2pP1ArCoSUrSONDlnAuWq6uiOyax Desktop/matplotlibwx/modules_needed.txt
-	wget_from_google_drive 1xVuaz179QpwFxb2Xf0zJFkn1x0HT_plC Desktop/matplotlibwx/locale/en/LC_MESSAGES/messages.mo
-	wget_from_google_drive 1nVIKZy5nm-jzfDIAGLfczyvCY1D924ZV Desktop/matplotlibwx/locale/en/LC_MESSAGES/messages.po
+	wget_from_github_public gitwamoto matplotlibwx main matplotlibwx.py Desktop/matplotlibwx/matplotlibwx.py
+	wget_from_github_public gitwamoto matplotlibwx main README.md Desktop/matplotlibwx/README.md
+	wget_from_github_public gitwamoto matplotlibwx main locale/en/LC_MESSAGES/messages.mo \
+		Desktop/matplotlibwx/locale/en/LC_MESSAGES/messages.mo
+	wget_from_github_public gitwamoto matplotlibwx main locale/en/LC_MESSAGES/messages.po \
+		Desktop/matplotlibwx/locale/en/LC_MESSAGES/messages.po
+	wget_from_github_public gitwamoto matplotlibwx main locale/messages.pot \
+		Desktop/matplotlibwx/locale/messages.pot
+	[ -f Desktop/matplotlibwx/modules_needed.txt ] && rm Desktop/matplotlibwx/modules_needed.txt
 	chmod -R +x Desktop/matplotlibwx/*.py
 fi
 
@@ -201,7 +172,7 @@ if [ "$dexcs_version" = '2019' ] && [ ! -f /usr/local/Mod/Draft/importDXF.py.ori
 		((++trial))
 	done
 	if [ "$trial" -eq 2 ]; then
-		sudo wget_from_google_drive 1_4pM92PhkaZHRAk09PoL-5pqZyZPg4dn /usr/local/Mod/Draft/importDXF.py
+		sudo wget_from_github_public gitwamoto mybinDEXCS main importDXF.py /usr/local/Mod/Draft/importDXF.py
 	fi
 fi
 
