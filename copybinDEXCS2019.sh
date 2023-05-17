@@ -55,6 +55,21 @@ wget_from_google_drive() {
 	rm "$cookie"
 }
 
+wget_from_github_public() {
+	# $1: user
+	# $2: repository
+	# $3: branch
+	# $4: file path
+	# $5: path to a file to save
+	document=$(mktemp /tmp/document.XXXXXXX)
+	wget --no-check-certificate --output-document="$document" "https://raw.githubusercontent.com/$1/$2/$3/$4"
+	if [ -s "$document" ]; then # -s -> True if a file size is greater than 0
+		mv -f "$document" "$5"
+	else
+		rm "$document"
+	fi
+}
+
 cd ~
 
 # dakuten.py -j -f <path> で濁点を結合しておく
