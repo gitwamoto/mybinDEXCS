@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2022/7/7 3:13:58 PM
+# 2023/10/10 8:12:15 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -234,10 +234,9 @@ def calculate_idle(x):
                 for b in bounds_idle:
                     f.write(b['name'] + ': ' + str(dict_idle[b['name']]) + '\n')
                 f.write('steps: {}\n'.format(steps))
-            #                     543210987654321
             for d in glob.iglob('*' + best_folder_idle_suffix + os.sep):
                 try:
-                    float(d[:-15 - len(os.sep)])
+                    float(d[:-len(best_folder_idle_suffix + os.sep)])
                     shutil.rmtree(d)
                 except:
                     pass
