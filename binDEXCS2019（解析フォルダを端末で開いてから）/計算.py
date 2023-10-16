@@ -261,7 +261,7 @@ def remove_entires_in_DPL(contents, comment):
             remove_entires_in_DPL(x.value(), comment)
         i += 1
 
-def remove_unnecessary_entires_in_controlDict():
+def remove_unnecessary_entries_in_controlDict():
     dp = DictParser(controlDict)
     s_old = dp.toString()
     startFrom = dp.getValueForKey(['startFrom'])
@@ -282,8 +282,8 @@ def remove_unnecessary_entires_in_controlDict():
         with open(controlDict, 'w') as f:
             f.write(s)
 
-def remove_unnecessary_entires_in_fvSolution():
-    def remove_unnecessary_entires_in(path):
+def remove_unnecessary_entries_in_fvSolution():
+    def remove_unnecessary_entries_in(path):
         if os.path.islink(path):
             return
         dp = DictParser(path)
@@ -294,14 +294,14 @@ def remove_unnecessary_entires_in_fvSolution():
         if s != s_old:
             with open(path, 'w') as f:
                 f.write(s)
-    remove_unnecessary_entires_in(os.path.join('system', 'fvSolution'))
+    remove_unnecessary_entries_in(os.path.join('system', 'fvSolution'))
     for d in glob.iglob(os.path.join('system', '*' + os.sep)):
         fvSolution = os.path.join(d, 'fvSolution')
         if os.path.isfile(fvSolution):
-            remove_unnecessary_entires_in(fvSolution)
+            remove_unnecessary_entries_in(fvSolution)
 
 def change_dt_in_controlDict(exponent):
-    remove_unnecessary_entires_in_controlDict()
+    remove_unnecessary_entries_in_controlDict()
     dp = DictParser(controlDict)
     i_dt_last = i_dt = dp.getIndexOfItem(['deltaT'])[0]
     for i in range(i_dt + 1, len(dp.contents)):
@@ -316,8 +316,8 @@ def change_dt_in_controlDict(exponent):
     dp.writeFile(controlDict)
 
 def modify_dicts_for_idle(value_dict):
-    remove_unnecessary_entires_in_controlDict()
-    remove_unnecessary_entires_in_fvSolution()
+    remove_unnecessary_entries_in_controlDict()
+    remove_unnecessary_entries_in_fvSolution()
     def modify_dicts_for_idle_in(path):
         if os.path.islink(path):
             return
@@ -441,8 +441,8 @@ if __name__ == '__main__':
             shutil.rmtree('0_bak')
 
     shutil.copytree('0', '0_bak')
-    remove_unnecessary_entires_in_controlDict()
-    remove_unnecessary_entires_in_fvSolution()
+    remove_unnecessary_entries_in_controlDict()
+    remove_unnecessary_entries_in_fvSolution()
 
     if os.path.isdir('processor0'):
         command = 'reconstructPar -newTimes -noFunctionObjects'
