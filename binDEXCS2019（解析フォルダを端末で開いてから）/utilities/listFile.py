@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # listFile.py
 # by Yukiharu Iwamoto
-# 2022/6/9 1:53:13 PM
+# 2023/10/23 7:31:18 PM
 
 import os
 import sys
@@ -32,7 +32,7 @@ def volFieldList(path = os.curdir):
     fields = []
     for i in os.listdir(path):
         tmp = os.path.join(path, i)
-        if os.path.isfile(tmp):
+        if os.path.isfile(tmp) and os.sep + '.' not in tmp:
             vol_field = False
             for line in open(tmp, 'r'):
                 if 'volScalarField' in line or 'volVectorField' in line:
