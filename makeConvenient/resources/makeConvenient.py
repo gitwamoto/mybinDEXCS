@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2023/5/14 4:04:15 PM
+# 2023/10/31 7:01:39 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -163,7 +163,7 @@ def set_fstab(): # Operations in this funchion needs sudo.
     for i, l, d, u, p in zip(mount_ip, mount_loc, mount_point, mount_user, mount_pass):
         if i != ip_self and d not in s:
             s += ('//' + i + '/' + l + ' /mnt/' + d + ' cifs ' + ('vers=1.0,' if d == 'Z_drive' else '') +
-                'uid=' + user + ',gid=' + user + ',noperm,username=' + u + ',password=' + p + ',domain=RYUUTAI 0 0\n')
+                'uid=' + user + ',gid=' + user + ',noperm,username=' + u + ',password=' + p + ',domain=RYUUTAI,x-systemd.automount 0 0\n')
             changed = True
     if changed:
         with open(fstab, 'w') as f:
