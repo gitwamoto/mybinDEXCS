@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2022/6/11 4:46:32 PM
+# 2023/10/31 6:13:39 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -320,6 +320,17 @@ class MyController:
             QtGui.QMessageBox.critical(None, 'Error',
                 'This document has never been saved. Save the document and retry.', QtGui.QMessageBox.Close)
             return
+        for obj in self.doc.Objects:
+            try:
+                if obj.ViewObject.Visibility and hasattr(obj, 'Shape'):
+                    l = obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label
+                    if ' ' in l:
+                        QtGui.QMessageBox.critical(None, 'Error',
+                            'Label "{}" has a half space, which is prohibited'.format(l), QtGui.QMessageBox.Close)
+                        return
+            except:
+                print(sys.exc_info())
+                pass
         self.sHMeshFrame = SHMeshFrame(controller = self,
             freecad_objects = self.doc.Objects,
             case_dir_path = os.path.dirname(self.doc.FileName),
