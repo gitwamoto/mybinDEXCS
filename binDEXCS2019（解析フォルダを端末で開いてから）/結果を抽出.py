@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:09:05 PM
+# 2023/11/10 4:28:43 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -141,9 +141,10 @@ def append_functions_in_controlDict(controlDict):
     shutil.copy(controlDict, controlDict + '_bak')
     dp_controlDict = dictFormat.moveLineToBottom(dp_controlDict)
     dp_controlDict.writeFile(controlDict)
-    print('\n\033[3;4;5m{}ファイルをtexteditwx.pyで開いています．'.format(controlDict))
-    print('- functionsの中にあるsetsまたはsurfacesに関する指示を読んで，必要に応じて書き換えて下さい．')
-    print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
+    print('\n\033[3;4;5m' + controlDict + 'ファイルのfunctionsにsetsまたはsurfacesに関するテンプレートを追加して，' +
+        'texteditwx.pyで開いています．')
+    print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
+    print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
     subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' ' + controlDict, shell = True)
     return dp_controlDict
 
@@ -196,7 +197,7 @@ if __name__ == '__main__':
     setFuncsInCD.setEnabledForType('surfaces', True)
     if interactive:
         sampling_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '{}ファイルのfunctionsにsetsまたはsurfacesに関する指示を書き込んでいますか？ (y/n) > '.format(controlDict)
+            controlDict + 'ファイルの内容を確認して下さい．functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > '
             ).strip().lower() == 'y' else False
     dp_controlDict = DictParser(controlDict) if sampling_is_written else append_functions_in_controlDict(controlDict)
 

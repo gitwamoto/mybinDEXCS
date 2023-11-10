@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2022/11/25 5:33:29 PM
+# 2023/11/10 4:28:45 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -61,9 +61,9 @@ if __name__ == '__main__':
 
     setFieldsDict = os.path.join('system', 'setFieldsDict')
     if interactive:
-        setFieldsDict_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '{}ファイルにを設定値に関する指示を書き込んでいますか？ (y/n) > '.format(setFieldsDict)
-            ).strip().lower() == 'y' else False
+        setFieldsDict_is_written = (True if (raw_input if sys.version_info.major <= 2 else input)(
+            setFieldsDict + 'ファイルの内容を確認して下さい．設定値に関する指示が書き込まれていますか？ (y/n) > '
+            ).strip().lower() == 'y' else False) if os.path.isfile(setFieldsDict) else False
 
     if not setFieldsDict_is_written:
         if os.path.isfile(setFieldsDict):
@@ -86,9 +86,9 @@ if __name__ == '__main__':
             f.write('\t\t);\n')
             f.write('\t}\n')
             f.write(');\n')
-        print('\n\033[3;4;5m{}ファイルをtexteditwx.pyで開いています．'.format(setFieldsDict))
-        print('- 指示を読んで，必要に応じて書き換えて下さい．')
-        print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
+        print('\n\033[3;4;5m' + setFieldsDict + 'ファイルにテンプレートを追加して，texteditwx.pyで開いています．')
+        print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
+        print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
         subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' {}'.format(setFieldsDict), shell = True)
 
     fields_to_be_set = find_fields(DictParser(setFieldsDict).contents)

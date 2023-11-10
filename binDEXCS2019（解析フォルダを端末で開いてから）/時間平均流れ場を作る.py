@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:08:51 PM
+# 2023/11/10 4:28:48 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -75,10 +75,11 @@ def append_functions_in_controlDict(controlDict):
     shutil.copy(controlDict, controlDict + '_bak')
     dp_controlDict = dictFormat.moveLineToBottom(dp_controlDict)
     dp_controlDict.writeFile(controlDict)
-    print('\n\033[3;4;5m%sファイルをtexteditwx.pyで開いています．' % controlDict)
-    print('- functionsの中にあるfieldAverageに関する指示を読んで，必要に応じて書き換えて下さい．')
-    print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' %s' % controlDict, shell = True)
+    print('\n\033[3;4;5m' + controlDict + 'ファイルのfunctionsにfieldAverageに関するテンプレートを追加して，' +
+        'texteditwx.pyで開いています．')
+    print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
+    print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
+    subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' ' + controlDict, shell = True)
     return dp_controlDict
 
 if __name__ == '__main__':
@@ -116,7 +117,7 @@ if __name__ == '__main__':
 
     controlDict = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict):
-        print('エラー: %sファイルがありません．' % controlDict)
+        print('エラー: {}ファイルがありません．'.format(controlDict))
         sys.exit(1)
 
     fieldAverage_related_files_txt = os.path.join('postProcessing', '_fieldAverage_related_files.txt')
@@ -139,7 +140,7 @@ if __name__ == '__main__':
     setFuncsInCD.setEnabledForType('fieldAverage', True)
     if interactive:
         fieldAverage_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '%sファイルのfunctionsにfieldAverageに関する指示を書き込んでいますか？ (y/n) > ' % controlDict
+            controlDict + 'ファイルの内容を確認して下さい．functionsにfieldAverageに関する指示が書き込まれていますか？ (y/n) > '
             ).strip().lower() == 'y' else False
     dp_controlDict = DictParser(controlDict) if fieldAverage_is_written else append_functions_in_controlDict(controlDict)
 
@@ -153,7 +154,7 @@ if __name__ == '__main__':
                         properties_list.append(x.key() + 'Properties')
                         break
     if len(properties_list) == 0:
-        print('%sファイルでfieldAverageに関する指示がありません．' % controlDict)
+        print('{}ファイルでfieldAverageに関する指示がありません．'.format(controlDict))
         sys.exit(1)
 
     if interactive:
@@ -171,7 +172,7 @@ if __name__ == '__main__':
     time_end = float(time_end)
     for properties in properties_list:
         print('\n結果は各時間のフォルダに書き出され，' +
-            'さらに各時間のフォルダの%s' % os.path.join('uniform', properties) +
+            'さらに各時間のフォルダの' + os.path.join('uniform', properties) +
             'に情報（何秒間の平均かなど）が記録されます．')
 
         x = []

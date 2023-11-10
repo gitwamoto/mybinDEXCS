@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:08:23 PM
+# 2023/11/10 4:28:51 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -81,10 +81,11 @@ def append_functions_in_controlDict(controlDict):
     shutil.copy(controlDict, controlDict + '_bak')
     dp_controlDict = dictFormat.moveLineToBottom(dp_controlDict)
     dp_controlDict.writeFile(controlDict)
-    print('\n\033[3;4;5m%sファイルをtexteditwx.pyで開いています．' % controlDict)
-    print('- functionsの中にあるforcesに関する指示を読んで，必要に応じて書き換えて下さい．')
-    print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' %s' % controlDict, shell = True)
+    print('\n\033[3;4;5m' + controlDict + 'ファイルのfunctionsにforcesに関するテンプレートを追加して，' +
+        'texteditwx.pyで開いています．')
+    print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
+    print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
+    subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' ' + controlDict, shell = True)
     return dp_controlDict
 
 if __name__ == '__main__':
@@ -118,7 +119,7 @@ if __name__ == '__main__':
 
     controlDict = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict):
-        print('エラー: %sファイルがありません．' % controlDict)
+        print('エラー: {}ファイルがありません．'.format(controlDict))
         sys.exit(1)
 
     forces_related_folders_txt = os.path.join('postProcessing', '_forces_related_folders.txt')
@@ -135,7 +136,7 @@ if __name__ == '__main__':
     setFuncsInCD.setEnabledForType('forces', True)
     if interactive:
         forces_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '%sファイルのfunctionsにforcesに関する指示を書き込んでいますか？ (y/n) > ' % controlDict
+            controlDict + 'ファイルの内容を確認して下さい．functionsにforcesに関する指示が書き込まれていますか？ (y/n) > '
             ).strip().lower() == 'y' else False
     dp_controlDict = DictParser(controlDict) if forces_is_written else append_functions_in_controlDict(controlDict)
 
@@ -149,7 +150,7 @@ if __name__ == '__main__':
                         forces_dir_list.append(x.key())
                         break
     if len(forces_dir_list) == 0:
-        print('%sファイルでforcesに関する指示がありません．' % controlDict)
+        print('{}ファイルでforcesに関する指示がありません．'.format(controlDict))
         sys.exit(1)
 
     if interactive:
@@ -214,8 +215,8 @@ if __name__ == '__main__':
                             Fx_list.append(Fx)
                             Fy_list.append(Fy)
                             Fz_list.append(Fz)
-                            fw.write('%g\t%g\t%g\t%g\t%g\t%g\t%g\n' %
-                                (t, Fx, Fy, Fz, float(linem[0]), float(linem[1]), float(linem[2])))
+                            fw.write('{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\n'.format(
+                                t, Fx, Fy, Fz, float(linem[0]), float(linem[1]), float(linem[2])))
         plt.plot(t_list, Fx_list, label = 'Fx')
         plt.plot(t_list, Fy_list, label = 'Fy')
         plt.plot(t_list, Fz_list, label = 'Fz')
@@ -238,7 +239,7 @@ if __name__ == '__main__':
         forces_png = os.path.join(pdir, forces_dir + '.png')
         plt.savefig(forces_png)
         plt.clf()
-        subprocess.call('xdg-open %s' % forces_png, shell = True)
-        print('\nグラフは%s, 結果は%sに保存しました．' % (forces_png, forces_tab_txt))
+        subprocess.call('xdg-open ' + forces_png, shell = True)
+        print('\nグラフは{}, 結果は{}に保存しました．'.format(forces_png, forces_tab_txt))
 
     rmObjects.removeInessentials()
