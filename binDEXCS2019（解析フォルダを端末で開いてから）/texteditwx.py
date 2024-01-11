@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 # texteditwx.py
 # by Yukiharu Iwamoto
-# 2023/11/30 11:33:23 AM
+# 2024/1/11 7:44:53 PM
 
-version = '2023/11/30 11:33:23 AM'
+version = '2024/1/11 7:44:53 PM'
 
 import sys
 
@@ -342,6 +342,7 @@ class Maxima(object):
             if sys.platform.startswith('linux') and self.maxima.before.endswith(self.maxima.after):
                 self.maxima.before = self.maxima.before[:-len(self.maxima.after)]
         except:
+#            print(sys.exc_info())
             with wx.MessageDialog(None, _(u'{}\nMaximaを再起動します．').format(sys.exc_info()[0]),
                 _(u'例外発生'), style = wx.ICON_ERROR) as md:
                 md.ShowModal()
@@ -527,7 +528,7 @@ class Maxima(object):
         m = re.sub(r'(?<!\w)\((-\w+)\)', r'\1', m) # (-a) -> -a
         if debug:
             print('modify_output 3 = "{}"'.format(m))
-        m = re.sub(r"(\b|[\)\]\}])\s*([+\-=]|:=)\s*(\b|[\(\[\{%\-'])", r'\1 \2 \3', m) # a+b-c -> a + b - c
+        m = re.sub(r"(\b|[\)\]\}]\!)\s*([+\-=]|:=)\s*(\b|[\(\[\{%\-'])", r'\1 \2 \3', m) # a+b-c -> a + b - c
         if debug:
             print('modify_output 4 = "{}"'.format(m))
         m = re.sub(r'(\d[ebE])\s+([+\-])\s+(\d)', r'\1\2\3', m) # 1.0e + 10 -> 1.0e+10
