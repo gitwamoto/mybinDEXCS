@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2024/5/22 4:42:18 PM
+# 2024/5/22 8:30:44 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -423,6 +423,7 @@ if [ "$dexcs_version" = '2019' ]; then
 	fi
 
 else # 2021
+	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python3-pyperclip; do
 			if echo "$apt_installed" | grep --quiet "$p"/; then

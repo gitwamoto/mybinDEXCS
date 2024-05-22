@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2024/5/22 4:40:59 PM
+# 2024/5/22 8:31:33 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -126,6 +126,7 @@ if [ "$dexcs_version" = '2019' ]; then
 	fi
 
 else # 2021
+	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python3-pyperclip; do
 			if echo "$apt_installed" | grep --quiet "$p"/; then
