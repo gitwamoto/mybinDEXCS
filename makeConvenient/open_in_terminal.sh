@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2022/7/8 10:25:38 AM
+# 2024/5/22 4:40:59 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -126,17 +126,16 @@ if [ "$dexcs_version" = '2019' ]; then
 	fi
 
 else # 2021
-#	# aptでインストールして欲しくないものは，2022/6/26の時点ではない
-#	if $imsudoer; then
-#		for p in xxx xxx xxx; do
-#			if echo "$apt_installed" | grep --quiet "$p"/; then
-#				echo '1: '$p
-#				# purge -> 設定ファイルも含めてアンインストール
-#				sudo apt purge -y "$p"
-#				sudo apt autoremove -y
-#			fi
-#		done
-#	fi
+	if $imsudoer; then
+		for p in python3-pyperclip; do
+			if echo "$apt_installed" | grep --quiet "$p"/; then
+				echo '1: '$p
+				# purge -> 設定ファイルも含めてアンインストール
+				sudo apt purge -y "$p"
+				sudo apt autoremove -y
+			fi
+		done
+	fi
 
 	# pipのインストール
 	if $imsudoer && ! echo "$apt_installed" | grep --quiet python3-pip/; then
@@ -145,7 +144,7 @@ else # 2021
 	fi
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
-	for p in pexpect pyperclip chardet xlrd Pillow urllib3 numpy scipy matplotlib openpyxl requests; do
+	for p in pexpect chardet xlrd Pillow urllib3 numpy scipy matplotlib openpyxl requests; do
 		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -161,7 +160,7 @@ else # 2021
 	fi
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
-	for p in zenhan GPyOpt GPy geomdl openpyxl; do
+	for p in zenhan GPyOpt GPy geomdl openpyxl pyperclip; do
 		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -179,7 +178,7 @@ else # 2021
 	# はfreecad-daily-python3で必要
 	if $imsudoer; then
 		for p in python3-tk \
-			python3-pexpect python3-pyperclip python3-chardet python3-xlrd python3-pil python3-urllib3 \
+			python3-pexpect python3-chardet python3-xlrd python3-pil python3-urllib3 \
 			python3-openpyxl python3-requests libsdl2-2.0-0 libgtk-3-dev \
 			python3-numpy python3-scipy python3-matplotlib \
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
@@ -198,7 +197,7 @@ else # 2021
 
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
-		for p in zenhan GPyOpt geomdl; do
+		for p in zenhan GPyOpt geomdl pyperclip; do
 			if [ ! -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
 				sudo pip install "$p"
 			fi
