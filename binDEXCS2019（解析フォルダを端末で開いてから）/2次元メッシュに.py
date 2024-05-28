@@ -98,10 +98,10 @@ if __name__ == '__main__':
 
     bouding_box = misc.bounding_box_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
     z_back, z_front = bouding_box[2]
-    plist = listFile.patchList()
-    patches = ' '.join(plist)
 
     if interactive:
+        plist = listFile.patchList()
+        patches = ' '.join(plist)
         sys.stdout.write('2次元メッシュに使う(z = {}にある)patchの名前を教えて下さい． ( {} の中から選択'.format(z_front, patches))
         if 'front' in plist:
             front_name = (raw_input if sys.version_info.major <= 2 else input)(', Enterのみ: front) > ').strip()
@@ -116,13 +116,18 @@ if __name__ == '__main__':
                 back_name = 'back'
         else:
             back_name = (raw_input if sys.version_info.major <= 2 else input)(') > ').strip()
+        wedge = True if (raw_input if sys.version_info.major <= 2 else input)(
+            'wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+        if not converted_millimeter_into_meter:
+            print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
+                bouding_box[0][0], bouding_box[0][1], bouding_box[1][0], bouding_box[1][1],
+                bouding_box[2][0], bouding_box[2][1]))
+            scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
+                'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
+                ).strip().lower() == 'y' else False
 
     if not os.path.isdir('system'):
         os.mkdir('system')
-
-    if interactive:
-        wedge = True if (raw_input if sys.version_info.major <= 2 else input)(
-            'wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
     makeExtrudeMeshDict(z_front - z_back, front_name, back_name, wedge)
 
     command = "transformPoints -translate '(0 0 {})'".format(-z_front)
@@ -137,16 +142,8 @@ if __name__ == '__main__':
 
     if converted_millimeter_into_meter:
         misc.writeConvertedMillimeterIntoMeter()
-    else:
-        if interactive:
-            print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
-                bouding_box[0][0], bouding_box[0][1], bouding_box[1][0], bouding_box[1][1],
-                bouding_box[2][0], bouding_box[2][1]))
-            scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
-                'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
-                ).strip().lower() == 'y' else False
-        if scaleMesh_0p001:
-            misc.convertLengthUnitInMillimeterToMeter()
+    elif scaleMesh_0p001:
+        misc.convertLengthUnitInMillimeterToMeter()
 
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
