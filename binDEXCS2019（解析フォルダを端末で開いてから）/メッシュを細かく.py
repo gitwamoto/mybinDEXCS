@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2023/4/30 5:16:25 PM
+# 2024/5/28 12:01:52 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         sys.exit(1)
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
-    box = misc.box_size_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
+    box = misc.bounding_box_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
     if interactive:
         print('細かくする範囲を指定します．')
         while True:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2023/5/8 1:02:20 PM
+# 2024/5/28 12:01:46 PM
 
 import glob
 import os
@@ -238,7 +238,7 @@ def renumberMesh():
     if converted_millimeter_into_meter:
         writeConvertedMillimeterIntoMeter()
 
-def box_size_of_calculation_range(points_path):
+def bounding_box_of_calculation_range(points_path):
     with open(points_path, 'r') as f:
         s = f.read()
     ph = s.find('(') + 1

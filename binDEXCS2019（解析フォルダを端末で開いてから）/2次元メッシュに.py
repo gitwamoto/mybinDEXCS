@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2023/4/30 5:16:05 PM
+# 2024/5/28 12:29:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -22,6 +22,41 @@ from utilities import misc
 from utilities import listFile
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
+
+def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
+    with open(os.path.join('system', 'extrudeMeshDict'), 'w') as f:
+        f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
+        f.write('\tlocation\t"system";\n')
+        f.write('\tobject\textrudeMeshDict;\n')
+        f.write('}\n')
+        f.write('constructFrom\tpatch;\n')
+        f.write('sourceCase\t".";\n')
+        f.write('sourcePatches\t({});\n'.format(front_name))
+        f.write('exposedPatchName\t{};\n'.format(back_name))
+        f.write('flipNormals\tfalse;\n')
+        if wedge: # wedge境界
+            f.write('extrudeModel\twedge;\n')
+            f.write('nLayers\t1;\n')
+            f.write('expansionRatio\t1.0;\n')
+            f.write('sectorCoeffs\n')
+            f.write('{\n')
+            f.write('\taxisPt\t(0 0 0);\n')
+            f.write('\taxis\t(1 0 0);\n')
+            f.write('\tangle\t2;\t// [degrees]\n')
+            f.write('}\n')
+            f.write('mergeFaces\tfalse;\n')
+            f.write('mergeTol\t1.0e-10;\n')
+            print('wedgeのくさび角は2度に設定しています．')
+        else: # empty境界
+            f.write('extrudeModel\tlinearNormal;\n')
+            f.write('nLayers\t1;\n')
+            f.write('expansionRatio\t1.0;\n')
+            f.write('linearNormalCoeffs\n')
+            f.write('{\n')
+            f.write('\tthickness\t{};\n'.format(z_thickness))
+            f.write('}\n')
+            f.write('mergeFaces\tfalse;\n')
+            f.write('mergeTol\t0;\n')
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
@@ -61,8 +96,8 @@ if __name__ == '__main__':
 
     print('xy平面に平行なpatchを押し出して2次元メッシュまたはwedge境界を作ります．')
 
-    box = misc.box_size_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
-    z_back, z_front = box[2]
+    bouding_box = misc.bounding_box_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
+    z_back, z_front = bouding_box[2]
     plist = listFile.patchList()
     patches = ' '.join(plist)
 
@@ -85,42 +120,10 @@ if __name__ == '__main__':
     if not os.path.isdir('system'):
         os.mkdir('system')
 
-    with open(os.path.join('system', 'extrudeMeshDict'), 'w') as f:
-        f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-        f.write('\tlocation\t"system";\n')
-        f.write('\tobject\textrudeMeshDict;\n')
-        f.write('}\n')
-        f.write('constructFrom\tpatch;\n')
-        f.write('sourceCase\t".";\n')
-        f.write('sourcePatches\t({});\n'.format(front_name))
-        f.write('exposedPatchName\t{};\n'.format(back_name))
-        f.write('flipNormals\tfalse;\n')
-        if interactive:
-            wedge = True if (raw_input if sys.version_info.major <= 2 else input)(
-                'wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
-        if wedge: # wedge境界
-            f.write('extrudeModel\twedge;\n')
-            f.write('nLayers\t1;\n')
-            f.write('expansionRatio\t1.0;\n')
-            f.write('sectorCoeffs\n')
-            f.write('{\n')
-            f.write('\taxisPt\t(0 0 0);\n')
-            f.write('\taxis\t(1 0 0);\n')
-            f.write('\tangle\t2;\t// [degrees]\n')
-            f.write('}\n')
-            f.write('mergeFaces\tfalse;\n')
-            f.write('mergeTol\t1.0e-10;\n')
-            print('wedgeのくさび角は2度に設定しています．')
-        else: # empty境界
-            f.write('extrudeModel\tlinearNormal;\n')
-            f.write('nLayers\t1;\n')
-            f.write('expansionRatio\t1.0;\n')
-            f.write('linearNormalCoeffs\n')
-            f.write('{\n')
-            f.write('\tthickness\t{};\n'.format(z_front - z_back))
-            f.write('}\n')
-            f.write('mergeFaces\tfalse;\n')
-            f.write('mergeTol\t0;\n')
+    if interactive:
+        wedge = True if (raw_input if sys.version_info.major <= 2 else input)(
+            'wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+    makeExtrudeMeshDict(z_front - z_back, front_name, back_name, wedge)
 
     command = "transformPoints -translate '(0 0 {})'".format(-z_front)
     if subprocess.call(command, shell = True) != 0:
@@ -137,7 +140,8 @@ if __name__ == '__main__':
     else:
         if interactive:
             print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
-                box[0][0], box[0][1], box[1][0], box[1][1], box[2][0], box[2][1]))
+                bouding_box[0][0], bouding_box[0][1], bouding_box[1][0], bouding_box[1][1],
+                bouding_box[2][0], bouding_box[2][1]))
             scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
                 'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
                 ).strip().lower() == 'y' else False

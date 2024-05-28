@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2022/7/6 4:22:10 PM
+# 2024/5/28 12:29:18 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -41,7 +41,7 @@ def handler(signal, frame):
             shutil.rmtree('0')
         shutil.move('0_bak', '0')
 
-def makeBlockMeshDict(max_cell_size, bounding_box, front_name = None, back_name = None):
+def makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name):
     x_min = bounding_box[0] - 0.5*max_cell_size
     x_max = bounding_box[3] + 0.5*max_cell_size
     y_min = bounding_box[1] - 0.5*max_cell_size
@@ -308,6 +308,8 @@ if __name__ == '__main__':
         if subprocess.call(command, shell = True) != 0:
             print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
             sys.exit(1)
+        subprocess.call(os.path.join(os.path.dirname(os.path.abspath(__file__)), '2次元メッシュに.py') +
+            ' -f ' + front_name + ' -b ' + back_name + ' -s', shell = True)
     regionProperties = os.path.join('constant', 'regionProperties')
     if multi_regions:
         for i in glob.iglob(os.path.join('constant', '*' + os.sep)):
