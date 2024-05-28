@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2024/5/28 5:17:38 PM
+# 2024/5/28 7:44:52 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -384,10 +384,11 @@ if __name__ == '__main__':
     elif os.path.isfile(regionProperties):
         os.remove(regionProperties)
 
-    misc.execCheckMesh()
-    sets = os.path.join('constant', 'polyMesh', 'sets')
-    if os.path.isdir(sets):
-        shutil.rmtree(sets)
+    if not two_dimensional:
+        misc.execCheckMesh()
+        sets = os.path.join('constant', 'polyMesh', 'sets')
+        if os.path.isdir(sets):
+            shutil.rmtree(sets)
 
     if interactive:
         exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
