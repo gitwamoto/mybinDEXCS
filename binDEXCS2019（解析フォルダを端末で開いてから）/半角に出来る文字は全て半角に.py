@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 # 半角に出来る文字は全て半角に.py
 # by Yukiharu Iwamoto
-# 2021/6/25 5:34:59 PM
+# 2024/5/29 12:03:02 PM
 
+import sys
 import signal
 import os
 import glob
@@ -23,7 +24,8 @@ def hankaku(dir_name):
             print('%sを処理中...' % f)
             with open(f, 'r') as fp:
                 s_old = fp.read()
-            s = zenhan.z2h(s_old.decode('UTF-8'), mode = 3).encode('UTF-8') # ALL = 7, ASCII = 1, DIGIT = 2, KANA = 4
+            s = (zenhan.z2h(s_old.decode('UTF-8'), mode = 3).encode('UTF-8') if sys.version_info.major <= 2
+                else zenhan.z2h(s_old, mode = 3)) # ALL = 7, ASCII = 1, DIGIT = 2, KANA = 4
             if s != s_old:
                 with open(f, 'w') as fp:
                     fp.write(s)
@@ -52,7 +54,8 @@ if __name__ == '__main__':
         print('%sを処理中...' % f)
         with open(f, 'r') as fp:
             s_old = fp.read()
-        s = zenhan.z2h(s_old.decode('UTF-8'), mode = 3).encode('UTF-8')
+        s = (zenhan.z2h(s_old.decode('UTF-8'), mode = 3).encode('UTF-8') if sys.version_info.major <= 2
+            else zenhan.z2h(s_old, mode = 3)) # ALL = 7, ASCII = 1, DIGIT = 2, KANA = 4
         if s != s_old:
             with open(f, 'w') as fp:
                 fp.write(s)
