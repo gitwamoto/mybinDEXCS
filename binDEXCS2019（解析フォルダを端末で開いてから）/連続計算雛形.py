@@ -65,7 +65,7 @@ if __name__ == '__main__':
             lines = f.readlines()
         os.rename('setting.txt', 'setting_bak.txt')
         for i in xrange(len(lines)):
-            lines[i] = setComment.uncomment(setComment.comment(lines[i], '// accurate'), r'// idle')
+            lines[i] = setComment.uncomment(setComment.comment(lines[i], '// accurate'), '// idle')
             # 行の末尾に// accurateと書かれている行をコメントアウトし，末尾に// idleと書かれている行をアンコメントする
             # '// accurate', '// idle'の文字は，スペースの個数を含めて完全に一致する必要あり
         with open('setting.txt', 'w') as f:
