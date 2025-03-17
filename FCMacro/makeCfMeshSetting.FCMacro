@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/3/17 11:17:51 PM
+# 2025/3/17 11:30:41 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -70,7 +70,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                 self.setItem(i, j, item)
             combo = QtGui.QComboBox()
             combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
-                'BoxRefine', 'SurfaceRefine', 'N/A'])
+                            'BoxRefine', 'SurfaceRefine', 'N/A'])
             self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
             self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
             combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
