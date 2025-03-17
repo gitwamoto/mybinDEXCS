@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/3/17 5:56:42 PM
+# 2025/3/17 11:17:58 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -70,7 +70,8 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                 self.setItem(i, j, item)
             combo = QtGui.QComboBox()
             combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
-                'BoxRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'])
+                            'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
+                            'LocationInMesh', 'N/A'])
             self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
             self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
             combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
@@ -232,6 +233,8 @@ class SHMeshFrame(QtGui.QDialog):
         remainder = objects[:]
         name = None
         box = []
+        cylinder = []
+        sphere = []
         surface = []
         x = sHMeshDict.getValueForKey(['geometry'])
         for y in x:
@@ -244,8 +247,12 @@ class SHMeshFrame(QtGui.QDialog):
                     for z in y.value():
                         if DictParserList.isType(z, DictParserList.DICT):
                             if z.key() == 'type':
-                                if z.value()[0] == 'searchableBox':
+                                if z.value()[0] in ('searchableBox', 'searchableRotatedBox'):
                                     box.append(y.key())
+                                elif z.value()[0] == 'searchableCylinder':
+                                    cylinder.append(y.key())
+                                elif z.value()[0] == 'searchableSphere':
+                                    sphere.append(y.key())
                                 elif z.value()[0] == 'searchableSurfaceWithGaps':
                                     surface.append(y.key())
         try:
@@ -267,10 +274,17 @@ class SHMeshFrame(QtGui.QDialog):
             x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions'])
             for y in x:
                 if (DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects and
-                    (y.key() in box or y.key() in surface)):
+                    (y.key() in box or y.key() in cylinder or y.key() in sphere or y.key() in surface)):
                     i = objects.index(y.key())
                     remainder.remove(y.key())
-                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine' if y.key() in box else 'SurfaceRefine')
+                    if y.key() in box:
+                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
+                    elif y.key() in cylinder:
+                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
+                    elif y.key() in sphere:
+                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
+                    else:
+                        self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
                     for z in y.value():
                         if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'levels':
                             self.grid.setCellValue(i, self.grid.LEVEL, z.value()[0].value()[0].value()[2])
@@ -518,7 +532,7 @@ class MyModel:
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
             for i in grid.table:
-                if i[grid.TYPE] not in ('BoxRefine', 'LocationInMesh', 'N/A'):
+                if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'LocationInMesh', 'N/A'):
                     for obj in freecad_objects:
                         if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
                             if i[grid.TYPE] == 'SurfaceRefine':
@@ -607,19 +621,47 @@ class MyModel:
             f.write('\t\tname\t' + surface_file_name_wo_ext + ';\n')
             f.write('\t}\n')
             for i in grid.table:
-                if i[grid.LEVEL] != 0 and i[grid.TYPE] == 'BoxRefine':
+                if i[grid.LEVEL] == 0:
+                    continue
+                if i[grid.TYPE] == 'BoxRefine':
                     for obj in freecad_objects:
                         if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            xmax, xmin = obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.XMin
-                            ymax, ymin = obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.YMin
-                            zmax, zmin = obj.Shape.BoundBox.ZMax, obj.Shape.BoundBox.ZMin
                             f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
-                            f.write('\t\ttype\tsearchableBox;\n')
-                            f.write('\t\tmin\t({} {} {});\n'.format(xmin, ymin, zmin))
-                            f.write('\t\tmax\t({} {} {});\n'.format(xmax, ymax, zmax))
+                            f.write('\t\ttype\tsearchableRotatedBox;\n')
+                            f.write('\t\tspan\t({} {} {});\n'.format(obj.Length.Value, obj.Width.Value, obj.Height.Value))
+                            f.write('\t\torigin\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\te1\t({} {} {});\n'.format(
+                                    obj.Placement.Matrix.A11, obj.Placement.Matrix.A21, obj.Placement.Matrix.A31))
+                            f.write('\t\te3\t({} {} {});\n'.format(
+                                    obj.Placement.Matrix.A13, obj.Placement.Matrix.A23, obj.Placement.Matrix.A33))
                             f.write('\t}\n')
                             break
-                elif i[grid.LEVEL] != 0 and i[grid.TYPE] == 'SurfaceRefine':
+                elif i[grid.TYPE] == 'CylinderRefine':
+                    for obj in freecad_objects:
+                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                            f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
+                            f.write('\t\ttype\tsearchableCylinder;\n')
+                            f.write('\t\tpoint1\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tpoint2\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
+                                    obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
+                                    obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
+                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                            f.write('\t}\n')
+                            break
+                elif i[grid.TYPE] == 'SphereRefine':
+                    for obj in freecad_objects:
+                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                            f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
+                            f.write('\t\ttype\tsearchableSphere;\n')
+                            f.write('\t\centre\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                            f.write('\t}\n')
+                            break
+                elif i[grid.TYPE] == 'SurfaceRefine':
                     f.write('\n\t' + i[grid.OBJECT_NAME] + '.stl // in constant/triSurface\n')
                     f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t}\n')
                     f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
@@ -641,6 +683,13 @@ class MyModel:
             f.write('//\t\ttype\tsearchableBox;\n')
             f.write('//\t\tmin\t(1.5 1 -0.5);\n')
             f.write('//\t\tmax\t(3.5 2 0.5);\n')
+            f.write('//\t}\n')
+            f.write('\n//\trotatedBoxExample\n//\t{\n')
+            f.write('//\t\ttype\tsearchableRotatedBox;\n')
+            f.write('//\t\tspan\t(5 4 3); // in (e1 e2 e3) directions\n')
+            f.write('//\t\torigin\t(0 0 0);\n')
+            f.write('//\t\te1\t(1 0.5 0);\n')
+            f.write('//\t\te3\t(0 0.5 1);\n')
             f.write('//\t}\n')
             f.write('\n//\tconeExample\n//\t{\n')
             f.write('//\t\ttype\tsearchableCone;\n')
@@ -711,7 +760,8 @@ class MyModel:
             f.write('\t\t\tlevel\t(0 1); // (min max)\n');
             f.write('\t\t\tregions\n\t\t\t{\n');
             for i in grid.table:
-                if i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
+                if i[grid.TYPE] not in (
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
                     f.write('\t\t\t\t' + i[grid.OBJECT_NAME] + '\n\t\t\t\t{\n')
                     f.write('\t\t\t\t\tlevel\t({} {}); // (min max)\n'.format(i[grid.LEVEL], i[grid.LEVEL] + 1))
                     f.write('\t\t\t\t\tpatchInfo\t{type\t' + i[grid.TYPE] + ';}\n\t\t\t\t}\n')
@@ -723,11 +773,11 @@ class MyModel:
             f.write('\n\trefinementRegions\n\t{\n')
             first = True
             for i in grid.table:
-                if i[grid.LEVEL] != 0 and i[grid.TYPE] in ('BoxRefine', 'SurfaceRefine'):
+                if i[grid.LEVEL] != 0 and i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine'):
                     if not first:
                         f.write('\n')
                     f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
-                    if i[grid.TYPE] == 'BoxRefine':
+                    if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                         f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
                         f.write('\t\t\tlevels\t((1.0 {})); // (distance level)\n'.format(i[grid.LEVEL]))
                     else: # SurfaceRefine
@@ -754,10 +804,8 @@ class MyModel:
                 if i[grid.TYPE] == 'LocationInMesh':
                     for obj in freecad_objects:
                         if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            xmax, xmin = obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.XMin
-                            ymax, ymin = obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.YMin
-                            zmax, zmin = obj.Shape.BoundBox.ZMax, obj.Shape.BoundBox.ZMin
-                            cellZone.append((0.5*(xmax + xmin), 0.5*(ymax + ymin), 0.5*(zmax + zmin), i[grid.OBJECT_NAME]))
+                            cellZone.append((obj.Shape.CenterOfMass.x, obj.Shape.CenterOfMass.y,
+                                             obj.Shape.CenterOfMass.z, i[grid.OBJECT_NAME]))
                             break
             if len(cellZone) == 1:
                 f.write('\n\tlocationInMesh\t({} {} {});\n'.format(*cellZone[0][:-1]))
@@ -854,7 +902,8 @@ class MyModel:
             f.write('\n\t// Layer information per final patch (so not geometry!)\n')
             f.write('\tlayers\n\t{\n')
             for i in grid.table:
-                if i[grid.BOUNDARY_LAYER] and i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
+                if i[grid.BOUNDARY_LAYER] and i[grid.TYPE] not in (
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
                     f.write('\t\t' + surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
                     f.write('\t\t\tnSurfaceLayers\t{};\n'.format(i[grid.N_LAYERS]))
                     f.write('\t\t\texpansionRatio\t{};\n'.format(i[grid.RATIO]))

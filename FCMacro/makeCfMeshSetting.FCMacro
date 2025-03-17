@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2023/10/31 6:13:36 PM
+# 2025/3/17 11:17:51 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -653,9 +653,6 @@ class MyModel:
                         ref_value /= 2
                     for obj in freecad_objects:
                         if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            xmax, xmin = obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.XMin
-                            ymax, ymin = obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.YMin
-                            zmax, zmin = obj.Shape.BoundBox.ZMax, obj.Shape.BoundBox.ZMin
                             f.write('\n\t' + i[grid.OBJECT_NAME] + '\n')
                             f.write('\t{\n')
                             f.write('\t\ttype\tbox;\n')
@@ -663,12 +660,12 @@ class MyModel:
                             f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
                                 '; // Relative to the maximum cell size\n')
                             f.write('\t\tcentre\t(' +
-                                str(0.5*(xmax + xmin)) + ' ' +
-                                str(0.5*(ymax + ymin)) + ' ' +
-                                str(0.5*(zmax + zmin)) + ');\n')
-                            f.write('\t\tlengthX\t' + str(xmax - xmin) + ';\n')
-                            f.write('\t\tlengthY\t' + str(ymax - ymin) + ';\n')
-                            f.write('\t\tlengthZ\t' + str(zmax - zmin) + ';\n')
+                                str(obj.Shape.CenterOfMass.x) + ' ' +
+                                str(obj.Shape.CenterOfMass.y) + ' ' +
+                                str(obj.Shape.CenterOfMass.z) + ');\n')
+                            f.write('\t\tlengthX\t' + str(obj.Length.Value) + ';\n')
+                            f.write('\t\tlengthY\t' + str(obj.Width.Value) + ';\n')
+                            f.write('\t\tlengthZ\t' + str(obj.Height.Value) + ';\n')
                             f.write('\t}\n')
                             break
             try:
