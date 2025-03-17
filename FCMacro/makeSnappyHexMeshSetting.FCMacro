@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2023/10/31 6:13:39 PM
+# 2025/3/17 5:56:42 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1004,7 +1004,7 @@ class MyModel:
                 f.write('\tnSmoothScale\t' + x[0] + ';\n')
             except:
                 f.write('\tnSmoothScale\t4;\n')
-            f.write('\t\n// Error reduction. Used in combination with nSmoothScale.\n')
+            f.write('\n\t// Error reduction. Used in combination with nSmoothScale.\n')
             try:
                 x = sHMeshDict.getValueForKey(['meshQualityControls', 'errorReduction'])
                 f.write('\terrorReduction\t' + x[0] + ';\n')
