@@ -213,6 +213,14 @@
 	// pの次元がPaの場合→rho，m^2/s^2にの場合→rhok
 	p uniform 0; // 設定したいpの値
 }
+// Rで始まるもの
+{
+	type rotatingWallVelocity;
+	// 速度を回転物体表面の速度と一致させる
+	origin (0 0 0); // 回転中心
+	axis (0 0 1); // 回転軸
+	omega (0 0 1); // 右ねじが進む向きを正とした角速度 [rps]
+}
 // Sで始まるもの
 {
 	type slip;

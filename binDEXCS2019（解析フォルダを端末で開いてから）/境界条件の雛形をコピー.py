@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 境界条件の雛形をコピー.py
 # by Yukiharu Iwamoto
-# 2023/1/18 8:48:09 PM
+# 2025/3/18 9:08:08 AM
 
 import os
 import sys
@@ -164,6 +164,12 @@ boundary_conditions = (
     'rho rhok; // 計算で用いる密度の変数名，rhoまたはrhok\n// pの次元がPaの場合→rho，m^2/s^2にの場合→rhok\n' +
     'p uniform 0; // 設定したいpの値',
     src + 'finiteVolume/fields/fvPatchFields/derived/prghPressure'),
+    ('rotatingWallVelocity',
+    '速度を回転物体表面の速度と一致させる',
+    'origin (0 0 0); // 回転中心\n' +
+    'axis (0 0 1); // 回転軸\n' +
+    'omega (0 0 1); // 右ねじが進む向きを正とした角速度 [rps]',
+    src + 'finiteVolume/fields/fvPatchFields/derived/rotatingWallVelocity'),
     ('slip',
     '非粘性流れの壁面境界条件',
     '',
