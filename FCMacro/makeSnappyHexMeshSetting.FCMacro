@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/3/17 11:17:58 PM
+# 2025/3/18 10:14:44 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -215,18 +215,17 @@ class SHMeshFrame(QtGui.QDialog):
 
     def setParametersFromSHMeshDictContents(self, sHMeshDict):
         try:
-            x = sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])
-            self.maxCellSizeCRL.setText(x[0])
+            self.maxCellSizeCRL.setText(sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])[0])
         except:
             pass
         try:
-            x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'features', '', 'level'])
-            self.featuresLevelCRL.setText(x[0])
+            self.featuresLevelCRL.setText(
+                sHMeshDict.getValueForKey(['castellatedMeshControls', 'features', '', 'level'])[0])
         except:
             pass
         try:
-            x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'resolveFeatureAngle'])
-            self.featureAngleCRL.setText(x[0])
+            self.featureAngleCRL.setText(
+                sHMeshDict.getValueForKey(['castellatedMeshControls', 'resolveFeatureAngle'])[0])
         except:
             pass
         objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
@@ -236,60 +235,59 @@ class SHMeshFrame(QtGui.QDialog):
         cylinder = []
         sphere = []
         surface = []
-        x = sHMeshDict.getValueForKey(['geometry'])
-        for y in x:
-            if DictParserList.isType(y, DictParserList.BLOCK):
-                if y.key().endswith('.stl'):
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
-                            name = z.value()[0]
+        for x in sHMeshDict.getValueForKey(['geometry']):
+            if DictParserList.isType(x, DictParserList.BLOCK):
+                if x.key().endswith('.stl'):
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'name':
+                            name = y.value()[0]
                 else:
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT):
-                            if z.key() == 'type':
-                                if z.value()[0] in ('searchableBox', 'searchableRotatedBox'):
-                                    box.append(y.key())
-                                elif z.value()[0] == 'searchableCylinder':
-                                    cylinder.append(y.key())
-                                elif z.value()[0] == 'searchableSphere':
-                                    sphere.append(y.key())
-                                elif z.value()[0] == 'searchableSurfaceWithGaps':
-                                    surface.append(y.key())
+                    for y in x.value():
+                        if not DictParserList.isType(y, DictParserList.DICT):
+                            continue
+                        if y.key() == 'type':
+                            if y.value()[0] in ('searchableBox', 'searchableRotatedBox'):
+                                box.append(x.key())
+                            elif y.value()[0] == 'searchableCylinder':
+                                cylinder.append(x.key())
+                            elif y.value()[0] == 'searchableSphere':
+                                sphere.append(x.key())
+                            elif y.value()[0] == 'searchableSurfaceWithGaps':
+                                surface.append(x.key())
         try:
-            x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementSurfaces', name, 'regions'])
-            for y in x:
-                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
-                    i = objects.index(y.key())
-                    remainder.remove(y.key())
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'level':
-                            self.grid.setCellValue(i, self.grid.LEVEL, z.value()[0].value()[0])
-                        elif DictParserList.isType(z, DictParserList.BLOCK) and z.key() == 'patchInfo':
-                            for a in z.value():
+            for x in sHMeshDict.getValueForKey(
+                ['castellatedMeshControls', 'refinementSurfaces', name, 'regions']):
+                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
+                    i = objects.index(x.key())
+                    remainder.remove(x.key())
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'level':
+                            self.grid.setCellValue(i, self.grid.LEVEL, y.value()[0].value()[0])
+                        elif DictParserList.isType(y, DictParserList.BLOCK) and y.key() == 'patchInfo':
+                            for a in y.value():
                                 if DictParserList.isType(a, DictParserList.DICT) and a.key() == 'type':
                                     self.grid.setCellValue(i, self.grid.TYPE, a.value()[0])
         except:
             pass
         try:
-            x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions'])
-            for y in x:
-                if (DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects and
-                    (y.key() in box or y.key() in cylinder or y.key() in sphere or y.key() in surface)):
-                    i = objects.index(y.key())
-                    remainder.remove(y.key())
-                    if y.key() in box:
+            for x in sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
+                if (DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects and
+                    (x.key() in box or x.key() in cylinder or x.key() in sphere or x.key() in surface)):
+                    i = objects.index(x.key())
+                    remainder.remove(x.key())
+                    if x.key() in box:
                         self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
-                    elif y.key() in cylinder:
+                    elif x.key() in cylinder:
                         self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
-                    elif y.key() in sphere:
+                    elif x.key() in sphere:
                         self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
                     else:
                         self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'levels':
-                            self.grid.setCellValue(i, self.grid.LEVEL, z.value()[0].value()[0].value()[2])
-                            if y.key() in surface:
-                                self.grid.setCellValue(i, self.grid.RATIO, z.value()[0].value()[0].value()[0])
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'levels':
+                            self.grid.setCellValue(i, self.grid.LEVEL, y.value()[0].value()[0].value()[2])
+                            if x.key() in surface:
+                                self.grid.setCellValue(i, self.grid.RATIO, y.value()[0].value()[0].value()[0])
         except:
             pass
         for i in remainder:
@@ -297,18 +295,17 @@ class SHMeshFrame(QtGui.QDialog):
         name += '_'
         lname = len(name)
         try:
-            x = sHMeshDict.getValueForKey(['addLayersControls', 'layers'])
-            for y in x:
-                if (DictParserList.isType(y, DictParserList.BLOCK) and y.key().startswith(name) and
-                    y.key()[lname:] in objects):
-                    i = objects.index(y.key()[lname:])
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT):
-                            if z.key() == 'nSurfaceLayers':
+            for x in sHMeshDict.getValueForKey(['addLayersControls', 'layers']):
+                if (DictParserList.isType(x, DictParserList.BLOCK) and x.key().startswith(name) and
+                    x.key()[lname:] in objects):
+                    i = objects.index(x.key()[lname:])
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.DICT):
+                            if y.key() == 'nSurfaceLayers':
                                 self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-                                self.grid.setCellValue(i, self.grid.N_LAYERS, z.value()[0])
-                            elif z.key() == 'expansionRatio':
-                                self.grid.setCellValue(i, self.grid.RATIO, z.value()[0])
+                                self.grid.setCellValue(i, self.grid.N_LAYERS, y.value()[0])
+                            elif y.key() == 'expansionRatio':
+                                self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
         except:
             pass
         QtGui.QMessageBox.warning(self, 'LocationInMesh',
@@ -532,28 +529,29 @@ class MyModel:
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
             for i in grid.table:
-                if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'LocationInMesh', 'N/A'):
-                    for obj in freecad_objects:
-                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            if i[grid.TYPE] == 'SurfaceRefine':
-                                name = os.path.join(dir_name, i[grid.OBJECT_NAME])
-                                Mesh.export([obj], name + '.ast') # ascii format
-                                os.rename(name + '.ast', name + '.stl') # can overwrite
-                            else:
-                                Mesh.export([obj], tmp_stl)
-                                for line in open(tmp_stl, 'r'):
-                                    if 'endsolid' in line:
-                                        f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
-                                    elif 'solid' in line:
-                                        f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
-                                    else:
-                                        f.write(line)
-                                        if line.lstrip().startswith('vertex'):
-                                            x, y, z = [float(j) for j in line.split()[1:]]
-                                            xmin, ymin, zmin = min(xmin, x), min(ymin, y), min(zmin, z)
-                                            xmax, ymax, zmax = max(xmax, x), max(ymax, y), max(zmax, z)
-                                os.remove(tmp_stl)
-                            break
+                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'LocationInMesh', 'N/A'):
+                    continue
+                for obj in freecad_objects:
+                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                        if i[grid.TYPE] == 'SurfaceRefine':
+                            name = os.path.join(dir_name, i[grid.OBJECT_NAME])
+                            Mesh.export([obj], name + '.ast') # ascii format
+                            os.rename(name + '.ast', name + '.stl') # can overwrite
+                        else:
+                            Mesh.export([obj], tmp_stl)
+                            for line in open(tmp_stl, 'r'):
+                                if 'endsolid' in line:
+                                    f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
+                                elif 'solid' in line:
+                                    f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
+                                else:
+                                    f.write(line)
+                                    if line.lstrip().startswith('vertex'):
+                                        x, y, z = [float(j) for j in line.split()[1:]]
+                                        xmin, ymin, zmin = min(xmin, x), min(ymin, y), min(zmin, z)
+                                        xmax, ymax, zmax = max(xmax, x), max(ymax, y), max(zmax, z)
+                            os.remove(tmp_stl)
+                        break
         return xmin, ymin, zmin, xmax, ymax, zmax
 
     def makeSurfFeatExtDict(self, case_dir_path, surface_file_name, featureAngle):
@@ -623,42 +621,33 @@ class MyModel:
             for i in grid.table:
                 if i[grid.LEVEL] == 0:
                     continue
-                if i[grid.TYPE] == 'BoxRefine':
+                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     for obj in freecad_objects:
                         if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
                             f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
-                            f.write('\t\ttype\tsearchableRotatedBox;\n')
-                            f.write('\t\tspan\t({} {} {});\n'.format(obj.Length.Value, obj.Width.Value, obj.Height.Value))
-                            f.write('\t\torigin\t({} {} {});\n'.format(
-                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                            f.write('\t\te1\t({} {} {});\n'.format(
-                                    obj.Placement.Matrix.A11, obj.Placement.Matrix.A21, obj.Placement.Matrix.A31))
-                            f.write('\t\te3\t({} {} {});\n'.format(
-                                    obj.Placement.Matrix.A13, obj.Placement.Matrix.A23, obj.Placement.Matrix.A33))
-                            f.write('\t}\n')
-                            break
-                elif i[grid.TYPE] == 'CylinderRefine':
-                    for obj in freecad_objects:
-                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
-                            f.write('\t\ttype\tsearchableCylinder;\n')
-                            f.write('\t\tpoint1\t({} {} {});\n'.format(
-                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                            f.write('\t\tpoint2\t({} {} {});\n'.format(
-                                    obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
-                                    obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
-                                    obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
-                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
-                            f.write('\t}\n')
-                            break
-                elif i[grid.TYPE] == 'SphereRefine':
-                    for obj in freecad_objects:
-                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
-                            f.write('\t\ttype\tsearchableSphere;\n')
-                            f.write('\t\centre\t({} {} {});\n'.format(
-                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                            if i[grid.TYPE] == 'BoxRefine':
+                                f.write('\t\ttype\tsearchableRotatedBox;\n')
+                                f.write('\t\tspan\t({} {} {});\n'.format(obj.Length.Value, obj.Width.Value, obj.Height.Value))
+                                f.write('\t\torigin\t({} {} {});\n'.format(
+                                        obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                                f.write('\t\te1\t({} {} {});\n'.format(
+                                        obj.Placement.Matrix.A11, obj.Placement.Matrix.A21, obj.Placement.Matrix.A31))
+                                f.write('\t\te3\t({} {} {});\n'.format(
+                                        obj.Placement.Matrix.A13, obj.Placement.Matrix.A23, obj.Placement.Matrix.A33))
+                            elif i[grid.TYPE] == 'CylinderRefine':
+                                f.write('\t\ttype\tsearchableCylinder;\n')
+                                f.write('\t\tpoint1\t({} {} {});\n'.format(
+                                        obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                                f.write('\t\tpoint2\t({} {} {});\n'.format(
+                                        obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
+                                        obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
+                                        obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
+                                f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                            elif i[grid.TYPE] == 'SphereRefine':
+                                f.write('\t\ttype\tsearchableSphere;\n')
+                                f.write('\t\centre\t({} {} {});\n'.format(
+                                        obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                                f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
                             f.write('\t}\n')
                             break
                 elif i[grid.TYPE] == 'SurfaceRefine':
@@ -773,18 +762,20 @@ class MyModel:
             f.write('\n\trefinementRegions\n\t{\n')
             first = True
             for i in grid.table:
-                if i[grid.LEVEL] != 0 and i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine'):
-                    if not first:
-                        f.write('\n')
-                    f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
-                    if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
-                        f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
-                        f.write('\t\t\tlevels\t((1.0 {})); // (distance level)\n'.format(i[grid.LEVEL]))
-                    else: # SurfaceRefine
-                        f.write('\t\t\tmode\tdistance;\n')
-                        f.write('\t\t\tlevels\t(({} {})); // (distance level)\n'.format(i[grid.RATIO], i[grid.LEVEL]))
-                    f.write('\t\t}\n')
-                    first = False
+                if i[grid.LEVEL] == 0 or i[grid.TYPE] not in (
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine'):
+                    continue
+                if not first:
+                    f.write('\n')
+                f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
+                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
+                    f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
+                    f.write('\t\t\tlevels\t((1.0 {})); // (distance level)\n'.format(i[grid.LEVEL]))
+                else: # SurfaceRefine
+                    f.write('\t\t\tmode\tdistance;\n')
+                    f.write('\t\t\tlevels\t(({} {})); // (distance level)\n'.format(i[grid.RATIO], i[grid.LEVEL]))
+                f.write('\t\t}\n')
+                first = False
             try:
                 x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions'])
                 for y in x:
@@ -902,22 +893,23 @@ class MyModel:
             f.write('\n\t// Layer information per final patch (so not geometry!)\n')
             f.write('\tlayers\n\t{\n')
             for i in grid.table:
-                if i[grid.BOUNDARY_LAYER] and i[grid.TYPE] not in (
+                if not i[grid.BOUNDARY_LAYER] or i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
-                    f.write('\t\t' + surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
-                    f.write('\t\t\tnSurfaceLayers\t{};\n'.format(i[grid.N_LAYERS]))
-                    f.write('\t\t\texpansionRatio\t{};\n'.format(i[grid.RATIO]))
-                    try:
-                        x = sHMeshDict.getValueForKey(['addLayersControls', 'layers',
-                            surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME]])
-                        for y in x:
-                            if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
-                                y.key() not in ('nSurfaceLayers', 'expansionRatio')):
-                                sHMeshDict.writeContents(y, f, indent = '\t\t\t', last_char = '\n')
-                                f.write('\n')
-                    except:
-                        pass
-                    f.write('\t\t}\n')
+                    continue
+                f.write('\t\t' + surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
+                f.write('\t\t\tnSurfaceLayers\t{};\n'.format(i[grid.N_LAYERS]))
+                f.write('\t\t\texpansionRatio\t{};\n'.format(i[grid.RATIO]))
+                try:
+                    x = sHMeshDict.getValueForKey(['addLayersControls', 'layers',
+                        surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME]])
+                    for y in x:
+                        if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
+                            y.key() not in ('nSurfaceLayers', 'expansionRatio')):
+                            sHMeshDict.writeContents(y, f, indent = '\t\t\t', last_char = '\n')
+                            f.write('\n')
+                except:
+                    pass
+                f.write('\t\t}\n')
             f.write('\t}\n') # layers
             try:
                 x = sHMeshDict.getValueForKey(['addLayersControls', 'expansionRatio'])

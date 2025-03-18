@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/3/17 11:30:41 PM
+# 2025/3/18 10:14:42 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -70,7 +70,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                 self.setItem(i, j, item)
             combo = QtGui.QComboBox()
             combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
-                            'BoxRefine', 'SurfaceRefine', 'N/A'])
+                            'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'])
             self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
             self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
             combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
@@ -214,80 +214,82 @@ class CfMeshFrame(QtGui.QDialog):
 
     def setParametersFromMeshDictContents(self, meshDict):
         try:
-            x = meshDict.getValueForKey(['maxCellSize'])
-            self.maxCellSizeCRL.setText(x[0])
+            self.maxCellSizeCRL.setText(meshDict.getValueForKey(['maxCellSize'])[0])
         except:
             pass
         try:
-            x = meshDict.getValueForKey(['minCellSize'])
-            self.minCellSizeCRL.setText(x[0])
+            self.minCellSizeCRL.setText(meshDict.getValueForKey(['minCellSize'])[0])
         except:
             pass
         try:
-            x = meshDict.getValueForKey(['CUSTOM_OPTIONS', 'featureAngle'])
-            self.featureAngleCRL.setText(x[0])
+            self.featureAngleCRL.setText(meshDict.getValueForKey(['CUSTOM_OPTIONS', 'featureAngle'])[0])
         except:
             pass
         objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
         remainder = objects[:]
         try:
-            x = meshDict.getValueForKey(['renameBoundary', 'newPatchNames'])
-            for y in x:
-                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
-                    remainder.remove(y.key())
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'type':
-                            self.grid.setCellValue(objects.index(y.key()), self.grid.TYPE, z.value()[0])
+            for x in meshDict.getValueForKey(['renameBoundary', 'newPatchNames']):
+                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
+                    remainder.remove(x.key())
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'type':
+                            self.grid.setCellValue(objects.index(x.key()), self.grid.TYPE, y.value()[0])
         except:
             pass
         try:
-            x = meshDict.getValueForKey(['localRefinement'])
-            for y in x:
-                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'cellSize':
-                            self.grid.setCellValue(objects.index(y.key()), self.grid.CELL_SIZE, z.value()[0])
+            for x in meshDict.getValueForKey(['localRefinement']):
+                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'cellSize':
+                            self.grid.setCellValue(objects.index(x.key()), self.grid.CELL_SIZE, y.value()[0])
         except:
             pass
         try:
-            x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers'])
-            for y in x:
-                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
-                    i = objects.index(y.key())
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT):
-                            if z.key() == 'nLayers':
-                                self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-                                self.grid.setCellValue(i, self.grid.N_LAYERS, z.value()[0])
-                            elif z.key() == 'thicknessRatio':
-                                self.grid.setCellValue(i, self.grid.RATIO, z.value()[0])
+            for x in meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers']):
+                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
+                    i = objects.index(x.key())
+                    for y in x.value():
+                        if not DictParserList.isType(y, DictParserList.DICT):
+                            continue
+                        if y.key() == 'nLayers':
+                            self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
+                            self.grid.setCellValue(i, self.grid.N_LAYERS, y.value()[0])
+                        elif y.key() == 'thicknessRatio':
+                            self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
         except:
             pass
         try:
-            x = meshDict.getValueForKey(['objectRefinements'])
-            for y in x:
-                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
-                    i = objects.index(y.key())
-                    remainder.remove(y.key())
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'cellSize':
-                            self.grid.setCellValue(i, self.grid.CELL_SIZE, z.value()[0])
-                            self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
+            for x in meshDict.getValueForKey(['objectRefinements']):
+                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
+                    i = objects.index(x.key())
+                    remainder.remove(x.key())
+                    for y in x.value():
+                        if not DictParserList.isType(y, DictParserList.DICT):
+                            continue
+                        if y.key() == 'cellSize':
+                            self.grid.setCellValue(i, self.grid.CELL_SIZE, y.value()[0])
+                        elif y.key() == 'type':
+                            if y.value()[0] == 'box':
+                                self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
+                            elif y.value()[0] == 'cone':
+                                self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
+                            elif y.value()[0] == 'sphere':
+                                self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
         except:
             pass
         try:
-            x = meshDict.getValueForKey(['surfaceMeshRefinement'])
-            for y in x:
-                if DictParserList.isType(y, DictParserList.BLOCK) and y.key() in objects:
-                    i = objects.index(y.key())
-                    remainder.remove(y.key())
-                    for z in y.value():
-                        if DictParserList.isType(z, DictParserList.DICT):
-                            if z.key() == 'cellSize':
-                                self.grid.setCellValue(i, self.grid.CELL_SIZE, z.value()[0])
-                                self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
-                            elif z.key() == 'refinementThickness':
-                                self.grid.setCellValue(i, self.grid.RATIO, z.value()[0])
+            for x in meshDict.getValueForKey(['surfaceMeshRefinement']):
+                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
+                    i = objects.index(x.key())
+                    remainder.remove(x.key())
+                    for y in x.value():
+                        if not DictParserList.isType(y, DictParserList.DICT):
+                            continue
+                        if y.key() == 'cellSize':
+                            self.grid.setCellValue(i, self.grid.CELL_SIZE, y.value()[0])
+                            self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
+                        elif y.key() == 'refinementThickness':
+                            self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
         except:
             pass
         for i in remainder:
@@ -474,24 +476,25 @@ class MyModel:
         dir_name = os.path.dirname(file_name)
         with open(file_name, 'w') as f:
             for i in grid.table:
-                if i[grid.TYPE] not in ('BoxRefine', 'N/A'):
-                    for obj in freecad_objects:
-                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            if i[grid.TYPE] == 'SurfaceRefine':
-                                name = os.path.join(dir_name, i[grid.OBJECT_NAME])
-                                Mesh.export([obj], name + '.ast') # ascii format
-                                os.rename(name + '.ast', name + '.stl') # can overwrite
-                            else:
-                                Mesh.export([obj], tmp_stl)
-                                for line in open(tmp_stl, 'r'):
-                                    if 'endsolid' in line:
-                                        f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
-                                    elif 'solid' in line:
-                                        f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
-                                    else:
-                                        f.write(line)
-                                os.remove(tmp_stl)
-                            break
+                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'N/A'):
+                    continue
+                for obj in freecad_objects:
+                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                        if i[grid.TYPE] == 'SurfaceRefine':
+                            name = os.path.join(dir_name, i[grid.OBJECT_NAME])
+                            Mesh.export([obj], name + '.ast') # ascii format
+                            os.rename(name + '.ast', name + '.stl') # can overwrite
+                        else:
+                            Mesh.export([obj], tmp_stl)
+                            for line in open(tmp_stl, 'r'):
+                                if 'endsolid' in line:
+                                    f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
+                                elif 'solid' in line:
+                                    f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
+                                else:
+                                    f.write(line)
+                            os.remove(tmp_stl)
+                        break
 
     def makeMeshDict(self, case_dir_path, surface_file_name, max_cell_size, min_cell_size,
         freecad_objects, grid, featureAngle, meshDict):
@@ -589,23 +592,25 @@ class MyModel:
             f.write('\t}\n') # optimisationParameters
             f.write('\n\tpatchBoundaryLayers\n\t{')
             for i in grid.table:
-                if i[grid.BOUNDARY_LAYER] and i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'N/A'):
-                    f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
-                    f.write('\n\t\t\tnLayers\t{}; // (optional)\n'.format(i[grid.N_LAYERS]))
-                    f.write('\t\t\tthicknessRatio\t{};\n'.format(i[grid.RATIO]))
-                    try:
-                        x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
-                            i[grid.OBJECT_NAME], 'maxFirstLayerThickness'])
-                        f.write('\t\t\tmaxFirstLayerThickness\t' + x[0] + '; // (optional)\n')
-                    except:
-                        f.write('//\t\t\tmaxFirstLayerThickness\t0.5; // (optional)\n')
-                    try:
-                        x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
-                            i[grid.OBJECT_NAME], 'allowDiscontinuity'])
-                        f.write('\t\t\tallowDiscontinuity\t' + x[0] + '; // 1 active or 0 inactive\n')
-                    except:
-                        f.write('\t\t\tallowDiscontinuity\t0; // 1 active or 0 inactive\n')
-                    f.write('\t\t}\n')
+                if not i[grid.BOUNDARY_LAYER] or i[grid.TYPE] in (
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'):
+                    continue
+                f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
+                f.write('\n\t\t\tnLayers\t{}; // (optional)\n'.format(i[grid.N_LAYERS]))
+                f.write('\t\t\tthicknessRatio\t{};\n'.format(i[grid.RATIO]))
+                try:
+                    x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
+                        i[grid.OBJECT_NAME], 'maxFirstLayerThickness'])
+                    f.write('\t\t\tmaxFirstLayerThickness\t' + x[0] + '; // (optional)\n')
+                except:
+                    f.write('//\t\t\tmaxFirstLayerThickness\t0.5; // (optional)\n')
+                try:
+                    x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
+                        i[grid.OBJECT_NAME], 'allowDiscontinuity'])
+                    f.write('\t\t\tallowDiscontinuity\t' + x[0] + '; // 1 active or 0 inactive\n')
+                except:
+                    f.write('\t\t\tallowDiscontinuity\t0; // 1 active or 0 inactive\n')
+                f.write('\t\t}\n')
             f.write('\t}\n') # patchBoundaryLayers
             f.write('}\n') # boundaryLayers
             f.write('\n// Valid only when keepCellsIntersectingBoundary is not active. (optional)\n')
@@ -622,19 +627,21 @@ class MyModel:
             f.write('}\n') # removeCellsIntersectingPatches
             f.write('\nlocalRefinement\n{')
             for i in grid.table:
-                if i[grid.CELL_SIZE] != '' and i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'N/A'):
-                    ref_thickness = i[grid.CELL_SIZE]
-                    ref_level = 0
-                    ref_value = float(max_cell_size)/ref_thickness
-                    while ref_value > 1.0:
-                        ref_level += 1
-                        ref_value /= 2
-                    f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
-                    f.write('\n\t\tcellSize\t' + str(ref_thickness) + ';\n')
-                    f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
-                        '; // Relative to the maximum cell size\n')
-                    f.write('//\t\trefinementThickness\t' + str(5*ref_thickness) + ';\n')
-                    f.write('\t}\n')
+                if i[grid.CELL_SIZE] == '' or i[grid.TYPE] in (
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'):
+                    continue
+                ref_thickness = i[grid.CELL_SIZE]
+                ref_level = 0
+                ref_value = float(max_cell_size)/ref_thickness
+                while ref_value > 1.0:
+                    ref_level += 1
+                    ref_value /= 2.0
+                f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
+                f.write('\n\t\tcellSize\t' + str(ref_thickness) + ';\n')
+                f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
+                    '; // Relative to the maximum cell size\n')
+                f.write('//\t\trefinementThickness\t' + str(5*ref_thickness) + ';\n')
+                f.write('\t}\n')
             f.write('\n//\t"patch.*" // accepts regex\n//\t{')
             f.write('\n//\t\tcellSize 1;\n')
             f.write('//\t\tadditionalRefinementLevels\t1;\n')
@@ -644,30 +651,52 @@ class MyModel:
             objects = [i[grid.OBJECT_NAME] for i in grid.table]
             f.write('\nobjectRefinements\n{')
             for i in grid.table:
-                if i[grid.CELL_SIZE] != '' and i[grid.TYPE] == 'BoxRefine':
-                    ref_thickness = i[grid.CELL_SIZE]
-                    ref_level = 0
-                    ref_value = float(max_cell_size)/ref_thickness
-                    while ref_value > 1.0:
-                        ref_level += 1
-                        ref_value /= 2
-                    for obj in freecad_objects:
-                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                            f.write('\n\t' + i[grid.OBJECT_NAME] + '\n')
-                            f.write('\t{\n')
+                if i[grid.CELL_SIZE] == '' or i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
+                    continue
+                ref_thickness = i[grid.CELL_SIZE]
+                ref_level = 0
+                ref_value = float(max_cell_size)/ref_thickness
+                while ref_value > 1.0:
+                    ref_level += 1
+                    ref_value /= 2.0
+                for obj in freecad_objects:
+                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                        f.write('\n\t' + i[grid.OBJECT_NAME] + '\n')
+                        f.write('\t{\n')
+                        if i[grid.TYPE] == 'BoxRefine':
                             f.write('\t\ttype\tbox;\n')
                             f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
                             f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
                                 '; // Relative to the maximum cell size\n')
-                            f.write('\t\tcentre\t(' +
-                                str(obj.Shape.CenterOfMass.x) + ' ' +
-                                str(obj.Shape.CenterOfMass.y) + ' ' +
-                                str(obj.Shape.CenterOfMass.z) + ');\n')
+                            f.write('\t\tcentre\t(' + str(obj.Shape.CenterOfMass.x) + ' ' +
+                                str(obj.Shape.CenterOfMass.y) + ' ' + str(obj.Shape.CenterOfMass.z) + ');\n')
                             f.write('\t\tlengthX\t' + str(obj.Length.Value) + ';\n')
                             f.write('\t\tlengthY\t' + str(obj.Width.Value) + ';\n')
                             f.write('\t\tlengthZ\t' + str(obj.Height.Value) + ';\n')
-                            f.write('\t}\n')
-                            break
+                        elif i[grid.TYPE] == 'CylinderRefine':
+                            f.write('\t\ttype\tcone;\n')
+                            f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
+                            f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
+                                '; // Relative to the maximum cell size\n')
+                            f.write('\t\p0\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tp1\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
+                                    obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
+                                    obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
+                            f.write('\t\tradius0\t{};\n'.format(obj.Radius.Value))
+                            f.write('\t\tradius1\t{};\n'.format(obj.Radius.Value))
+                        elif i[grid.TYPE] == 'SphereRefine':
+                            f.write('\t\ttype\tsphere;\n')
+                            f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
+                            f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
+                                '; // Relative to the maximum cell size\n')
+                            f.write('\t\centre\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                            f.write('\t\refinementThickness\t{};\n'.format(obj.Radius.Value))
+                        f.write('\t}\n')
+                        break
             try:
                 x = meshDict.getValueForKey(['objectRefinements'])
                 for y in x:
@@ -731,7 +760,7 @@ class MyModel:
                     ref_value = float(max_cell_size)/ref_thickness
                     while ref_value > 1.0:
                         ref_level += 1
-                        ref_value /= 2
+                        ref_value /= 2.0
                     f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
                     f.write('\n\t\tsurfaceFile\t"' + i[grid.OBJECT_NAME] + '.stl";\n')
                     f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
@@ -771,7 +800,7 @@ class MyModel:
             f.write('\nrenameBoundary\n{')
             f.write('\n\tnewPatchNames\n\t{')
             for i in grid.table:
-                if i[grid.TYPE] not in ('BoxRefine', 'SurfaceRefine', 'N/A'):
+                if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'):
                     f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
                     f.write('\n\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
                     f.write('\t\t\ttype\t'+ i[grid.TYPE] + ';\n')
