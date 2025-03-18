@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/3/18 10:14:42 AM
+# 2025/3/18 4:13:43 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -678,7 +678,7 @@ class MyModel:
                             f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
                             f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
                                 '; // Relative to the maximum cell size\n')
-                            f.write('\t\p0\t({} {} {});\n'.format(
+                            f.write('\t\tp0\t({} {} {});\n'.format(
                                     obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                             f.write('\t\tp1\t({} {} {});\n'.format(
                                     obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
@@ -691,10 +691,10 @@ class MyModel:
                             f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
                             f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
                                 '; // Relative to the maximum cell size\n')
-                            f.write('\t\centre\t({} {} {});\n'.format(
+                            f.write('\t\tcentre\t({} {} {});\n'.format(
                                     obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                             f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
-                            f.write('\t\refinementThickness\t{};\n'.format(obj.Radius.Value))
+                            f.write('\t\trefinementThickness\t{};\n'.format(obj.Radius.Value))
                         f.write('\t}\n')
                         break
             try:

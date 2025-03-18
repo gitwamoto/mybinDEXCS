@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/3/18 10:14:44 AM
+# 2025/3/18 4:13:47 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -645,7 +645,7 @@ class MyModel:
                                 f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
                             elif i[grid.TYPE] == 'SphereRefine':
                                 f.write('\t\ttype\tsearchableSphere;\n')
-                                f.write('\t\centre\t({} {} {});\n'.format(
+                                f.write('\t\tcentre\t({} {} {});\n'.format(
                                         obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                                 f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
                             f.write('\t}\n')
