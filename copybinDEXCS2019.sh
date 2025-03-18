@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2024/5/22 8:30:44 PM
+# 2025/3/18 1:31:23 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -510,6 +510,24 @@ else # 2021
 		fi
 		if [ ! -e /usr/local/lib/python3.8/dist-packages/stl ]; then
 			sudo pip install numpy-stl
+		fi
+	fi
+
+	#クリップボードマネージャー
+	if $imsudoer; then
+		if [ ! -e /usr/bin/copyq ]; then
+			sudo apt install -y copyq
+			copyq &
+			copyq config maxitems 50
+			copyq config autostart true
+			sed -i '/size=/c 8\\Command=copyq: menu()\
+8\\GlobalShortcut=ctrl+shift+v\
+8\\Icon=\\xf01c\
+8\\IsGlobalShortcut=true\
+8\\Name=\\x30c8\\x30ec\\x30a4\\x30e1\\x30cb\\x30e5\\x30fc\\x3092\\x8868\\x793a\
+size=8' ~/.config/copyq/copyq-commands.ini
+			copyq exit
+			copyq &
 		fi
 	fi
 
