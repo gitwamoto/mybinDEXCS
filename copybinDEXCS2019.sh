@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2025/3/18 1:31:23 PM
+# 2025/4/1 4:01:46 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -130,7 +130,7 @@ if [ "$trial" -eq 2 ]; then
 	done
 	for f in '__init__.py' 'appendEntries.py' 'dakuten.py' 'dictFormat.py' 'dictParse.py' \
 		'findMaxMin.py' 'folderTime.py' 'listFile.py' 'misc.py' 'ofpolymesh.py' 'rmObjects.py' \
-		'setComment.py' 'setFuncsInCD.py' 'showDir.py'; do
+		'setComment.py' 'setFuncsInCD.py'; do
 		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS"/utilities/"$f" \
 			Desktop/"$binDEXCS"/utilities/"$f"
 	done
