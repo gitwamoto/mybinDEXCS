@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2022/6/11 4:44:36 PM
+# 2025/4/1 4:20:50 PM
 
 import os
 import signal
@@ -19,7 +19,6 @@ from utilities import appendEntries
 from utilities import ofpolymesh
 from utilities import folderTime
 from utilities import rmObjects
-from utilities import showDir
 from utilities import dakuten
 from utilities import listFile
 from utilities import setComment
