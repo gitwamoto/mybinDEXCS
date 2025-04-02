@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2025/4/1 4:20:21 PM
+# 2025/4/2 7:43:28 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -78,6 +78,8 @@ binDEXCS=binDEXCS2019（解析フォルダを端末で開いてから）
 if [ ! -d Desktop/"$binDEXCS" ]; then
 	mkdir Desktop/"$binDEXCS"
 fi
+
+rm -f Desktop/"$binDEXCS"/utilities/showDir.py # -fオプション付きだと，ファイルがなくてもエラーを吐かない
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
