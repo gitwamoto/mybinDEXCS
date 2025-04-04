@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2023/11/10 4:28:51 PM
+# 2025/4/4 2:12:34 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -216,7 +216,7 @@ if __name__ == '__main__':
                             Fy_list.append(Fy)
                             Fz_list.append(Fz)
                             fw.write('{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\n'.format(
-                                t, Fx, Fy, Fz, float(linem[0]), float(linem[1]), float(linem[2])))
+                                t, Fx, Fy, Fz, float(linem[1]), float(linem[2]), float(linem[3])))
         plt.plot(t_list, Fx_list, label = 'Fx')
         plt.plot(t_list, Fy_list, label = 'Fy')
         plt.plot(t_list, Fz_list, label = 'Fz')
