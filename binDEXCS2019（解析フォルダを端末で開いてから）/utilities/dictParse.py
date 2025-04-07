@@ -145,8 +145,8 @@ class DictParserList(list):
 class DictParser:
     def __init__(self, file_name = None, string = None):
         try:
-            self.n_line = 0
-            self.index = 0
+            self.n_line = 0 # 行番号
+            self.index = 0 # 列番号
             if file_name is not None:
                 with open(file_name, 'r') as self.f:
                     self.line = self.f.readline()
