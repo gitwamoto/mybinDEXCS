@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2022/11/25 8:20:28 PM
+# 2025/4/8 8:44:02 AM
 
 import sys
 import os
@@ -357,16 +357,16 @@ class DictParser:
     def writeFileAsItIs(self, file_name, x = None):
         if x is None:
             x = self.contents
-        with open(file_name, 'w') as self.f:
-            self.f.write(str(x))
+        with open(file_name, 'w') as f:
+            f.write(str(x))
 
     def writeFile(self, file_name, x = None, indent = '', last_char = '\n'):
         self.indent = indent
         self.last_char = last_char
         if x is None:
             x = self.contents
-        with open(file_name, 'w') as self.f:
-            self.writeContents(x, self.f)
+        with open(file_name, 'w') as f:
+            self.writeContents(x, f)
 
     def writeContents(self, x, f):
         if type(x) is DictParserList:
