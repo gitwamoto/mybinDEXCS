@@ -1,9 +1,12 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2025/3/18 1:30:47 PM
+# 2025/6/4 12:26:29 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
+
+# FreeCAD最新版のAppImageの名前
+FREECAD_APPIMAGE="FreeCAD_weekly-builds-42006-conda-Linux-x86_64-py311.AppImage"
 
 if [ -e /opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc ]; then
 	dexcs_version=2019
@@ -234,6 +237,34 @@ size=8' ~/.config/copyq/copyq-commands.ini
 		fi
 	fi
 
+	# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
+	if [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
+		if [ -e ~/.config/FreeCAD/user.cfg ]; then
+			mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+		fi
+		cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
+	fi
+
+	# FreeCAD最新版に置き換え
+	if $imsudoer; then
+		cd /opt
+		sudo wget -N https://github.com/FreeCAD/FreeCAD-Bundle/releases/download/weekly-builds/"$FREECAD_APPIMAGE" -o wgetfreecad.log
+		if [ $? -eq 0 ]; then
+			if grep -q '保存完了' wgetfreecad.log; then
+				sudo mv "$FREECAD_APPIMAGE" freecadnew.APPIMAGE
+				sudo find . -type f -name "FreeCAD_weekly-builds-*" -exec rm -v {} \;
+				sudo mv freecadnew.APPIMAGE "$FREECAD_APPIMAGE"
+				sudo chmod +x "$FREECAD_APPIMAGE"
+				if [ $(readlink /usr/bin/freecad) != /opt/"$FCAPPFREECAD_APPIMAGEIMAGE" ]; then
+					sudo ln -sf /opt/"$FREECAD_APPIMAGE" /usr/bin/freecad
+				fi
+			fi
+		fi
+		if [ -f wgetfreecad.log ]; then
+			sudo rm wgetfreecad.log
+		fi
+	fi
+
 fi # end of if [ "$dexcs_version" = '2019' ]; then
 
 # デスクトップアイコンの表示設定
@@ -267,14 +298,6 @@ done
 if $imsudoer && [ "$(apt list --upgradable | wc -l)" -gt 1 ]; then
 	sudo apt update
 	sudo apt upgrade -y
-fi
-
-# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-if [ "$dexcs_version" = '2021' ] && [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
-	if [ -e ~/.config/FreeCAD/user.cfg ]; then
-		mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
-	fi
-	cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 fi
 
 # Macから画面共有するための設定
