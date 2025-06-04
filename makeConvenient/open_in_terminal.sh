@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2025/6/4 12:26:29 PM
+# 2025/6/4 12:31:07 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -255,7 +255,7 @@ size=8' ~/.config/copyq/copyq-commands.ini
 				sudo find . -type f -name "FreeCAD_weekly-builds-*" -exec rm -v {} \;
 				sudo mv freecadnew.APPIMAGE "$FREECAD_APPIMAGE"
 				sudo chmod +x "$FREECAD_APPIMAGE"
-				if [ $(readlink /usr/bin/freecad) != /opt/"$FCAPPFREECAD_APPIMAGEIMAGE" ]; then
+				if [ $(readlink /usr/bin/freecad) != /opt/"$FREECAD_APPIMAGE" ]; then
 					sudo ln -sf /opt/"$FREECAD_APPIMAGE" /usr/bin/freecad
 				fi
 			fi
