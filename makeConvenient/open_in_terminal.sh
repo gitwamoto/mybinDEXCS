@@ -1,12 +1,9 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2025/6/4 12:31:07 PM
+# 2025/6/5 11:46:44 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
-
-# FreeCAD最新版のAppImageの名前
-FREECAD_APPIMAGE="FreeCAD_weekly-builds-42006-conda-Linux-x86_64-py311.AppImage"
 
 if [ -e /opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc ]; then
 	dexcs_version=2019
@@ -245,24 +242,10 @@ size=8' ~/.config/copyq/copyq-commands.ini
 		cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 	fi
 
-	# FreeCAD最新版に置き換え
-	if $imsudoer; then
-		cd /opt
-		sudo wget -N https://github.com/FreeCAD/FreeCAD-Bundle/releases/download/weekly-builds/"$FREECAD_APPIMAGE" -o wgetfreecad.log
-		if [ $? -eq 0 ]; then
-			if grep -q '保存完了' wgetfreecad.log; then
-				sudo mv "$FREECAD_APPIMAGE" freecadnew.APPIMAGE
-				sudo find . -type f -name "FreeCAD_weekly-builds-*" -exec rm -v {} \;
-				sudo mv freecadnew.APPIMAGE "$FREECAD_APPIMAGE"
-				sudo chmod +x "$FREECAD_APPIMAGE"
-				if [ $(readlink /usr/bin/freecad) != /opt/"$FREECAD_APPIMAGE" ]; then
-					sudo ln -sf /opt/"$FREECAD_APPIMAGE" /usr/bin/freecad
-				fi
-			fi
-		fi
-		if [ -f wgetfreecad.log ]; then
-			sudo rm wgetfreecad.log
-		fi
+	# 2025年5月ごろ，freecad-daily-python3が破損することがあった．
+	# 破損していればこれを修正する．
+	if echo $(sudo apt-get check 2>&1) | grep -q freecad-daily-python3; then
+		sudo aptitude install -y freecad-daily
 	fi
 
 fi # end of if [ "$dexcs_version" = '2019' ]; then

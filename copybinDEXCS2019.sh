@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2025/6/4 12:31:05 PM
+# 2025/6/5 11:46:41 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -12,9 +12,6 @@
 # (2) 「プログラムとして実行可能」をチェック
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
-
-# FreeCAD最新版のAppImageの名前
-FREECAD_APPIMAGE="FreeCAD_weekly-builds-42006-conda-Linux-x86_64-py311.AppImage"
 
 RSYNC_OPTION='--delete'
 
@@ -544,24 +541,20 @@ size=8' ~/.config/copyq/copyq-commands.ini
 		cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
 	fi
 
-	# FreeCAD最新版に置き換え
-	if $imsudoer; then
-		cd /opt
-		sudo wget -N https://github.com/FreeCAD/FreeCAD-Bundle/releases/download/weekly-builds/"$FREECAD_APPIMAGE" -o wgetfreecad.log
-		if [ $? -eq 0 ]; then
-			if grep -q '保存完了' wgetfreecad.log; then
-				sudo mv "$FREECAD_APPIMAGE" freecadnew.APPIMAGE
-				sudo find . -type f -name "FreeCAD_weekly-builds-*" -exec rm -v {} \;
-				sudo mv freecadnew.APPIMAGE "$FREECAD_APPIMAGE"
-				sudo chmod +x "$FREECAD_APPIMAGE"
-				if [ $(readlink /usr/bin/freecad) != /opt/"$FREECAD_APPIMAGE" ]; then
-					sudo ln -sf /opt/"$FREECAD_APPIMAGE" /usr/bin/freecad
-				fi
-			fi
-		fi
-		if [ -f wgetfreecad.log ]; then
-			sudo rm wgetfreecad.log
-		fi
+	# 2025年5月ごろ，freecad-daily-python3が破損することがあった．
+	# 破損していればこれを修正する．
+	if echo $(sudo apt-get check 2>&1) | grep -q freecad-daily-python3; then
+		sudo aptitude install -y freecad-daily
+	fi
+	# freecad-daily-python3の破損に対する対処療法として，FreeCAD_weekly-buildsのAppImageをgithubからダウンロードした．
+	# これで大丈夫と思いきや，makeSnappyHexMeshDict.FCMacroでgnome-terminalが起動しないトラブルが発生した．
+	# おそらく，AppImageはgnome-terminalにアクセスできない制限がかかっているのであろう．
+	# そのため．FreeCAD_weekly-buildsのAppImageは使えないと判断した．
+	# もしAppImageが残っているのであれば消す．
+	sudo find /opt -type f -name "FreeCAD_weekly-builds-*" -exec rm -v {} \;
+	# 対処療法でシンボリックリンクも付け替えてしまったので，元に戻す．
+	if [ $(readlink /usr/bin/freecad) != /usr/bin/freecad-daily ]; then
+		sudo ln -sf /usr/bin/freecad-daily /usr/bin/freecad
 	fi
 
 fi # end of if [ "$dexcs_version" = '2019' ]; then

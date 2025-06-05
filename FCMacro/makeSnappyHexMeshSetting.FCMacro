@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/3/18 4:13:47 PM
+# 2025/6/5 5:15:35 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -86,7 +86,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
             self.cellWidget(row, FreeCadFileGrid.TYPE).itemText(index))
 
     def actionOnStateChanged(self, row, state):
-        self.updateTable(row, FreeCadFileGrid.BOUNDARY_LAYER, state == QtCore.Qt.Checked)
+        self.updateTable(row, FreeCadFileGrid.BOUNDARY_LAYER, state == QtCore.Qt.Checked.value)
 
     def actionOnCellChanged(self, row, col):
         try:
