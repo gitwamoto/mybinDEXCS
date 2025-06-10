@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2025/6/10 3:21:59 PM
+# 2025/6/10 5:06:39 PM
 
 import glob
 import os
@@ -65,8 +65,8 @@ def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0):
     paraview_json_home = os.path.expanduser('~/.config/ParaView/ParaView-UserSettings.json')
     with open(paraview_json_home, 'r') as f:
         s = f.read()
-    t = re.sub(r'Ambient\s*:\s*[0-9.]+', 'Ambient : {}'.format(ambient),
-            re.sub(r'Diffuse\s*:\s*[0-9.]+', 'Diffuse : {}'.format(diffuse), s))
+    t = re.sub(r'"Ambient"\s*:\s*[0-9.]+', '"Ambient" : {}'.format(ambient),
+            re.sub(r'"Diffuse"\s*:\s*[0-9.]+', '"Diffuse" : {}'.format(diffuse), s))
     if s != t:
         with open(paraview_json_home, 'w') as f:
             f.write(t)

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2025/6/10 11:24:36 AM
+# 2025/6/10 5:03:55 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -154,6 +154,6 @@ if __name__ == '__main__':
     if interactive:
         exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
             '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 0.1)
+    misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()
