@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/6 4:55:12 PM
+# 2025/6/9 3:03:42 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -369,14 +369,18 @@ class MyController:
             QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
                 self.sHMeshFrame.caseDirST.text() + ' is not a directory.', QtGui.QMessageBox.Close)
             return
-        has_LocationInMesh = False
+        num_of_LocationInMesh = 0
         for i in self.sHMeshFrame.grid.table:
             if i[self.sHMeshFrame.grid.TYPE] == 'LocationInMesh':
-                has_LocationInMesh = True
+                num_of_LocationInMesh += 1
                 break
-        if not has_LocationInMesh:
+        if num_of_LocationInMesh == 0:
             QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
                 'LocationInMesh is required!\nSet LocationInMesh and try again.', QtGui.QMessageBox.Close)
+            return
+        elif num_of_LocationInMesh > 1:
+            QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
+                'Multiple LocationInMesh found!\nDesignate LocationInMesh only one and try again.', QtGui.QMessageBox.Close)
             return
         case_dir_path = self.sHMeshFrame.caseDirST.text()
         # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）

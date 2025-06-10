@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2024/5/28 12:01:46 PM
+# 2025/6/10 11:29:12 AM
 
 import glob
 import os
@@ -37,7 +37,7 @@ def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
     # https://joppot.info/2013/12/17/235, http://tldp.org/HOWTO/Xterm-Title-3.html
     print('\033]2;{} - {}\007'.format(path, os.path.basename(file)))
 
-def execParaFoam(touch_only = False):
+def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
     for f in glob.iglob('*.OpenFOAM' if dexcs_version == '2019' else '*.foam'):
         os.remove(f)
     subprocess.call('paraFoam -touch-all', shell = True)
@@ -57,7 +57,19 @@ def execParaFoam(touch_only = False):
         for f in glob.iglob(p):
             os.remove(f)
     if not touch_only:
+        setParaViewAmbientDiffuse(ambient, diffuse)
         subprocess.call('paraFoam', shell = True)
+    setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0)
+
+def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0)
+    paraview_json_home = os.path.expanduser('~/.config/ParaView/ParaView-UserSettings.json')
+    with open(paraview_json_home, 'r') as f:
+        s = f.read()
+    t = re.sub(r'Ambient\s*:\s*[0-9.]+', 'Ambient : {}'.format(ambient),
+            re.sub(r'Diffuse\s*:\s*[0-9.]+', 'Diffuse : {}'.format(diffuse), s))
+    if s != t:
+        with open(paraview_json_home, 'w') as f:
+            f.write(t)
 
 def execCheckMesh():
     for f in ('checkMesh.log', 'checkMesh.logfile'):

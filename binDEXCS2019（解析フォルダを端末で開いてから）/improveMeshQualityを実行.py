@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2024/5/28 12:01:31 PM
+# 2025/6/10 11:25:39 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -105,6 +105,6 @@ if __name__ == '__main__':
     if interactive:
         exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
             '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam)
+    misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 0.1)
 
     rmObjects.removeInessentials()

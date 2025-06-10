@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # blockMeshを実行.py
 # by Yukiharu Iwamoto
-# 2021/6/30 11:19:34 AM
+# 2025/6/10 11:25:22 AM
 
 import os
 import sys
@@ -29,6 +29,6 @@ if __name__ == '__main__':
 
     exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
         '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam)
+    misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 0.1)
 
     rmObjects.removeInessentials()
