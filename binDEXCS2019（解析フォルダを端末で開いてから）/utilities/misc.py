@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2025/6/10 11:29:12 AM
+# 2025/6/10 3:21:59 PM
 
 import glob
 import os
@@ -61,7 +61,7 @@ def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
         subprocess.call('paraFoam', shell = True)
     setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0)
 
-def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0)
+def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0):
     paraview_json_home = os.path.expanduser('~/.config/ParaView/ParaView-UserSettings.json')
     with open(paraview_json_home, 'r') as f:
         s = f.read()
