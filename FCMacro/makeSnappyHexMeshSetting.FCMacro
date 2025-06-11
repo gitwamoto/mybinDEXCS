@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/10 9:53:53 PM
+# 2025/6/11 9:08:16 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -378,11 +378,10 @@ class MyController:
             QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
                 'LocationInMesh is required!\nSet LocationInMesh and try again.', QtGui.QMessageBox.Close)
             return
-        elif num_of_LocationInMesh > 1: # 共役熱伝導解析ではLocationInMeshが複数ある
-            if QtGui.QMessageBox.warning(self.sHMeshFrame, 'Multiple LocationInMesh',
-                '{} LocationInMesh exist. Is this correct?'.format(num_of_LocationInMesh),
-                QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.No:
-            return
+        elif num_of_LocationInMesh > 1 and QtGui.QMessageBox.warning(self.sHMeshFrame, 'Multiple LocationInMesh',
+            '{} LocationInMesh exist. Is this correct?'.format(num_of_LocationInMesh),
+            QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.No:
+            return # chtMultiRegionFoam（共役熱伝導解析）ではLocationInMeshが複数ある
         case_dir_path = self.sHMeshFrame.caseDirST.text()
         # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
         if not os.path.isdir(os.path.join(case_dir_path, 'constant')):
