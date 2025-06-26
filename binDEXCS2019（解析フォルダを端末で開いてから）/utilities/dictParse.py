@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2025/4/8 8:44:02 AM
+# 2025/6/17 5:57:50 PM
 
 import sys
 import os
@@ -361,62 +361,65 @@ class DictParser:
             f.write(str(x))
 
     def writeFile(self, file_name, x = None, indent = '', last_char = '\n'):
-        self.indent = indent
-        self.last_char = last_char
         if x is None:
             x = self.contents
         with open(file_name, 'w') as f:
-            self.writeContents(x, f)
+            self.writeContents(x, f, indent, last_char)
 
-    def writeContents(self, x, f):
+    def writeContents(self, x, f, indent = '', last_char = '\n'):
+        self.indent = indent
+        self.last_char = last_char
+        self.writeContent(x, f)
+
+    def writeContent(self, x, f):
         if type(x) is DictParserList:
             if x.type == DictParserList.BLOCK:
-                self.writeContents(x[:2], f)
-                self.writeContents('{', f)
+                self.writeContent(x[:2], f)
+                self.writeContent('{', f)
                 self.indent += '\t'
-                self.writeContents(x[2], f)
+                self.writeContent(x[2], f)
                 self.indent = self.indent[:-1]
-                self.writeContents('}', f)
+                self.writeContent('}', f)
             elif x.type == DictParserList.DICT:
-                self.writeContents(x[0], f)
+                self.writeContent(x[0], f)
                 if ((x[1] == '' or x[1][0] not in ' \t\r\n') and
                     (x[1] != '' or len(x[2]) > 0 or x[3] != '')):
                     f.write('\t')
                     self.last_char = '\t'
-                self.writeContents(x[1:], f)
-                self.writeContents(';', f)
+                self.writeContent(x[1:], f)
+                self.writeContent(';', f)
             elif x.type == DictParserList.LISTP:
                 if x[0] != '':
-                    self.writeContents(x[0], f)
+                    self.writeContent(x[0], f)
                     f.write(x[1] + '(')
                     self.last_char = '('
                 else:
-                    self.writeContents('(', f)
+                    self.writeContent('(', f)
                 self.indent += '\t'
-                self.writeContents(x[2], f)
+                self.writeContent(x[2], f)
                 self.indent = self.indent[:-1]
-                self.writeContents(')', f)
+                self.writeContent(')', f)
             elif x.type == DictParserList.LISTB:
-                self.writeContents('[', f)
+                self.writeContent('[', f)
                 self.indent += '\t'
-                self.writeContents(x[:], f)
+                self.writeContent(x[:], f)
                 self.indent = self.indent[:-1]
-                self.writeContents(']', f)
+                self.writeContent(']', f)
             elif x.type in (DictParserList.INCLUDE, DictParserList.INCLUDE_ETC, DictParserList.CALC):
-                self.writeContents('#include' if x.type == DictParserList.INCLUDE else
+                self.writeContent('#include' if x.type == DictParserList.INCLUDE else
                     ('#includeEtc' if x.type == DictParserList.INCLUDE_ETC else '#calc'), f)
-                self.writeContents(x[:], f)
+                self.writeContent(x[:], f)
         elif type(x) is list:
             for y in x:
-                self.writeContents(y, f)
+                self.writeContent(y, f)
         elif x != '':
             if self.last_char in '\r\n':
                 if x.strip() != '':
                     f.write(self.indent)
             elif self.last_char not in ' \t[{(' and x[0] not in ' \t\r\n]}):;,':
                 x = ' ' + x
-            if re.match('([ \\r\\n]*)/\*', x):
-                x = re.sub('([\\r\\n]+)(?!$)', '\\1' + self.indent, x)
+            if re.match(r'([ \r\n]*)/\*', x):
+                x = re.sub(r'([\r\n]+)(?!$)', r'\1' + self.indent, x)
             f.write(x)
             self.last_char = x[-1]
 
@@ -475,8 +478,8 @@ class DictParser:
                     s += self.indent
             elif self.last_char not in ' \t[{(' and x[0] not in ' \t\r\n]}):;,':
                 x = ' ' + x
-            if re.match('([ \\r\\n]*)/\*', x):
-                x = re.sub('([\\r\\n]+)(?!$)', '\\1' + self.indent, x)
+            if re.match(r'([ \r\n]*)/\*', x):
+                x = re.sub(r'([\r\n]+)(?!$)', r'\1' + self.indent, x)
             s += x
             self.last_char = x[-1]
         return s

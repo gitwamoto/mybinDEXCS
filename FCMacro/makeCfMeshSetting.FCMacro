@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/6 4:55:16 PM
+# 2025/6/17 8:31:15 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -215,7 +215,14 @@ class CfMeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParametersFromMeshDictContents(self, meshDict):
+    def setParamsFromMeshDict(self, meshDict_path):
+        try:
+            meshDict = DictParser(file_name = meshDict_path)
+            assert (meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                meshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                meshDict.getValueForKey(['FoamFile', 'object'])[0] == 'meshDict')
+        except:
+            raise Exception(meshDict_path + ' is not a meshDict file.')
         try:
             self.maxCellSizeCRL.setText(meshDict.getValueForKey(['maxCellSize'])[0])
         except:
@@ -297,6 +304,7 @@ class CfMeshFrame(QtGui.QDialog):
             pass
         for i in remainder:
             self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'N/A')
+        return meshDict
 
     def actionOnExitButton(self):
         self.close()
@@ -421,29 +429,17 @@ class MyController:
 
     def actionOnLoadButton(self):
         case_dir_path = self.cfMeshFrame.caseDirST.text()
-        if os.path.isdir(case_dir_path):
-            file_name = QtGui.QFileDialog.getOpenFileName(self.cfMeshFrame, 'Choose a meshDict file.',
-                os.path.join(case_dir_path, 'system'))[0]
-            if file_name == '':
-                return
-            try:
-                self.meshDict = DictParser(file_name = file_name)
-                if (self.meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
-                    self.meshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
-                    self.meshDict.getValueForKey(['FoamFile', 'object'])[0] == 'meshDict'):
-                    self.cfMeshFrame.setParametersFromMeshDictContents(self.meshDict)
-                else:
-                    self.meshDict = None
-                    QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error',
-                        file_name + ' is not a meshDict file.', QtGui.QMessageBox.Close)
-            except:
-                self.meshDict = None
-                QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error',
-                    file_name + ' is not a meshDict file.', QtGui.QMessageBox.Close)
+        if not os.path.isdir(case_dir_path):
+            return
+        try:
+            self.meshDict = self.cfMeshFrame.setParamsFromMeshDict(
+                os.path.join(case_dir_path, 'system', 'meshDict'))
+        except Exception as e:
+            self.meshDict = None
+            QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error', str(e), QtGui.QMessageBox.Close)
 
     def actionOnEditButton(self):
-        case_dir_path = self.cfMeshFrame.caseDirST.text()
-        meshDict_path = os.path.join(case_dir_path, 'system', 'meshDict')
+        meshDict_path = os.path.join(self.cfMeshFrame.caseDirST.text(), 'system', 'meshDict')
         if not os.path.isfile(meshDict_path):
             QtGui.QMessageBox.warning(self.cfMeshFrame, 'No meshDict',
                 "File system/meshDict doesn't exist.", QtGui.QMessageBox.Close)
@@ -559,11 +555,10 @@ class MyModel:
             except:
                 f.write('\toptimiseLayer\t1; // 1 active or 0 inactive\n')
             try:
-                x = meshDict.getValueForKey(['boundaryLayers'])
-                for y in x:
-                    if DictParserList.isType(y, DictParserList.DICT) and y.key() != 'optimiseLayer':
+                for x in meshDict.getValueForKey(['boundaryLayers']):
+                    if DictParserList.isType(x, DictParserList.DICT) and x.key() != 'optimiseLayer':
                         f.write('\n')
-                        meshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -583,12 +578,11 @@ class MyModel:
             except:
                 f.write('\t\trelThicknessTol\t0.2;\n')
             try:
-                x = meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters'])
-                for y in x:
-                    if (DictParserList.isType(y, DictParserList.DICT) and
-                        y.key() not in ['featureSizeFactor', 'relThicknessTol']):
+                for x in meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters']):
+                    if (DictParserList.isType(x, DictParserList.DICT) and
+                        x.key() not in ['featureSizeFactor', 'relThicknessTol']):
                         f.write('\n')
-                        meshDict.writeContents(y, f, indent = '\t\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -701,11 +695,10 @@ class MyModel:
                         f.write('\t}\n')
                         break
             try:
-                x = meshDict.getValueForKey(['objectRefinements'])
-                for y in x:
-                    if DictParserList.isType(y, DictParserList.BLOCK) and y.key() not in objects:
+                for x in meshDict.getValueForKey(['objectRefinements']):
+                    if DictParserList.isType(x, DictParserList.BLOCK) and x.key() not in objects:
                         f.write('\n')
-                        meshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -772,11 +765,10 @@ class MyModel:
                     f.write('\t\trefinementThickness\t' + str(i[grid.RATIO]) + ';\n')
                     f.write('\t}\n')
             try:
-                x = meshDict.getValueForKey(['surfaceMeshRefinement'])
-                for y in x:
-                    if DictParserList.isType(y, DictParserList.BLOCK) and y.key() not in objects:
+                for x in meshDict.getValueForKey(['surfaceMeshRefinement']):
+                    if DictParserList.isType(x, DictParserList.BLOCK) and x.key() not in objects:
                         f.write('\n')
-                        meshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass

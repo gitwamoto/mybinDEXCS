@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/11 9:08:16 AM
+# 2025/6/26 2:52:23 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -71,7 +71,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
             combo = QtGui.QComboBox()
             combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
                             'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                            'LocationInMesh', 'N/A'])
+                            'LocationInMesh', 'N/A', 'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'])
             self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
             self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
             combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
@@ -216,7 +216,34 @@ class SHMeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParametersFromSHMeshDictContents(self, sHMeshDict):
+    def setParamsFromSHMeshDict(self, sHMeshDict_path, setFieldsDict_path, topoSetDict_path):
+        try:
+            sHMeshDict = DictParser(file_name = sHMeshDict_path)
+            assert (sHMeshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                sHMeshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                sHMeshDict.getValueForKey(['FoamFile', 'object'])[0] == 'snappyHexMeshDict')
+        except:
+            raise Exception(sHMeshDict_path + ' is not a snappyHexMeshDict file.')
+        if os.path.isfile(setFieldsDict_path):
+            try:
+                setFieldsDict = DictParser(file_name = setFieldsDict_path)
+                assert (setFieldsDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                    setFieldsDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                    setFieldsDict.getValueForKey(['FoamFile', 'object'])[0] == 'setFieldsDict')
+            except:
+                raise Exception(setFieldsDict_path + ' is not a setFieldsDict file.')
+        else:
+            setFieldsDict = None
+        if os.path.isfile(topoSetDict_path):
+            try:
+                topoSetDict = DictParser(file_name = topoSetDict_path)
+                assert (topoSetDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                    topoSetDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                    topoSetDict.getValueForKey(['FoamFile', 'object'])[0] == 'topoSetDict')
+            except:
+                raise Exception(topoSetDict_path + ' is not a topoSetDict file.')
+        else:
+            topoSetDict = None
         try:
             self.maxCellSizeCRL.setText(sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])[0])
         except:
@@ -293,15 +320,45 @@ class SHMeshFrame(QtGui.QDialog):
                                 self.grid.setCellValue(i, self.grid.RATIO, y.value()[0].value()[0].value()[0])
         except:
             pass
+        try:
+            for x in setFieldsDict.getValueForKey(['regions']):
+                if DictParserList.isType(x, DictParserList.LISTP):
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' in y[1].lower():
+                            for i, j in enumerate(objects):
+                                if j in y[1]:
+                                    remainder.remove(j)
+                                    if y.key() == 'boxToCell':
+                                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
+                                    elif y.key() == 'cylinderToCell':
+                                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
+                                    else:
+                                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
+                                    break
+        except:
+            pass
+        try:
+            for x in topoSetDict.getValueForKey(['actions']):
+                if DictParserList.isType(x, DictParserList.LISTP):
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.BLOCK):
+                            for z in y.value():
+                                if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
+                                    for i, j in enumerate(objects):
+                                        if z.value()[0] in (j, j + 'CellSet'):
+                                            remainder.remove(j)
+                                            self.grid.setCellValue(i, self.grid.TYPE, 'BoxTopo')
+                                            break
+        except:
+            pass
         for i in remainder:
             self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'LocationInMesh')
         name += '_'
-        lname = len(name)
         try:
             for x in sHMeshDict.getValueForKey(['addLayersControls', 'layers']):
                 if (DictParserList.isType(x, DictParserList.BLOCK) and x.key().startswith(name) and
-                    x.key()[lname:] in objects):
-                    i = objects.index(x.key()[lname:])
+                    x.key()[len(name):] in objects):
+                    i = objects.index(x.key()[len(name):])
                     for y in x.value():
                         if DictParserList.isType(y, DictParserList.DICT):
                             if y.key() == 'nSurfaceLayers':
@@ -311,8 +368,10 @@ class SHMeshFrame(QtGui.QDialog):
                                 self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
         except:
             pass
+
         QtGui.QMessageBox.warning(self, 'LocationInMesh',
             'Confirm that LocationInMesh is selected correctly!', QtGui.QMessageBox.Close)
+        return sHMeshDict, setFieldsDict, topoSetDict
 
     def actionOnExitButton(self):
         self.close()
@@ -329,7 +388,7 @@ class MyController:
         import Part
         self.doc = App.ActiveDocument
         self.model = MyModel()
-        self.sHMeshDict = None
+        self.sHMeshDict = self.setFieldsDict = self.topoSetDict = None
         if self.doc.FileName == '':
             QtGui.QMessageBox.critical(None, 'Error',
                 'This document has never been saved. Save the document and retry.', QtGui.QMessageBox.Close)
@@ -423,6 +482,14 @@ class MyController:
             grid = self.sHMeshFrame.grid,
             featureAngle = self.sHMeshFrame.featureAngleCRL.text(),
             sHMeshDict = self.sHMeshDict)
+        self.model.makeSetFieldsDict(case_dir_path = case_dir_path,
+            freecad_objects = self.doc.Objects,
+            grid = self.sHMeshFrame.grid,
+            setFieldsDict = self.setFieldsDict)
+        self.model.makeTopoSetDict(case_dir_path = case_dir_path,
+            freecad_objects = self.doc.Objects,
+            grid = self.sHMeshFrame.grid,
+            topoSetDict = self.topoSetDict)
         QtGui.QMessageBox.information(self.sHMeshFrame, 'Done',
             'File system/snappyHexMeshDict for snappyHexMesh has been created.', QtGui.QMessageBox.Close)
 
@@ -442,63 +509,49 @@ class MyController:
             os.chdir(cwd)
 
     def actionOnExtrudeMeshButton(self):
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
         if QtGui.QMessageBox.question(self.sHMeshFrame, '2D by extrudeMesh',
             'Really exicute extrudeMesh to generate a two-dimensional mesh?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
-            os.chdir(case_dir_path)
+            os.chdir(self.sHMeshFrame.caseDirST.text())
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
                 os.path.join(path_binDEXCS, '2次元メッシュに.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnImproveMeshQualityButton(self):
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
         if QtGui.QMessageBox.question(self.sHMeshFrame, 'improveMeshQuality',
             'Really exicute improveMeshQuality?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
-            os.chdir(case_dir_path)
+            os.chdir(self.sHMeshFrame.caseDirST.text())
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
                 os.path.join(path_binDEXCS, 'improveMeshQualityを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnFlattenPatchButton(self):
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
         if QtGui.QMessageBox.question(self.sHMeshFrame, 'Flatten patch',
             'Really flatten patch?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
-            os.chdir(case_dir_path)
+            os.chdir(self.sHMeshFrame.caseDirST.text())
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
                 os.path.join(path_binDEXCS, 'patchを平面に.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnLoadButton(self):
         case_dir_path = self.sHMeshFrame.caseDirST.text()
-        if os.path.isdir(case_dir_path):
-            file_name = QtGui.QFileDialog.getOpenFileName(self.sHMeshFrame, 'Choose a snappyHexMeshDict file.',
-                os.path.join(case_dir_path, 'system'))[0]
-            if file_name == '':
-                return
-            try:
-                self.sHMeshDict = DictParser(file_name = file_name)
-                if (self.sHMeshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
-                    self.sHMeshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
-                    self.sHMeshDict.getValueForKey(['FoamFile', 'object'])[0] == 'snappyHexMeshDict'):
-                    self.sHMeshFrame.setParametersFromSHMeshDictContents(self.sHMeshDict)
-                else:
-                    self.sHMeshDict = None
-                    QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
-                        file_name + ' is not a snappyHexMeshDict file.', QtGui.QMessageBox.Close)
-            except:
-                self.sHMeshDict = None
-                QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
-                    file_name + ' is not a snappyHexMeshDict file.', QtGui.QMessageBox.Close)
+        if not os.path.isdir(case_dir_path):
+            return
+        try:
+            self.sHMeshDict, self.setFieldsDict, self.topoSetDict = self.sHMeshFrame.setParamsFromSHMeshDict(
+                os.path.join(case_dir_path, 'system', 'snappyHexMeshDict'),
+                os.path.join(case_dir_path, 'system', 'setFieldsDict'),
+                os.path.join(case_dir_path, 'system', 'topoSetDict'))
+        except Exception as e:
+            QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error', str(e), QtGui.QMessageBox.Close)
 
     def actionOnEditButton(self):
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
-        sHMeshDict_path = os.path.join(case_dir_path, 'system', 'snappyHexMeshDict')
+        sHMeshDict_path = os.path.join(self.sHMeshFrame.caseDirST.text(), 'system', 'snappyHexMeshDict')
         if not os.path.isfile(sHMeshDict_path):
             QtGui.QMessageBox.warning(self.sHMeshFrame, 'No snappyHexMeshDict',
                 "File system/snappyHexMeshDict doesn't exist.", QtGui.QMessageBox.Close)
@@ -536,7 +589,8 @@ class MyModel:
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
             for i in grid.table:
-                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'LocationInMesh', 'N/A'):
+                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'LocationInMesh', 'N/A',
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'):
                     continue
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
@@ -666,12 +720,11 @@ class MyModel:
                     f.write('\t\tgap\t0;\n')
                     f.write('\t}\n')
             try:
-                x = sHMeshDict.getValueForKey(['geometry'])
-                for y in x:
-                    if (DictParserList.isType(y, DictParserList.BLOCK) and
-                        y.key() != surface_file_name and re.sub(r'\.stl$', '', y.key()) not in objects):
+                for x in sHMeshDict.getValueForKey(['geometry']):
+                    if (DictParserList.isType(x, DictParserList.BLOCK) and
+                        x.key() != surface_file_name and re.sub(r'\.stl$', '', x.key()) not in objects):
                         f.write('\n')
-                        sHMeshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -757,7 +810,8 @@ class MyModel:
             f.write('\t\t\tregions\n\t\t\t{\n');
             for i in grid.table:
                 if i[grid.TYPE] not in (
-                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A',
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'):
                     f.write('\t\t\t\t' + i[grid.OBJECT_NAME] + '\n\t\t\t\t{\n')
                     f.write('\t\t\t\t\tlevel\t({} {}); // (min max)\n'.format(i[grid.LEVEL], i[grid.LEVEL] + 1))
                     f.write('\t\t\t\t\tpatchInfo\t{type\t' + i[grid.TYPE] + ';}\n\t\t\t\t}\n')
@@ -784,13 +838,12 @@ class MyModel:
                 f.write('\t\t}\n')
                 first = False
             try:
-                x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions'])
-                for y in x:
-                    if (DictParserList.isType(y, DictParserList.BLOCK) and
-                        y.key() != surface_file_name and y.key() not in objects):
+                for x in sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
+                    if (DictParserList.isType(x, DictParserList.BLOCK) and
+                        x.key() != surface_file_name and x.key() not in objects):
                         if not first:
                             f.write('\n')
-                        sHMeshDict.writeContents(y, f, indent = '\t\t', last_char = '\n')
+                        sHMeshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
                         f.write('\n')
                         first = False
             except:
@@ -825,14 +878,13 @@ class MyModel:
             except:
                 f.write('\tallowFreeStandingZoneFaces\ttrue;\n')
             try:
-                x = sHMeshDict.getValueForKey(['castellatedMeshControls'])
-                for y in x:
-                    if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        y.key() not in ('maxLocalCells', 'maxGlobalCells', 'minRefinementCells',
+                for x in sHMeshDict.getValueForKey(['castellatedMeshControls']):
+                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                        x.key() not in ('maxLocalCells', 'maxGlobalCells', 'minRefinementCells',
                         'nCellsBetweenLevels', 'features', 'refinementSurfaces', 'resolveFeatureAngle',
                         'refinementRegions', 'locationInMesh', 'locationsInMesh', 'allowFreeStandingZoneFaces')):
                         f.write('\n')
-                        sHMeshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -882,13 +934,12 @@ class MyModel:
             except:
                 f.write('\tnFeatureSnapIter\t10;\n')
             try:
-                x = sHMeshDict.getValueForKey(['snapControls'])
-                for y in x:
-                    if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        y.key() not in ('nSmoothPatch', 'nSmoothInternal', 'tolerance',
+                for x in sHMeshDict.getValueForKey(['snapControls']):
+                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                        x.key() not in ('nSmoothPatch', 'nSmoothInternal', 'tolerance',
                         'nSolveIter', 'nRelaxIter', 'nFeatureSnapIter')):
                         f.write('\n')
-                        sHMeshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -901,18 +952,18 @@ class MyModel:
             f.write('\tlayers\n\t{\n')
             for i in grid.table:
                 if not i[grid.BOUNDARY_LAYER] or i[grid.TYPE] in (
-                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A'):
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A',
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'):
                     continue
                 f.write('\t\t' + surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
                 f.write('\t\t\tnSurfaceLayers\t{};\n'.format(i[grid.N_LAYERS]))
                 f.write('\t\t\texpansionRatio\t{};\n'.format(i[grid.RATIO]))
                 try:
-                    x = sHMeshDict.getValueForKey(['addLayersControls', 'layers',
-                        surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME]])
-                    for y in x:
-                        if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
-                            y.key() not in ('nSurfaceLayers', 'expansionRatio')):
-                            sHMeshDict.writeContents(y, f, indent = '\t\t\t', last_char = '\n')
+                    for x in sHMeshDict.getValueForKey(['addLayersControls', 'layers',
+                        surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME]]):
+                        if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                            x.key() not in ('nSurfaceLayers', 'expansionRatio')):
+                            sHMeshDict.writeContents(x, f, indent = '\t\t\t', last_char = '\n')
                             f.write('\n')
                 except:
                     pass
@@ -1008,16 +1059,15 @@ class MyModel:
             except:
                 f.write('\tnRelaxedIter\t50;\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls'])
-                for y in x:
-                    if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        y.key() not in ('relativeSizes', 'layers', 'expansionRatio', 'finalLayerThickness',
+                for x in sHMeshDict.getValueForKey(['addLayersControls']):
+                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                        x.key() not in ('relativeSizes', 'layers', 'expansionRatio', 'finalLayerThickness',
                             'minThickness', 'nGrow', 'featureAngle', 'nRelaxIter', 'nSmoothSurfaceNormals',
                             'nSmoothNormals', 'nSmoothThickness', 'maxFaceThicknessRatio',
                             'maxThicknessToMedialRatio', 'minMedialAxisAngle', 'nBufferCellsNoExtrude',
                             'nLayerIter', 'nRelaxedIter')):
                         f.write('\n')
-                        sHMeshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -1036,11 +1086,10 @@ class MyModel:
             except:
                 f.write('\t\tmaxNonOrtho\t75;\n')
                 try:
-                    x = sHMeshDict.getValueForKey(['meshQualityControls', 'relaxed'])
-                    for y in x:
-                        if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
-                            y.key() != 'maxNonOrtho'):
-                            sHMeshDict.writeContents(y, f, indent = '\t\t', last_char = '\n')
+                    for x in sHMeshDict.getValueForKey(['meshQualityControls', 'relaxed']):
+                        if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                            x.key() != 'maxNonOrtho'):
+                            sHMeshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
                             f.write('\n')
                 except:
                     pass
@@ -1059,12 +1108,11 @@ class MyModel:
             except:
                 f.write('\terrorReduction\t0.75;\n')
             try:
-                x = sHMeshDict.getValueForKey(['meshQualityControls'])
-                for y in x:
-                    if (DictParserList.isType(y, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        y.key() not in ('nSmoothScale', 'relaxed', 'errorReduction')):
+                for x in sHMeshDict.getValueForKey(['meshQualityControls']):
+                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                        x.key() not in ('nSmoothScale', 'relaxed', 'errorReduction')):
                         f.write('\n')
-                        sHMeshDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -1085,6 +1133,163 @@ class MyModel:
                             'meshQualityControls', 'mergeTolerance')):
                         f.write('\n')
                         sHMeshDict.writeContents(x, f, indent = '', last_char = '\n')
+                        f.write('\n')
+            except:
+                pass
+        os.chmod(dict_name, 0o0666)
+
+    def makeSetFieldsDict(self, case_dir_path, freecad_objects, grid, setFieldsDict):
+        has_set = False
+        for i in grid.table:
+            if i[grid.TYPE] in ('BoxSet', 'CylinderSet', 'SphereSet'):
+                has_set = True
+                break
+        if not has_set:
+            return
+        dict_name = os.path.join(case_dir_path, 'system', 'setFieldsDict')
+        if os.path.isfile(dict_name):
+            shutil.copy(dict_name, dict_name + '_bak')
+        with open(dict_name, 'w') as f:
+            f.write('FoamFile\n{')
+            f.write('\n\tversion\t2.0;\n')
+            f.write('\tformat\tascii;\n')
+            f.write('\tclass\tdictionary;\n')
+            f.write('\tlocation\t"system";\n')
+            f.write('\tobject\tsetFieldsDict;\n')
+            f.write('}\n\n') # FoamFile
+            try:
+                setFieldsDict.writeContents(setFieldsDict.getDPLForKey(['defaultFieldValues']),
+                    f, indent = '', last_char = '\n')
+            except:
+                f.write('defaultFieldValues // regionsで指定しない領域における値\n(\n')
+                f.write('\tvolScalarFieldValue\talpha.water 0 // ←自分の目的に合わせて書き換える\n')
+                f.write('\tvolVectorFieldValue\tU ( 0 0 0 ) // ←自分の目的に合わせて書き換える\n);')
+            f.write('\n\nregions\n(\n')
+            for i in grid.table:
+                if i[grid.TYPE] not in ('BoxSet', 'CylinderSet', 'SphereSet'):
+                    continue
+                for obj in freecad_objects:
+                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                        if i[grid.TYPE] == 'BoxSet':
+                            f.write('\tboxToCell // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                            f.write('\t{\n')
+                            f.write('\t\tbox\t({} {} {}) ({} {} {});\n'.format(
+                                obj.Shape.BoundBox.XMin, obj.Shape.BoundBox.YMin, obj.Shape.BoundBox.ZMin,
+                                obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.ZMax))
+                        elif i[grid.TYPE] == 'CylinderSet':
+                            f.write('\tcylinderToCell // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                            f.write('\t{\n')
+                            f.write('\t\tp1\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tp2\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
+                                    obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
+                                    obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
+                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                        else: # SphereSet
+                            f.write('\tsphereToCell // Object {} in FreeCAD'.format(i[grid.OBJECT_NAME]))
+                            f.write('\n\t{\n')
+                            f.write('\t\tcentre\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                        f.write('\t\tfieldValues\n\t\t(\n')
+                        f.write('\t\t\tvolScalarFieldValue alpha.water 1 // ←自分の目的に合わせて書き換える\n')
+                        f.write('\t\t);\n') # fieldValues
+                        f.write('\t}\n') # boxToCell, cylinderToCell, sphereToCell
+            try:
+                for x in setFieldsDict.getValueForKey(['regions']):
+                    if DictParserList.isType(x, DictParserList.LISTP):
+                        for y in x.value():
+                            if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' not in y[1].lower():
+                                setFieldsDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                                f.write('\n')
+            except:
+                pass
+            f.write(');\n') # regions
+            try:
+                for x in setFieldsDict.contents:
+                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                        x.key() not in ('FoamFile', 'defaultFieldValues', 'regions')):
+                        f.write('\n')
+                        setFieldsDict.writeContents(x, f, indent = '', last_char = '\n')
+                        f.write('\n')
+            except:
+                pass
+        os.chmod(dict_name, 0o0666)
+
+    def makeTopoSetDict(self, case_dir_path, freecad_objects, grid, topoSetDict):
+        has_topo = False
+        for i in grid.table:
+            if i[grid.TYPE] == 'BoxTopo':
+                has_topo = True
+                break
+        if not has_topo:
+            return
+        dict_name = os.path.join(case_dir_path, 'system', 'topoSetDict')
+        if os.path.isfile(dict_name):
+            shutil.copy(dict_name, dict_name + '_bak')
+        with open(dict_name, 'w') as f:
+            f.write('FoamFile\n{')
+            f.write('\n\tversion\t2.0;\n')
+            f.write('\tformat\tascii;\n')
+            f.write('\tclass\tdictionary;\n')
+            f.write('\tlocation\t"system";\n')
+            f.write('\tobject\ttopoSetDict;\n')
+            f.write('}\n') # FoamFile
+            f.write('\nactions\n(\n')
+            for i in grid.table:
+                if i[grid.TYPE] != 'BoxTopo':
+                    continue
+                for obj in freecad_objects:
+                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                        f.write('\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t\tname\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t\ttype\tcellSet;\n')
+                        f.write('\t\taction\tnew;\n')
+                        f.write('\t\tsource\mi;\n')
+                        f.write('\t\torigin\t({} {} {});\n'.format(
+                                obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                        f.write('\t\ti\t({} {} {});\n'.format(
+                                obj.Length.Value*obj.Placement.Matrix.A11, obj.Length.Value*obj.Placement.Matrix.A21,
+                                obj.Length.Value*obj.Placement.Matrix.A31))
+                        f.write('\t\tj\t({} {} {});\n'.format(
+                                obj.Width.Value*obj.Placement.Matrix.A12, obj.Width.Value*obj.Placement.Matrix.A22,
+                                obj.Width.Value*obj.Placement.Matrix.A32))
+                        f.write('\t\tk\t({} {} {});\n'.format(
+                                obj.Height.Value*obj.Placement.Matrix.A13, obj.Height.Value*obj.Placement.Matrix.A23,
+                                obj.Height.Value*obj.Placement.Matrix.A33))
+                        f.write('\t}}\n\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t\ttype\tcellZoneSet;\n')
+                        f.write('\t\taction\tnew;\n')
+                        f.write('\t\tsource\tsetToCellZone;\n')
+                        f.write('\t\tset\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t}\n')
+            try:
+                for x in topoSetDict.getValueForKey(['actions']):
+                    if DictParserList.isType(x, DictParserList.LISTP):
+                        for y in x.value():
+                            if DictParserList.isType(y, DictParserList.BLOCK):
+                                for z in y.value():
+                                    if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
+                                        freecad_object = False
+                                        for i in grid.table:
+                                            if z.value()[0] in (i[grid.OBJECT_NAME], i[grid.OBJECT_NAME] + 'CellSet'):
+                                                freecad_object = True
+                                                break
+                                        if not freecad_object:
+                                            topoSetDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                                            f.write('\n')
+                                            break
+            except:
+                pass
+            f.write(');\n') # actions
+            try:
+                for x in topoSetDict.contents:
+                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
+                        x.key() not in ('FoamFile', 'actions')):
+                        f.write('\n')
+                        topoSetDict.writeContents(x, f, indent = '', last_char = '\n')
                         f.write('\n')
             except:
                 pass
