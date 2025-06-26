@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/26 2:52:23 PM
+# 2025/6/26 3:16:12 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -71,7 +71,8 @@ class FreeCadFileGrid(QtGui.QTableWidget):
             combo = QtGui.QComboBox()
             combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
                             'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                            'LocationInMesh', 'N/A', 'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'])
+                            'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo',
+                            'LocationInMesh', 'N/A'])
             self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
             self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
             combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
@@ -589,8 +590,8 @@ class MyModel:
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
             for i in grid.table:
-                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'LocationInMesh', 'N/A',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'):
+                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine',
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'LocationInMesh', 'N/A'):
                     continue
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
@@ -810,8 +811,8 @@ class MyModel:
             f.write('\t\t\tregions\n\t\t\t{\n');
             for i in grid.table:
                 if i[grid.TYPE] not in (
-                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'):
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'LocationInMesh', 'N/A'):
                     f.write('\t\t\t\t' + i[grid.OBJECT_NAME] + '\n\t\t\t\t{\n')
                     f.write('\t\t\t\t\tlevel\t({} {}); // (min max)\n'.format(i[grid.LEVEL], i[grid.LEVEL] + 1))
                     f.write('\t\t\t\t\tpatchInfo\t{type\t' + i[grid.TYPE] + ';}\n\t\t\t\t}\n')
@@ -952,8 +953,8 @@ class MyModel:
             f.write('\tlayers\n\t{\n')
             for i in grid.table:
                 if not i[grid.BOUNDARY_LAYER] or i[grid.TYPE] in (
-                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'LocationInMesh', 'N/A',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo'):
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'LocationInMesh', 'N/A'):
                     continue
                 f.write('\t\t' + surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
                 f.write('\t\t\tnSurfaceLayers\t{};\n'.format(i[grid.N_LAYERS]))
