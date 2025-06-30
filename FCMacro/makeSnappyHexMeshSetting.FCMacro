@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/26 3:16:12 PM
+# 2025/6/30 6:17:43 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -544,7 +544,8 @@ class MyController:
         if not os.path.isdir(case_dir_path):
             return
         try:
-            self.sHMeshDict, self.setFieldsDict, self.topoSetDict = self.sHMeshFrame.setParamsFromSHMeshDict(
+            self.sHMeshDict, self.setFieldsDict, self.topoSetDict = \
+            self.sHMeshFrame.setParamsFromSHMeshDict(
                 os.path.join(case_dir_path, 'system', 'snappyHexMeshDict'),
                 os.path.join(case_dir_path, 'system', 'setFieldsDict'),
                 os.path.join(case_dir_path, 'system', 'topoSetDict'))
@@ -810,12 +811,13 @@ class MyModel:
             f.write('\t\t\tlevel\t(0 1); // (min max)\n');
             f.write('\t\t\tregions\n\t\t\t{\n');
             for i in grid.table:
-                if i[grid.TYPE] not in (
+                if i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
                     'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'LocationInMesh', 'N/A'):
-                    f.write('\t\t\t\t' + i[grid.OBJECT_NAME] + '\n\t\t\t\t{\n')
-                    f.write('\t\t\t\t\tlevel\t({} {}); // (min max)\n'.format(i[grid.LEVEL], i[grid.LEVEL] + 1))
-                    f.write('\t\t\t\t\tpatchInfo\t{type\t' + i[grid.TYPE] + ';}\n\t\t\t\t}\n')
+                    continue
+                f.write('\t\t\t\t' + i[grid.OBJECT_NAME] + '\n\t\t\t\t{\n')
+                f.write('\t\t\t\t\tlevel\t({} {}); // (min max)\n'.format(i[grid.LEVEL], i[grid.LEVEL] + 1))
+                f.write('\t\t\t\t\tpatchInfo\t{type\t' + i[grid.TYPE] + ';}\n\t\t\t\t}\n')
             f.write('\t\t\t}\n')
             f.write('\t\t}\n')
             f.write('\t}\n') # refinementSurfaces
