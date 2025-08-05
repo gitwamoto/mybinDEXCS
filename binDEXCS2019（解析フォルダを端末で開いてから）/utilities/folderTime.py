@@ -2,36 +2,28 @@
 # -*- coding: utf-8 -*-
 # folderTime.py
 # by Yukiharu Iwamoto
-# 2021/3/13 10:14:57 PM
+# 2025/8/5 2:44:02 PM
 
 import os
 import glob
 
 def firstTime(path = os.curdir):
-    s = 'inf'
-    t = float(s)
-    for d in glob.iglob(os.path.join(path, '*' + os.sep)):
-        d = os.path.basename(os.path.dirname(d))
-        try:
-            fd = float(d)
-            if t > fd:
-                t, s = fd, d
-        except:
-            pass
-    return None if s == 'inf' else s
+    t = timesFolders(path)
+    return None if len(t) == 0 else t[0]
 
 def latestTime(path = os.curdir):
-    s = '-inf'
-    t = float(s)
+    t = timesFolders(path)
+    return None if len(t) == 0 else t[-1]
+
+def timesFolders(path = os.curdir):
+    t = []
     for d in glob.iglob(os.path.join(path, '*' + os.sep)):
         d = os.path.basename(os.path.dirname(d))
         try:
-            fd = float(d)
-            if t < fd:
-                t, s = fd, d
+            t.append([d, float(d)])
         except:
             pass
-    return None if s == '-inf' else s
+    return [i[0] for i in sorted(t, key = lambda x: x[1])] 
 
 if __name__ == '__main__':
     print('firstTime = ' + firstTime())
