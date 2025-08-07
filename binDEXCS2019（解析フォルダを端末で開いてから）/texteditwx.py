@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 # texteditwx.py
 # by Yukiharu Iwamoto
-# 2025/7/7 11:25:51 AM
+# 2025/8/7 9:14:04 PM
 
-version = '2025/7/7 11:25:51 AM'
+version = '2025/8/7 9:14:04 PM'
 
 import sys
 
@@ -583,7 +583,9 @@ class Maxima(object):
                     if m:
                         if debug:
                             print('        following operator = "{}"'.format(m[0]))
-                        if not r.endswith('%e^-') and (last_priority <= inside_priority >= priority[m[0]] or
+                        if not r.endswith('%e^-') and (
+                            (last_priority == priority['initial value'] or last_priority <= inside_priority) and
+                            inside_priority >= priority[m[0]] or
                             inside_priority == priority['*'] and m[0] == '/'): # conversion (a*b)/c = a*b/c is done here
                             r += inside + s[:m.end()]
                         else: # append parentheses in the case of %e^-(a*b)
