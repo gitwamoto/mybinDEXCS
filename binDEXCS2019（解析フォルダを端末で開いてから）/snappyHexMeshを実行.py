@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:04:46 PM
+# 2025/9/14 7:16:50 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -318,8 +318,15 @@ if __name__ == '__main__':
                 shutil.rmtree(i)
         if os.path.isdir('0'):
             shutil.move('0', '0_bak')
-        command = 'splitMeshRegions -cellZones -overwrite'
+        command = 'splitMeshRegions -cellZones -overwrite' 
         if subprocess.call(command, shell = True) != 0:
+            # 0
+            # +-- regionA
+            # |   +-- cellToregion
+            # +-- regionB
+            # |   +-- cellToregion
+            # :
+            # +-- cellToregion
             print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
             sys.exit(1)
         regions = []
