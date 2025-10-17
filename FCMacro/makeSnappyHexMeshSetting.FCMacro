@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/10/17 11:14:24 AM
+# 2025/10/17 2:45:17 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -564,7 +564,8 @@ class MyController:
             os.system('gedit ' + sHMeshDict_path)
 
 class MyModel:
-    def threeEdgesOfCadObjects(self, freecad_objects):
+    @staticmethod
+    def sumOfThreeEdgesOfCadObjects(self, freecad_objects):
         xmin = ymin = zmin = float('inf')
         xmax = ymax = zmax = float('-inf')
         for obj in freecad_objects:
@@ -578,10 +579,6 @@ class MyModel:
                     zmax = max(zmax, obj.Shape.BoundBox.ZMax)
             except:
                 pass
-        return xmin, ymin, zmin, xmax, ymax, zmax
-
-    def sumOfThreeEdgesOfCadObjects(self, freecad_objects):
-        xmin, ymin, zmin, xmax, ymax, zmax = self.threeEdgesOfCadObjects(freecad_objects)
         return xmax - xmin + ymax - ymin + zmax - zmin
 
     @staticmethod
