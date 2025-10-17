@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/17 8:31:15 PM
+# 2025/10/17 11:14:48 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -470,7 +470,8 @@ class MyModel:
         xmin, ymin, zmin, xmax, ymax, zmax = self.threeEdgesOfCadObjects(freecad_objects)
         return xmax - xmin + ymax - ymin + zmax - zmin
 
-    def exportStl(self, freecad_objects, grid, file_name):
+    @staticmethod
+    def exportStl(freecad_objects, grid, file_name):
         tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
         dir_name = os.path.dirname(file_name)
         with open(file_name, 'w') as f:
@@ -495,7 +496,8 @@ class MyModel:
                             os.remove(tmp_stl)
                         break
 
-    def makeMeshDict(self, case_dir_path, surface_file_name, max_cell_size, min_cell_size,
+    @staticmethod
+    def makeMeshDict(case_dir_path, surface_file_name, max_cell_size, min_cell_size,
         freecad_objects, grid, featureAngle, meshDict):
         dict_name = os.path.join(case_dir_path, 'system', 'meshDict')
         if os.path.isfile(dict_name):

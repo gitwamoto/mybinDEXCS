@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/6/30 6:17:43 PM
+# 2025/10/17 11:14:24 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -584,7 +584,8 @@ class MyModel:
         xmin, ymin, zmin, xmax, ymax, zmax = self.threeEdgesOfCadObjects(freecad_objects)
         return xmax - xmin + ymax - ymin + zmax - zmin
 
-    def exportStl(self, freecad_objects, grid, file_name):
+    @staticmethod
+    def exportStl(freecad_objects, grid, file_name):
         tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
         dir_name = os.path.dirname(file_name)
         xmin = ymin = zmin = float('inf')
@@ -617,7 +618,8 @@ class MyModel:
                         break
         return xmin, ymin, zmin, xmax, ymax, zmax
 
-    def makeSurfFeatExtDict(self, case_dir_path, surface_file_name, featureAngle):
+    @staticmethod
+    def makeSurfFeatExtDict(case_dir_path, surface_file_name, featureAngle):
         dict_name = os.path.join(case_dir_path, 'system', 'surfaceFeatureExtractDict')
         with open(dict_name, 'w') as f:
             f.write('FoamFile\n{')
@@ -640,7 +642,8 @@ class MyModel:
             f.write('\twriteObj\tyes;\n}\n')
         os.chmod(dict_name, 0o0666)
 
-    def makeSHMeshDict(self, case_dir_path, surface_file_name, max_cell_size, bounding_box, features_level,
+    @staticmethod
+    def makeSHMeshDict(case_dir_path, surface_file_name, max_cell_size, bounding_box, features_level,
         freecad_objects, grid, featureAngle, sHMeshDict):
         dict_name = os.path.join(case_dir_path, 'system', 'snappyHexMeshDict')
         if os.path.isfile(dict_name):
@@ -1141,7 +1144,8 @@ class MyModel:
                 pass
         os.chmod(dict_name, 0o0666)
 
-    def makeSetFieldsDict(self, case_dir_path, freecad_objects, grid, setFieldsDict):
+    @staticmethod
+    def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
         has_set = False
         for i in grid.table:
             if i[grid.TYPE] in ('BoxSet', 'CylinderSet', 'SphereSet'):
@@ -1220,7 +1224,8 @@ class MyModel:
                 pass
         os.chmod(dict_name, 0o0666)
 
-    def makeTopoSetDict(self, case_dir_path, freecad_objects, grid, topoSetDict):
+    @staticmethod
+    def makeTopoSetDict(case_dir_path, freecad_objects, grid, topoSetDict):
         has_topo = False
         for i in grid.table:
             if i[grid.TYPE] == 'BoxTopo':
