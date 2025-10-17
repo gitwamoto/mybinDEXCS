@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/10/17 2:45:17 PM
+# 2025/10/17 2:57:38 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -465,7 +465,7 @@ class MyController:
         stl_file_name = os.path.join(triSurface, re.sub('^([0-9])', r'_\1', os.path.basename(case_dir_path)) + '.stl')
         box = self.model.exportStl(self.doc.Objects, self.sHMeshFrame.grid, stl_file_name)
         self.model.makeSurfFeatExtDict(case_dir_path = case_dir_path,
-            surface_file_name = stl_file_name, featureAngle = self.sHMeshFrame.featureAngleCRL.text())
+            surface_file_name = stl_file_name, feature_angle = self.sHMeshFrame.featureAngleCRL.text())
         cwd = os.getcwd()
         os.chdir(case_dir_path)
         command = '. ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' + 'surfaceFeatureExtract'
@@ -481,7 +481,7 @@ class MyController:
             features_level = self.sHMeshFrame.featuresLevelCRL.text(),
             freecad_objects = self.doc.Objects,
             grid = self.sHMeshFrame.grid,
-            featureAngle = self.sHMeshFrame.featureAngleCRL.text(),
+            feature_angle = self.sHMeshFrame.featureAngleCRL.text(),
             sHMeshDict = self.sHMeshDict)
         self.model.makeSetFieldsDict(case_dir_path = case_dir_path,
             freecad_objects = self.doc.Objects,
@@ -616,7 +616,7 @@ class MyModel:
         return xmin, ymin, zmin, xmax, ymax, zmax
 
     @staticmethod
-    def makeSurfFeatExtDict(case_dir_path, surface_file_name, featureAngle):
+    def makeSurfFeatExtDict(case_dir_path, surface_file_name, feature_angle):
         dict_name = os.path.join(case_dir_path, 'system', 'surfaceFeatureExtractDict')
         with open(dict_name, 'w') as f:
             f.write('FoamFile\n{')
@@ -632,7 +632,7 @@ class MyModel:
             f.write('\t// than includedAngle as features\n')
             f.write('\t// - 0  : selects no edges\n')
             f.write('\t// - 180: selects all edges\n')
-            f.write('\tincludedAngle\t{};\n\n'.format(180.0 - float(featureAngle)))
+            f.write('\tincludedAngle\t{};\n\n'.format(180.0 - float(feature_angle)))
             f.write('\t// Write options\n')
             f.write('\twriteFeatureEdgeMesh\tyes;\n\n')
             f.write('\t// Write features to obj format for postprocessing\n')
@@ -641,7 +641,7 @@ class MyModel:
 
     @staticmethod
     def makeSHMeshDict(case_dir_path, surface_file_name, max_cell_size, bounding_box, features_level,
-        freecad_objects, grid, featureAngle, sHMeshDict):
+        freecad_objects, grid, feature_angle, sHMeshDict):
         dict_name = os.path.join(case_dir_path, 'system', 'snappyHexMeshDict')
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
@@ -821,7 +821,7 @@ class MyModel:
             f.write('\t\t\t}\n')
             f.write('\t\t}\n')
             f.write('\t}\n') # refinementSurfaces
-            f.write('\n\tresolveFeatureAngle\t' + featureAngle + ';\n')
+            f.write('\n\tresolveFeatureAngle\t' + feature_angle + ';\n')
             f.write('\n\t// ----- Region-wise refinement -----\n')
             f.write('\n\trefinementRegions\n\t{\n')
             first = True
@@ -998,7 +998,7 @@ class MyModel:
             f.write('\n\t// ----- Advanced settings -----\n')
             f.write('\n\t// When not to extrude surface. 0 is flat surface, 90 is when two faces\n')
             f.write('\t// are perpendicular\n')
-            f.write('\tfeatureAngle\t' + featureAngle + ';\n')
+            f.write('\tfeatureAngle\t' + feature_angle + ';\n')
             f.write('\n\t// Number of relaxation steps (where relaxed mesh quality parameters are used)\n')
             try:
                 x = sHMeshDict.getValueForKey(['addLayersControls', 'nRelaxIter'])

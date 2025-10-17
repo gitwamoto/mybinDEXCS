@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/10/17 2:45:20 PM
+# 2025/10/17 2:57:35 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -385,7 +385,7 @@ class MyController:
             min_cell_size = self.cfMeshFrame.minCellSizeCRL.text(),
             freecad_objects = self.doc.Objects,
             grid = self.cfMeshFrame.grid,
-            featureAngle = self.cfMeshFrame.featureAngleCRL.text(),
+            feature_angle = self.cfMeshFrame.featureAngleCRL.text(),
             meshDict = self.meshDict)
         QtGui.QMessageBox.information(self.cfMeshFrame, 'Done',
             'File system/meshDict for cfMesh has been created.', QtGui.QMessageBox.Close)
@@ -495,7 +495,7 @@ class MyModel:
 
     @staticmethod
     def makeMeshDict(case_dir_path, surface_file_name, max_cell_size, min_cell_size,
-        freecad_objects, grid, featureAngle, meshDict):
+        freecad_objects, grid, feature_angle, meshDict):
         dict_name = os.path.join(case_dir_path, 'system', 'meshDict')
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
@@ -510,7 +510,7 @@ class MyModel:
             f.write('\n// A manual is available on\n')
             f.write('// http://cfmesh.com/wp-content/uploads/2015/09/User_Guide-cfMesh_v1.1.pdf\n')
             f.write('\nCUSTOM_OPTIONS\n{\n')
-            f.write('\tfeatureAngle\t' + featureAngle + '; // used in surfaceFeatureEdges utility\n')
+            f.write('\tfeatureAngle\t' + feature_angle + '; // used in surfaceFeatureEdges utility\n')
             f.write('}\n') # CUSTOM_OPTIONS
             f.write('\n// Keep all the cells intersecting the surface template.\n')
             f.write('// Useful in capturing small gaps in a geometry. (default: 0)\n')
