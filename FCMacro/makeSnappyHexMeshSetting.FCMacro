@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/10/19 4:05:23 PM
+# 2025/10/19 6:06:02 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -831,6 +831,7 @@ class MyModel:
                     continue
                 if not first:
                     f.write('\n')
+                    first = False
                 f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
@@ -839,16 +840,15 @@ class MyModel:
                     f.write('\t\t\tmode\tdistance;\n')
                     f.write('\t\t\tlevels\t(({} {})); // (distance level)\n'.format(i[grid.RATIO], i[grid.LEVEL]))
                 f.write('\t\t}\n')
-                first = False
             try:
                 for x in sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
                     if (DictParserList.isType(x, DictParserList.BLOCK) and
                         x.key() != surface_file_name and x.key() not in objects):
                         if not first:
                             f.write('\n')
+                            first = False
                         sHMeshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
                         f.write('\n')
-                        first = False
             except:
                 pass
             f.write('\t}\n') # refinementRegions
