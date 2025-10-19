@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/10/17 2:57:35 PM
+# 2025/10/19 4:05:48 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -451,7 +451,7 @@ class MyController:
 
 class MyModel:
     @staticmethod
-    def sumOfThreeEdgesOfCadObjects(self, freecad_objects):
+    def sumOfThreeEdgesOfCadObjects(freecad_objects):
         xmin = ymin = zmin = float('inf')
         xmax = ymax = zmax = float('-inf')
         for obj in freecad_objects:
