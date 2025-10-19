@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/10/17 2:57:38 PM
+# 2025/10/19 3:28:42 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -478,9 +478,9 @@ class MyController:
             surface_file_name = stl_file_name,
             max_cell_size = self.sHMeshFrame.maxCellSizeCRL.text(),
             bounding_box = box,
-            features_level = self.sHMeshFrame.featuresLevelCRL.text(),
             freecad_objects = self.doc.Objects,
             grid = self.sHMeshFrame.grid,
+            features_level = self.sHMeshFrame.featuresLevelCRL.text(),
             feature_angle = self.sHMeshFrame.featureAngleCRL.text(),
             sHMeshDict = self.sHMeshDict)
         self.model.makeSetFieldsDict(case_dir_path = case_dir_path,
@@ -640,8 +640,8 @@ class MyModel:
         os.chmod(dict_name, 0o0666)
 
     @staticmethod
-    def makeSHMeshDict(case_dir_path, surface_file_name, max_cell_size, bounding_box, features_level,
-        freecad_objects, grid, feature_angle, sHMeshDict):
+    def makeSHMeshDict(case_dir_path, surface_file_name, max_cell_size, bounding_box,
+        freecad_objects, grid, features_level, feature_angle, sHMeshDict):
         dict_name = os.path.join(case_dir_path, 'system', 'snappyHexMeshDict')
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
