@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/10/19 6:06:02 PM
+# 2025/12/2 8:32:16 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -824,18 +824,27 @@ class MyModel:
             f.write('\n\tresolveFeatureAngle\t' + feature_angle + ';\n')
             f.write('\n\t// ----- Region-wise refinement -----\n')
             f.write('\n\trefinementRegions\n\t{\n')
-            first = True
+            f.write('\t\t//                    ********************\n')
+            f.write('\t\t//                    ********************   ******************\n')
+            f.write('\t\t// +--------------+   **+--------------+**   *+--------------+*\n')
+            f.write('\t\t// |**************|   **|              |**   *|**************|*\n')
+            f.write('\t\t// |**************|   **|              |**   *|*            *|*\n')
+            f.write('\t\t// |*** inside ***|   **|   outside    |**   *|*  distance ->|*<-\n')
+            f.write('\t\t// |**************|   **|              |**   *|*          ->*|<-\n')
+            f.write('\t\t// |**************|   **|              |**   *|**************|*\n')
+            f.write('\t\t// +--------------+   **+--------------+**   *+--------------+*\n')
+            f.write('\t\t//                    ********************   ******************\n')
+            f.write('\t\t//                    ********************\n')
             for i in grid.table:
                 if i[grid.LEVEL] == 0 or i[grid.TYPE] not in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine'):
                     continue
-                if not first:
-                    f.write('\n')
-                    first = False
+                f.write('\n')
                 f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
-                    f.write('\t\t\tlevels\t((1.0 {})); // (distance level)\n'.format(i[grid.LEVEL]))
+                    f.write('\t\t\tlevels\t((1.0 {})); ' +
+                            '// (distance level), distance is used only in a distance mode.\n'.format(i[grid.LEVEL]))
                 else: # SurfaceRefine
                     f.write('\t\t\tmode\tdistance;\n')
                     f.write('\t\t\tlevels\t(({} {})); // (distance level)\n'.format(i[grid.RATIO], i[grid.LEVEL]))
@@ -844,9 +853,7 @@ class MyModel:
                 for x in sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
                     if (DictParserList.isType(x, DictParserList.BLOCK) and
                         x.key() != surface_file_name and x.key() not in objects):
-                        if not first:
-                            f.write('\n')
-                            first = False
+                        f.write('\n')
                         sHMeshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
                         f.write('\n')
             except:
