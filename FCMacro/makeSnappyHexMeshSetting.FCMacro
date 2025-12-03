@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/12/2 8:40:00 PM
+# 2025/12/3 8:57:07 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -669,8 +669,8 @@ class MyModel:
             f.write('\tmaxCellSize\t' + max_cell_size +'; // used to generate blockMeshDict\n')
             f.write('\tboundingBox\t(({} {} {}) ({} {} {})); // used to generate blockMeshDict\n'.format(*bounding_box))
             f.write('}\n') # CUSTOM_OPTIONS
-            f.write('\n// Geometry. Definition of all surfaces. All surfaces are of class\n')
-            f.write('// searchableSurface.\n')
+            f.write('\n// Geometry. Definition of all surfaces.\n')
+            f.write('// All surfaces are of class searchableSurface.\n')
             f.write('// Surfaces are used\n')
             f.write('// - to specify refinement for any mesh cell intersecting it\n')
             f.write('// - to specify refinement for any mesh cell inside/outside/near\n')
@@ -844,10 +844,11 @@ class MyModel:
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
                     f.write('\t\t\tlevels\t((1.0 {}));'.format(i[grid.LEVEL]) +
-                            ' // (distance level), distance is used only in a distance mode.\n')
+                            ' // ((distance level)), distance is used only in a distance mode.\n')
                 else: # SurfaceRefine
                     f.write('\t\t\tmode\tdistance;\n')
-                    f.write('\t\t\tlevels\t(({} {})); // (distance level)\n'.format(i[grid.RATIO], i[grid.LEVEL]))
+                    f.write('\t\t\tlevels\t(({} {}));'.format(i[grid.RATIO], i[grid.LEVEL]) +
+                            ' // ((distance1 level1) (distance2 level2) ...), distance1 < distance2, level1 > level2\n')
                 f.write('\t\t}\n')
             try:
                 for x in sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
