@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/12/3 8:57:07 PM
+# 2025/12/4 3:04:30 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1135,7 +1135,7 @@ class MyModel:
                 x = sHMeshDict.getValueForKey(['mergeTolerance'])
                 f.write('mergeTolerance\t' + x[0] + ';\n')
             except:
-                f.write('mergeTolerance\t1.0e-6;\n')
+                f.write('mergeTolerance\t1.0e-06;\n')
             try:
                 for x in sHMeshDict.contents:
                     if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
