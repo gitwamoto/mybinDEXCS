@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/12/4 3:04:30 PM
+# 2025/12/4 3:56:47 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -716,7 +716,7 @@ class MyModel:
                 elif i[grid.TYPE] == 'SurfaceRefine':
                     f.write('\n\t' + i[grid.OBJECT_NAME] + '.stl // in constant/triSurface\n')
                     f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t}\n')
-                    f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
+                    f.write('\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
                     f.write('\t\ttype\tsearchableSurfaceWithGaps;\n')
                     f.write('\t\tsurface\t' + i[grid.OBJECT_NAME] + '.stl;\n')
                     f.write('\t\tgap\t0;\n')
