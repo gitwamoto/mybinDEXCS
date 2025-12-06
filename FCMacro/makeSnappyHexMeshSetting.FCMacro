@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/12/4 3:56:47 PM
+# 2025/12/4 9:04:31 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -839,8 +839,7 @@ class MyModel:
                 if i[grid.LEVEL] == 0 or i[grid.TYPE] not in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine'):
                     continue
-                f.write('\n')
-                f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
+                f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
                     f.write('\t\t\tlevels\t((1.0 {}));'.format(i[grid.LEVEL]) +
