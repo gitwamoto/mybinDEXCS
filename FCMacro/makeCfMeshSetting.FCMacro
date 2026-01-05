@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/4 7:41:56 PM
+# 2026/1/5 11:55:08 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -514,6 +514,8 @@ class MyModel:
     def exportStl(freecad_objects, grid, file_name):
         tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
         dir_name = os.path.dirname(file_name)
+        xmin = ymin = zmin = float('inf')
+        xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
             for i in grid.table:
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine',
@@ -534,8 +536,13 @@ class MyModel:
                                     f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
                                 else:
                                     f.write(line)
+                                    if line.lstrip().startswith('vertex'):
+                                        x, y, z = [float(j) for j in line.split()[1:]]
+                                        xmin, ymin, zmin = min(xmin, x), min(ymin, y), min(zmin, z)
+                                        xmax, ymax, zmax = max(xmax, x), max(ymax, y), max(zmax, z)
                             os.remove(tmp_stl)
                         break
+        return xmin, ymin, zmin, xmax, ymax, zmax
 
     @staticmethod
     def makeMeshDict(case_dir_path, surface_file_name, max_cell_size, min_cell_size,
