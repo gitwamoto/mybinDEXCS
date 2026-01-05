@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2026/1/5 10:21:28 AM
+# 2025/6/5 11:46:44 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -213,9 +213,6 @@ else # 2021
 		fi
 		if [ ! -e /usr/local/lib/python3.8/dist-packages/stl ]; then
 			sudo pip install numpy-stl
-		fi
-		if [ ! -e /usr/local/lib/python3.8/dist-packages/gmsh.py ]; then
-			sudo pip install gmsh
 		fi
 	fi
 
