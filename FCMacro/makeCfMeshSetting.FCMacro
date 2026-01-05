@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/4 7:41:56 PM
+# 2025/10/19 4:05:48 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -70,8 +70,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                 self.setItem(i, j, item)
             combo = QtGui.QComboBox()
             combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
-                            'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                            'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'])
+                            'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'])
             self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
             self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
             combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
@@ -216,7 +215,7 @@ class CfMeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParamsFromMeshDict(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
+    def setParamsFromMeshDict(self, meshDict_path):
         try:
             meshDict = DictParser(file_name = meshDict_path)
             assert (meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
@@ -303,40 +302,9 @@ class CfMeshFrame(QtGui.QDialog):
                             self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
         except:
             pass
-        try:
-            for x in setFieldsDict.getValueForKey(['regions']):
-                if DictParserList.isType(x, DictParserList.LISTP):
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' in y[1].lower():
-                            for i, j in enumerate(objects):
-                                if j in y[1]:
-                                    remainder.remove(j)
-                                    if y.key() == 'boxToCell':
-                                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
-                                    elif y.key() == 'cylinderToCell':
-                                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
-                                    else:
-                                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
-                                    break
-        except:
-            pass
-        try:
-            for x in topoSetDict.getValueForKey(['actions']):
-                if DictParserList.isType(x, DictParserList.LISTP):
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.BLOCK):
-                            for z in y.value():
-                                if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
-                                    for i, j in enumerate(objects):
-                                        if z.value()[0] in (j, j + 'CellSet'):
-                                            remainder.remove(j)
-                                            self.grid.setCellValue(i, self.grid.TYPE, 'BoxTopo')
-                                            break
-        except:
-            pass
         for i in remainder:
             self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'N/A')
-        return meshDict, setFieldsDict, topoSetDict
+        return meshDict
 
     def actionOnExitButton(self):
         self.close()
@@ -353,7 +321,7 @@ class MyController:
         import Part
         self.doc = App.ActiveDocument
         self.model = MyModel()
-        self.meshDict = self.setFieldsDict = self.topoSetDict = None
+        self.meshDict = None
         if self.doc.FileName == '':
             QtGui.QMessageBox.critical(None, 'Error',
                 'This document has never been saved. Save the document and retry.', QtGui.QMessageBox.Close)
@@ -419,14 +387,6 @@ class MyController:
             grid = self.cfMeshFrame.grid,
             feature_angle = self.cfMeshFrame.featureAngleCRL.text(),
             meshDict = self.meshDict)
-        self.model.makeSetFieldsDict(case_dir_path = case_dir_path,
-            freecad_objects = self.doc.Objects,
-            grid = self.cfMeshFrame.grid,
-            setFieldsDict = self.setFieldsDict)
-        self.model.makeTopoSetDict(case_dir_path = case_dir_path,
-            freecad_objects = self.doc.Objects,
-            grid = self.cfMeshFrame.grid,
-            topoSetDict = self.topoSetDict)
         QtGui.QMessageBox.information(self.cfMeshFrame, 'Done',
             'File system/meshDict for cfMesh has been created.', QtGui.QMessageBox.Close)
 
@@ -472,13 +432,10 @@ class MyController:
         if not os.path.isdir(case_dir_path):
             return
         try:
-            self.meshDict, self.setFieldsDict, self.topoSetDict = \
-            self.cfMeshFrame.setParamsFromMeshDict(
-                os.path.join(case_dir_path, 'system', 'meshDict'),
-                os.path.join(case_dir_path, 'system', 'setFieldsDict'),
-                os.path.join(case_dir_path, 'system', 'topoSetDict'))
+            self.meshDict = self.cfMeshFrame.setParamsFromMeshDict(
+                os.path.join(case_dir_path, 'system', 'meshDict'))
         except Exception as e:
-            self.meshDict = self.setFieldsDict = self.topoSetDict = None
+            self.meshDict = None
             QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error', str(e), QtGui.QMessageBox.Close)
 
     def actionOnEditButton(self):
@@ -516,8 +473,7 @@ class MyModel:
         dir_name = os.path.dirname(file_name)
         with open(file_name, 'w') as f:
             for i in grid.table:
-                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'N/A'):
                     continue
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
@@ -633,8 +589,7 @@ class MyModel:
             f.write('\n\tpatchBoundaryLayers\n\t{')
             for i in grid.table:
                 if not i[grid.BOUNDARY_LAYER] or i[grid.TYPE] in (
-                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'):
                     continue
                 f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
                 f.write('\n\t\t\tnLayers\t{}; // (optional)\n'.format(i[grid.N_LAYERS]))
@@ -669,8 +624,7 @@ class MyModel:
             f.write('\nlocalRefinement\n{')
             for i in grid.table:
                 if i[grid.CELL_SIZE] == '' or i[grid.TYPE] in (
-                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                    'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'):
                     continue
                 ref_thickness = i[grid.CELL_SIZE]
                 ref_level = 0
@@ -840,8 +794,7 @@ class MyModel:
             f.write('\nrenameBoundary\n{')
             f.write('\n\tnewPatchNames\n\t{')
             for i in grid.table:
-                if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine', 'N/A'):
                     f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
                     f.write('\n\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
                     f.write('\t\t\ttype\t'+ i[grid.TYPE] + ';\n')
@@ -859,165 +812,6 @@ class MyModel:
                         'anisotropicSources', 'renameBoundary')):
                         f.write('\n')
                         meshDict.writeContents(x, f, indent = '', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
-        os.chmod(dict_name, 0o0666)
-
-    @staticmethod
-    def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
-        has_set = False
-        for i in grid.table:
-            if i[grid.TYPE] in ('BoxSet', 'CylinderSet', 'SphereSet'):
-                has_set = True
-                break
-        if not has_set:
-            return
-        dict_name = os.path.join(case_dir_path, 'system', 'setFieldsDict')
-        if os.path.isfile(dict_name):
-            shutil.copy(dict_name, dict_name + '_bak')
-        with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{')
-            f.write('\n\tversion\t2.0;\n')
-            f.write('\tformat\tascii;\n')
-            f.write('\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\tsetFieldsDict;\n')
-            f.write('}\n\n') # FoamFile
-            try:
-                setFieldsDict.writeContents(setFieldsDict.getDPLForKey(['defaultFieldValues']),
-                    f, indent = '', last_char = '\n')
-            except:
-                f.write('defaultFieldValues // regionsで指定しない領域における値\n(\n')
-                f.write('\tvolScalarFieldValue\talpha.water 0 // ←自分の目的に合わせて書き換える\n')
-                f.write('\tvolVectorFieldValue\tU ( 0 0 0 ) // ←自分の目的に合わせて書き換える\n);')
-            f.write('\n\nregions\n(\n')
-            for i in grid.table:
-                if i[grid.TYPE] not in ('BoxSet', 'CylinderSet', 'SphereSet'):
-                    continue
-                for obj in freecad_objects:
-                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                        if i[grid.TYPE] == 'BoxSet':
-                            f.write('\tboxToCell // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                            f.write('\t{\n')
-                            f.write('\t\tbox\t({} {} {}) ({} {} {});\n'.format(
-                                obj.Shape.BoundBox.XMin, obj.Shape.BoundBox.YMin, obj.Shape.BoundBox.ZMin,
-                                obj.Shape.BoundBox.XMax, obj.Shape.BoundBox.YMax, obj.Shape.BoundBox.ZMax))
-                        elif i[grid.TYPE] == 'CylinderSet':
-                            f.write('\tcylinderToCell // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                            f.write('\t{\n')
-                            f.write('\t\tp1\t({} {} {});\n'.format(
-                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                            f.write('\t\tp2\t({} {} {});\n'.format(
-                                    obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
-                                    obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
-                                    obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
-                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
-                        else: # SphereSet
-                            f.write('\tsphereToCell // Object {} in FreeCAD'.format(i[grid.OBJECT_NAME]))
-                            f.write('\n\t{\n')
-                            f.write('\t\tcentre\t({} {} {});\n'.format(
-                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
-                        f.write('\t\tfieldValues\n\t\t(\n')
-                        f.write('\t\t\tvolScalarFieldValue alpha.water 1 // ←自分の目的に合わせて書き換える\n')
-                        f.write('\t\t);\n') # fieldValues
-                        f.write('\t}\n') # boxToCell, cylinderToCell, sphereToCell
-            try:
-                for x in setFieldsDict.getValueForKey(['regions']):
-                    if DictParserList.isType(x, DictParserList.LISTP):
-                        for y in x.value():
-                            if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' not in y[1].lower():
-                                setFieldsDict.writeContents(y, f, indent = '\t', last_char = '\n')
-                                f.write('\n')
-            except:
-                pass
-            f.write(');\n') # regions
-            try:
-                for x in setFieldsDict.contents:
-                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        x.key() not in ('FoamFile', 'defaultFieldValues', 'regions')):
-                        f.write('\n')
-                        setFieldsDict.writeContents(x, f, indent = '', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
-        os.chmod(dict_name, 0o0666)
-
-    @staticmethod
-    def makeTopoSetDict(case_dir_path, freecad_objects, grid, topoSetDict):
-        has_topo = False
-        for i in grid.table:
-            if i[grid.TYPE] == 'BoxTopo':
-                has_topo = True
-                break
-        if not has_topo:
-            return
-        dict_name = os.path.join(case_dir_path, 'system', 'topoSetDict')
-        if os.path.isfile(dict_name):
-            shutil.copy(dict_name, dict_name + '_bak')
-        with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{')
-            f.write('\n\tversion\t2.0;\n')
-            f.write('\tformat\tascii;\n')
-            f.write('\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\ttopoSetDict;\n')
-            f.write('}\n') # FoamFile
-            f.write('\nactions\n(\n')
-            for i in grid.table:
-                if i[grid.TYPE] != 'BoxTopo':
-                    continue
-                for obj in freecad_objects:
-                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                        f.write('\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t\tname\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t\ttype\tcellSet;\n')
-                        f.write('\t\taction\tnew;\n')
-                        f.write('\t\tsource\mi;\n')
-                        f.write('\t\torigin\t({} {} {});\n'.format(
-                                obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                        f.write('\t\ti\t({} {} {});\n'.format(
-                                obj.Length.Value*obj.Placement.Matrix.A11, obj.Length.Value*obj.Placement.Matrix.A21,
-                                obj.Length.Value*obj.Placement.Matrix.A31))
-                        f.write('\t\tj\t({} {} {});\n'.format(
-                                obj.Width.Value*obj.Placement.Matrix.A12, obj.Width.Value*obj.Placement.Matrix.A22,
-                                obj.Width.Value*obj.Placement.Matrix.A32))
-                        f.write('\t\tk\t({} {} {});\n'.format(
-                                obj.Height.Value*obj.Placement.Matrix.A13, obj.Height.Value*obj.Placement.Matrix.A23,
-                                obj.Height.Value*obj.Placement.Matrix.A33))
-                        f.write('\t}}\n\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t\ttype\tcellZoneSet;\n')
-                        f.write('\t\taction\tnew;\n')
-                        f.write('\t\tsource\tsetToCellZone;\n')
-                        f.write('\t\tset\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t}\n')
-            try:
-                for x in topoSetDict.getValueForKey(['actions']):
-                    if DictParserList.isType(x, DictParserList.LISTP):
-                        for y in x.value():
-                            if DictParserList.isType(y, DictParserList.BLOCK):
-                                for z in y.value():
-                                    if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
-                                        freecad_object = False
-                                        for i in grid.table:
-                                            if z.value()[0] in (i[grid.OBJECT_NAME], i[grid.OBJECT_NAME] + 'CellSet'):
-                                                freecad_object = True
-                                                break
-                                        if not freecad_object:
-                                            topoSetDict.writeContents(y, f, indent = '\t', last_char = '\n')
-                                            f.write('\n')
-                                            break
-            except:
-                pass
-            f.write(');\n') # actions
-            try:
-                for x in topoSetDict.contents:
-                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        x.key() not in ('FoamFile', 'actions')):
-                        f.write('\n')
-                        topoSetDict.writeContents(x, f, indent = '', last_char = '\n')
                         f.write('\n')
             except:
                 pass
