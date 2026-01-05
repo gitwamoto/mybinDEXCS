@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2025/12/4 9:04:31 PM
+# 2026/1/4 7:41:59 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -550,6 +550,7 @@ class MyController:
                 os.path.join(case_dir_path, 'system', 'setFieldsDict'),
                 os.path.join(case_dir_path, 'system', 'topoSetDict'))
         except Exception as e:
+            self.sHMeshDict = self.setFieldsDict = self.topoSetDict = None
             QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error', str(e), QtGui.QMessageBox.Close)
 
     def actionOnEditButton(self):
