@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/6 2:34:28 PM
+# 2026/1/6 2:40:36 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
