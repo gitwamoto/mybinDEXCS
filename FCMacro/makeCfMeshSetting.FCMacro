@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/5 11:55:08 AM
+# 2026/1/6 2:34:25 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -127,9 +127,9 @@ class FreeCadFileGrid(QtGui.QTableWidget):
         except:
             pass
 
-class CfMeshFrame(QtGui.QDialog):
+class MeshFrame(QtGui.QDialog):
     def __init__(self, controller, freecad_objects, case_dir_path, max_cell_size, feature_angle):
-        super(CfMeshFrame, self).__init__(parent = None)
+        super(MeshFrame, self).__init__(parent = None)
         self.setWindowTitle('cfMesh settings from FreeCAD Model (.fcstd)')
 
         self.controller = controller
@@ -216,7 +216,7 @@ class CfMeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParamsFromMeshDict(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
+    def setParamsFromDictFiles(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
         try:
             meshDict = DictParser(file_name = meshDict_path)
             assert (meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
@@ -224,6 +224,26 @@ class CfMeshFrame(QtGui.QDialog):
                 meshDict.getValueForKey(['FoamFile', 'object'])[0] == 'meshDict')
         except:
             raise Exception(meshDict_path + ' is not a meshDict file.')
+        if os.path.isfile(setFieldsDict_path):
+            try:
+                setFieldsDict = DictParser(file_name = setFieldsDict_path)
+                assert (setFieldsDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                    setFieldsDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                    setFieldsDict.getValueForKey(['FoamFile', 'object'])[0] == 'setFieldsDict')
+            except:
+                raise Exception(setFieldsDict_path + ' is not a setFieldsDict file.')
+        else:
+            setFieldsDict = None
+        if os.path.isfile(topoSetDict_path):
+            try:
+                topoSetDict = DictParser(file_name = topoSetDict_path)
+                assert (topoSetDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                    topoSetDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                    topoSetDict.getValueForKey(['FoamFile', 'object'])[0] == 'topoSetDict')
+            except:
+                raise Exception(topoSetDict_path + ' is not a topoSetDict file.')
+        else:
+            topoSetDict = None
         try:
             self.maxCellSizeCRL.setText(meshDict.getValueForKey(['maxCellSize'])[0])
         except:
@@ -359,50 +379,39 @@ class MyController:
                 'This document has never been saved. Save the document and retry.', QtGui.QMessageBox.Close)
             return
         for obj in self.doc.Objects:
-            try:
-                if obj.ViewObject.Visibility and hasattr(obj, 'Shape'):
-                    l = obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label
-                    if ' ' in l:
-                        QtGui.QMessageBox.critical(None, 'Error',
-                            'Label "{}" has a half space, which is prohibited'.format(l), QtGui.QMessageBox.Close)
-                        return
-            except:
-                print(sys.exc_info())
-                pass
-        self.cfMeshFrame = CfMeshFrame(controller = self,
+            if obj.ViewObject.Visibility and hasattr(obj, 'Shape'):
+                obj.Label = obj.Label.strip()
+                l = obj.Label
+                obj.Label = re.sub('^([0-9])', r'_\1', l.replace(' ', '_'))
+                if obj.Label != l:
+                    QtGui.QMessageBox.warning(None, 'Prohibited object label', 'Label fixed: ' +
+                        (l.encode('UTF-8') if sys.version_info.major <= 2 else l) + ' -> ' +
+                        (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label),
+                        QtGui.QMessageBox.Close)
+        self.MeshFrame = MeshFrame(controller = self,
             freecad_objects = self.doc.Objects,
             case_dir_path = os.path.dirname(self.doc.FileName),
             max_cell_size = self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)/60.0,
             feature_angle = MyController.FEATURE_ANGLE)
-        self.cfMeshFrame.show()
+        self.MeshFrame.show()
 
     def actionOnCaseButton(self):
-        dir_name = QtGui.QFileDialog.getExistingDirectory(self.cfMeshFrame, 'Choose a directory.',
+        dir_name = QtGui.QFileDialog.getExistingDirectory(self.MeshFrame, 'Choose a directory.',
             os.path.expanduser(os.path.join('~', 'Desktop')))
         if dir_name != '':
-            self.cfMeshFrame.caseDirST.setText(dir_name)
+            self.MeshFrame.caseDirST.setText(dir_name)
 
     def actionOnOpenButton(self):
-        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()
         if os.path.isdir(case_dir_path):
             os.system("xdg-open '" + case_dir_path + "'")
 
     def actionOnExportButton(self):
-        if not os.path.isdir(self.cfMeshFrame.caseDirST.text()):
-            QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error',
-                self.sHMeshFrame.caseDirST.text() + ' is not a directory.', QtGui.QMessageBox.Close)
+        if not os.path.isdir(self.MeshFrame.caseDirST.text()):
+            QtGui.QMessageBox.critical(None, 'Error',
+                self.MeshFrame.caseDirST.text() + ' is not a directory.', QtGui.QMessageBox.Close)
             return
-        case_dir_path = self.cfMeshFrame.caseDirST.text()
-        file_stem = os.path.join(case_dir_path, os.path.basename(case_dir_path))
-        stl_file_name = file_stem + '.stl'
-        self.model.exportStl(self.doc.Objects, self.cfMeshFrame.grid, stl_file_name)
-        fms_file_name = file_stem + '.fms'
-        command = ('. ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-            'surfaceFeatureEdges -angle ' + self.cfMeshFrame.featureAngleCRL.text() + ' ' +
-            stl_file_name + ' ' + fms_file_name)
-        if os.system(command) != 0:
-            QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error', command + ' was not succeed.', QtGui.QMessageBox.Close)
-            return
+        case_dir_path = self.MeshFrame.caseDirST.text()
         # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
         if not os.path.isdir(os.path.join(case_dir_path, 'constant')):
             os.system('rsync -a ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'constant') + ' ' +
@@ -411,32 +420,51 @@ class MyController:
             os.system('cp -r ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'system') + ' ' + case_dir_path)
         if not os.path.isdir(os.path.join(case_dir_path, '0')):
             os.system('cp -r ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, '0') + ' ' + case_dir_path)
+        triSurface = os.path.join(case_dir_path, 'constant', 'triSurface')
+        if os.path.isdir(triSurface):
+            shutil.rmtree(triSurface)
+        elif os.path.isfile(triSurface):
+            os.remove(triSurface)
+        os.mkdir(triSurface)
+        stl_file_name = os.path.join(triSurface, re.sub('^([0-9])', r'_\1', os.path.basename(case_dir_path)) + '.stl')
+        self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_name)
+        fms_file_name = stl_file_name[:-3] + 'fms'
+        cwd = os.getcwd()
+        os.chdir(case_dir_path)
+        command = ('. ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
+            'surfaceFeatureEdges -angle ' + self.MeshFrame.featureAngleCRL.text() + ' ' +
+            stl_file_name + ' ' + fms_file_name)
+        if os.system(command) != 0:
+            QtGui.QMessageBox.critical(None, 'Error', command + ' was not succeed.', QtGui.QMessageBox.Close)
+            os.chdir(cwd)
+            return
+        os.chdir(cwd)
         self.model.makeMeshDict(case_dir_path = case_dir_path,
             surface_file_name = fms_file_name,
-            max_cell_size = self.cfMeshFrame.maxCellSizeCRL.text(),
-            min_cell_size = self.cfMeshFrame.minCellSizeCRL.text(),
+            max_cell_size = self.MeshFrame.maxCellSizeCRL.text(),
             freecad_objects = self.doc.Objects,
-            grid = self.cfMeshFrame.grid,
-            feature_angle = self.cfMeshFrame.featureAngleCRL.text(),
-            meshDict = self.meshDict)
+            grid = self.MeshFrame.grid,
+            feature_angle = self.MeshFrame.featureAngleCRL.text(),
+            meshDict = self.meshDict,
+            min_cell_size = self.MeshFrame.minCellSizeCRL.text())
         self.model.makeSetFieldsDict(case_dir_path = case_dir_path,
             freecad_objects = self.doc.Objects,
-            grid = self.cfMeshFrame.grid,
+            grid = self.MeshFrame.grid,
             setFieldsDict = self.setFieldsDict)
         self.model.makeTopoSetDict(case_dir_path = case_dir_path,
             freecad_objects = self.doc.Objects,
-            grid = self.cfMeshFrame.grid,
+            grid = self.MeshFrame.grid,
             topoSetDict = self.topoSetDict)
-        QtGui.QMessageBox.information(self.cfMeshFrame, 'Done',
+        QtGui.QMessageBox.information(None, 'Done',
             'File system/meshDict for cfMesh has been created.', QtGui.QMessageBox.Close)
 
     def actionOnCartesianMeshButton(self):
-        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()
         if not os.path.isfile(os.path.join(case_dir_path, 'system', 'meshDict')):
-            QtGui.QMessageBox.warning(self.cfMeshFrame, 'No meshDict',
+            QtGui.QMessageBox.critical(None, 'No meshDict',
                 "File system/meshDict doesn't exist.", QtGui.QMessageBox.Close)
             return
-        if QtGui.QMessageBox.question(self.cfMeshFrame, 'cartesianMesh',
+        if QtGui.QMessageBox.question(None, 'cartesianMesh',
             'Really exicute cartesianMesh?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
@@ -446,8 +474,8 @@ class MyController:
             os.chdir(cwd)
 
     def actionOnImproveMeshQualityButton(self):
-        case_dir_path = self.cfMeshFrame.caseDirST.text()
-        if QtGui.QMessageBox.question(self.cfMeshFrame, 'improveMeshQuality',
+        case_dir_path = self.MeshFrame.caseDirST.text()
+        if QtGui.QMessageBox.question(None, 'improveMeshQuality',
             'Really exicute improveMeshQuality?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
@@ -457,8 +485,8 @@ class MyController:
             os.chdir(cwd)
 
     def actionOnFlattenPatchButton(self):
-        case_dir_path = self.cfMeshFrame.caseDirST.text()
-        if QtGui.QMessageBox.question(self.cfMeshFrame, 'Flatten patch',
+        case_dir_path = self.MeshFrame.caseDirST.text()
+        if QtGui.QMessageBox.question(None, 'Flatten patch',
             'Really flatten patch?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
@@ -468,26 +496,25 @@ class MyController:
             os.chdir(cwd)
 
     def actionOnLoadButton(self):
-        case_dir_path = self.cfMeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()
         if not os.path.isdir(case_dir_path):
             return
         try:
-            self.meshDict, self.setFieldsDict, self.topoSetDict = \
-            self.cfMeshFrame.setParamsFromMeshDict(
+            self.meshDict, self.setFieldsDict, self.topoSetDict = self.MeshFrame.setParamsFromDictFiles(
                 os.path.join(case_dir_path, 'system', 'meshDict'),
                 os.path.join(case_dir_path, 'system', 'setFieldsDict'),
                 os.path.join(case_dir_path, 'system', 'topoSetDict'))
         except Exception as e:
             self.meshDict = self.setFieldsDict = self.topoSetDict = None
-            QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error', str(e), QtGui.QMessageBox.Close)
+            QtGui.QMessageBox.critical(None, 'Error', str(e), QtGui.QMessageBox.Close)
 
     def actionOnEditButton(self):
-        meshDict_path = os.path.join(self.cfMeshFrame.caseDirST.text(), 'system', 'meshDict')
+        meshDict_path = os.path.join(self.MeshFrame.caseDirST.text(), 'system', 'meshDict')
         if not os.path.isfile(meshDict_path):
-            QtGui.QMessageBox.warning(self.cfMeshFrame, 'No meshDict',
+            QtGui.QMessageBox.critical(None, 'No meshDict',
                 "File system/meshDict doesn't exist.", QtGui.QMessageBox.Close)
             return
-        if QtGui.QMessageBox.question(self.cfMeshFrame, 'Edit',
+        if QtGui.QMessageBox.question(None, 'Edit',
             'The file system/meshDict last exported/saved will be edited.\n' +
             'Really edit?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             os.system('gedit ' + meshDict_path)
@@ -513,7 +540,6 @@ class MyModel:
     @staticmethod
     def exportStl(freecad_objects, grid, file_name):
         tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
-        dir_name = os.path.dirname(file_name)
         xmin = ymin = zmin = float('inf')
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
@@ -524,10 +550,21 @@ class MyModel:
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
                         if i[grid.TYPE] == 'SurfaceRefine':
-                            name = os.path.join(dir_name, i[grid.OBJECT_NAME])
-                            Mesh.export([obj], name + '.ast') # ascii format
-                            os.rename(name + '.ast', name + '.stl') # can overwrite
+                            Mesh.export([obj], i[grid.OBJECT_NAME] + '.ast') # ascii format
+                            os.rename(i[grid.OBJECT_NAME] + '.ast', i[grid.OBJECT_NAME] + '.stl') # can overwrite
                         else:
+                            # ascii stlフォーマット
+                            # solid 任意の文字列
+                            # facet normal x成分値 y成分値 z成分値
+                            # outer loop
+                            # vertex x成分値 y成分値 z成分値
+                            # vertex x成分値 y成分値 z成分値
+                            # vertex x成分値 y成分値 z成分値
+                            # endloop
+                            # endfacet
+                            #（facet normal行～endfacet行までを１枚の三角形データとして以降くり返し）
+                            # ..............
+                            # endsolid 任意の文字列
                             Mesh.export([obj], tmp_stl)
                             for line in open(tmp_stl, 'r'):
                                 if 'endsolid' in line:
@@ -545,8 +582,8 @@ class MyModel:
         return xmin, ymin, zmin, xmax, ymax, zmax
 
     @staticmethod
-    def makeMeshDict(case_dir_path, surface_file_name, max_cell_size, min_cell_size,
-        freecad_objects, grid, feature_angle, meshDict):
+    def makeMeshDict(case_dir_path, surface_file_name, max_cell_size, freecad_objects, grid,
+        feature_angle, meshDict, min_cell_size):
         dict_name = os.path.join(case_dir_path, 'system', 'meshDict')
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
@@ -582,12 +619,12 @@ class MyModel:
                 x = meshDict.getValueForKey(['boundaryCellSize'])
                 f.write('\nboundaryCellSize\t' + x[0] + '; // (optional)\n')
             except:
-                f.write('\n//boundaryCellSize\t0.5; // (optional)\n')
+                f.write('\n// boundaryCellSize\t0.5; // (optional)\n')
             try:
                 x = meshDict.getValueForKey(['boundaryCellSizeRefinementThickness'])
                 f.write('boundaryCellSizeRefinementThickness\t' + x[0] + '; // (optional)\n')
             except:
-                f.write('//boundaryCellSizeRefinementThickness\t5.0; // (optional)\n')
+                f.write('// boundaryCellSizeRefinementThickness\t5.0; // (optional)\n')
             if min_cell_size != '':
                 f.write('\nminCellSize\t' + min_cell_size + '; // (optional)\n')
             else:
@@ -595,8 +632,8 @@ class MyModel:
                     min_cell_size = meshDict.getValueForKey(['minCellSize'])[0]
                 except:
                     min_cell_size = '1'
-                f.write('\n//minCellSize\t' + min_cell_size + '; // (optional)\n')
-            f.write('\nsurfaceFile\t"' + os.path.basename(surface_file_name) + '"; // (mandatory)\n')
+                f.write('\n// minCellSize\t' + min_cell_size + '; // (optional)\n')
+            f.write('\nsurfaceFile\t"constant/triSurface/' + os.path.basename(surface_file_name) + '"; // (mandatory)\n')
             f.write('\nboundaryLayers\n{')
             f.write('\n\t// Smoothing of boundary layers (default: 0)\n')
             try:
@@ -686,10 +723,10 @@ class MyModel:
                     ref_level += 1
                     ref_value /= 2.0
                 f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
-                f.write('\n\t\tcellSize\t' + str(ref_thickness) + ';\n')
-                f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
-                    '; // Relative to the maximum cell size\n')
-                f.write('//\t\trefinementThickness\t' + str(5*ref_thickness) + ';\n')
+                f.write('\n\t\tcellSize\t{};\n'.format(ref_thickness))
+                f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
+                    ' // Relative to the maximum cell size\n')
+                f.write('//\t\trefinementThickness\t{};\n'.format(5*ref_thickness))
                 f.write('\t}\n')
             f.write('\n//\t"patch.*" // accepts regex\n//\t{')
             f.write('\n//\t\tcellSize 1;\n')
@@ -710,23 +747,22 @@ class MyModel:
                     ref_value /= 2.0
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                        f.write('\n\t' + i[grid.OBJECT_NAME] + '\n')
-                        f.write('\t{\n')
+                        f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
                         if i[grid.TYPE] == 'BoxRefine':
                             f.write('\t\ttype\tbox;\n')
-                            f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
-                            f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
-                                '; // Relative to the maximum cell size\n')
-                            f.write('\t\tcentre\t(' + str(obj.Shape.CenterOfMass.x) + ' ' +
-                                str(obj.Shape.CenterOfMass.y) + ' ' + str(obj.Shape.CenterOfMass.z) + ');\n')
-                            f.write('\t\tlengthX\t' + str(obj.Length.Value) + ';\n')
-                            f.write('\t\tlengthY\t' + str(obj.Width.Value) + ';\n')
-                            f.write('\t\tlengthZ\t' + str(obj.Height.Value) + ';\n')
+                            f.write('\t\tcellSize\t{};\n'.format(ref_thickness))
+                            f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
+                                ' // Relative to the maximum cell size\n')
+                            f.write('\t\tcentre\t({} {} {});\n'.format(obj.Shape.CenterOfMass.x,
+                                obj.Shape.CenterOfMass.y, obj.Shape.CenterOfMass.z))
+                            f.write('\t\tlengthX\t{};\n'.format(obj.Length.Value))
+                            f.write('\t\tlengthY\t{};\n'.format(obj.Width.Value))
+                            f.write('\t\tlengthZ\t{};\n'.format(obj.Height.Value))
                         elif i[grid.TYPE] == 'CylinderRefine':
                             f.write('\t\ttype\tcone;\n')
-                            f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
-                            f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
-                                '; // Relative to the maximum cell size\n')
+                            f.write('\t\tcellSize\t{};\n'.format(ref_thickness))
+                            f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
+                                ' // Relative to the maximum cell size\n')
                             f.write('\t\tp0\t({} {} {});\n'.format(
                                     obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                             f.write('\t\tp1\t({} {} {});\n'.format(
@@ -737,9 +773,9 @@ class MyModel:
                             f.write('\t\tradius1\t{};\n'.format(obj.Radius.Value))
                         elif i[grid.TYPE] == 'SphereRefine':
                             f.write('\t\ttype\tsphere;\n')
-                            f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
-                            f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
-                                '; // Relative to the maximum cell size\n')
+                            f.write('\t\tcellSize\t{};\n'.format(ref_thickness))
+                            f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
+                                ' // Relative to the maximum cell size\n')
                             f.write('\t\tcentre\t({} {} {});\n'.format(
                                     obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                             f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
@@ -810,12 +846,11 @@ class MyModel:
                         ref_level += 1
                         ref_value /= 2.0
                     f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
-                    f.write('\n\t\tsurfaceFile\t"' + i[grid.OBJECT_NAME] + '.stl";\n')
-                    f.write('\t\tcellSize\t' + str(ref_thickness) + ';\n')
-                    f.write('//\t\tadditionalRefinementLevels\t' + str(ref_level) +
-                        '; // Relative to the maximum cell size\n')
-                    f.write('\t\trefinementThickness\t' + str(i[grid.RATIO]) + ';\n')
-                    f.write('\t}\n')
+                    f.write('\n\t\tsurfaceFile\t"constant/triSurface/' + i[grid.OBJECT_NAME] + '.stl";\n')
+                    f.write('\t\tcellSize\t{};\n'.format(ref_thickness))
+                    f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
+                        ' // Relative to the maximum cell size\n')
+                    f.write('\t\trefinementThickness\t{};\n\t}\n'.format(i[grid.RATIO]))
             try:
                 for x in meshDict.getValueForKey(['surfaceMeshRefinement']):
                     if DictParserList.isType(x, DictParserList.BLOCK) and x.key() not in objects:

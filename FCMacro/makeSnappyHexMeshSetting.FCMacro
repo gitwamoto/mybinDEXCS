@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/4 7:41:59 PM
+# 2026/1/6 2:34:28 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -123,9 +123,9 @@ class FreeCadFileGrid(QtGui.QTableWidget):
         except:
             pass
 
-class SHMeshFrame(QtGui.QDialog):
+class MeshFrame(QtGui.QDialog):
     def __init__(self, controller, freecad_objects, case_dir_path, max_cell_size, features_level, feature_angle):
-        super(SHMeshFrame, self).__init__(parent = None)
+        super(MeshFrame, self).__init__(parent = None)
         self.setWindowTitle('snappyHexMesh settings from FreeCAD Model (.fcstd)')
 
         self.controller = controller
@@ -217,14 +217,14 @@ class SHMeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParamsFromSHMeshDict(self, sHMeshDict_path, setFieldsDict_path, topoSetDict_path):
+    def setParamsFromDictFiles(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
         try:
-            sHMeshDict = DictParser(file_name = sHMeshDict_path)
-            assert (sHMeshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
-                sHMeshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
-                sHMeshDict.getValueForKey(['FoamFile', 'object'])[0] == 'snappyHexMeshDict')
+            meshDict = DictParser(file_name = meshDict_path)
+            assert (meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                meshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                meshDict.getValueForKey(['FoamFile', 'object'])[0] == 'snappyHexMeshDict')
         except:
-            raise Exception(sHMeshDict_path + ' is not a snappyHexMeshDict file.')
+            raise Exception(meshDict_path + ' is not a snappyHexMeshDict file.')
         if os.path.isfile(setFieldsDict_path):
             try:
                 setFieldsDict = DictParser(file_name = setFieldsDict_path)
@@ -246,17 +246,17 @@ class SHMeshFrame(QtGui.QDialog):
         else:
             topoSetDict = None
         try:
-            self.maxCellSizeCRL.setText(sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])[0])
+            self.maxCellSizeCRL.setText(meshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])[0])
         except:
             pass
         try:
             self.featuresLevelCRL.setText(
-                sHMeshDict.getValueForKey(['castellatedMeshControls', 'features', '', 'level'])[0])
+                meshDict.getValueForKey(['castellatedMeshControls', 'features', '', 'level'])[0])
         except:
             pass
         try:
             self.featureAngleCRL.setText(
-                sHMeshDict.getValueForKey(['castellatedMeshControls', 'resolveFeatureAngle'])[0])
+                meshDict.getValueForKey(['castellatedMeshControls', 'resolveFeatureAngle'])[0])
         except:
             pass
         objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
@@ -266,7 +266,7 @@ class SHMeshFrame(QtGui.QDialog):
         cylinder = []
         sphere = []
         surface = []
-        for x in sHMeshDict.getValueForKey(['geometry']):
+        for x in meshDict.getValueForKey(['geometry']):
             if DictParserList.isType(x, DictParserList.BLOCK):
                 if x.key().endswith('.stl'):
                     for y in x.value():
@@ -286,7 +286,7 @@ class SHMeshFrame(QtGui.QDialog):
                             elif y.value()[0] == 'searchableSurfaceWithGaps':
                                 surface.append(x.key())
         try:
-            for x in sHMeshDict.getValueForKey(
+            for x in meshDict.getValueForKey(
                 ['castellatedMeshControls', 'refinementSurfaces', name, 'regions']):
                 if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
                     i = objects.index(x.key())
@@ -301,7 +301,7 @@ class SHMeshFrame(QtGui.QDialog):
         except:
             pass
         try:
-            for x in sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
+            for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
                 if (DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects and
                     (x.key() in box or x.key() in cylinder or x.key() in sphere or x.key() in surface)):
                     i = objects.index(x.key())
@@ -356,7 +356,7 @@ class SHMeshFrame(QtGui.QDialog):
             self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'LocationInMesh')
         name += '_'
         try:
-            for x in sHMeshDict.getValueForKey(['addLayersControls', 'layers']):
+            for x in meshDict.getValueForKey(['addLayersControls', 'layers']):
                 if (DictParserList.isType(x, DictParserList.BLOCK) and x.key().startswith(name) and
                     x.key()[len(name):] in objects):
                     i = objects.index(x.key()[len(name):])
@@ -370,9 +370,9 @@ class SHMeshFrame(QtGui.QDialog):
         except:
             pass
 
-        QtGui.QMessageBox.warning(self, 'LocationInMesh',
+        QtGui.QMessageBox.warning(None, 'LocationInMesh',
             'Confirm that LocationInMesh is selected correctly!', QtGui.QMessageBox.Close)
-        return sHMeshDict, setFieldsDict, topoSetDict
+        return meshDict, setFieldsDict, topoSetDict
 
     def actionOnExitButton(self):
         self.close()
@@ -389,60 +389,60 @@ class MyController:
         import Part
         self.doc = App.ActiveDocument
         self.model = MyModel()
-        self.sHMeshDict = self.setFieldsDict = self.topoSetDict = None
+        self.meshDict = self.setFieldsDict = self.topoSetDict = None
+        starts_with_number = False
         if self.doc.FileName == '':
             QtGui.QMessageBox.critical(None, 'Error',
                 'This document has never been saved. Save the document and retry.', QtGui.QMessageBox.Close)
             return
         for obj in self.doc.Objects:
-            try:
-                if obj.ViewObject.Visibility and hasattr(obj, 'Shape'):
-                    l = obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label
-                    if ' ' in l:
-                        QtGui.QMessageBox.critical(None, 'Error',
-                            'Label "{}" has a half space, which is prohibited'.format(l), QtGui.QMessageBox.Close)
-                        return
-            except:
-                print(sys.exc_info())
-                pass
-        self.sHMeshFrame = SHMeshFrame(controller = self,
+            if obj.ViewObject.Visibility and hasattr(obj, 'Shape'):
+                obj.Label = obj.Label.strip()
+                l = obj.Label
+                obj.Label = re.sub('^([0-9])', r'_\1', l.replace(' ', '_'))
+                if obj.Label != l:
+                    QtGui.QMessageBox.warning(None, 'Prohibited object label', 'Label fixed: ' +
+                        (l.encode('UTF-8') if sys.version_info.major <= 2 else l) + ' -> ' +
+                        (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label),
+                        QtGui.QMessageBox.Close)
+        self.MeshFrame = MeshFrame(controller = self,
             freecad_objects = self.doc.Objects,
             case_dir_path = os.path.dirname(self.doc.FileName),
             max_cell_size = self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)/60.0,
             features_level = 1,
             feature_angle = MyController.FEATURE_ANGLE)
-        self.sHMeshFrame.show()
+        self.MeshFrame.show()
 
     def actionOnCaseButton(self):
-        dir_name = QtGui.QFileDialog.getExistingDirectory(self.sHMeshFrame, 'Choose a directory.',
+        dir_name = QtGui.QFileDialog.getExistingDirectory(self.MeshFrame, 'Choose a directory.',
             os.path.expanduser(os.path.join('~', 'Desktop')))
         if dir_name != '':
-            self.sHMeshFrame.caseDirST.setText(dir_name)
+            self.MeshFrame.caseDirST.setText(dir_name)
 
     def actionOnOpenButton(self):
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()
         if os.path.isdir(case_dir_path):
             os.system("xdg-open '" + case_dir_path + "'")
 
     def actionOnExportButton(self):
-        if not os.path.isdir(self.sHMeshFrame.caseDirST.text()):
-            QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
-                self.sHMeshFrame.caseDirST.text() + ' is not a directory.', QtGui.QMessageBox.Close)
+        if not os.path.isdir(self.MeshFrame.caseDirST.text()):
+            QtGui.QMessageBox.critical(None, 'Error',
+                self.MeshFrame.caseDirST.text() + ' is not a directory.', QtGui.QMessageBox.Close)
             return
         num_of_LocationInMesh = 0
-        for i in self.sHMeshFrame.grid.table:
-            if i[self.sHMeshFrame.grid.TYPE] == 'LocationInMesh':
+        for i in self.MeshFrame.grid.table:
+            if i[self.MeshFrame.grid.TYPE] == 'LocationInMesh':
                 num_of_LocationInMesh += 1
                 break
         if num_of_LocationInMesh == 0:
-            QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error',
+            QtGui.QMessageBox.critical(None, 'Error',
                 'LocationInMesh is required!\nSet LocationInMesh and try again.', QtGui.QMessageBox.Close)
             return
-        elif num_of_LocationInMesh > 1 and QtGui.QMessageBox.warning(self.sHMeshFrame, 'Multiple LocationInMesh',
+        elif num_of_LocationInMesh > 1 and QtGui.QMessageBox.warning(None, 'Multiple LocationInMesh',
             '{} LocationInMesh exist. Is this correct?'.format(num_of_LocationInMesh),
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.No:
             return # chtMultiRegionFoam（共役熱伝導解析）ではLocationInMeshが複数ある
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()
         # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
         if not os.path.isdir(os.path.join(case_dir_path, 'constant')):
             os.system('rsync -a ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'constant') + ' ' +
@@ -463,44 +463,44 @@ class MyController:
         elif os.path.isfile(extendedFeatureEdgeMesh):
             os.remove(extendedFeatureEdgeMesh)
         stl_file_name = os.path.join(triSurface, re.sub('^([0-9])', r'_\1', os.path.basename(case_dir_path)) + '.stl')
-        box = self.model.exportStl(self.doc.Objects, self.sHMeshFrame.grid, stl_file_name)
+        box = self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_name)
         self.model.makeSurfFeatExtDict(case_dir_path = case_dir_path,
-            surface_file_name = stl_file_name, feature_angle = self.sHMeshFrame.featureAngleCRL.text())
+            surface_file_name = stl_file_name, feature_angle = self.MeshFrame.featureAngleCRL.text())
         cwd = os.getcwd()
         os.chdir(case_dir_path)
         command = '. ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' + 'surfaceFeatureExtract'
         if os.system(command) != 0:
-            QtGui.QMessageBox.critical(self.cfMeshFrame, 'Error', command + ' was not succeed.', QtGui.QMessageBox.Close)
+            QtGui.QMessageBox.critical(None, 'Error', command + ' was not succeed.', QtGui.QMessageBox.Close)
             os.chdir(cwd)
             return
         os.chdir(cwd)
-        self.model.makeSHMeshDict(case_dir_path = case_dir_path,
+        self.model.makeMeshDict(case_dir_path = case_dir_path,
             surface_file_name = stl_file_name,
-            max_cell_size = self.sHMeshFrame.maxCellSizeCRL.text(),
+            max_cell_size = self.MeshFrame.maxCellSizeCRL.text(),
             bounding_box = box,
             freecad_objects = self.doc.Objects,
-            grid = self.sHMeshFrame.grid,
-            features_level = self.sHMeshFrame.featuresLevelCRL.text(),
-            feature_angle = self.sHMeshFrame.featureAngleCRL.text(),
-            sHMeshDict = self.sHMeshDict)
+            grid = self.MeshFrame.grid,
+            features_level = self.MeshFrame.featuresLevelCRL.text(),
+            feature_angle = self.MeshFrame.featureAngleCRL.text(),
+            meshDict = self.meshDict)
         self.model.makeSetFieldsDict(case_dir_path = case_dir_path,
             freecad_objects = self.doc.Objects,
-            grid = self.sHMeshFrame.grid,
+            grid = self.MeshFrame.grid,
             setFieldsDict = self.setFieldsDict)
         self.model.makeTopoSetDict(case_dir_path = case_dir_path,
             freecad_objects = self.doc.Objects,
-            grid = self.sHMeshFrame.grid,
+            grid = self.MeshFrame.grid,
             topoSetDict = self.topoSetDict)
-        QtGui.QMessageBox.information(self.sHMeshFrame, 'Done',
+        QtGui.QMessageBox.information(None, 'Done',
             'File system/snappyHexMeshDict for snappyHexMesh has been created.', QtGui.QMessageBox.Close)
 
     def actionOnSHMeshButton(self):
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()
         if not os.path.isfile(os.path.join(case_dir_path, 'system', 'snappyHexMeshDict')):
-            QtGui.QMessageBox.warning(self.sHMeshFrame, 'No snappyHexMeshDict',
+            QtGui.QMessageBox.critical(None, 'No snappyHexMeshDict',
                 "File system/snappyHexMeshDict doesn't exist.", QtGui.QMessageBox.Close)
             return
-        if QtGui.QMessageBox.question(self.sHMeshFrame, 'snappyHexMesh',
+        if QtGui.QMessageBox.question(None, 'snappyHexMesh',
             'Really exicute snappyHexMesh?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
@@ -510,59 +510,58 @@ class MyController:
             os.chdir(cwd)
 
     def actionOnExtrudeMeshButton(self):
-        if QtGui.QMessageBox.question(self.sHMeshFrame, '2D by extrudeMesh',
+        if QtGui.QMessageBox.question(None, '2D by extrudeMesh',
             'Really exicute extrudeMesh to generate a two-dimensional mesh?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
-            os.chdir(self.sHMeshFrame.caseDirST.text())
+            os.chdir(self.MeshFrame.caseDirST.text())
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
                 os.path.join(path_binDEXCS, '2次元メッシュに.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnImproveMeshQualityButton(self):
-        if QtGui.QMessageBox.question(self.sHMeshFrame, 'improveMeshQuality',
+        if QtGui.QMessageBox.question(None, 'improveMeshQuality',
             'Really exicute improveMeshQuality?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
-            os.chdir(self.sHMeshFrame.caseDirST.text())
+            os.chdir(self.MeshFrame.caseDirST.text())
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
                 os.path.join(path_binDEXCS, 'improveMeshQualityを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnFlattenPatchButton(self):
-        if QtGui.QMessageBox.question(self.sHMeshFrame, 'Flatten patch',
+        if QtGui.QMessageBox.question(None, 'Flatten patch',
             'Really flatten patch?',
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
-            os.chdir(self.sHMeshFrame.caseDirST.text())
+            os.chdir(self.MeshFrame.caseDirST.text())
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
                 os.path.join(path_binDEXCS, 'patchを平面に.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnLoadButton(self):
-        case_dir_path = self.sHMeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()
         if not os.path.isdir(case_dir_path):
             return
         try:
-            self.sHMeshDict, self.setFieldsDict, self.topoSetDict = \
-            self.sHMeshFrame.setParamsFromSHMeshDict(
+            self.meshDict, self.setFieldsDict, self.topoSetDict = self.MeshFrame.setParamsFromDictFiles(
                 os.path.join(case_dir_path, 'system', 'snappyHexMeshDict'),
                 os.path.join(case_dir_path, 'system', 'setFieldsDict'),
                 os.path.join(case_dir_path, 'system', 'topoSetDict'))
         except Exception as e:
-            self.sHMeshDict = self.setFieldsDict = self.topoSetDict = None
-            QtGui.QMessageBox.critical(self.sHMeshFrame, 'Error', str(e), QtGui.QMessageBox.Close)
+            self.meshDict = self.setFieldsDict = self.topoSetDict = None
+            QtGui.QMessageBox.critical(None, 'Error', str(e), QtGui.QMessageBox.Close)
 
     def actionOnEditButton(self):
-        sHMeshDict_path = os.path.join(self.sHMeshFrame.caseDirST.text(), 'system', 'snappyHexMeshDict')
-        if not os.path.isfile(sHMeshDict_path):
-            QtGui.QMessageBox.warning(self.sHMeshFrame, 'No snappyHexMeshDict',
+        meshDict_path = os.path.join(self.MeshFrame.caseDirST.text(), 'system', 'snappyHexMeshDict')
+        if not os.path.isfile(meshDict_path):
+            QtGui.QMessageBox.critical(None, 'No snappyHexMeshDict',
                 "File system/snappyHexMeshDict doesn't exist.", QtGui.QMessageBox.Close)
             return
-        if QtGui.QMessageBox.question(self.sHMeshFrame, 'Edit',
+        if QtGui.QMessageBox.question(None, 'Edit',
             'The file system/snappyHexMeshDict last exported/saved will be edited.\n' +
             'Really edit?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
-            os.system('gedit ' + sHMeshDict_path)
+            os.system('gedit ' + meshDict_path)
 
 class MyModel:
     @staticmethod
@@ -585,7 +584,6 @@ class MyModel:
     @staticmethod
     def exportStl(freecad_objects, grid, file_name):
         tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
-        dir_name = os.path.dirname(file_name)
         xmin = ymin = zmin = float('inf')
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
@@ -596,11 +594,22 @@ class MyModel:
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
                         if i[grid.TYPE] == 'SurfaceRefine':
-                            name = os.path.join(dir_name, i[grid.OBJECT_NAME])
-                            Mesh.export([obj], name + '.ast') # ascii format
-                            os.rename(name + '.ast', name + '.stl') # can overwrite
+                            Mesh.export([obj], i[grid.OBJECT_NAME] + '.ast') # ascii format
+                            os.rename(i[grid.OBJECT_NAME] + '.ast', i[grid.OBJECT_NAME] + '.stl') # can overwrite
                         else:
                             Mesh.export([obj], tmp_stl)
+                            # ascii stlフォーマット
+                            # solid 任意の文字列
+                            # facet normal x成分値 y成分値 z成分値
+                            # outer loop
+                            # vertex x成分値 y成分値 z成分値
+                            # vertex x成分値 y成分値 z成分値
+                            # vertex x成分値 y成分値 z成分値
+                            # endloop
+                            # endfacet
+                            #（facet normal行～endfacet行までを１枚の三角形データとして以降くり返し）
+                            # ..............
+                            # endsolid 任意の文字列
                             for line in open(tmp_stl, 'r'):
                                 if 'endsolid' in line:
                                     f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
@@ -641,8 +650,8 @@ class MyModel:
         os.chmod(dict_name, 0o0666)
 
     @staticmethod
-    def makeSHMeshDict(case_dir_path, surface_file_name, max_cell_size, bounding_box,
-        freecad_objects, grid, features_level, feature_angle, sHMeshDict):
+    def makeMeshDict(case_dir_path, surface_file_name, max_cell_size, bounding_box,
+        freecad_objects, grid, features_level, feature_angle, meshDict):
         dict_name = os.path.join(case_dir_path, 'system', 'snappyHexMeshDict')
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
@@ -659,7 +668,7 @@ class MyModel:
             f.write('\n// Which of the steps to run\n')
             for i in ('castellatedMesh', 'snap', 'addLayers'):
                 try:
-                    x = sHMeshDict.getValueForKey([i])
+                    x = meshDict.getValueForKey([i])
                     f.write(i + '\t' + x[0] + '; // true or false\n')
                 except:
                     f.write(i + '\ttrue; // true | false\n')
@@ -723,11 +732,11 @@ class MyModel:
                     f.write('\t\tgap\t0;\n')
                     f.write('\t}\n')
             try:
-                for x in sHMeshDict.getValueForKey(['geometry']):
+                for x in meshDict.getValueForKey(['geometry']):
                     if (DictParserList.isType(x, DictParserList.BLOCK) and
-                        x.key() != surface_file_name and re.sub(r'\.stl$', '', x.key()) not in objects):
+                        x.key() != surface_file_name and re.sub(r'.stl$', '', x.key()) not in objects):
                         f.write('\n')
-                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -775,13 +784,13 @@ class MyModel:
             f.write('\t// ----- Refinement parameters -----\n')
             f.write('\n\t// Maximum number of cells per processor during refinement\n')
             try:
-                x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'maxLocalCells'])
+                x = meshDict.getValueForKey(['castellatedMeshControls', 'maxLocalCells'])
                 f.write('\tmaxLocalCells\t' + x[0] + ';\n')
             except:
                 f.write('\tmaxLocalCells\t100000;\n')
             f.write('\n\t// Overall cell limit during refinement (i.e. before removal)\n')
             try:
-                x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'maxGlobalCells'])
+                x = meshDict.getValueForKey(['castellatedMeshControls', 'maxGlobalCells'])
                 f.write('\tmaxGlobalCells\t' + x[0] + ';\n')
             except:
                 f.write('\tmaxGlobalCells\t2000000;\n')
@@ -790,13 +799,13 @@ class MyModel:
             f.write('\t// or equal to the minRefinementCells parameter, the refinement will stop.\n')
             f.write('\t// be performed.\n')
             try:
-                x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'minRefinementCells'])
+                x = meshDict.getValueForKey(['castellatedMeshControls', 'minRefinementCells'])
                 f.write('\tminRefinementCells\t' + x[0] + ';\n')
             except:
                 f.write('\tminRefinementCells\t2;\n')
             f.write('\n\t// Number of buffer layers of cells between different levels of refinement\n')
             try:
-                x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'nCellsBetweenLevels'])
+                x = meshDict.getValueForKey(['castellatedMeshControls', 'nCellsBetweenLevels'])
                 f.write('\tnCellsBetweenLevels\t' + x[0] + ';\n')
             except:
                 f.write('\tnCellsBetweenLevels\t3;\n')
@@ -851,11 +860,11 @@ class MyModel:
                             ' // ((distance1 level1) (distance2 level2) ...), distance1 < distance2, level1 > level2\n')
                 f.write('\t\t}\n')
             try:
-                for x in sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
+                for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
                     if (DictParserList.isType(x, DictParserList.BLOCK) and
                         x.key() != surface_file_name and x.key() not in objects):
                         f.write('\n')
-                        sHMeshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -884,18 +893,18 @@ class MyModel:
             f.write('\n\t// allowFreeStandingZoneFaces allowing zone faces that share the same\n')
             f.write('\t// owner and neighbour cell zone. Not used if there are no faceZones.\n')
             try:
-                x = sHMeshDict.getValueForKey(['castellatedMeshControls', 'allowFreeStandingZoneFaces'])
+                x = meshDict.getValueForKey(['castellatedMeshControls', 'allowFreeStandingZoneFaces'])
                 f.write('\tallowFreeStandingZoneFaces\t' + x[0] + ';\n')
             except:
                 f.write('\tallowFreeStandingZoneFaces\ttrue;\n')
             try:
-                for x in sHMeshDict.getValueForKey(['castellatedMeshControls']):
+                for x in meshDict.getValueForKey(['castellatedMeshControls']):
                     if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
                         x.key() not in ('maxLocalCells', 'maxGlobalCells', 'minRefinementCells',
                         'nCellsBetweenLevels', 'features', 'refinementSurfaces', 'resolveFeatureAngle',
                         'refinementRegions', 'locationInMesh', 'locationsInMesh', 'allowFreeStandingZoneFaces')):
                         f.write('\n')
-                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -904,7 +913,7 @@ class MyModel:
             f.write('snapControls\n{\n')
             f.write('\t// Number of smoothing iterations along the surface\n')
             try:
-                x = sHMeshDict.getValueForKey(['snapControls', 'nSmoothPatch'])
+                x = meshDict.getValueForKey(['snapControls', 'nSmoothPatch'])
                 f.write('\tnSmoothPatch\t' + x[0] + ';\n')
             except:
                 f.write('\tnSmoothPatch\t3;\n')
@@ -912,20 +921,20 @@ class MyModel:
             f.write('\t// at the face of refinement (effectively making the faces non-planar).\n')
             f.write('\t// Default value is 0.\n')
             try:
-                x = sHMeshDict.getValueForKey(['snapControls', 'nSmoothInternal'])
+                x = meshDict.getValueForKey(['snapControls', 'nSmoothInternal'])
                 f.write('\tnSmoothInternal\t' + x[0] + ';\n')
             except:
                 f.write('\tnSmoothInternal\t1;\n')
             f.write('\n\t// Multiplied by local cell-edge length specifies region along the surface\n')
             f.write('\t// within which the points are attracted by the surface\n')
             try:
-                x = sHMeshDict.getValueForKey(['snapControls', 'tolerance'])
+                x = meshDict.getValueForKey(['snapControls', 'tolerance'])
                 f.write('\ttolerance\t' + x[0] + ';\n')
             except:
                 f.write('\ttolerance\t1.0;\n')
             f.write('\n\t// Number of mesh displacement iterations\n')
             try:
-                x = sHMeshDict.getValueForKey(['snapControls', 'nSolveIter'])
+                x = meshDict.getValueForKey(['snapControls', 'nSolveIter'])
                 f.write('\tnSolveIter\t' + x[0] + ';\n')
             except:
                 f.write('\tnSolveIter\t30;\n')
@@ -933,24 +942,24 @@ class MyModel:
             f.write('\t// conform the geometry and all the iterations are spend, user may try to\n')
             f.write('\t// increase the number of iterations.\n')
             try:
-                x = sHMeshDict.getValueForKey(['snapControls', 'nRelaxIter'])
+                x = meshDict.getValueForKey(['snapControls', 'nRelaxIter'])
                 f.write('\tnRelaxIter\t' + x[0] + ';\n')
             except:
                 f.write('\tnRelaxIter\t5;\n')
             f.write('\n\t// Number of relaxation iterations used for snapping onto the features.\n')
             f.write('\t// If not specified, feature snapping will be disabled.\n')
             try:
-                x = sHMeshDict.getValueForKey(['snapControls', 'nFeatureSnapIter'])
+                x = meshDict.getValueForKey(['snapControls', 'nFeatureSnapIter'])
                 f.write('\tnFeatureSnapIter\t' + x[0] + ';\n')
             except:
                 f.write('\tnFeatureSnapIter\t10;\n')
             try:
-                for x in sHMeshDict.getValueForKey(['snapControls']):
+                for x in meshDict.getValueForKey(['snapControls']):
                     if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
                         x.key() not in ('nSmoothPatch', 'nSmoothInternal', 'tolerance',
                         'nSolveIter', 'nRelaxIter', 'nFeatureSnapIter')):
                         f.write('\n')
-                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -970,36 +979,36 @@ class MyModel:
                 f.write('\t\t\tnSurfaceLayers\t{};\n'.format(i[grid.N_LAYERS]))
                 f.write('\t\t\texpansionRatio\t{};\n'.format(i[grid.RATIO]))
                 try:
-                    for x in sHMeshDict.getValueForKey(['addLayersControls', 'layers',
+                    for x in meshDict.getValueForKey(['addLayersControls', 'layers',
                         surface_file_name_wo_ext + '_' + i[grid.OBJECT_NAME]]):
                         if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
                             x.key() not in ('nSurfaceLayers', 'expansionRatio')):
-                            sHMeshDict.writeContents(x, f, indent = '\t\t\t', last_char = '\n')
+                            meshDict.writeContents(x, f, indent = '\t\t\t', last_char = '\n')
                             f.write('\n')
                 except:
                     pass
                 f.write('\t\t}\n')
             f.write('\t}\n') # layers
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'expansionRatio'])
+                x = meshDict.getValueForKey(['addLayersControls', 'expansionRatio'])
                 f.write('\texpansionRatio\t' + x[0] + '; // mandatory\n')
             except:
                 f.write('\n\texpansionRatio\t1; // mandatory\n')
             f.write('\n\t// Thickness of the layer furthest away from the wall\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'finalLayerThickness'])
+                x = meshDict.getValueForKey(['addLayersControls', 'finalLayerThickness'])
                 f.write('\tfinalLayerThickness\t' + x[0] + ';\n')
             except:
                 f.write('\tfinalLayerThickness\t1;\n')
             f.write('\n\t// Minimum thickness of cell layer\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'minThickness'])
+                x = meshDict.getValueForKey(['addLayersControls', 'minThickness'])
                 f.write('\tminThickness\t' + x[0] + ';\n')
             except:
                 f.write('\tminThickness\t0.1;\n')
             f.write('\n\t// Number of layers of cells where point extrusion is cancelled\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nGrow'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nGrow'])
                 f.write('\tnGrow\t' + x[0] + ';\n')
             except:
                 f.write('\tnGrow\t0;\n')
@@ -1009,55 +1018,55 @@ class MyModel:
             f.write('\tfeatureAngle\t' + feature_angle + ';\n')
             f.write('\n\t// Number of relaxation steps (where relaxed mesh quality parameters are used)\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nRelaxIter'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nRelaxIter'])
                 f.write('\tnRelaxIter\t' + x[0] + ';\n')
             except:
                 f.write('\tnRelaxIter\t3;\n')
             f.write('\n\t// Number of smoothing iterations of surface normals\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nSmoothSurfaceNormals'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nSmoothSurfaceNormals'])
                 f.write('\tnSmoothSurfaceNormals\t' + x[0] + ';\n')
             except:
                 f.write('\tnSmoothSurfaceNormals\t1;\n')
             f.write('\n\t// Number of smoothing iterations of interior mesh movement direction\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nSmoothNormals'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nSmoothNormals'])
                 f.write('\tnSmoothNormals\t' + x[0] + ';\n')
             except:
                 f.write('\tnSmoothNormals\t3;\n')
             f.write('\n\t// Smooth layer thickness over surface patches\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nSmoothThickness'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nSmoothThickness'])
                 f.write('\tnSmoothThickness\t' + x[0] + ';\n')
             except:
                 f.write('\tnSmoothThickness\t10;\n')
             f.write('\n\t// Stop layer growth on highly warped cells\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'maxFaceThicknessRatio'])
+                x = meshDict.getValueForKey(['addLayersControls', 'maxFaceThicknessRatio'])
                 f.write('\tmaxFaceThicknessRatio\t' + x[0] + ';\n')
             except:
                 f.write('\tmaxFaceThicknessRatio\t0.5;\n')
             f.write('\n\t// Reduce layer growth where ratio thickness to medial distance is large\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'maxThicknessToMedialRatio'])
+                x = meshDict.getValueForKey(['addLayersControls', 'maxThicknessToMedialRatio'])
                 f.write('\tmaxThicknessToMedialRatio\t' + x[0] + ';\n')
             except:
                 f.write('\tmaxThicknessToMedialRatio\t1;\n')
             f.write('\n\t// Angle used to select medial axis points\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'minMedialAxisAngle'])
+                x = meshDict.getValueForKey(['addLayersControls', 'minMedialAxisAngle'])
                 f.write('\tminMedialAxisAngle\t' + x[0] + ';\n')
             except:
                 f.write('\tminMedialAxisAngle\t90;\n')
             f.write('\n\t// Create buffer region for new layer terminations\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nBufferCellsNoExtrude'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nBufferCellsNoExtrude'])
                 f.write('\tnBufferCellsNoExtrude\t' + x[0] + ';\n')
             except:
                 f.write('\tnBufferCellsNoExtrude\t0;\n')
             f.write('\n\t// Overall max number of layer addition iterations\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nLayerIter'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nLayerIter'])
                 f.write('\tnLayerIter\t' + x[0] + ';\n')
             except:
                 f.write('\tnLayerIter\t50;\n')
@@ -1065,12 +1074,12 @@ class MyModel:
             f.write('\t// get used. Up to nRelaxIter it uses the settings in meshQualityControls,\n')
             f.write('\t// after nRelaxIter it uses the values in meshQualityControls::relaxed.\n')
             try:
-                x = sHMeshDict.getValueForKey(['addLayersControls', 'nRelaxedIter'])
+                x = meshDict.getValueForKey(['addLayersControls', 'nRelaxedIter'])
                 f.write('\tnRelaxedIter\t' + x[0] + ';\n')
             except:
                 f.write('\tnRelaxedIter\t50;\n')
             try:
-                for x in sHMeshDict.getValueForKey(['addLayersControls']):
+                for x in meshDict.getValueForKey(['addLayersControls']):
                     if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
                         x.key() not in ('relativeSizes', 'layers', 'expansionRatio', 'finalLayerThickness',
                             'minThickness', 'nGrow', 'featureAngle', 'nRelaxIter', 'nSmoothSurfaceNormals',
@@ -1078,7 +1087,7 @@ class MyModel:
                             'maxThicknessToMedialRatio', 'minMedialAxisAngle', 'nBufferCellsNoExtrude',
                             'nLayerIter', 'nRelaxedIter')):
                         f.write('\n')
-                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -1092,15 +1101,15 @@ class MyModel:
             f.write('\trelaxed\n\t{\n')
             f.write('\t\t// Maximum non-orthogonality allowed. Set to 180 to disable.\n')
             try:
-                x = sHMeshDict.getValueForKey(['meshQualityControls', 'relaxed', 'maxNonOrtho'])
+                x = meshDict.getValueForKey(['meshQualityControls', 'relaxed', 'maxNonOrtho'])
                 f.write('\t\tmaxNonOrtho\t' + x[0] + ';\n')
             except:
                 f.write('\t\tmaxNonOrtho\t75;\n')
                 try:
-                    for x in sHMeshDict.getValueForKey(['meshQualityControls', 'relaxed']):
+                    for x in meshDict.getValueForKey(['meshQualityControls', 'relaxed']):
                         if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
                             x.key() != 'maxNonOrtho'):
-                            sHMeshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
+                            meshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
                             f.write('\n')
                 except:
                     pass
@@ -1108,22 +1117,22 @@ class MyModel:
             f.write('\n\t// ----- Advanced -----\n')
             f.write('\n\t// Smoothing iterations. Used in combination with errorReduction.\n')
             try:
-                x = sHMeshDict.getValueForKey(['meshQualityControls', 'nSmoothScale'])
+                x = meshDict.getValueForKey(['meshQualityControls', 'nSmoothScale'])
                 f.write('\tnSmoothScale\t' + x[0] + ';\n')
             except:
                 f.write('\tnSmoothScale\t4;\n')
             f.write('\n\t// Error reduction. Used in combination with nSmoothScale.\n')
             try:
-                x = sHMeshDict.getValueForKey(['meshQualityControls', 'errorReduction'])
+                x = meshDict.getValueForKey(['meshQualityControls', 'errorReduction'])
                 f.write('\terrorReduction\t' + x[0] + ';\n')
             except:
                 f.write('\terrorReduction\t0.75;\n')
             try:
-                for x in sHMeshDict.getValueForKey(['meshQualityControls']):
+                for x in meshDict.getValueForKey(['meshQualityControls']):
                     if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
                         x.key() not in ('nSmoothScale', 'relaxed', 'errorReduction')):
                         f.write('\n')
-                        sHMeshDict.writeContents(x, f, indent = '\t', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
                         f.write('\n')
             except:
                 pass
@@ -1132,18 +1141,18 @@ class MyModel:
             f.write('\n// Merge tolerance. Is fraction of overall bounding box of initial mesh.\n')
             f.write('// Note: the write tolerance needs to be higher than this.\n')
             try:
-                x = sHMeshDict.getValueForKey(['mergeTolerance'])
+                x = meshDict.getValueForKey(['mergeTolerance'])
                 f.write('mergeTolerance\t' + x[0] + ';\n')
             except:
                 f.write('mergeTolerance\t1.0e-06;\n')
             try:
-                for x in sHMeshDict.contents:
+                for x in meshDict.contents:
                     if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
                         x.key() not in ('FoamFile', 'CUSTOM_OPTIONS', 'castellatedMesh', 'snap', 'addLayers',
                             'geometry', 'castellatedMeshControls', 'snapControls', 'addLayersControls',
                             'meshQualityControls', 'mergeTolerance')):
                         f.write('\n')
-                        sHMeshDict.writeContents(x, f, indent = '', last_char = '\n')
+                        meshDict.writeContents(x, f, indent = '', last_char = '\n')
                         f.write('\n')
             except:
                 pass
