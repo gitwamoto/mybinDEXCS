@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/6 2:40:36 PM
+# 2026/1/6 6:35:03 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -271,7 +271,11 @@ class MeshFrame(QtGui.QDialog):
                 if x.key().endswith('.stl'):
                     for y in x.value():
                         if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'name':
-                            name = y.value()[0]
+                            if meshDict.getValueForKey(
+                                ['castellatedMeshControls', 'refinementSurfaces', y.value()[0]]) is not None:
+                                name = y.value()[0]
+                            else:
+                                surface.append(y.value()[0])
                 else:
                     for y in x.value():
                         if not DictParserList.isType(y, DictParserList.DICT):
@@ -283,11 +287,8 @@ class MeshFrame(QtGui.QDialog):
                                 cylinder.append(x.key())
                             elif y.value()[0] == 'searchableSphere':
                                 sphere.append(x.key())
-                            elif y.value()[0] == 'searchableSurfaceWithGaps':
-                                surface.append(x.key())
         try:
-            for x in meshDict.getValueForKey(
-                ['castellatedMeshControls', 'refinementSurfaces', name, 'regions']):
+            for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementSurfaces', name, 'regions']):
                 if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
                     i = objects.index(x.key())
                     remainder.remove(x.key())
@@ -594,8 +595,9 @@ class MyModel:
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
                         if i[grid.TYPE] == 'SurfaceRefine':
-                            Mesh.export([obj], i[grid.OBJECT_NAME] + '.ast') # ascii format
-                            os.rename(i[grid.OBJECT_NAME] + '.ast', i[grid.OBJECT_NAME] + '.stl') # can overwrite
+                            name = os.path.join(os.path.dirname(file_name), i[grid.OBJECT_NAME])
+                            Mesh.export([obj], name + '.ast') # ascii format
+                            os.rename(name + '.ast', name + '.stl') # can overwrite
                         else:
                             Mesh.export([obj], tmp_stl)
                             # ascii stlフォーマット
@@ -687,10 +689,7 @@ class MyModel:
             f.write("// - to 'snap' the mesh boundary to the surface\n")
             f.write('geometry\n{\n')
             f.write('\t' + surface_file_name + ' // in constant/triSurface\n')
-            f.write('\t{\n')
-            f.write('\t\ttype\ttriSurfaceMesh;\n')
-            f.write('\t\tname\t' + surface_file_name_wo_ext + ';\n')
-            f.write('\t}\n')
+            f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t\tname\t' + surface_file_name_wo_ext + ';\n\t}\n')
             for i in grid.table:
                 if i[grid.LEVEL] == 0:
                     continue
@@ -725,12 +724,7 @@ class MyModel:
                             break
                 elif i[grid.TYPE] == 'SurfaceRefine':
                     f.write('\n\t' + i[grid.OBJECT_NAME] + '.stl // in constant/triSurface\n')
-                    f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t}\n')
-                    f.write('\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
-                    f.write('\t\ttype\tsearchableSurfaceWithGaps;\n')
-                    f.write('\t\tsurface\t' + i[grid.OBJECT_NAME] + '.stl;\n')
-                    f.write('\t\tgap\t0;\n')
-                    f.write('\t}\n')
+                    f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t\tname\t' + i[grid.OBJECT_NAME] + ';\n\t}\n')
             try:
                 for x in meshDict.getValueForKey(['geometry']):
                     if (DictParserList.isType(x, DictParserList.BLOCK) and

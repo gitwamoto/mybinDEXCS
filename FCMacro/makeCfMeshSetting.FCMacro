@@ -550,8 +550,9 @@ class MyModel:
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
                         if i[grid.TYPE] == 'SurfaceRefine':
-                            Mesh.export([obj], i[grid.OBJECT_NAME] + '.ast') # ascii format
-                            os.rename(i[grid.OBJECT_NAME] + '.ast', i[grid.OBJECT_NAME] + '.stl') # can overwrite
+                            name = os.path.join(os.path.dirname(file_name), i[grid.OBJECT_NAME])
+                            Mesh.export([obj], name + '.ast') # ascii format
+                            os.rename(name + '.ast', name + '.stl') # can overwrite
                         else:
                             # ascii stlフォーマット
                             # solid 任意の文字列
