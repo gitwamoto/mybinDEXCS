@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/7 3:03:28 PM
+# 2026/1/8 3:59:07 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1274,7 +1274,8 @@ class MyModel:
                         f.write('\t\tk\t({} {} {});\n'.format(
                                 obj.Height.Value*obj.Placement.Matrix.A13, obj.Height.Value*obj.Placement.Matrix.A23,
                                 obj.Height.Value*obj.Placement.Matrix.A33))
-                        f.write('\t}}\n\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t}}\n')
+                        f.write('\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\ttype\tcellZoneSet;\n')
                         f.write('\t\taction\tnew;\n')
