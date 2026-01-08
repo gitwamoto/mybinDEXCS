@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/8 4:06:40 PM
+# 2026/1/8 4:11:58 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -882,14 +882,14 @@ class MyModel:
             f.write('//\t}\n') # planeExample
             f.write('}\n') # anisotropicSource
             f.write('\nrenameBoundary\n{')
-            f.write('\n\tnewPatchNames\n\t{')
+            f.write('\n\tnewPatchNames\n\t{\n')
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
                     'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
-                    f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
-                    f.write('\n\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
+                    f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
+                    f.write('\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
                     f.write('\t\t\ttype\t'+ i[grid.TYPE] + ';\n')
-                    f.write('\t\t}') # i[grid.OBJECT_NAME]
+                    f.write('\t\t}\n') # i[grid.OBJECT_NAME]
             f.write('\t}\n') # newPatchNames
             f.write('}\n') # renameBoundary
             try:
