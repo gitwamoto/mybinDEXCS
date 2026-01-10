@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/8 3:59:07 PM
+# 2026/1/10 5:37:37 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -584,7 +584,8 @@ class MyModel:
 
     @staticmethod
     def exportStl(freecad_objects, grid, file_name):
-        tmp_stl = tempfile.mkstemp(suffix = '.ast')[1]
+        f, tmp_stl = tempfile.mkstemp(suffix = '.ast')
+        os.close(f)
         xmin = ymin = zmin = float('inf')
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
