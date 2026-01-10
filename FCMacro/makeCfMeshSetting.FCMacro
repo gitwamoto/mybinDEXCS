@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/10 5:37:40 PM
+# 2026/1/10 5:47:51 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -539,8 +539,9 @@ class MyModel:
 
     @staticmethod
     def exportStl(freecad_objects, grid, file_name):
-        f, tmp_stl = tempfile.mkstemp(suffix = '.ast')
-        os.close(f)
+        fd, tmp_stl = tempfile.mkstemp(suffix = '.ast')
+        os.close(fd)
+        os.remove(tmp_stl)
         xmin = ymin = zmin = float('inf')
         xmax = ymax = zmax = float('-inf')
         with open(file_name, 'w') as f:
