@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2025/4/1 4:20:50 PM
+# 2026/1/15 1:28:20 PM
 
 import os
 import signal
@@ -81,11 +81,11 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r %d' % regions + ' -e -d', shell = True)
+        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r {}'.format(regions) + ' -e -d', shell = True)
         # ' -e -d'などのオプションの意味は，計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
 
 #        # ----- ベイズ最適化を使ったならし計算を使う場合 -----
-#        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r %d' % regions + ' -e -d -i -1 -6', shell = True)
+#        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r {}'.format(regions) + ' -e -d -i -1 -6', shell = True)
 
     # 正確な計算
     for d in ('elbow_vane01_10', 'elbow_vane02_10', 'elbow_vane03_10', 'elbow_wovane'):
@@ -113,9 +113,9 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r %d' % regions + ' -e', shell = True)
+        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r %{}'.format(regions) + ' -e', shell = True)
         # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
 
 #        # ----- ベイズ最適化を使ったならし計算を使う場合 -----
-#        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r %d' % regions + ' -e', shell = True)
+#        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r {}'.format(regions) + ' -e', shell = True)
 #        # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
