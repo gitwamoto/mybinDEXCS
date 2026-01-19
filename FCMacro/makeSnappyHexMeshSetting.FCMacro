@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/10 5:47:54 PM
+# 2026/1/19 8:12:13 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1260,7 +1260,7 @@ class MyModel:
                     continue
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                        f.write('\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\tname\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\ttype\tcellSet;\n')
                         f.write('\t\taction\tnew;\n')
@@ -1276,8 +1276,8 @@ class MyModel:
                         f.write('\t\tk\t({} {} {});\n'.format(
                                 obj.Height.Value*obj.Placement.Matrix.A13, obj.Height.Value*obj.Placement.Matrix.A23,
                                 obj.Height.Value*obj.Placement.Matrix.A33))
-                        f.write('\t}}\n')
-                        f.write('\t{{ // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                        f.write('\t}\n')
+                        f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\ttype\tcellZoneSet;\n')
                         f.write('\t\taction\tnew;\n')
