@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/19 8:12:16 PM
+# 2026/1/21 2:40:06 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -71,7 +71,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
             combo = QtGui.QComboBox()
             combo.addItems(['patch', 'wall', 'empty', 'symmetryPlane', 'symmetry', 'overset',
                             'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                            'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'])
+                            'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo', 'N/A'])
             self.setCellWidget(i, FreeCadFileGrid.TYPE, combo)
             self.table[i][FreeCadFileGrid.TYPE] = combo.itemText(combo.currentIndex())
             combo.currentIndexChanged.connect(partial(self.actionOnCurrentIndexChanged, i))
@@ -325,33 +325,43 @@ class MeshFrame(QtGui.QDialog):
             pass
         try:
             for x in setFieldsDict.getValueForKey(['regions']):
-                if DictParserList.isType(x, DictParserList.LISTP):
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' in y[1].lower():
-                            for i, j in enumerate(objects):
-                                if j in y[1]:
-                                    remainder.remove(j)
-                                    if y.key() == 'boxToCell':
-                                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
-                                    elif y.key() == 'cylinderToCell':
-                                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
-                                    else:
-                                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
-                                    break
+                for y in x.value():
+                    if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' in y[1].lower():
+                        for i, j in enumerate(objects):
+                            if j in y[1]:
+                                remainder.remove(j)
+                                if y.key() == 'boxToCell':
+                                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
+                                elif y.key() == 'cylinderToCell':
+                                    self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
+                                else:
+                                    self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
+                                break
         except:
             pass
         try:
             for x in topoSetDict.getValueForKey(['actions']):
-                if DictParserList.isType(x, DictParserList.LISTP):
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.BLOCK):
-                            for z in y.value():
-                                if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
-                                    for i, j in enumerate(objects):
-                                        if z.value()[0] in (j, j + 'CellSet'):
-                                            remainder.remove(j)
-                                            self.grid.setCellValue(i, self.grid.TYPE, 'BoxTopo')
-                                            break
+                for y in x.value():
+                    grid_index = -1
+                    source = None
+                    if DictParserList.isType(y, DictParserList.BLOCK):
+                        for z in y.value():
+                            if DictParserList.isType(z, DictParserList.DICT):
+                                if z.key() == 'name':
+                                    name = z.value()[0].replace('CellSet', '')
+                                    if name in objects:
+                                        grid_index = objects.index(name)
+                                        remainder.remove(name)
+                                elif z.key() == 'source':
+                                    if z.value[0] == 'rotatedBoxToCell':
+                                        source = 'BoxTopo'
+                                    elif z.value[0] == 'cylinderToCell':
+                                        source = 'CylinderTopo'
+                                    elif z.value[0] == 'sphereToCell':
+                                        source = 'SphereTopo'
+                                if grid_index != -1 and source is not None:
+                                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxTopo')
+                                    break
         except:
             pass
         for i in remainder:
@@ -547,7 +557,7 @@ class MyModel:
         with open(file_name, 'w') as f:
             for i in grid.table:
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo', 'N/A'):
                     continue
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
@@ -681,7 +691,7 @@ class MyModel:
             for i in grid.table:
                 if not i[grid.BOUNDARY_LAYER] or i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo', 'N/A'):
                     continue
                 f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
                 f.write('\n\t\t\tnLayers\t{}; // (optional)\n'.format(i[grid.N_LAYERS]))
@@ -717,7 +727,7 @@ class MyModel:
             for i in grid.table:
                 if i[grid.CELL_SIZE] == '' or i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo', 'N/A'):
                     continue
                 ref_thickness = i[grid.CELL_SIZE]
                 ref_level = 0
@@ -887,7 +897,7 @@ class MyModel:
             f.write('\n\tnewPatchNames\n\t{\n')
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
-                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'N/A'):
+                    'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo', 'N/A'):
                     f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
                     f.write('\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
                     f.write('\t\t\ttype\t'+ i[grid.TYPE] + ';\n')
@@ -965,17 +975,31 @@ class MyModel:
                             f.write('\t\tcentre\t({} {} {});\n'.format(
                                     obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                             f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
-                        f.write('\t\tfieldValues\n\t\t(\n')
-                        f.write('\t\t\tvolScalarFieldValue alpha.water 1 // ←自分の目的に合わせて書き換える\n')
-                        f.write('\t\t);\n') # fieldValues
+                        fieldValues_is_written = False
+                        try:
+                            for x in setFieldsDict.getValueForKey(['regions']):
+                                for y in x.value():
+                                    if DictParserList.isType(y, DictParserList.BLOCK) and i[grid.OBJECT_NAME] in y[1]:
+                                        for z in y.value():
+                                            if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'fieldValues':
+                                                setFieldsDict.writeContents(z, f, indent = '\t\t', last_char = '\n')
+                                                fieldValues_is_written = True
+                                                break
+                                        break
+                        except:
+                            pass
+                        if not fieldValues_is_written:
+                            f.write('\t\tfieldValues\n\t\t(\n')
+                            f.write('\t\t\tvolScalarFieldValue alpha.water 1 // ←自分の目的に合わせて書き換える\n')
+                            f.write('\t\t);\n') # fieldValues
                         f.write('\t}\n') # boxToCell, cylinderToCell, sphereToCell
+                        break
             try:
                 for x in setFieldsDict.getValueForKey(['regions']):
-                    if DictParserList.isType(x, DictParserList.LISTP):
-                        for y in x.value():
-                            if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' not in y[1].lower():
-                                setFieldsDict.writeContents(y, f, indent = '\t', last_char = '\n')
-                                f.write('\n')
+                    for y in x.value():
+                        if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' not in y[1].lower():
+                            setFieldsDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                            f.write('\n')
             except:
                 pass
             f.write(');\n') # regions
@@ -1012,26 +1036,59 @@ class MyModel:
             f.write('}\n') # FoamFile
             f.write('\nactions\n(\n')
             for i in grid.table:
-                if i[grid.TYPE] != 'BoxTopo':
+                if i[grid.TYPE] not in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
                     continue
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
                         f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\tname\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\ttype\tcellSet;\n')
-                        f.write('\t\taction\tnew;\n')
-                        f.write('\t\tsource\mi;\n')
-                        f.write('\t\torigin\t({} {} {});\n'.format(
-                                obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                        f.write('\t\ti\t({} {} {});\n'.format(
-                                obj.Length.Value*obj.Placement.Matrix.A11, obj.Length.Value*obj.Placement.Matrix.A21,
-                                obj.Length.Value*obj.Placement.Matrix.A31))
-                        f.write('\t\tj\t({} {} {});\n'.format(
-                                obj.Width.Value*obj.Placement.Matrix.A12, obj.Width.Value*obj.Placement.Matrix.A22,
-                                obj.Width.Value*obj.Placement.Matrix.A32))
-                        f.write('\t\tk\t({} {} {});\n'.format(
-                                obj.Height.Value*obj.Placement.Matrix.A13, obj.Height.Value*obj.Placement.Matrix.A23,
-                                obj.Height.Value*obj.Placement.Matrix.A33))
+                        freecad_object = False
+                        action = None
+                        try:
+                            for x in setFieldsDict.getValueForKey(['actions']):
+                                for y in x.value():
+                                    if DictParserList.isType(y, DictParserList.BLOCK):
+                                        for z in y.value():
+                                            if DictParserList.isType(z, DictParserList.DICT):
+                                                if z.key() == 'name' and z.value()[0] == i[grid.OBJECT_NAME] + 'CellSet':
+                                                    freecad_object = True
+                                                elif z.key() == 'action':
+                                                    action = z.value()[0]
+                                            if freecad_object and action is not None:
+                                            break
+                        except:
+                            pass
+                        if action is None:
+                            action = 'new'
+                        f.write('\t\taction\t{};\t// new | add | subtract\n'.format(action))
+                        if i[grid.TYPE] == 'BoxTopo':
+                            f.write('\t\tsource\trotatedBoxToCell;\n')
+                            f.write('\t\torigin\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\ti\t({} {} {});\n'.format(
+                                    obj.Length.Value*obj.Placement.Matrix.A11, obj.Length.Value*obj.Placement.Matrix.A21,
+                                    obj.Length.Value*obj.Placement.Matrix.A31))
+                            f.write('\t\tj\t({} {} {});\n'.format(
+                                    obj.Width.Value*obj.Placement.Matrix.A12, obj.Width.Value*obj.Placement.Matrix.A22,
+                                    obj.Width.Value*obj.Placement.Matrix.A32))
+                            f.write('\t\tk\t({} {} {});\n'.format(
+                                    obj.Height.Value*obj.Placement.Matrix.A13, obj.Height.Value*obj.Placement.Matrix.A23,
+                                    obj.Height.Value*obj.Placement.Matrix.A33))
+                        elif i[grid.TYPE] == 'CylinderTopo':
+                            f.write('\t\tsource\tcylinderToCell;\n')
+                            f.write('\t\tp1\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tp2\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
+                                    obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
+                                    obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
+                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                        else: # SphereTopo
+                            f.write('\t\tsource\tsphereToCell;\n')
+                            f.write('\t\torigin\t({} {} {});\n'.format(
+                                    obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
+                            f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
                         f.write('\t}\n')
                         f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
@@ -1040,22 +1097,22 @@ class MyModel:
                         f.write('\t\tsource\tsetToCellZone;\n')
                         f.write('\t\tset\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t}\n')
+                        break
             try:
                 for x in topoSetDict.getValueForKey(['actions']):
-                    if DictParserList.isType(x, DictParserList.LISTP):
-                        for y in x.value():
-                            if DictParserList.isType(y, DictParserList.BLOCK):
-                                for z in y.value():
-                                    if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
-                                        freecad_object = False
-                                        for i in grid.table:
-                                            if z.value()[0] in (i[grid.OBJECT_NAME], i[grid.OBJECT_NAME] + 'CellSet'):
-                                                freecad_object = True
-                                                break
-                                        if not freecad_object:
-                                            topoSetDict.writeContents(y, f, indent = '\t', last_char = '\n')
-                                            f.write('\n')
+                    for y in x.value():
+                        freecad_object = False
+                        if DictParserList.isType(y, DictParserList.BLOCK):
+                            for z in y.value():
+                                if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
+                                    for i in grid.table:
+                                        if z.value()[0] in (i[grid.OBJECT_NAME], i[grid.OBJECT_NAME] + 'CellSet'):
+                                            freecad_object = True
                                             break
+                                    break
+                        if not freecad_object:
+                            topoSetDict.writeContents(y, f, indent = '\t', last_char = '\n')
+                            f.write('\n')
             except:
                 pass
             f.write(');\n') # actions
