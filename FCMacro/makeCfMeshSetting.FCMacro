@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/21 2:40:06 PM
+# 2026/1/21 7:27:30 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1044,7 +1044,7 @@ class MyModel:
                         f.write('\t\tname\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
                         f.write('\t\ttype\tcellSet;\n')
                         freecad_object = False
-                        action = None
+                        action = 'new'
                         try:
                             for x in setFieldsDict.getValueForKey(['actions']):
                                 for y in x.value():
@@ -1059,8 +1059,6 @@ class MyModel:
                                             break
                         except:
                             pass
-                        if action is None:
-                            action = 'new'
                         f.write('\t\taction\t{};\t// new | add | subtract\n'.format(action))
                         if i[grid.TYPE] == 'BoxTopo':
                             f.write('\t\tsource\trotatedBoxToCell;\n')
@@ -1090,13 +1088,14 @@ class MyModel:
                                     obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                             f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
                         f.write('\t}\n')
-                        f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t\ttype\tcellZoneSet;\n')
-                        f.write('\t\taction\tnew;\n')
-                        f.write('\t\tsource\tsetToCellZone;\n')
-                        f.write('\t\tset\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
-                        f.write('\t}\n')
+                        if action == 'new':
+                            f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
+                            f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
+                            f.write('\t\ttype\tcellZoneSet;\n')
+                            f.write('\t\taction\tnew;\n')
+                            f.write('\t\tsource\tsetToCellZone;\n')
+                            f.write('\t\tset\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
+                            f.write('\t}\n')
                         break
             try:
                 for x in topoSetDict.getValueForKey(['actions']):
