@@ -1282,6 +1282,7 @@ class MyModel:
             f.write('\tobject\ttopoSetDict;\n')
             f.write('}\n') # FoamFile
             f.write('\nactions\n(\n')
+            actions = {}
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
                     continue
@@ -1293,7 +1294,7 @@ class MyModel:
                         freecad_object = False
                         action = 'new'
                         try:
-                            for x in setFieldsDict.getValueForKey(['actions']):
+                            for x in topoSetDict.getValueForKey(['actions']):
                                 for y in x.value():
                                     if DictParserList.isType(y, DictParserList.BLOCK):
                                         for z in y.value():
@@ -1303,7 +1304,8 @@ class MyModel:
                                                 elif z.key() == 'action':
                                                     action = z.value()[0]
                                             if freecad_object and action is not None:
-                                            break
+                                                actions[i[grid.OBJECT_NAME]] = action
+                                                break
                         except:
                             pass
                         f.write('\t\taction\t{};\t// new | add | subtract\n'.format(action))
@@ -1335,7 +1337,13 @@ class MyModel:
                                     obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
                             f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
                         f.write('\t}\n')
-                        if action == 'new':
+                        break
+            for i in grid.table:
+                if i[grid.TYPE] not in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
+                    continue
+                for obj in freecad_objects:
+                    if (i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label) and:
+                        actions[i[grid.OBJECT_NAME]] == 'new'):
                             f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
                             f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
                             f.write('\t\ttype\tcellZoneSet;\n')
