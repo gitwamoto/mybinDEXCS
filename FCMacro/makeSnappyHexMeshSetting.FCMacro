@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/22 11:20:09 AM
+# 2026/1/22 12:29:25 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1297,16 +1297,16 @@ class MyModel:
                     x = topoSetDict.getValueForKey(['actions'])[0]
                     if DictParserList.isType(x, DictParserList.LISTP):
                         for y in x.value():
-                            current_object = False
+                            obj_in_dict = False
                             action = None
                             if DictParserList.isType(y, DictParserList.BLOCK):
                                 for z in y.value():
                                     if DictParserList.isType(z, DictParserList.DICT):
                                         if z.key() == 'name' and z.value()[0] == i[grid.OBJECT_NAME] + 'CellSet':
-                                            current_object = True
+                                            obj_in_dict = True
                                         elif z.key() == 'action':
                                             action = z.value()[0]
-                                    if current_object and action is not None:
+                                    if obj_in_dict and action is not None:
                                         break
                                 break
                 except:
@@ -1361,16 +1361,16 @@ class MyModel:
                 x = topoSetDict.getValueForKey(['actions'])[0]
                 if DictParserList.isType(x, DictParserList.LISTP):
                     for y in x.value():
-                        current_object = False
+                        obj_in_table = False
                         if DictParserList.isType(y, DictParserList.BLOCK):
                             for z in y.value():
                                 if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
                                     for i in grid.table:
                                         if z.value()[0] in (i[grid.OBJECT_NAME], i[grid.OBJECT_NAME] + 'CellSet'):
-                                            current_object = True
+                                            obj_in_table = True
                                             break
                                     break
-                        if not current_object:
+                        if not obj_in_table:
                             topoSetDict.writeContents(y, f, indent = '\t', last_char = '\n')
                             f.write('\n')
             except:
