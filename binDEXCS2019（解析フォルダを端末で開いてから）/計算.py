@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2023/10/10 8:12:15 PM
+# 2026/2/2 4:35:53 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -489,6 +489,64 @@ if __name__ == '__main__':
             except ValueError:
                 pass
     domains = min(domains, threads)
+
+    appendEntries.intoFvSolution()
+    appendEntries.intoFvSchemes()
+    appendEntries.intoControlDict()
+    for f in ('potentialFoam.log', 'potentialFoam.logfile'):
+        if os.path.isfile(f):
+            os.remove(f)
+#    if interactive:
+#        print('初期流れ場をpotentialFoamで作成しますか？')
+#        exec_potentialFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
+#            'もしp_potentialflowという名前のファイルがある場合，' +
+#            'そのファイルに書かれている境界条件をpの境界条件に使います． (y/n) > ').strip().lower() == 'y' else False
+
+    if interactive:
+        with_function_objects = True if (raw_input if sys.version_info.major <= 2 else input)(
+            '{}に書かれている'.format(controlDict) +
+            'functionsの内容を計算中に実行しますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+
+    if float(latest_time) == 0.0 and interactive:
+        idle_calculation = True if (raw_input if sys.version_info.major <= 2 else input)(
+            'ならし計算を行いますか？ (y/n, どうしても発散する場合に試す価値あり) > '
+            ).strip().lower() == 'y' else False
+    else:
+        idle_calculation = False
+
+    if idle_calculation:
+        if interactive:
+            while True:
+                try:
+                    log10_dt_max = int((raw_input if sys.version_info.major <= 2 else input)(
+                        'log10(時間ステップの最大値)を整数で入力して下さい． > '))
+                    break
+                except ValueError:
+                    pass
+            while True:
+                try:
+                    log10_dt_min = int((raw_input if sys.version_info.major <= 2 else input)(
+                        'log10(時間ステップの最小値)を整数で入力して下さい． > '))
+                    break
+                except ValueError:
+                    pass
+        if log10_dt_max < log10_dt_min:
+            log10_dt_max, log10_dt_min = log10_dt_min, log10_dt_max
+        d = {'name': 'deltaT', 'type': 'discrete', 'domain': 10.0**np.arange(log10_dt_min, log10_dt_max + 1)}
+        if bounds_idle[-1]['name'] == 'deltaT':
+            bounds_idle[-1] = d
+        else:
+            bounds_idle.append(d)
+        with open(idle_calc_report_txt, 'w') as f:
+            f.write('#datetime')
+            for b in bounds_idle:
+                f.write('\t{}'.format(b['name']))
+            f.write('\tsteps\n')
+    elif interactive:
+        decrease_dt_if_fpe_occured = True if (raw_input if sys.version_info.major <= 2 else input)(
+            '計算が発散した場合，時間ステップを小さくして計算を続けますか？ (y/n) > '
+            ).strip().lower() == 'y' else False
+
     if domains != 1:
         processor_dirs = set()
         #                    0123456789
@@ -531,64 +589,13 @@ if __name__ == '__main__':
                     shutil.move('0_bak', '0')
                 sys.exit(1)
 
-    appendEntries.intoFvSolution()
-    appendEntries.intoFvSchemes()
-    appendEntries.intoControlDict()
-    for f in ('potentialFoam.log', 'potentialFoam.logfile'):
-        if os.path.isfile(f):
-            os.remove(f)
-#    if interactive:
-#        print('初期流れ場をpotentialFoamで作成しますか？')
-#        exec_potentialFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-#            'もしp_potentialflowという名前のファイルがある場合，' +
-#            'そのファイルに書かれている境界条件をpの境界条件に使います． (y/n) > ').strip().lower() == 'y' else False
 #    if exec_potentialFoam:
 #        potentialFoam(latest_time)
-
-    if interactive:
-        with_function_objects = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '{}に書かれている'.format(controlDict) +
-            'functionsの内容を計算中に実行しますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
-
-    if float(latest_time) == 0.0:
-        if interactive:
-            idle_calculation = True if (raw_input if sys.version_info.major <= 2 else input)(
-                'ならし計算を行いますか？ (y/n, どうしても発散する場合に試す価値あり) > '
-                ).strip().lower() == 'y' else False
-    else:
-        idle_calculation = False
 
     if idle_calculation:
         subprocess.call('foamListTimes -rm -noZero', shell = True)
         if domains != 1:
             rmObjects.removeProcessorDirs('noZero')
-        if interactive:
-            while True:
-                try:
-                    log10_dt_max = int((raw_input if sys.version_info.major <= 2 else input)(
-                        'log10(時間ステップの最大値)を整数で入力して下さい． > '))
-                    break
-                except ValueError:
-                    pass
-            while True:
-                try:
-                    log10_dt_min = int((raw_input if sys.version_info.major <= 2 else input)(
-                        'log10(時間ステップの最小値)を整数で入力して下さい． > '))
-                    break
-                except ValueError:
-                    pass
-        if log10_dt_max < log10_dt_min:
-            log10_dt_max, log10_dt_min = log10_dt_min, log10_dt_max
-        d = {'name': 'deltaT', 'type': 'discrete', 'domain': 10.0**np.arange(log10_dt_min, log10_dt_max + 1)}
-        if bounds_idle[-1]['name'] == 'deltaT':
-            bounds_idle[-1] = d
-        else:
-            bounds_idle.append(d)
-        with open(idle_calc_report_txt, 'w') as f:
-            f.write('#datetime')
-            for b in bounds_idle:
-                f.write('\t{}'.format(b['name']))
-            f.write('\tsteps\n')
         myBopt = GPyOpt.methods.BayesianOptimization(f = calculate_idle, domain = bounds_idle,
             model_type = 'GP', initial_design_numdata = 5, acquisition_type ='EI', maximize = True)
         myBopt.run_optimization(max_iter = 100)
@@ -602,10 +609,6 @@ if __name__ == '__main__':
             print('ベイズ最適化の履歴は{}に保存されています．'.format(idle_calc_report_txt) +
                 'system/controlDictのwriteIntervalが大きかったせいか，最も発散しにくかった計算条件による結果は保存されていません．')
     else:
-        if interactive:
-            decrease_dt_if_fpe_occured = True if (raw_input if sys.version_info.major <= 2 else input)(
-                '計算が発散した場合，時間ステップを小さくして計算を続けますか？ (y/n) > '
-                ).strip().lower() == 'y' else False
         for trial in range(30):
             calculate()
             if domains != 1:
