@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/2/13 2:25:21 PM
+# 2022/11/25 5:37:16 PM
 
 import os
 import glob
@@ -19,11 +19,8 @@ def removeInessentials():
             for name in files:
                 if re.match('\._.+|[._]+DS_Store', name):
                     os.remove(os.path.join(curDir, name))
-    try:
-        if os.path.isdir('dynamicCode'):
-            shutil.rmtree('dynamicCode')
-    except:
-        pass
+    if os.path.isdir('dynamicCode'):
+        shutil.rmtree('dynamicCode')
     for d in glob.iglob('*.analyzed/'):
         shutil.rmtree(d)
 
