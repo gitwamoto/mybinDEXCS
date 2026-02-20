@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2025/6/17 5:57:50 PM
+# 2026/2/20 1:00:50 PM
 
 import sys
 import os
 import re
-if sys.version_info.major > 2:
+
+if sys.version_info.major > 2: # DictParser
     import io
 
 class DictParserList(list):
@@ -581,14 +582,305 @@ class DictParser:
                 return [i]
         return None # returns index list, e.g. [0, 9, 4] or None
 
+# ----------------------------
+
+def normalize(file_name = None, string = None, overwrite_file = True):
+    if file_name is not None:
+        with open(file_name, 'r') as f:
+            string = f.read()
+    if sys.version_info.major <= 2:
+        normalized_string = re.sub(u'[！-～]', lambda m: unichr(ord(m.group(0)) - 0xFEE0), # 全角英数字・記号を半角に変換
+            string.decode('UTF-8').replace(u'　', u' '), # 全角スペースを半角に
+            flags = re.U).encode('UTF-8')
+    else:
+        normalized_string = re.sub('[！-～]', lambda m: chr(ord(m.group(0)) - 0xFEE0), # 全角英数字・記号を半角に変換
+            string.replace('　', ' '), # 全角スペースを半角に
+            flags = re.U)
+    changed = normalized_string != string
+    if file_name is not None and overwrite_file and changed:
+        with open(file_name, 'w') as f:
+            f.write(normalized_string)
+    return normalized_string, changed
+
+class DictParser2:
+    PATTERN = re.compile(
+        # .      -> 改行（\n）以外の任意の1文字
+        # [\s\S] -> 全ての文字
+        r'(?P<line_comment>//.*)' '|'
+        r'(?P<block_comment>/\*[\s\S]*?\*/)' '|' # [\s\S]*?の?がないと\*/も[\s\S]*が取り込んでしまう
+        r'(?P<code>#\{[\s\S]*?#\})' '|' # block_startよりも前！
+        r'(?P<string>"([^"\\]|\\.)*")' '|'
+        r'(?P<directive>#[^{}][a-zA-Z]*)' '|'
+        r'(?P<word>[a-zA-Z_$](?:[a-zA-Z0-9_.:,*]|/(?![/*])|(?:\([^)]*\)))*)' '|'
+        # /(?![/*])で行コメントやブロックコメントの始まりを排除, (?:\([^)]*\))で(から)までを捕獲
+        r'(?P<float>[-+]?\d*(?:\.\d*(?:[eE][-+]?\d+)?|[eE][-+]?\d+))' '|' # integerよりも先！
+        r'(?P<integer>[-+]?\d+)' '|' # floatよりも後！
+        r'(?P<block_start>\{)' '|' # codeよりも後！
+        r'(?P<block_end>\})' '|'
+        r'(?P<list_start>\()' '|'
+        r'(?P<list_end>\))' '|'
+        r'(?P<dimension_start>\[)' '|'
+        r'(?P<dimension_end>\])' '|'
+        r'(?P<semicolon>;)' '|'
+        r'(?P<whitespace>(?:[ \t]|\\\r?\n)+)' '|' # linebreakよりも前！
+        r'(?P<linebreak>\r?\n)' '|' # whitespaceより後！
+        r'(?P<unknown>.)'
+    )
+    CLOSING_SYMBOL = {'block_end': '}', 'list_end': ')', 'dimension_end': ']'}
+
+    def __init__(self, file_name = None, string = None):
+        self.file_name = file_name
+        if file_name is not None:
+            with open(file_name, 'r') as f:
+                self.string = f.read()
+        self.elements = self.elements_list(index = 0, terminator = None)[0]
+
+    def elements_list(self, index, terminator = None, essentials_required = 0):
+        # terminator = 'block_end' | 'list_end' | 'dimension_end' | 'reached'
+        debug = False
+        def raise_error(message, last_index):
+            raise Exception('Error in parser' +
+                ('' if self.file_name is None else ' (File: ' + os.path.basename(self.file_name) + ')') +
+                ': ' + message + ' | ' + self.string[max(last_index - 20, 0): last_index])
+        # word -> Essential words, such as word, string.
+        # IIII -> Nonessential words, such as whitespace, linebreak, comment, which doesn't always exist.
+        # -------------------------------------------------------
+        #  type          |  pattern
+        # -------------------------------------------------------
+        #                | key     | value
+        #                |---------------------------------------
+        #  directive     | #SSSS   | IIII SSSS IIII
+        #                | #SSSS   | IIII
+        #  dictionary    | SSSS    | IIII SSSS ... ; IIII
+        #                | SSSS    | IIII          ; IIII
+        #  block         | SSSS    | IIII { IIII SSSS ... } IIII
+        #                |         |      { IIII SSSS ... } IIII
+        # -------------------------------------------------------
+        #                | length  | value
+        #                |---------------------------------------
+        #  list          | integer | IIII ( IIII SSSS ... ) IIII
+        #                |         |      ( IIII SSSS ... ) IIII
+        # -------------------------------------------------------
+        #                |           value
+        #                |---------------------------------------
+        #  dimension     |           [ IIII SSSS ... ] IIII
+        #  line_comment  |           //...
+        #  block_comment |           /* ... */
+        #  code          |           #{ ... #}
+        #  string        |           " ... "
+        #  word          |           word
+        #  float         |           float string
+        #  integer       |           integer string
+        #  semicolon     |           ;
+        #  whitespace    |           white space
+        #  linebreak     |           line break
+        #  separator     |           // * * ... * * //
+        #                |           // *** ... *** //
+        # -------------------------------------------------------
+        if debug:
+            print('elements_list from {}, terminator = {}, essentials_required = {}'.format(
+                index, terminator, essentials_required))
+        l = []
+        terminator_reached = True if terminator == 'reached' else False
+        essentials = 0
+        while index < len(self.string):
+            s = self.PATTERN.search(self.string, pos = index)
+            if debug:
+                print('  [{}, {}) '.format(s.start(), s.end()) + s.lastgroup + ' "' +
+                    s.group().replace('\r', r'\r').replace('\n', r'\n').replace('\t', r'\t') + '"')
+            if terminator_reached and s.lastgroup not in ('line_comment', 'block_comment', 'whitespace'):
+                if debug:
+                    print('    return {}'.format(l))
+                return l, s.start()
+            if s.lastgroup == 'directive':
+                if s.group() in ('#else', '#endif', '#merge', '#overwrite', '#protect', '#warn'):
+                    v, index = self.elements_list(index = s.end(), terminator = 'reached')
+                else:
+                    v, index = self.elements_list(index = s.end(), essentials_required = 1)
+                l.append({'type': s.lastgroup, 'key': s.group(), 'value': v})
+                if debug:
+                    print('    -> {}'.format(l[-1]))
+            elif s.lastgroup == 'semicolon':
+                dictionary = False
+                for i in range(len(l)):
+                    if l[i]['type'] in ('word', 'string'):
+                        v, index = self.elements_list(index = s.end(), terminator = 'reached')
+                        l[i:] = [{'type': 'dictionary', 'key': l[i]['value'],
+                            'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
+                        dictionary = True
+                        break
+                if not dictionary: # meaningless semicolon
+                    l.append({'type': s.lastgroup, 'value': s.group()})
+                    index = s.end()
+                if debug:
+                    print('    -> {}'.format(l[-1]))
+            elif s.lastgroup in ('block_start', 'list_start'):
+                type_string = s.lastgroup[:-6]
+                v, index = self.elements_list(index = s.end(), terminator = type_string + '_end')
+                if len(l) > 0:
+                    for i in range(len(l) - 1, -1, -1):
+                        if l[i]['type'] not in ('line_comment', 'block_comment', 'whitespace', 'linebreak'):
+                            if type_string == 'block' and l[i]['type'] in ('word', 'string'):
+                                l[i:] = [{'type': type_string, 'key': l[i]['value'],
+                                    'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
+                            elif type_string == 'list' and l[i]['type'] == 'integer':
+                                l[i:] = [{'type': type_string, 'length': int(l[i]['value']),
+                                    'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
+                            else:
+                                l.append({'type': type_string, 'value': [{'type': s.lastgroup, 'value': s.group()}] + v})
+                            break
+                else:
+                    l.append({'type': type_string, 'value': [{'type': s.lastgroup, 'value': s.group()}] + v})
+            elif s.lastgroup == 'dimension_start':
+                v, index = self.elements_list(index = s.end(), terminator = 'dimension_end')
+                l.append({'type': 'dimension', 'value': [{'type': s.lastgroup, 'value': s.group()}] + v})
+            elif s.lastgroup in ('block_end', 'list_end', 'dimension_end'):
+                if s.lastgroup != terminator:
+                    raise_error('Inappropriate closing bracket, "' + self.CLOSING_SYMBOL[terminator] + '" is required.', s.end())
+                l.append({'type': s.lastgroup, 'value': s.group()})
+                index = s.end()
+            elif s.lastgroup == 'unknown':
+                raise_error('Unknown token "' + s.group() + '".', s.end())
+            else:
+                if s.lastgroup == 'line_comment' and re.match(r'^// (?:\* ?)+//$', s.group()):
+                    l.append({'type': 'separator', 'value': s.group()})
+                else:
+                    l.append({'type': s.lastgroup, 'value': s.group()})
+                index = s.end()
+            if s.lastgroup not in ('line_comment', 'block_comment', 'whitespace', 'linebreak'):
+                essentials += 1
+                if essentials == essentials_required:
+                    terminator_reached = True
+            if s.lastgroup == terminator:
+                terminator_reached = True
+        if not terminator_reached and terminator is not None:
+            raise_error('Missing "' + self.CLOSING_SYMBOL[terminator] + '".', len(self.string))
+        if debug:
+            print('    return {}'.format(l))
+        return l, index
+
+    def structure_string(self, indent_level = 0, l = None):
+        if l is None:
+            l = self.elements
+        s = '[\n'
+        indent = '  '*(indent_level + 1)
+        for i in l:
+            if i['type'] in ('dictionary', 'block'):
+                s += (indent + "{'type': '" + i['type'] + "', " +
+                    ("'key': '" + i['key'] + "', " if 'key' in i else "") + 
+                    "'value': " + self.structure_string(indent_level + 1, i['value']) + "}\n")
+            elif i['type'] == 'list':
+                s += (indent + "{'type': 'list', " +
+                    ("'length': {}, ".format(i['length']) if 'length' in i else "") +
+                    "'value': " + self.structure_string(indent_level + 1, i['value']) + "}\n")
+            else:
+                s += indent + str(i) + '\n'
+        return s + '  '*indent_level + ']'
+
+    def file_string(self, indent_level = 0, pretty_print = False, commentless = False, l = None):
+        if l is None:
+            l = self.elements
+        s = ''
+        indent = '\t'*indent_level
+        linebreak = False
+        for i in l:
+            if pretty_print and linebreak: # 改行直後
+                if (i['type'] == 'whitespace' or
+                    commentless and i['type'] in ('line_comment', 'block_comment')):
+                    continue
+                elif i['type'] != 'linebreak':
+                    s += indent
+            if i['type'] in ('block', 'list', 'dimension'):
+                start = self.find_element([{'type': i['type'] + '_start'}], i['value'])['index'] + 1
+                end = self.find_element([{'type': i['type'] + '_end'}], i['value'])['index'] - 1
+                s += (i.get('key', '') + i.get('length', '') +
+                    self.file_string(indent_level, pretty_print, commentless, i['value'][:start]) +
+                    self.file_string(indent_level + 1, pretty_print, commentless, i['value'][start: end]) +
+                    self.file_string(indent_level, pretty_print, commentless, i['value'][end:]))
+            else:
+                if commentless and i['type'] == 'block_comment':
+                    if not s.endswith(' '):
+                        s += ' '
+                elif not commentless or i['type'] != 'line_comment':
+                    if isinstance(i['value'], list):
+                        s += (i.get('key', '') + i.get('length', '') +
+                            self.file_string(indent_level, pretty_print, commentless, i['value']))
+                    else:
+                        s += i['value']
+            linebreak = (i['type'] == 'linebreak')
+        return s
+
+    def find_separators(self):
+        separators = self.find_all_elements([{'type': 'separator'}])
+        if len(separators) == 0:
+            return [None, None] # header, footer
+        for i in separators[-1]['parent'][separators[-1]['index'] + 1:]:
+            if i['type'] not in ('line_comment', 'block_comment', 'whitespace', 'linebreak'):
+                return [separators[0], None] # header, footer
+        return [None if len(separators) == 1 else separators[0], separators[-1]] # header, footer
+
+    def find_element(self, path_list, parent = None):
+        # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
+        if parent is None:
+            parent = self.elements
+        if not isinstance(parent, list):
+            parent = parent['value']
+        if isinstance(path_list, dict):
+            path_list = [path_list]
+        elif len(path_list) == 0:
+            return None
+        # ジェネレータ式（タプル）で、target_dictのすべてのアイテムが含まれているか判定
+        # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
+        c = next(({'index': i, 'element': e} for i, e in enumerate(parent)
+            if all(e.get(k) == v for k, v in path_list[0].items())), None)
+        if c is None:
+            return None
+        elif len(path_list) == 1:
+            return {'parent': parent, 'index': c['index'], 'element': c['element']}
+        else:
+            return self.find_element(path_list[1:], c['element'])
+
+    def find_all_elements(self, path_list, parent = None):
+        # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
+        if parent is None:
+            parent = self.elements
+        if not isinstance(parent, list):
+            parent = parent['value']
+        if isinstance(path_list, dict):
+            path_list = [path_list]
+        elif len(path_list) == 0:
+            return []
+        # 条件に合う要素だけで新しいリストを作る
+        c = [{'index': i, 'element': e} for i, e in enumerate(parent)
+            if all(e.get(k) == v for k, v in path_list[0].items())]
+        if len(c) == 0 or len(path_list) == 1:
+            return [{'parent': parent, 'index': i['index'], 'element': i['element']} for i in c]
+        else:
+            elements = []
+            for i in c:
+                elements += self.find_all_elements(path_list[1:], i['element'])
+            return elements
+
 if __name__ == '__main__':
-    file_name = sys.argv[1]
-    base_name = os.path.basename(file_name)
-    dp = DictParser(file_name = file_name)
-    root, ext = os.path.splitext(base_name)
-    dp.writeFileAsItIs(os.path.join(os.path.dirname(file_name), root + 'r' + ext))
-    dp.writeFile(os.path.join(os.path.dirname(file_name), root + 'p' + ext))
+#    file_name = sys.argv[1]
+#    base_name = os.path.basename(file_name)
+#    dp = DictParser(file_name = file_name)
+#    root, ext = os.path.splitext(base_name)
+#    dp.writeFileAsItIs(os.path.join(os.path.dirname(file_name), root + 'r' + ext))
+#    dp.writeFile(os.path.join(os.path.dirname(file_name), root + 'p' + ext))
 #    index = dp.getIndexOfItem(['solvers', 'Phi'])
 #    print('index = ' + str(index))
 #    if index is not None:
 #        print('item = ' + str(dp.getItemAtIndex(index[:-1])))
+    try:
+        dp = DictParser2(file_name = sys.argv[1], normalize = True)
+    except:
+        print(sys.exc_info())
+#    print(dp.structure_string())
+    print(dp.file_string(pretty_print = True, commentless = False))
+#    print(dp.find_element([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}]))
+#    print([i['element']['key'] for i in dp.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}, {'type': 'dictionary'}])])
+#    for i, e in enumerate(dp.find_element([{'type': 'block', 'key': 'solvers'}])[1]['value']):
+#        print(i, e)
+#    separators = dp.find_separators()
+#    print([(s['index'], s['element']) for s in separators])
