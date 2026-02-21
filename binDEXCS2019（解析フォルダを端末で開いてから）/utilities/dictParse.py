@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/2/20 1:00:50 PM
+# 2026/2/21 8:03:35 PM
 
 import sys
 import os
@@ -582,7 +582,7 @@ class DictParser:
                 return [i]
         return None # returns index list, e.g. [0, 9, 4] or None
 
-# ----------------------------
+# ------------------------------------------------------------------------------
 
 def normalize(file_name = None, string = None, overwrite_file = True):
     if file_name is not None:
@@ -611,8 +611,9 @@ class DictParser2:
         r'(?P<code>#\{[\s\S]*?#\})' '|' # block_startよりも前！
         r'(?P<string>"([^"\\]|\\.)*")' '|'
         r'(?P<directive>#[^{}][a-zA-Z]*)' '|'
-        r'(?P<word>[a-zA-Z_$](?:[a-zA-Z0-9_.:,*]|/(?![/*])|(?:\([^)]*\)))*)' '|'
-        # /(?![/*])で行コメントやブロックコメントの始まりを排除, (?:\([^)]*\))で(から)までを捕獲
+        r'(?P<word>(?:[a-zA-Z_$](?:[a-zA-Z0-9_.:,*]|/(?![/*]))*(?:\([^\s\n;]*\))?)+)' '|'
+        # /(?![/*])で行コメントやブロックコメントの始まりを排除
+        # (?:\[^\s\n;]*\))?でfvSchemesのdiv((nuEff*dev(T(grad(U)))))なども捕獲
         r'(?P<float>[-+]?\d*(?:\.\d*(?:[eE][-+]?\d+)?|[eE][-+]?\d+))' '|' # integerよりも先！
         r'(?P<integer>[-+]?\d+)' '|' # floatよりも後！
         r'(?P<block_start>\{)' '|' # codeよりも後！
@@ -872,12 +873,16 @@ if __name__ == '__main__':
 #    print('index = ' + str(index))
 #    if index is not None:
 #        print('item = ' + str(dp.getItemAtIndex(index[:-1])))
+
+# ------------------------------------------------------------------------------
+
     try:
-        dp = DictParser2(file_name = sys.argv[1], normalize = True)
+        dp = DictParser2(file_name = sys.argv[1])
     except:
         print(sys.exc_info())
 #    print(dp.structure_string())
     print(dp.file_string(pretty_print = True, commentless = False))
+    print(dp.structure_string())
 #    print(dp.find_element([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}]))
 #    print([i['element']['key'] for i in dp.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}, {'type': 'dictionary'}])])
 #    for i, e in enumerate(dp.find_element([{'type': 'block', 'key': 'solvers'}])[1]['value']):
