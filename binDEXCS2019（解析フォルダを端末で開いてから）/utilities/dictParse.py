@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/2/28 12:30:45 AM
+# 2026/2/28 8:15:54 PM
 
 import sys
 import os
@@ -708,7 +708,7 @@ def structure_string(parent, indent_level = 0):
             s += str(n).zfill(l) + ': ' + indent + str(i) + ',\n'
     return s + '    '*indent_level + ']'
 
-def file_string(parent, indent_level = 0, pretty_print = False, commentless = False):
+def file_string(parent, indent_level = 0, pretty_print = True, commentless = False):
     if not isinstance(parent, list):
         parent = parent['value']
     s = ''
@@ -785,27 +785,28 @@ class DictParser2:
                 ('' if self.file_name is None else ' (File: ' + os.path.basename(self.file_name) + ')') +
                 ': ' + message + ' | ' + self.string[max(last_index - 20, 0): last_index])
         # word -> Essential words, such as word, string.
-        # IIII -> Nonessential words, such as whitespace, linebreak, comment, which doesn't always exist.
+        # IIII -> Nonessential words, such as whitespace, comments, linebreak, which doesn't always exist.
+        # JJJJ -> Nonessential words, such as whitespace, comments, which doesn't always exist.
         # -------------------------------------------------------
         #  type          |  pattern
         # -------------------------------------------------------
         #                | key     | value
         #                |---------------------------------------
-        #  directive     | #SSSS   | IIII SSSS IIII
+        #  directive     | #SSSS   | IIII SSSS JJJJ
         #                | #SSSS   | IIII
-        #  dictionary    | SSSS    | IIII SSSS ... ; IIII
-        #                | SSSS    | IIII          ; IIII
-        #  block         | SSSS    | IIII { IIII SSSS ... } IIII
-        #                |         |      { IIII SSSS ... } IIII
+        #  dictionary    | SSSS    | IIII SSSS ... ; JJJJ
+        #                | SSSS    | IIII          ; JJJJ
+        #  block         | SSSS    | IIII { IIII SSSS ... } JJJJ
+        #                |         |      { IIII SSSS ... } JJJJ
         # -------------------------------------------------------
         #                | length  | value
         #                |---------------------------------------
-        #  list          | integer | IIII ( IIII SSSS ... ) IIII
-        #                |         |      ( IIII SSSS ... ) IIII
+        #  list          | integer | IIII ( IIII SSSS ... ) JJJJ
+        #                |         |      ( IIII SSSS ... ) JJJJ
         # -------------------------------------------------------
         #                |           value
         #                |---------------------------------------
-        #  dimension     |           [ IIII SSSS ... ] IIII
+        #  dimension     |           [ IIII SSSS ... ] JJJJ
         #  line_comment  |           //...
         #  block_comment |           /* ... */
         #  code          |           #{ ... #}
@@ -830,7 +831,7 @@ class DictParser2:
             if debug:
                 print('  [{}, {}) '.format(s.start(), s.end()) + s.lastgroup + ' "' +
                     s.group().replace('\r', r'\r').replace('\n', r'\n').replace('\t', r'\t') + '"')
-            if terminator_reached and s.lastgroup not in ('line_comment', 'block_comment', 'whitespace'):
+            if terminator_reached and s.lastgroup not in ('whitespace', 'line_comment', 'block_comment'):
                 if debug:
                     print('    return {}'.format(l))
                 return l, s.start()
@@ -922,7 +923,7 @@ class DictParser2:
     def structure_string(self, indent_level = 0):
         return structure_string(self.elements, indent_level)
 
-    def file_string(self, indent_level = 0, pretty_print = False, commentless = False):
+    def file_string(self, indent_level = 0, pretty_print = True, commentless = False):
         return file_string(self.elements, indent_level, pretty_print, commentless)
 
 if __name__ == '__main__':
