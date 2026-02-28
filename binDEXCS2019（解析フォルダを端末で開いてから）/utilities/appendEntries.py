@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/2/28 12:30:48 AM
+# 2026/2/28 11:06:55 PM
 
 import os
 import sys
@@ -22,138 +22,6 @@ import dictFormat
 # DictParser2
 import re
 import dictParse
-
-#def intoFvSolution():
-#    def intoFvSolutionIn(path):
-#        fvSolution = os.path.join(path, 'fvSolution')
-#        if os.path.islink(fvSolution):
-#            return
-#        os.chmod(fvSolution, 0o0666)
-#        dp = DictParser(fvSolution)
-#        s_old = dp.toString()
-#
-#        x = dp.getValueForKey(['solvers'])
-#        if x is not None:
-#            params = []
-#            for y in x:
-#                if DictParserList.isType(y, DictParserList.BLOCK):
-#                    params.append(y.key())
-#            if 'Phi' not in params and ('p' in params or 'p_rgh' in params):
-#                a = (
-#                    '\n' +
-#                    '\tPhi\n' +
-#                    '\t{\n' +
-#                    '\t\t' + ('$p' if 'p' in params else '$p_rgh') + ';\n' +
-#                    '\t}\n'
-#                )
-#                if len(x) == 0:
-#                    x.append(a)
-#                elif type(x[-1]) is str:
-#                    b = x[-1].rstrip()
-#                    if len(x) == 1 and b == '':
-#                        x[0] = a
-#                    else:
-#                        x[-1:] = [b + '\n', a]
-#                else:
-#                    x.extend(['\n', a])
-#
-#        x = dp.getValueForKey(['potentialFlow'])
-#        i = None
-#        if x is not None:
-#            i = dp.getIndexOfItem(['nNonOrthogonalCorrectors'], x)
-#            if i is not None:
-#                i = i[0]
-#                if not DictParserList.isType(x[i], DictParserList.DICT):
-#                    i = None
-#        if i is None:
-#            a = '\n\tnNonOrthogonalCorrectors\t10;\n'
-#            if x is None:
-#                a = 'potentialFlow\n{' + a + '}\n'
-#                x = dp.contents
-#            if len(x) == 0:
-#                x.append(a)
-#            elif type(x[-1]) is str:
-#                b = x[-1].rstrip()
-#                if len(x) == 1 and b == '':
-#                    x[0] = a
-#                else:
-#                    x[-1:] = [b if a[0] == '\n' else b + '\n', a]
-#            elif a[0] == '\n':
-#                x.append(a)
-#            else:
-#                x.extend(['\n\n', a])
-#
-#        c = '/* yesだと圧力方程式を解く前に，運動方程式からなる連立方程式を解いて速度を求める． */'
-#        for t in ('SIMPLE', 'PIMPLE', 'PISO'):
-#            x = dp.getValueForKey([t])
-#            if x is not None:
-#                i = dp.getIndexOfItem(['momentumPredictor'], x)
-#                if i is not None and DictParserList.isType(x[i[0]], DictParserList.DICT):
-#                    x[i[0]][-1] = c
-#                else:
-#                    dictFormat.insertEntryIntoBlockTop(
-#                        entry = DictParser(
-#                            string = 'momentumPredictor\tyes ' + c + ';\n'
-#                        ).contents, block = x)
-#                if t != 'SIMPLE' and dp.getIndexOfItem(['nCorrectors'], x) is None:
-#                    dictFormat.insertEntryIntoBlockBottom(
-#                        entry = DictParser(
-#                            string = 'nCorrectors\t3;\n'
-#                        ).contents, block = x)
-#                if dp.getIndexOfItem(['nNonOrthogonalCorrectors'], x) is None:
-#                    dictFormat.insertEntryIntoBlockBottom(
-#                        entry = DictParser(
-#                            string = 'nNonOrthogonalCorrectors\t1;\n'
-#                        ).contents, block = x)
-#                if t == 'SIMPLE' and dp.getIndexOfItem(['residualControl'], x) is None:
-#                    dictFormat.insertEntryIntoBlockBottom(
-#                        entry = DictParser(
-#                            string = 'residualControl\n{\n\t".*"\t1.0e-03;\n}\n'
-#                        ).contents, block = x)
-#            else:
-#                dictFormat.insertEntryIntoTopLayerBottom(
-#                    entry = DictParser(
-#                        string = '\n' + t + '\n{\nmomentumPredictor\tyes ' + c +
-#                        ('' if t == 'SIMPLE' else ';\nnCorrectors\t3') + ';\n}\n'
-#                    ).contents, contents = dp.contents)
-#
-#        cfields = '// p = p^{old} + \\alpha (p - p^{old})\n'
-#        cequations = '// A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
-#        x = dp.getValueForKey(['relaxationFactors'])
-#        if x is not None:
-#            i = dp.getIndexOfItem(['fields'], x)
-#            if i is not None and DictParserList.isType(x[i[0]], DictParserList.BLOCK):
-#                x[i[0]][1] = cfields
-#            else:
-#                dictFormat.insertEntryIntoBlockBottom(
-#                    entry = DictParser(string = 'fields ' + cfields +
-#                        '{\n"p|p_rgh"\t1;\nrho\t1;\n}\n'
-#                    ).contents, block = x)
-#            i = dp.getIndexOfItem(['equations'], x)
-#            if i is not None and DictParserList.isType(x[i[0]], DictParserList.BLOCK):
-#                x[i[0]][1] = cequations
-#            else:
-#                dictFormat.insertEntryIntoBlockBottom(
-#                    entry = DictParser(string = 'equations ' + cequations +
-#                        '{\nU\t1;\n"k|epsilon|omega|R"\t1;\n}\n'
-#                    ).contents, block = x)
-#        else:
-#            dictFormat.insertEntryIntoTopLayerBottom(
-#                entry = DictParser(string = '\nrelaxationFactors\n{\nfields ' + cfields +
-#                    '{\n"p|p_rgh"\t1;\nrho\t1;\n}\nequations' + cequations +
-#                    '{\nU\t1;\n"k|epsilon|omega|R"\t1;\n}\n}\n'
-#                ).contents, contents = dp.contents)
-#
-#        dp = dictFormat.moveLineToBottom(dp)
-#        s = dp.toString()
-#        if s != s_old:
-#            with open(fvSolution, 'w') as f:
-#                f.write(s)
-#
-#    if os.path.isdir('system'):
-#        intoFvSolutionIn('system')
-#    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
-#        intoFvSolutionIn(d)
 
 def intoFvSolution():
     def intoFvSolutionIn(path):
@@ -205,8 +73,7 @@ def intoFvSolution():
             if nNonOrthogonalCorrectors is None:
                 i = dictParse.find_element([{'type': 'block_end'}], parent = potentialFlow, reverse = True)
                 i['parent'][i['index']:i['index']] = dictParse.DictParser2(string =
-                    'nNonOrthogonalCorrectors\t10;\n'
-                    ).elements
+                    'nNonOrthogonalCorrectors\t10;\n').elements
 
         # SIMPLE, PIMPLE, PISO
         linebreak = dictParse.DictParser2(string = '\n').elements[0]
@@ -216,7 +83,8 @@ def intoFvSolution():
                 block_and_linebreak = dictParse.DictParser2(string =
                     str(k) + '\n' +
                     '{\n' +
-                    '}\n\n').elements
+                    '}\n' +
+                    '\n').elements
                 fvSolution.elements[footer_index:footer_index] = block_and_linebreak
                 footer_index += len(block_and_linebreak)
                 block = block_and_linebreak[0]
@@ -233,8 +101,7 @@ def intoFvSolution():
                         'residualControl\n'
                         '{\n'
                         '".*"\t1.0e-03;\n'
-                        '}\n'
-                        ).elements
+                        '}\n').elements
                 else:
                     i['parent'][start:start] = [i['parent'].pop(i['index']), linebreak]
 
@@ -242,16 +109,14 @@ def intoFvSolution():
                 i = dictParse.find_element([{'type': 'dictionary', 'key': 'consistent'}], parent = block)
                 if i is None:
                     block['value'][start:start] = dictParse.DictParser2(string =
-                        'consistent\tyes;\n'
-                        ).elements
+                        'consistent\tyes;\n').elements
                 else:
                     i['parent'][start:start] = [i['parent'].pop(i['index']), linebreak]
 
             i = dictParse.find_element([{'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = block)
             if i is None:
                 block['value'][start:start] = dictParse.DictParser2(string =
-                    'nNonOrthogonalCorrectors\t1;\n'
-                    ).elements
+                    'nNonOrthogonalCorrectors\t1;\n').elements
             else:
                 i['parent'][start:start] = [i['parent'].pop(i['index']), linebreak]
 
@@ -259,8 +124,7 @@ def intoFvSolution():
                 i = dictParse.find_element([{'type': 'dictionary', 'key': 'nCorrectors'}], parent = block)
                 if i is None:
                     block['value'][start:start] = dictParse.DictParser2(string =
-                        'nCorrectors\t3;\n'
-                        ).elements
+                        'nCorrectors\t3;\n').elements
                 else:
                     i['parent'][start:start] = [i['parent'].pop(i['index']), linebreak]
 
@@ -273,8 +137,7 @@ def intoFvSolution():
                 del block['value'][i['index']]
             block['value'][start:start] = dictParse.DictParser2(string =
                 'momentumPredictor\t' + v + ';' +
-                ' // yes -> 圧力方程式を解く前に，運動方程式を解いて速度を求める．\n'
-                ).elements
+                ' // yes -> 圧力方程式を解く前に，運動方程式を解いて速度を求める．\n').elements
 
             dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
@@ -299,13 +162,11 @@ def intoFvSolution():
                 '{'
                 '"p|p_rgh"\t1.0;\n'
                 'rho\t1.0;\n'
-                '}\n'
-                ).elements
+                '}\n').elements
         else:
             i['element']['value'][:dictParse.find_element([{'type': 'block_start'}],
                 parent = i['element'])['index']] = dictParse.DictParser2(string =
-                ' // p = p^{old} + \\alpha (p - p^{old})\n'
-                ).elements
+                    ' // p = p^{old} + \\alpha (p - p^{old})\n').elements
 
         i = dictParse.find_element([{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)
         if i is None:
@@ -319,14 +180,13 @@ def intoFvSolution():
         else:
             i['element']['value'][:dictParse.find_element([{'type': 'block_start'}],
                 parent = i['element'])['index']] = dictParse.DictParser2(string =
-                ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
-                ).elements
+                ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
 
         dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
         if fvSolution.string != string:
-            os.rename(fvSolution_path, fvSolution_path + '_back')
+#            os.rename(fvSolution_path, fvSolution_path + '_back')
             with open(fvSolution_path, 'w') as f:
                 f.write(string)
 
@@ -337,49 +197,50 @@ def intoFvSolution():
 
 def intoFvSchemes():
     def intoFvSchemesIn(path):
-        fvSchemes = os.path.join(path, 'fvSchemes')
-        if os.path.islink(fvSchemes):
+        fvSchemes_path = os.path.join(path, 'fvSchemes')
+        if os.path.islink(fvSchemes_path):
             return
-        os.chmod(fvSchemes, 0o0666)
-        dp = DictParser(fvSchemes)
-        s_old = dp.toString()
+        os.chmod(fvSchemes_path, 0o0666)
+        dictParse.normalize(file_name = fvSchemes_path)
 
-        for t, k, v in (
-                ('divSchemes', 'div(div(phi,U))', 'Gauss linear'),
-                ('laplacianSchemes', 'laplacian(1,p)', 'Gauss linear corrected'),
-                ('wallDist', 'method', 'meshWave'),
-            ):
-            x = dp.getValueForKey([t])
-            i = None
-            if x is not None:
-                i = dp.getIndexOfItem([k], x)
-                if i is not None:
-                    i = i[0]
-                    if not DictParserList.isType(x[i], DictParserList.DICT):
-                        i = None
-            if i is None:
-                a = '\n\t' + k + '\t' + v + ';\n'
-                if x is None:
-                    a = t + '\n{' + a + '}\n'
-                    x = dp.contents
-                if len(x) == 0:
-                    x.append(a)
-                elif type(x[-1]) is str:
-                    b = x[-1].rstrip()
-                    if len(x) == 1 and b == '':
-                        x[0] = a
-                    else:
-                        x[-1:] = [b if a[0] == '\n' else b + '\n', a]
-                elif a[0] == '\n':
-                    x.append(a)
-                else:
-                    x.extend(['\n\n', a])
+        fvSchemes = dictParse.DictParser2(file_name = fvSchemes_path)
 
-        dp = dictFormat.moveLineToBottom(dp)
-        s = dp.toString()
-        if s != s_old:
-            with open(fvSchemes, 'w') as f:
-                f.write(s)
+        footer = fvSchemes.find_separators()[1]
+        if footer is None:
+            footer_index = len(fvSchemes.elements)
+        else:
+            footer_index = footer['index']
+
+        # divSchemes, laplacianSchemes, wallDist
+        for b, k, v in (
+            ('divSchemes', 'div(div(phi,U))', 'Gauss linear'),
+            ('laplacianSchemes', 'laplacian(1,p)', 'Gauss linear corrected'),
+            ('wallDist', 'method', 'meshWave')):
+            block = fvSchemes.find_element([{'type': 'block', 'key': b}])
+            if block is None:
+                block = dictParse.DictParser2(string =
+                    b + '\n' +
+                    '{\n' +
+                    k + '\t' + v + ';\n' +
+                    '}\n' +
+                    '\n').elements
+                fvSchemes.elements[footer_index:footer_index] = block
+                footer_index += len(block)
+            else:
+                block = block['element']
+                d = dictParse.find_element(
+                    [{'type': 'dictionary', 'key': k}], parent = block)
+                print(d)
+                if d is None:
+                    i = dictParse.find_element([{'type': 'block_end'}], parent = block, reverse = True)
+                    i['parent'][i['index']:i['index']] = dictParse.DictParser2(string =
+                        k + '\t' + v + ';\n').elements
+
+        string = dictParse.normalize(string = fvSchemes.file_string(pretty_print = True))[0]
+        if fvSchemes.string != string:
+#            os.rename(fvSchemes_path, fvSchemes_path + '_back')
+            with open(fvSchemes_path, 'w') as f:
+                f.write(string)
 
     if os.path.isdir('system'):
         intoFvSchemesIn('system')
@@ -430,5 +291,5 @@ def intoControlDict():
 
 if __name__ == '__main__':
     intoFvSolution()
-#    intoFvSchemes()
+    intoFvSchemes()
 #    intoControlDict()
