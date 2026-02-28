@@ -230,7 +230,6 @@ def intoFvSchemes():
                 block = block['element']
                 d = dictParse.find_element(
                     [{'type': 'dictionary', 'key': k}], parent = block)
-                print(d)
                 if d is None:
                     i = dictParse.find_element([{'type': 'block_end'}], parent = block, reverse = True)
                     i['parent'][i['index']:i['index']] = dictParse.DictParser2(string =
