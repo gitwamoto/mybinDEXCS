@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/2/28 8:15:54 PM
+# 2026/2/28 10:19:14 PM
 
 import sys
 import os
@@ -653,23 +653,34 @@ def find_all_elements(path_list, parent, reverse = False):
 
 def set_blank_line(parent, number_of_blank_lines = 1):
     if isinstance(parent, list):
+        if find_element([{'type': 'linebreak'}], parent) is None:
+            return
         start = 0
         end = len(parent)
     else:
         if parent['type'] in ('block', 'list', 'dimension'):
             start = find_element([{'type': parent['type'] + '_start'}], parent['value'])['index'] + 1
-            end = find_element([{'type': parent['type'] + '_end'}], parent['value'], reverse = True)['index'] - 1
+            end = find_element([{'type': parent['type'] + '_end'}], parent['value'], reverse = True)['index']
             parent = parent['value']
-            if parent[start]['type'] == 'linebreak':
-                while start + 1 < len(parent) and parent[start + 1]['type'] in ('linebreak', 'whitespace'):
-                    del parent[start + 1]
-                    end -= 1
-                start += 1
-            if parent[end]['type'] == 'linebreak':
-                while end - 1 > 0 and parent[end - 1]['type'] in ('linebreak', 'whitespace'):
-                    del parent[end - 1]
-                    end -= 1
+            i = find_element([{'type': 'linebreak'}], parent[start:end])
+            if i is None:
+                return
+            start += i['index'] + 1
+            i = find_element([{'except type': 'whitespace|linebreak'}], parent[start:end])
+            if i is not None:
+                i = start + i['index']
+                del parent[start:i]
+                end += start - i
+            if start != end:
+                end = start + find_element([{'type': 'linebreak'}], parent[start:end], reverse = True)['index']
+                i = find_element([{'except type': 'whitespace|linebreak'}], parent[start:end], reverse = True)
+                if i is not None:
+                    i = start + i['index']
+                    del parent[i + 1:end]
+                    end = i + 1
         else:
+            if find_element([{'type': 'linebreak'}], parent['value']) is None:
+                return
             parent = parent['value']
             start = 0
             end = len(parent)
@@ -723,7 +734,9 @@ def file_string(parent, indent_level = 0, pretty_print = True, commentless = Fal
                 s += indent
         if i['type'] in ('block', 'list', 'dimension'):
             start = find_element([{'type': i['type'] + '_start'}], i['value'])['index'] + 1
-            end = find_element([{'type': i['type'] + '_end'}], i['value'], reverse = True)['index'] - 1
+            end = find_element([{'type': i['type'] + '_end'}], i['value'], reverse = True)['index']
+            j = find_element([{'except type': 'whitespace'}], i['value'][start:end], reverse = True)
+            end = start + j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
             s += (i.get('key', '') + i.get('length', '') +
                 file_string(i['value'][:start], indent_level, pretty_print, commentless) +
                 file_string(i['value'][start: end], indent_level + 1, pretty_print, commentless) +
@@ -784,29 +797,29 @@ class DictParser2:
             raise Exception('Error in parser' +
                 ('' if self.file_name is None else ' (File: ' + os.path.basename(self.file_name) + ')') +
                 ': ' + message + ' | ' + self.string[max(last_index - 20, 0): last_index])
-        # word -> Essential words, such as word, string.
-        # IIII -> Nonessential words, such as whitespace, comments, linebreak, which doesn't always exist.
-        # JJJJ -> Nonessential words, such as whitespace, comments, which doesn't always exist.
+        # @@@@ -> Essential words, such as word, string.
+        # _scn -> Nonessential words, such as whitespace, comments, linebreak, which doesn't always exist.
+        # _sc_ -> Nonessential words, such as whitespace, comments, which doesn't always exist.
         # -------------------------------------------------------
         #  type          |  pattern
         # -------------------------------------------------------
         #                | key     | value
         #                |---------------------------------------
-        #  directive     | #SSSS   | IIII SSSS JJJJ
-        #                | #SSSS   | IIII
-        #  dictionary    | SSSS    | IIII SSSS ... ; JJJJ
-        #                | SSSS    | IIII          ; JJJJ
-        #  block         | SSSS    | IIII { IIII SSSS ... } JJJJ
-        #                |         |      { IIII SSSS ... } JJJJ
+        #  directive     | #@@@@   | _scn @@@@ _sc_
+        #                | #@@@@   | _scn
+        #  dictionary    | @@@@    | _scn @@@@ ... ; _sc_
+        #                | @@@@    | _scn          ; _sc_
+        #  block         | @@@@    | _scn { _scn @@@@ ... } _sc_
+        #                |         |      { _scn @@@@ ... } _sc_
         # -------------------------------------------------------
         #                | length  | value
         #                |---------------------------------------
-        #  list          | integer | IIII ( IIII SSSS ... ) JJJJ
-        #                |         |      ( IIII SSSS ... ) JJJJ
+        #  list          | integer | _scn ( _scn @@@@ ... ) _sc_
+        #                |         |      ( _scn @@@@ ... ) _sc_
         # -------------------------------------------------------
         #                |           value
         #                |---------------------------------------
-        #  dimension     |           [ IIII SSSS ... ] JJJJ
+        #  dimension     |           [ _scn @@@@ ... ] _sc_
         #  line_comment  |           //...
         #  block_comment |           /* ... */
         #  code          |           #{ ... #}
@@ -862,7 +875,7 @@ class DictParser2:
                 v, index = self.elements_list(index = s.end(), terminator = type_string + '_end')
                 if len(l) > 0:
                     for i in range(len(l) - 1, -1, -1):
-                        if l[i]['type'] not in ('line_comment', 'block_comment', 'whitespace', 'linebreak'):
+                        if l[i]['type'] not in ('whitespace', 'line_comment', 'block_comment', 'linebreak'):
                             if type_string == 'block' and l[i]['type'] in ('word', 'string'):
                                 l[i:] = [{'type': type_string, 'key': l[i]['value'],
                                     'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
@@ -890,7 +903,7 @@ class DictParser2:
                 else:
                     l.append({'type': s.lastgroup, 'value': s.group()})
                 index = s.end()
-            if s.lastgroup not in ('line_comment', 'block_comment', 'whitespace', 'linebreak'):
+            if s.lastgroup not in ('whitespace', 'line_comment', 'block_comment', 'linebreak'):
                 essentials += 1
                 if essentials == essentials_required:
                     terminator_reached = True

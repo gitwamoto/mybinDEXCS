@@ -268,7 +268,7 @@ def intoFvSolution():
             if i is None:
                 v = 'yes'
             else:
-                v = dictParse.find_element([{'except type': 'line_comment|block_comment|whitespace|linebreak'}],
+                v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                     parent = i['element'])['element']['value']
                 del block['value'][i['index']]
             block['value'][start:start] = dictParse.DictParser2(string =
