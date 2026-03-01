@@ -741,7 +741,7 @@ def file_string(parent, indent_level = 0, pretty_print = True, commentless = Fal
             end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
             s += (i.get('key', '') + i.get('length', '') +
                 file_string(i['value'][:start], indent_level, pretty_print, commentless) +
-                file_string(i['value'][start: end], indent_level + 1, pretty_print, commentless) +
+                file_string(i['value'][start:end], indent_level + 1, pretty_print, commentless) +
                 file_string(i['value'][end:], indent_level, pretty_print, commentless))
         else:
             if commentless and i['type'] == 'block_comment':
