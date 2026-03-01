@@ -39,7 +39,7 @@ def intoFvSolution():
             solvers = solvers['element']
             params = ','.join([i['element']['key'] for i in
                 dictParse.find_all_elements([{'type': 'block'}], parent = solvers)])
-            if 'Phi' not in params and ('p_rgh' in params or 'p' in params):
+            if 'Phi' not in params and ('p' in params or 'p_rgh' in params):
                 block_end = dictParse.find_element([{'type': 'block_end'}], parent = solvers, reverse = True)
                 block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
                     '\n' +
