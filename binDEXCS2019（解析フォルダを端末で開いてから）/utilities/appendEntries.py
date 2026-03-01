@@ -91,9 +91,9 @@ def intoFvSolution():
             else:
                 block = block['element']
             start = dictParse.find_element([{'type': 'block_start'}], parent = block)['index'] + 1
-            i = dictParse.find_element([{'type': 'linebreak'}], parent = block[start:])
+            i = dictParse.find_element([{'type': 'linebreak'}], parent = block, start = start)
             if i is not None:
-                start += i['index'] + 1
+                start = i['index'] + 1
 
             if k == 'SIMPLE':
                 residualControl = dictParse.find_element([{'type': 'block', 'key': 'residualControl'}],
@@ -158,9 +158,9 @@ def intoFvSolution():
         else:
             relaxationFactors = relaxationFactors['element']
         start = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
-        i = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors[start:])
+        i = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors, start = start)
         if i is not None:
-            start += i['index'] + 1
+            start = i['index'] + 1
 
         fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)
         if fields is None:
