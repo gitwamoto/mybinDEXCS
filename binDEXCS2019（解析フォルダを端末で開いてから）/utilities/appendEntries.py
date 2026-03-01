@@ -247,26 +247,58 @@ def intoFvSchemes():
         intoFvSchemesIn(d)
 
 def intoControlDict():
-    controlDict = os.path.join('system', 'controlDict')
-    os.chmod(controlDict, 0o0666)
-    dp = DictParser(controlDict)
-    s_old = dp.toString()
+    controlDict_path = os.path.join(path, 'controlDict')
+    if os.path.islink(controlDict_path):
+        return
+    os.chmod(controlDict_path, 0o0666)
+    dictParse.normalize(file_name = controlDict_path)
 
-    x = dp.getDPLForKey(['runTimeModifiable'])
-    if x is not None:
-        x.setValue(['yes'])
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+
+    footer = controlDict.find_separators()[1]
+    if footer is None:
+        footer_index = len(controlDict.elements)
     else:
-        a = DictParser(string = 'runTimeModifiable\tyes;\n').contents # list
-        if len(dp.contents) == 0:
-            dp.contents.extend(a)
-        elif type(dp.contents[-1]) is str:
-            b = dp.contents[-1].rstrip()
-            if len(dp.contents) == 1 and b == '':
-                dp.contents[:] = a
-            else:
-                dp.contents[-1:] = [b + '\n\n'] + a
-        else:
-            dp.contents.extend(['\n\n'] + a)
+        footer_index = footer['index']
+
+    runTimeModifiable = controlDict.find_element([{'type': 'dictionary', 'key': 'runTimeModifiable'}])
+    if runTimeModifiable is None:
+        runTimeModifiable = dictParse.DictParser2(string =
+            'runTimeModifiable\tyes;\n' +
+            '\n').elements
+        fvSolution.elements[footer_index:footer_index] = runTimeModifiable
+        footer_index += len(runTimeModifiable)
+    else:
+        i = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            parent = runTimeModifiable['element'])
+        i['parent'][i['index']] = dictParse.DictParser2(string = 'yes').elements[0]
+
+    ここまで
+
+#	limitNut // nutの最大値を制限する
+#	{
+#		type	limitFields;
+#		libs	(fieldFunctionObjects);
+#		enabled	yes; // yesで実行
+#		fields	(nut);
+#		limit	max; // 渦粘性の場合は上限(max)だけ抑えることが多い
+#		max	#calc "1000.0*$_nu";
+#		writeControl	none;
+#	}
+#    calcCo // クーラン数を計算させる（画面に出なくても計算はされる）
+#    {
+#        type            CourantNo;
+#        libs            (fieldFunctionObjects);
+#        enabled	yes; // yesで実行
+#        writeControl    none;
+#    }
+#    printCoMinMax // 計算されたクーラン数（"Co"フィールド）の値を画面表示
+#    {
+#        type            fieldMinMax;
+#        libs            (fieldFunctionObjects);
+#		enabled	yes; // yesで実行
+#        fields           (Co);
+#    }
 
     x = dp.getValueForKey(['functions'])
     if x is not None:
@@ -282,11 +314,11 @@ def intoControlDict():
                 else:
                     z.extend(a)
 
-    dp = dictFormat.moveLineToBottom(dp)
-    s = dp.toString()
-    if s != s_old:
-        with open(controlDict, 'w') as f:
-            f.write(s)
+        string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+        if controlDict.string != string:
+#            os.rename(controlDict_path, controlDict_path + '_back')
+            with open(controlDict_path, 'w') as f:
+                f.write(string)
 
 if __name__ == '__main__':
     intoFvSolution()
