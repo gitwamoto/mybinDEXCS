@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 # 半角に出来る文字は全て半角に.py
 # by Yukiharu Iwamoto
-# 2026/2/21 6:34:26 PM
+# 2026/3/2 6:42:36 PM
+
+# DictParser2で書き直し済み
 
 import sys
 import signal

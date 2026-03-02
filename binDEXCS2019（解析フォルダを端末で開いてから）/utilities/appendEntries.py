@@ -2,26 +2,21 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/3/2 6:32:18 PM
+# 2026/3/2 6:42:11 PM
+
+# DictParser2で書き直し済み
 
 import os
 import sys
 import glob
+import re
+import dictParse
 # {
 # DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
 if os.path.dirname(__file__) not in ([i.encode('UTF-8') if type(i) is unicode else i
     for i in sys.path] if sys.version_info.major <= 2 else sys.path):
     sys.path.append(os.path.dirname(__file__))
 # }
-
-# DictParser
-from dictParse import DictParser
-from dictParse import DictParserList
-import dictFormat
-
-# DictParser2
-import re
-import dictParse
 
 def intoFvSolution():
     def intoFvSolutionIn(path):
