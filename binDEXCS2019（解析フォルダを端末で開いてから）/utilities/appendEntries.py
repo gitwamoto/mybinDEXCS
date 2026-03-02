@@ -43,11 +43,7 @@ def intoFvSolution():
                     '}\n').elements
             dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
 
-        footer = fvSolution.find_separators()[1]
-        if footer is None:
-            footer_index = len(fvSolution.elements)
-        else:
-            footer_index = footer['index']
+        footer_index = fvSolution.find_separators(footer_index_not_found = len(fvSolution.elements))[1]['index']
 
         # potentialFlow
         potentialFlow = fvSolution.find_element([{'type': 'block', 'key': 'potentialFlow'}])['element']
@@ -200,11 +196,7 @@ def intoFvSchemes():
 
         fvSchemes = dictParse.DictParser2(file_name = fvSchemes_path)
 
-        footer = fvSchemes.find_separators()[1]
-        if footer is None:
-            footer_index = len(fvSchemes.elements)
-        else:
-            footer_index = footer['index']
+        footer_index = fvSchemes.find_separators(footer_index_not_found = len(fvSchemes.elements))[1]['index']
 
         # divSchemes, laplacianSchemes, wallDist
         for b, k, v in (
@@ -245,18 +237,14 @@ def intoControlDict():
 
     controlDict = dictParse.DictParser2(file_name = controlDict_path)
 
-    footer = controlDict.find_separators()[1]
-    if footer is None:
-        footer_index = len(controlDict.elements)
-    else:
-        footer_index = footer['index']
+    footer_index = controlDict.find_separators(footer_index_not_found = len(controlDict.elements))[1]['index']
 
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])
     if functions['element'] is None:
         functions_and_linebreak = dictParse.DictParser2(string =
-            'functions\n' +
-            '{\n' +
-            '}\n' +
+            'functions\n'
+            '{\n'
+            '}\n'
             '\n').elements
         controlDict.elements[footer_index:footer_index] = functions_and_linebreak
         functions_index = footer_index

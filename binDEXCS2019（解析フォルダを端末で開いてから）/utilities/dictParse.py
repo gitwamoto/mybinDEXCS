@@ -694,7 +694,7 @@ def set_blank_line(parent, number_of_blank_lines = 1):
             if parent[i - 1]['type'] != 'linebreak':
                 i += 1
             j = i
-            while j < end and parent[j]['type'] in ('linebreak', 'whitespace'):
+            while j < end and parent[j]['type'] in ('whitespace', 'linebreak', ):
                 j += 1
             parent[i:j] = number_of_blank_lines*[linebreak]
             end += i - j + number_of_blank_lines
@@ -917,14 +917,17 @@ class DictParser2:
             print('    return {}'.format(l))
         return l, index
 
-    def find_separators(self):
+    def find_separators(self, header_index_not_found = None, footer_index_not_found = None):
         separators = self.find_all_elements([{'type': 'separator'}])
         if len(separators) == 0:
-            return [None, None] # header, footer
-        for i in separators[-1]['parent'][separators[-1]['index'] + 1:]:
-            if i['type'] not in ('line_comment', 'block_comment', 'whitespace', 'linebreak'):
-                return [separators[0], None] # header, footer
-        return [None if len(separators) == 1 else separators[0], separators[-1]] # header, footer
+            return [{'parent': None, 'index': header_index_not_found, 'element': None},
+                {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
+        if self.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            start = separators[-1]['index'] + 1)['element'] is not None:
+            return [separators[0],
+                {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
+        return [{'parent': None, 'index': header_index_not_found, 'element': None}
+            if len(separators) == 1 else separators[0], separators[-1]] # header, footer
 
     def find_element(self, path_list, start = None, end = None, reverse = False):
         return find_element(path_list, self.elements, start, end, reverse)
