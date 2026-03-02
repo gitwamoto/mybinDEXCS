@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2021/7/2 7:38:56 PM
+# 2026/3/2 8:56:44 PM
 
 # ---- オプションはない ----
+
+# DictParser2で書き直し済み
 
 import os
 import signal
