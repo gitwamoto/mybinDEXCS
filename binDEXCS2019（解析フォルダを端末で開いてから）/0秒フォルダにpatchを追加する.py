@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/2 8:56:44 PM
+# 2026/3/3 12:38:40 AM
 
 # ---- オプションはない ----
 
@@ -60,10 +60,6 @@ from utilities import dictParse
 #                        x.value().extend(a)
 #                        dp.writeFile(f)
 
-def mykey(x):
-    m = re.match('(.*?)([0-9]*)$', x[0])
-    return m.group(1), -1 if m.group(2) == '' else int(m.group(2))
-
 def append_patches(src, dst):
     src = os.path.join(src, 'polyMesh', 'boundary')
     os.chmod(src, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
@@ -73,10 +69,10 @@ def append_patches(src, dst):
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     patches.sort(key = lambda p: p['element']['key'])
 
+    linebreak = dictParse.DictParser2(string = '\n').elements[0]
     for f in glob.iglob(os.path.join(dst, '*')):
         if not os.path.isfile(f):
             continue
-
         os.chmod(f, 0o0666)
         if os.path.basename(f) == 'cellToRegion':
             continue
@@ -93,12 +89,9 @@ def append_patches(src, dst):
             footer_index = parameter.find_separators(footer_index_not_found = len(parameter.elements))[1]['index']
             parameter.elements[footer_index:footer_index] = boundaryField_and_linebreak
             boundaryField = boundaryField_and_linebreak[0]
-        i = dictParse.find_element([{'type': 'block_start'}], parent = boundaryField)['index'] + 1
-        start = dictParse.find_element([{'type': 'linebreak'}], parent = boundaryField, start = i,
-            index_not_found = i - 1)['index'] + 1
+        boundaryField_end = dictParse.find_element([{'type': 'block_end'}], parent = boundaryField, reverse = True)['index']
 
-        linebreak = dictParse.DictParser2(string = '\n').elements[0]
-        for p in reversed(patches):
+        for p in patches:
             i = dictParse.find_element([{'type': 'block', 'key': p['element']['key']}], parent = boundaryField)
             if i['element'] is None:
                 v = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
@@ -106,13 +99,15 @@ def append_patches(src, dst):
                     parent = p['element'])['element']['value']
                 if v not in ('empty', 'symmetryPlane', 'symmetry', 'wedge'):
                     v = 'zeroGradient'
-                boundaryField['value'][start:start] = dictParse.DictParser2(string = '\n' +
+                b = dictParse.DictParser2(string = '\n' +
                     p['element']['key'] + '\n' +
                     '{\n' +
                     'type\t' + v + ';\n' +
                     '}\n').elements
+                boundaryField['value'][boundaryField_end:boundaryField_end] = b
+                boundaryField_end += len(b)
             else:
-                i['parent'][start:start] = [i['parent'].pop(i['index']), linebreak]
+                i['parent'][boundaryField_end:boundaryField_end] = [linebreak, i['parent'].pop(i['index'])]
         dictParse.set_blank_line(boundaryField, number_of_blank_lines = 1)
 
         string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]

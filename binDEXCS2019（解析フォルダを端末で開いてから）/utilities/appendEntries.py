@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/3/2 6:42:11 PM
+# 2026/3/3 12:28:40 AM
 
 # DictParser2で書き直し済み
 
@@ -78,45 +78,47 @@ def intoFvSolution():
                 footer_index += len(block_and_linebreak)
                 block = block_and_linebreak[0]
             i = dictParse.find_element([{'type': 'block_start'}], parent = block)['index'] + 1
-            start = dictParse.find_element([{'type': 'linebreak'}], parent = block, start = i,
+            block_start = dictParse.find_element([{'type': 'linebreak'}], parent = block, start = i,
                 index_not_found = i - 1)['index'] + 1
 
             if k == 'SIMPLE':
                 residualControl = dictParse.find_element([{'type': 'block', 'key': 'residualControl'}], parent = block)
                 if residualControl['element'] is None:
-                    block['value'][start:start] = dictParse.DictParser2(string =
+                    block['value'][block_start:block_start] = dictParse.DictParser2(string =
                         'residualControl\n'
                         '{\n'
                         '".*"\t1.0e-03;\n'
                         '}\n').elements
                 else:
-                    residualControl['parent'][start:start] = [
+                    residualControl['parent'][block_start:block_start] = [
                         residualControl['parent'].pop(residualControl['index']), linebreak]
 
             if k != 'PISO':
                 consistent = dictParse.find_element([{'type': 'dictionary', 'key': 'consistent'}], parent = block)
                 if consistent['element'] is None:
-                    block['value'][start:start] = dictParse.DictParser2(string =
+                    block['value'][block_start:block_start] = dictParse.DictParser2(string =
                         'consistent\tyes;\n').elements
                 else:
-                    consistent['parent'][start:start] = [consistent['parent'].pop(consistent['index']), linebreak]
+                    consistent['parent'][block_start:block_start] = [
+                        consistent['parent'].pop(consistent['index']), linebreak]
 
             nNonOrthogonalCorrectors = dictParse.find_element([
                 {'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = block)
             if nNonOrthogonalCorrectors['element'] is None:
-                block['value'][start:start] = dictParse.DictParser2(string =
+                block['value'][block_start:block_start] = dictParse.DictParser2(string =
                     'nNonOrthogonalCorrectors\t1;\n').elements
             else:
-                nNonOrthogonalCorrectors['parent'][start:start] = [
+                nNonOrthogonalCorrectors['parent'][block_start:block_start] = [
                     nNonOrthogonalCorrectors['parent'].pop(nNonOrthogonalCorrectors['index']), linebreak]
 
             if k != 'SIMPLE':
                 nCorrectors = dictParse.find_element([{'type': 'dictionary', 'key': 'nCorrectors'}], parent = block)
                 if nCorrectors['element'] is None:
-                    block['value'][start:start] = dictParse.DictParser2(string =
+                    block['value'][block_start:block_start] = dictParse.DictParser2(string =
                         'nCorrectors\t3;\n').elements
                 else:
-                    nCorrectors['parent'][start:start] = [nCorrectors['parent'].pop(nCorrectors['index']), linebreak]
+                    nCorrectors['parent'][block_start:block_start] = [
+                        nCorrectors['parent'].pop(nCorrectors['index']), linebreak]
 
             momentumPredictor = dictParse.find_element(
                 [{'type': 'dictionary', 'key': 'momentumPredictor'}], parent = block)
@@ -126,7 +128,7 @@ def intoFvSolution():
                 v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                     parent = momentumPredictor['element'])['element']['value']
                 del block['value'][momentumPredictor['index']]
-            block['value'][start:start] = dictParse.DictParser2(string =
+            block['value'][block_start:block_start] = dictParse.DictParser2(string =
                 'momentumPredictor\t' + v + ';' +
                 ' // yes -> 圧力方程式を解く前に，運動方程式を解いて速度を求める．\n').elements
 
@@ -140,14 +142,14 @@ def intoFvSolution():
                 '}\n\n').elements
             fvSolution.elements[footer_index:footer_index] = relaxationFactors
             footer_index += len(relaxationFactors)
-        start = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
-        i = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors, start = start)
-        if i is not None:
-            start = i['index'] + 1
+        i = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
+        relaxationFactors_start = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors,
+            start = i, index_not_found = i - 1) + 1
 
         fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
         if fields is None:
-            relaxationFactors['value'][start:start] = dictParse.DictParser2(string =
+            relaxationFactors['value'][
+                relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
                 'fields // p = p^{old} + \\alpha (p - p^{old})\n'
                 '{'
                 '"p|p_rgh"\t1.0;\n'
@@ -161,7 +163,8 @@ def intoFvSolution():
         equations = dictParse.find_element(
             [{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)['element']
         if equations is None:
-            relaxationFactors['value'][start:start] = dictParse.DictParser2(string =
+            relaxationFactors['value'][
+                relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
                 'equations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
                 '{'
                 'U\t1.0;\n'
