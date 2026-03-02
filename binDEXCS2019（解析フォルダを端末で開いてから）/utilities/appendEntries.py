@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/3/2 10:15:43 AM
+# 2026/3/2 6:32:18 PM
 
 import os
 import sys
@@ -128,12 +128,12 @@ def intoFvSolution():
                     nCorrectors['parent'][start:start] = [nCorrectors['parent'].pop(nCorrectors['index']), linebreak]
 
             momentumPredictor = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'momentumPredictor'}], parent = block)['element']
-            if momentumPredictor is None:
+                [{'type': 'dictionary', 'key': 'momentumPredictor'}], parent = block)
+            if momentumPredictor['element'] is None:
                 v = 'yes'
             else:
                 v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                    parent = momentumPredictor)['element']['value']
+                    parent = momentumPredictor['element'])['element']['value']
                 del block['value'][momentumPredictor['index']]
             block['value'][start:start] = dictParse.DictParser2(string =
                 'momentumPredictor\t' + v + ';' +
@@ -244,9 +244,7 @@ def intoFvSchemes():
         intoFvSchemesIn(d)
 
 def intoControlDict():
-    controlDict_path = os.path.join(path, 'controlDict')
-    if os.path.islink(controlDict_path):
-        return
+    controlDict_path = os.path.join('system', 'controlDict')
     os.chmod(controlDict_path, 0o0666)
     dictParse.normalize(file_name = controlDict_path)
 
@@ -258,7 +256,7 @@ def intoControlDict():
     else:
         footer_index = footer['index']
 
-    functions = controlDict.find_element([{'type': 'dictionary', 'key': 'functions'}])
+    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])
     if functions['element'] is None:
         functions_and_linebreak = dictParse.DictParser2(string =
             'functions\n' +
@@ -273,81 +271,100 @@ def intoControlDict():
         functions_index = functions['index']
         functions = functions['element']
 
-    functions_blocks = dictParse.find_all_elements([{'type': 'block'}], parent = functions)])
-    if functions_blocks is not None:
-        for block in functions_blocks:
-            enabled = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = block['elements'])
-            if enabled['element'] is not None:
-                v = 'yes'
-            else:
-                v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                    parent = enabled['element'])['element']['value']
-                del functions_blocks['value'][enabled['index']]
-            insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'libs'}], parent = block)
-            if insertion['element'] is not None:
-                insertion = insertion['index'] + 1
-            else:
-                insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = block)['index'] + 1
-            insertion = dictParse.find_element(
-                [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
-            block['value'][insertion:insertion] = dictParse.DictParser2(string =
-                'enabled\t' + v + '; // yesで実行\n'
-                ).elements
-            dictParse.set_blank_line(block, number_of_blank_lines = 0)
+    functions_blocks = dictParse.find_all_elements([{'type': 'block'}], parent = functions)
+    for block in functions_blocks:
+        block = block['element']
+        enabled = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = block)
+        if enabled['element'] is None:
+            v = 'yes'
+        else:
+            v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = enabled['element'])['element']['value']
+            del block['value'][enabled['index']]
+        insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'libs'}], parent = block)
+        if insertion['element'] is not None:
+            insertion = insertion['index'] + 1
+        else:
+            insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = block)['index'] + 1
+        insertion = dictParse.find_element(
+            [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
+        block['value'][insertion:insertion] = dictParse.DictParser2(string =
+            'enabled\t' + v + '; // yesで実行\n'
+            ).elements
+        dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
-#    end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)['index']
+    functions_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)['index']
     has_limitNut = has_calcCo = has_printCoMinMax = False
-    types = dictParse.find_all_elements([{'type': 'block'}, {'type': 'dictionaty', 'key': 'type'}], parent = functions)
+    types = dictParse.find_all_elements([{'type': 'block'}, {'type': 'dictionary', 'key': 'type'}], parent = functions)
     for t in types:
-        if (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+        if (not has_limitNut and
+            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                 parent = t['element'])['element']['value'] == 'limitFields' and
-            dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
-                parent = dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}],
-                    parent = t['parent'])['element'])['element']['value'] == 'nut' and
-            dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                parent = dictParse.find_element([{'type': 'dictionary', 'key': 'limit'}],
-                    parent = t['parent'])['element'])['element']['value'] == 'max'):
+            dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}, 
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
+                parent = t['parent'])['element']['value'] == 'nut' and
+            dictParse.find_element([{'type': 'dictionary', 'key': 'limit'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                    parent = t['parent'])['element']['value'] == 'max')):
             has_limitNut = True
+        elif (not has_calcCo and
+            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = t['element'])['element']['value'] == 'CourantNo')):
+            has_calcCo = True
+        elif (not has_printCoMinMax and
+            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = t['element'])['element']['value'] == 'fieldMinMax' and
+            dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}, 
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
+                parent = t['parent'])['element']['value'] == 'Co')):
+            has_printCoMinMax = True
 
-#	limitNut // nutの最大値を制限する
-#	{
-#		type	limitFields;
-#		libs	(fieldFunctionObjects);
-#		enabled	no; // yesで実行
-#		fields	(nut);
-#		limit	max; // 渦粘性の場合は上限(max)だけ抑えることが多い
-#		max	#calc "1000.0*$_nu";
-#	}
-#    calcCo // クーラン数を計算する（画面に出なくても計算はされる）
-#    {
-#        type            CourantNo;
-#        libs            (fieldFunctionObjects);
-#        enabled	no; // yesで実行
-#        writeControl    none;
-#    }
-#    printCoMinMax // クーラン数（"Co"フィールド）の値を画面表示
-#    {
-#        type            fieldMinMax;
-#        libs            (fieldFunctionObjects);
-#        enabled	no; // yesで実行
-#        fields           (Co);
-#    }
+    if not has_limitNut:
+        limitNut = dictParse.DictParser2(string =
+            '\n'
+            'limitNut // nutの最大値を制限する\n'
+            '{\n'
+            'type\tlimitFields;\n'
+            'libs\t(fieldFunctionObjects);\n'
+            'enabled\tno; // yesで実行\n'
+            'fields\t(nut);\n'
+            'limit\tmax; // 渦粘性の場合は上限(max)だけ抑えることが多い\n'
+            'max\t0.01;\n'
+            '}\n'
+            ).elements
+        functions['value'][functions_end:functions_end] = limitNut
+        functions_end += len(limitNut)
+    if not has_calcCo:
+        calcCo = dictParse.DictParser2(string =
+            '\n'
+            'calcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
+            '{\n'
+            'type\tCourantNo;\n'
+            'libs\t(fieldFunctionObjects);\n'
+            'enabled\tno; // yesで実行\n'
+            'writeControl\tno;\n'
+            '}\n'
+            ).elements
+        functions['value'][functions_end:functions_end] = calcCo
+        functions_end += len(calcCo)
+    if not has_printCoMinMax:
+        printCoMinMax = dictParse.DictParser2(string =
+            '\n'
+            'printCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
+            '{\n'
+            'type\tfieldMinMax;\n'
+            'libs\t(fieldFunctionObjects);\n'
+            'enabled\tno; // yesで実行\n'
+            'fields\t(Co);\n'
+            '}\n'
+            ).elements
+        functions['value'][functions_end:functions_end] = printCoMinMax
+        functions_end += len(printCoMinMax)
+    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
-    x = dp.getValueForKey(['functions'])
-    if x is not None:
-        for y in x:
-            if (DictParserList.isType(y, DictParserList.BLOCK) and
-                dp.getIndexOfItem([y.key(), 'enabled'], y) is None):
-                a = DictParser(string = '\nenabled\tno /* yesで実行 */;\n').contents # list
-                z = y.value()
-                if len(z) == 0:
-                    z.extend(a)
-                elif type(z[-1]) is str:
-                    z[-1:] = a + [z[-1].lstrip()]
-                else:
-                    z.extend(a)
-
-    runTimeModifiable = controlDict.find_element([{'type': 'dictionary', 'key': 'runTimeModifiable'}])
+    runTimeModifiable = controlDict.find_element([{'type': 'dictionary', 'key': 'runTimeModifiable'}])['element']
     if runTimeModifiable is None:
         runTimeModifiable = dictParse.DictParser2(string =
             'runTimeModifiable\tyes;\n' +
@@ -356,8 +373,8 @@ def intoControlDict():
         functions_index += len(runTimeModifiable)
         footer_index += len(runTimeModifiable)
     else:
-        i = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-            parent = runTimeModifiable['element'])
+        i = dictParse.find_element(
+            [{'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = runTimeModifiable)
         i['parent'][i['index']] = dictParse.DictParser2(string = 'yes').elements[0]
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
@@ -369,4 +386,4 @@ def intoControlDict():
 if __name__ == '__main__':
     intoFvSolution()
     intoFvSchemes()
-#    intoControlDict()
+    intoControlDict()

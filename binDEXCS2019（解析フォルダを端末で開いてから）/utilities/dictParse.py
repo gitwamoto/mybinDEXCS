@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/2 10:15:46 AM
+# 2026/3/2 6:32:14 PM
 
 import sys
 import os
@@ -651,7 +651,7 @@ def find_all_elements(path_list, parent):
         elements = []
         for i in c:
             elements += find_all_elements(path_list[1:], i['element'])
-            return elements
+        return elements
 
 def set_blank_line(parent, number_of_blank_lines = 1):
     if isinstance(parent, list):
@@ -707,7 +707,7 @@ def structure_string(parent, indent_level = 0):
         parent = parent['value']
     l = len(str(len(parent) - 1))
     s = '[\n'
-    indent = '    '*(indent_level + 1)
+    indent = '  '*(indent_level + 1)
     for n, i in enumerate(parent):
         if i['type'] in ('dictionary', 'block'):
             s += (str(n).zfill(l) + ': ' + indent + "{'type': '" + i['type'] + "', " +
@@ -719,7 +719,7 @@ def structure_string(parent, indent_level = 0):
                 "'value': " + structure_string(i['value'], indent_level + 1) + "},\n")
         else:
             s += str(n).zfill(l) + ': ' + indent + str(i) + ',\n'
-    return s + '    '*indent_level + ']'
+    return s + '  '*indent_level + ']'
 
 def file_string(parent, indent_level = 0, pretty_print = True, commentless = False):
     if not isinstance(parent, list):
