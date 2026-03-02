@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/2/28 11:06:55 PM
+# 2026/3/2 10:15:43 AM
 
 import os
 import sys
@@ -34,9 +34,8 @@ def intoFvSolution():
         fvSolution = dictParse.DictParser2(file_name = fvSolution_path)
 
         # solvers/Phi
-        solvers = fvSolution.find_element([{'type': 'block', 'key': 'solvers'}])
+        solvers = fvSolution.find_element([{'type': 'block', 'key': 'solvers'}])['element']
         if solvers is not None:
-            solvers = solvers['element']
             params = ','.join([i['element']['key'] for i in
                 dictParse.find_all_elements([{'type': 'block'}], parent = solvers)])
             if 'Phi' not in params and ('p' in params or 'p_rgh' in params):
@@ -56,7 +55,7 @@ def intoFvSolution():
             footer_index = footer['index']
 
         # potentialFlow
-        potentialFlow = fvSolution.find_element([{'type': 'block', 'key': 'potentialFlow'}])
+        potentialFlow = fvSolution.find_element([{'type': 'block', 'key': 'potentialFlow'}])['element']
         if potentialFlow is None:
             potentialFlow = dictParse.DictParser2(string =
                 'potentialFlow\n' +
@@ -67,9 +66,8 @@ def intoFvSolution():
             fvSolution.elements[footer_index:footer_index] = potentialFlow
             footer_index += len(potentialFlow)
         else:
-            potentialFlow = potentialFlow['element']
             nNonOrthogonalCorrectors = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = potentialFlow)
+                [{'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = potentialFlow)['element']
             if nNonOrthogonalCorrectors is None:
                 block_end = dictParse.find_element([{'type': 'block_end'}], parent = potentialFlow, reverse = True)
                 block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
@@ -78,7 +76,7 @@ def intoFvSolution():
         # SIMPLE, PIMPLE, PISO
         linebreak = dictParse.DictParser2(string = '\n').elements[0]
         for k in ('SIMPLE', 'PIMPLE', 'PISO'):
-            block = fvSolution.find_element([{'type': 'block', 'key': k}])
+            block = fvSolution.find_element([{'type': 'block', 'key': k}])['element']
             if block is None:
                 block_and_linebreak = dictParse.DictParser2(string =
                     str(k) + '\n' +
@@ -88,17 +86,13 @@ def intoFvSolution():
                 fvSolution.elements[footer_index:footer_index] = block_and_linebreak
                 footer_index += len(block_and_linebreak)
                 block = block_and_linebreak[0]
-            else:
-                block = block['element']
-            start = dictParse.find_element([{'type': 'block_start'}], parent = block)['index'] + 1
-            i = dictParse.find_element([{'type': 'linebreak'}], parent = block, start = start)
-            if i is not None:
-                start = i['index'] + 1
+            i = dictParse.find_element([{'type': 'block_start'}], parent = block)['index'] + 1
+            start = dictParse.find_element([{'type': 'linebreak'}], parent = block, start = i,
+                index_not_found = i - 1)['index'] + 1
 
             if k == 'SIMPLE':
-                residualControl = dictParse.find_element([{'type': 'block', 'key': 'residualControl'}],
-                    parent = block)
-                if residualControl is None:
+                residualControl = dictParse.find_element([{'type': 'block', 'key': 'residualControl'}], parent = block)
+                if residualControl['element'] is None:
                     block['value'][start:start] = dictParse.DictParser2(string =
                         'residualControl\n'
                         '{\n'
@@ -110,7 +104,7 @@ def intoFvSolution():
 
             if k != 'PISO':
                 consistent = dictParse.find_element([{'type': 'dictionary', 'key': 'consistent'}], parent = block)
-                if consistent is None:
+                if consistent['element'] is None:
                     block['value'][start:start] = dictParse.DictParser2(string =
                         'consistent\tyes;\n').elements
                 else:
@@ -118,7 +112,7 @@ def intoFvSolution():
 
             nNonOrthogonalCorrectors = dictParse.find_element([
                 {'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = block)
-            if nNonOrthogonalCorrectors is None:
+            if nNonOrthogonalCorrectors['element'] is None:
                 block['value'][start:start] = dictParse.DictParser2(string =
                     'nNonOrthogonalCorrectors\t1;\n').elements
             else:
@@ -127,19 +121,19 @@ def intoFvSolution():
 
             if k != 'SIMPLE':
                 nCorrectors = dictParse.find_element([{'type': 'dictionary', 'key': 'nCorrectors'}], parent = block)
-                if nCorrectors is None:
+                if nCorrectors['element'] is None:
                     block['value'][start:start] = dictParse.DictParser2(string =
                         'nCorrectors\t3;\n').elements
                 else:
                     nCorrectors['parent'][start:start] = [nCorrectors['parent'].pop(nCorrectors['index']), linebreak]
 
-            momentumPredictor = dictParse.find_element([{'type': 'dictionary', 'key': 'momentumPredictor'}],
-                parent = block)
+            momentumPredictor = dictParse.find_element(
+                [{'type': 'dictionary', 'key': 'momentumPredictor'}], parent = block)['element']
             if momentumPredictor is None:
                 v = 'yes'
             else:
                 v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                    parent = momentumPredictor['element'])['element']['value']
+                    parent = momentumPredictor)['element']['value']
                 del block['value'][momentumPredictor['index']]
             block['value'][start:start] = dictParse.DictParser2(string =
                 'momentumPredictor\t' + v + ';' +
@@ -147,7 +141,7 @@ def intoFvSolution():
 
             dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
-        relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])
+        relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
             relaxationFactors = dictParse.DictParser2(string =
                 'relaxationFactors\n'
@@ -155,14 +149,12 @@ def intoFvSolution():
                 '}\n\n').elements
             fvSolution.elements[footer_index:footer_index] = relaxationFactors
             footer_index += len(relaxationFactors)
-        else:
-            relaxationFactors = relaxationFactors['element']
         start = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
         i = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors, start = start)
         if i is not None:
             start = i['index'] + 1
 
-        fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)
+        fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
         if fields is None:
             relaxationFactors['value'][start:start] = dictParse.DictParser2(string =
                 'fields // p = p^{old} + \\alpha (p - p^{old})\n'
@@ -171,11 +163,12 @@ def intoFvSolution():
                 'rho\t1.0;\n'
                 '}\n').elements
         else:
-            fields['element']['value'][:dictParse.find_element([{'type': 'block_start'}],
-                parent = fields['element'])['index']] = dictParse.DictParser2(string =
+            fields['value'][:dictParse.find_element(
+                [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser2(string =
                     ' // p = p^{old} + \\alpha (p - p^{old})\n').elements
 
-        equations = dictParse.find_element([{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)
+        equations = dictParse.find_element(
+            [{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)['element']
         if equations is None:
             relaxationFactors['value'][start:start] = dictParse.DictParser2(string =
                 'equations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
@@ -185,8 +178,8 @@ def intoFvSolution():
                 '}\n'
                 ).elements
         else:
-            equations['element']['value'][:dictParse.find_element([{'type': 'block_start'}],
-                parent = equations['element'])['index']] = dictParse.DictParser2(string =
+            equations['value'][:dictParse.find_element(
+                [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser2(string =
                 ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
 
         dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
@@ -223,7 +216,7 @@ def intoFvSchemes():
             ('divSchemes', 'div(div(phi,U))', 'Gauss linear'),
             ('laplacianSchemes', 'laplacian(1,p)', 'Gauss linear corrected'),
             ('wallDist', 'method', 'meshWave')):
-            block = fvSchemes.find_element([{'type': 'block', 'key': b}])
+            block = fvSchemes.find_element([{'type': 'block', 'key': b}])['element']
             if block is None:
                 block = dictParse.DictParser2(string =
                     b + '\n' +
@@ -234,10 +227,7 @@ def intoFvSchemes():
                 fvSchemes.elements[footer_index:footer_index] = block
                 footer_index += len(block)
             else:
-                block = block['element']
-                d = dictParse.find_element(
-                    [{'type': 'dictionary', 'key': k}], parent = block)
-                if d is None:
+                if dictParse.find_element([{'type': 'dictionary', 'key': k}], parent = block)['element'] is None:
                     block_end = dictParse.find_element([{'type': 'block_end'}], parent = block, reverse = True)
                     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
                         k + '\t' + v + ';\n').elements
@@ -269,7 +259,7 @@ def intoControlDict():
         footer_index = footer['index']
 
     functions = controlDict.find_element([{'type': 'dictionary', 'key': 'functions'}])
-    if functions is None:
+    if functions['element'] is None:
         functions_and_linebreak = dictParse.DictParser2(string =
             'functions\n' +
             '{\n' +
@@ -281,26 +271,25 @@ def intoControlDict():
         functions = functions_and_linebreak[0]
     else:
         functions_index = functions['index']
+        functions = functions['element']
 
     functions_blocks = dictParse.find_all_elements([{'type': 'block'}], parent = functions)])
     if functions_blocks is not None:
         for block in functions_blocks:
             enabled = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = block['elements'])
-            if enabled is not None:
+            if enabled['element'] is not None:
                 v = 'yes'
             else:
                 v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                     parent = enabled['element'])['element']['value']
                 del functions_blocks['value'][enabled['index']]
             insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'libs'}], parent = block)
-            if insertion is not None:
+            if insertion['element'] is not None:
                 insertion = insertion['index'] + 1
             else:
-                insertion = dictParse.find_element(
-                    [{'type': 'dictionary', 'key': 'type'}], parent = block)['index'] + 1
-            i = dictParse.find_element([{'type': 'linebreak'}], parent = block[insertion:])
-            if i is not None:
-                insertion += i['index'] + 1
+                insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = block)['index'] + 1
+            insertion = dictParse.find_element(
+                [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
             block['value'][insertion:insertion] = dictParse.DictParser2(string =
                 'enabled\t' + v + '; // yesで実行\n'
                 ).elements
@@ -308,19 +297,17 @@ def intoControlDict():
 
 #    end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)['index']
     has_limitNut = has_calcCo = has_printCoMinMax = False
-    types = dictParse.find_all_elements([{'type': 'block'}, {'type': 'dictionaty', 'key': 'type'}],
-        parent = functions)
-    if types is not None:
-        for t in types:
-            if (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                    parent = t['element'])['element']['value'] == 'limitFields' and
-                dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
-                    parent = dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}],
-                        parent = t['parent'])['element'])['element']['value'] == 'nut' and
-                dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                    parent = dictParse.find_element([{'type': 'dictionary', 'key': 'limit'}],
-                        parent = t['parent'])['element'])['element']['value'] == 'max'):
-                has_limitNut = True
+    types = dictParse.find_all_elements([{'type': 'block'}, {'type': 'dictionaty', 'key': 'type'}], parent = functions)
+    for t in types:
+        if (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = t['element'])['element']['value'] == 'limitFields' and
+            dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
+                parent = dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}],
+                    parent = t['parent'])['element'])['element']['value'] == 'nut' and
+            dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = dictParse.find_element([{'type': 'dictionary', 'key': 'limit'}],
+                    parent = t['parent'])['element'])['element']['value'] == 'max'):
+            has_limitNut = True
 
 #	limitNut // nutの最大値を制限する
 #	{

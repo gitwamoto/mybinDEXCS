@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/1 10:02:22 PM
+# 2026/3/2 10:15:46 AM
 
 import sys
 import os
@@ -607,7 +607,7 @@ def normalize(file_name = None, string = None, overwrite_file = True):
             f.write(normalized_string)
     return normalized_string, changed
 
-def find_element(path_list, parent, start = None, end = None, reverse = False):
+def find_element(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
     # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
     #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
     #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
@@ -626,7 +626,7 @@ def find_element(path_list, parent, start = None, end = None, reverse = False):
         if all(parent[i].get(k[7:]) not in v.split('|') if k.startswith('except ') else parent[i].get(k) in v.split('|')
         for k, v in path_list[0].items())), None)
     if c is None:
-        return None
+        return {'parent': None, 'index': index_not_found, 'element': None}
     elif len(path_list) == 1:
         return {'parent': parent, 'index': c['index'], 'element': c['element']}
     else:
@@ -655,7 +655,7 @@ def find_all_elements(path_list, parent):
 
 def set_blank_line(parent, number_of_blank_lines = 1):
     if isinstance(parent, list):
-        if find_element([{'type': 'linebreak'}], parent) is None:
+        if find_element([{'type': 'linebreak'}], parent)['element'] is None:
             return
         start = 0
         end = len(parent)
@@ -665,23 +665,23 @@ def set_blank_line(parent, number_of_blank_lines = 1):
             end = find_element([{'type': parent['type'] + '_end'}], parent['value'], reverse = True)['index']
             parent = parent['value']
             i = find_element([{'type': 'linebreak'}], parent, start, end)
-            if i is None:
+            if i['element'] is None:
                 return
             start = i['index'] + 1
             i = find_element([{'except type': 'whitespace|linebreak'}], parent, start, end)
-            if i is not None:
+            if i['element'] is not None:
                 i = i['index']
                 del parent[start:i]
                 end += start - i
             if start != end:
                 end = find_element([{'type': 'linebreak'}], parent, end - 1, start - 1, reverse = True)['index']
                 i = find_element([{'except type': 'whitespace|linebreak'}], parent, end - 1, start - 1, reverse = True)
-                if i is not None:
+                if i['element'] is not None:
                     i = i['index'] + 1
                     del parent[i:end]
                     end = i
         else:
-            if find_element([{'type': 'linebreak'}], parent['value']) is None:
+            if find_element([{'type': 'linebreak'}], parent['value'])['element'] is None:
                 return
             parent = parent['value']
             start = 0
