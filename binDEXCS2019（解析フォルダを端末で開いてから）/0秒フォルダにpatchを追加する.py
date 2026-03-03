@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/3 12:38:40 AM
+# 2026/3/3 4:25:14 PM
 
 # ---- オプションはない ----
 
@@ -13,9 +13,7 @@ import signal
 import glob
 import re
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
-
 from utilities import dictParse
 
 def append_patches(src, dst):
@@ -47,7 +45,9 @@ def append_patches(src, dst):
             footer_index = parameter.find_separators(footer_index_not_found = len(parameter.elements))[1]['index']
             parameter.elements[footer_index:footer_index] = boundaryField_and_linebreak
             boundaryField = boundaryField_and_linebreak[0]
-        boundaryField_end = dictParse.find_element([{'type': 'block_end'}], parent = boundaryField, reverse = True)['index']
+        i = dictParse.find_element([{'type': 'block_end'}], parent = boundaryField, reverse = True)['index']
+        boundaryField_end = dictParse.find_element([{'type': 'linebreak'}], parent = boundaryField, start = i - 1,
+            reverse = True, index_not_found = i)['index']
 
         for p in patches:
             i = dictParse.find_element([{'type': 'block', 'key': p['element']['key']}], parent = boundaryField)
@@ -65,7 +65,9 @@ def append_patches(src, dst):
                 boundaryField['value'][boundaryField_end:boundaryField_end] = b
                 boundaryField_end += len(b)
             else:
-                i['parent'][boundaryField_end:boundaryField_end] = [linebreak, i['parent'].pop(i['index'])]
+                # popで1つ引き抜くので，差し込む場所はboundaryField_end - 1にする．
+                i['parent'][boundaryField_end - 1:boundaryField_end - 1] = [linebreak, i['parent'].pop(i['index'])]
+                boundaryField_end += 1 # linebreakのぶん増える
         dictParse.set_blank_line(boundaryField, number_of_blank_lines = 1)
 
         string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
@@ -75,8 +77,8 @@ def append_patches(src, dst):
                 f.write(string)
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
-    misc.showDirForPresentAnalysis(__file__)
+#    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+#    misc.showDirForPresentAnalysis(__file__)
 
     regions = []
     for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
@@ -90,4 +92,4 @@ if __name__ == '__main__':
             if os.path.isdir(d):
                 append_patches(src = os.path.join('constant', i), dst = d)
 
-    rmObjects.removeInessentials()
+#    rmObjects.removeInessentials()
