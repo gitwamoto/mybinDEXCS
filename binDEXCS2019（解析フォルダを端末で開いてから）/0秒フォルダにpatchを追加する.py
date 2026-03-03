@@ -18,48 +18,6 @@ from utilities import rmObjects
 
 from utilities import dictParse
 
-#def mykey(x):
-#    m = re.match('(.*?)([0-9]*)$', x[0])
-#    return m.group(1), -1 if m.group(2) == '' else int(m.group(2))
-#
-#def append_patches(src, dst):
-#    dp = DictParser(os.path.join(src, 'polyMesh', 'boundary'))
-#    for x in dp.contents:
-#        if DictParserList.isType(x, DictParserList.LISTP):
-#            x = x.value()
-#            break
-#    patches = []
-#    for y in x:
-#        if DictParserList.isType(y, DictParserList.BLOCK):
-#            for z in y.value():
-#                 if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'type':
-#                    patches.append([y.key(), z.value()[0]])
-#                    break
-#    patches.sort(key = mykey)
-#    a = ['\n\n\n']
-#    for i in patches:
-#        a.extend([DictParserList(DictParserList.BLOCK, [i[0], '\n', ['\n',
-#            DictParserList(DictParserList.DICT, ['type', '',
-#            [(i[1] if i[1] in ('empty', 'symmetryPlane', 'symmetry', 'wedge') else 'zeroGradient')], '']),
-#            '\n']]), '\n'])
-#    patches = set([i[0] for i in patches])
-#    for f in glob.iglob(os.path.join(dst, '*')):
-#        if os.path.isfile(f):
-#            os.chmod(f, 0o0666)
-#            if os.path.basename(f) != 'cellToRegion':
-#                print('{}を処理中...'.format(f))
-#                dp = DictParser(f)
-#                x = dp.getDPLForKey(['boundaryField'])
-#                if x is not None and DictParserList.isType(x, DictParserList.BLOCK):
-#                    patches_bf = set()
-#                    for y in x.value():
-#                        if DictParserList.isType(y, DictParserList.BLOCK):
-#                            patches_bf.add(y.key())
-#                    if patches != patches_bf:
-#                        x.setValue([dp.toString(x.value(), indent = '//\t')])
-#                        x.value().extend(a)
-#                        dp.writeFile(f)
-
 def append_patches(src, dst):
     src = os.path.join(src, 'polyMesh', 'boundary')
     os.chmod(src, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない

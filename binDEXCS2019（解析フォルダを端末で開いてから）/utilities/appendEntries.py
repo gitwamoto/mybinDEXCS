@@ -144,7 +144,7 @@ def intoFvSolution():
             footer_index += len(relaxationFactors)
         i = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
         relaxationFactors_start = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors,
-            start = i, index_not_found = i - 1) + 1
+            start = i, index_not_found = i - 1)['index'] + 1
 
         fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
         if fields is None:
@@ -240,6 +240,15 @@ def intoControlDict():
 
     controlDict = dictParse.DictParser2(file_name = controlDict_path)
 
+    deltaT = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}])
+    i = controlDict.find_element([{'except type': 'whitespace|linebreak'}], start = deltaT['index'] - 1, reverse = True)
+    if (i['element'] is None or
+        i['element']['type'] not in ('line_comment|block_comment') or
+        'simpleFoam' not in i['element']['value']):
+        controlDict.elements[deltaT['index']:deltaT['index']] = dictParse.DictParser2(string =
+            '// simpleFoamnの場合 -> deltaTはいくらでも良い．'
+            '安定性はfvSolution/relaxationFactorsで制御する．\n').elements
+
     footer_index = controlDict.find_separators(footer_index_not_found = len(controlDict.elements))[1]['index']
 
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])
@@ -280,7 +289,9 @@ def intoControlDict():
         dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
     functions_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)['index']
-    has_limitNut = has_calcCo = has_printCoMinMax = False
+    has_limitNut = False
+# Geminiによると，simpleFoamでは時間ステップが使われていないため，クーラン数を表示する必要はないらしい．
+#    has_calcCo = has_printCoMinMax = False
     types = dictParse.find_all_elements([{'type': 'block'}, {'type': 'dictionary', 'key': 'type'}], parent = functions)
     for t in types:
         if (not has_limitNut and
@@ -294,18 +305,18 @@ def intoControlDict():
                 {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                     parent = t['parent'])['element']['value'] == 'max')):
             has_limitNut = True
-        elif (not has_calcCo and
-            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                parent = t['element'])['element']['value'] == 'CourantNo')):
-            has_calcCo = True
-        elif (not has_printCoMinMax and
-            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                parent = t['element'])['element']['value'] == 'fieldMinMax' and
-            dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}, 
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
-                parent = t['parent'])['element']['value'] == 'Co')):
-            has_printCoMinMax = True
+#        elif (not has_calcCo and
+#            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+#                parent = t['element'])['element']['value'] == 'CourantNo')):
+#            has_calcCo = True
+#        elif (not has_printCoMinMax and
+#            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+#                parent = t['element'])['element']['value'] == 'fieldMinMax' and
+#            dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}, 
+#                {'except type': 'whitespace|line_comment|block_comment|linebreak'},
+#                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
+#                parent = t['parent'])['element']['value'] == 'Co')):
+#            has_printCoMinMax = True
 
     if not has_limitNut:
         limitNut = dictParse.DictParser2(string =
@@ -322,32 +333,31 @@ def intoControlDict():
             ).elements
         functions['value'][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
-    if not has_calcCo:
-        calcCo = dictParse.DictParser2(string =
-            '\n'
-            'calcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
-            '{\n'
-            'type\tCourantNo;\n'
-            'libs\t(fieldFunctionObjects);\n'
-            'enabled\tno; // yesで実行\n'
-            'writeControl\tno;\n'
-            '}\n'
-            ).elements
-        functions['value'][functions_end:functions_end] = calcCo
-        functions_end += len(calcCo)
-    if not has_printCoMinMax:
-        printCoMinMax = dictParse.DictParser2(string =
-            '\n'
-            'printCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
-            '{\n'
-            'type\tfieldMinMax;\n'
-            'libs\t(fieldFunctionObjects);\n'
-            'enabled\tno; // yesで実行\n'
-            'fields\t(Co);\n'
-            '}\n'
-            ).elements
-        functions['value'][functions_end:functions_end] = printCoMinMax
-        functions_end += len(printCoMinMax)
+#    if not has_calcCo:
+#        calcCo = dictParse.DictParser2(string =
+#            '\n'
+#            'calcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
+#            '{\n'
+#            'type\tCourantNo;\n'
+#            'libs\t(fieldFunctionObjects);\n'
+#            'enabled\tno; // yesで実行\n'
+#            '}\n'
+#            ).elements
+#        functions['value'][functions_end:functions_end] = calcCo
+#        functions_end += len(calcCo)
+#    if not has_printCoMinMax:
+#        printCoMinMax = dictParse.DictParser2(string =
+#            '\n'
+#            'printCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
+#            '{\n'
+#            'type\tfieldMinMax;\n'
+#            'libs\t(fieldFunctionObjects);\n'
+#            'enabled\tno; // yesで実行\n'
+#            'fields\t(Co);\n'
+#            '}\n'
+#            ).elements
+#        functions['value'][functions_end:functions_end] = printCoMinMax
+#        functions_end += len(printCoMinMax)
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
     runTimeModifiable = controlDict.find_element([{'type': 'dictionary', 'key': 'runTimeModifiable'}])['element']
