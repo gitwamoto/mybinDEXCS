@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:06:39 PM
+# 2026/3/3 5:37:53 PM
+
+# DictParser2で書き直し済み
 
 import glob
 import os
@@ -16,8 +18,6 @@ if os.path.dirname(__file__) not in ([i.encode('UTF-8') if type(i) is unicode el
     for i in sys.path] if sys.version_info.major <= 2 else sys.path):
     sys.path.append(os.path.dirname(__file__))
 # }
-from dictParse import DictParser
-from dictParse import DictParserList
 import folderTime
 import setFuncsInCD
 
@@ -59,7 +59,7 @@ def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
     if not touch_only:
         setParaViewAmbientDiffuse(ambient, diffuse)
         subprocess.call('paraFoam', shell = True)
-    setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0)
+    setParaViewAmbientDiffuse(ambient, diffuse)
 
 def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0):
     paraview_json_home = os.path.expanduser('~/.config/ParaView/ParaView-UserSettings.json')
@@ -278,20 +278,23 @@ def texteditwx_works_well():
 
 def correctLocation():
     def correctLocationIn(file_name):
-        os.chmod(file_name, 0o0666)
-        dir_name = os.path.dirname(file_name)
-        changed = False
-        dp = DictParser(file_name)
-        x = dp.getDPLForKey(['FoamFile'])
-        if x is not None and DictParserList.isType(x, DictParserList.BLOCK):
-            for y in x.value():
-                if (DictParserList.isType(y, DictParserList.DICT) and y.key() == 'location' and
-                    y.value()[0].strip('"') != dir_name):
-                    changed = True
-                    y.setValue(['"' + dir_name  +'"'])
-                    break
-        if changed:
-            dp.writeFile(file_name)
+        os.chmod(file_name, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
+        parser = dictParse.DictParser2(file_name = file_name)
+        FoamFile = parser.find_element([{'type': 'block', 'key': 'FoamFile'}])['element']
+        if FoamFile is None:
+            return
+        location = dictparse.find_element([{'type': 'dictionary', 'key': 'lcation'}], parent = FoamFile)['element']
+        if location is not None:
+            i = dictparse.find_element(
+                [{'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = location)
+            i['parent']['value'][i['index']:i['index'] + 1] = dictParse.DictParser2(string =
+                '"' + os.path.dirname(file_name) + '"').elements
+        string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+        if parser.string != string:
+#            os.rename(file_name, file_name + '_back')
+            with open(file_name, 'w') as f:
+                f.write(string)
+
     for d in ('0', 'constant', 'system'):
         if os.path.isdir(d):
             for f in glob.iglob(os.path.join(d, '*')):
