@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/3 4:25:14 PM
+# 2026/3/3 7:53:47 PM
 
 # ---- オプションはない ----
 
@@ -12,8 +12,8 @@ import os
 import signal
 import glob
 import re
-from utilities import misc
-from utilities import rmObjects
+#from utilities import misc
+#from utilities import rmObjects
 from utilities import dictParse
 
 def append_patches(src, dst):
@@ -30,18 +30,42 @@ def append_patches(src, dst):
         if not os.path.isfile(f):
             continue
         os.chmod(f, 0o0666)
-        if os.path.basename(f) == 'cellToRegion':
+        f_base = os.path.basename(f)
+        if f_base == 'cellToRegion':
             continue
 
         print('{}を処理中...'.format(f))
         parameter = dictParse.DictParser2(file_name = f)
 
-        if f == 'k':
-            #calc "1.5*pow($_k_intensity*$_U,2)"
-        elif f == 'epsilon':
-            #calc "1.5*pow($_k_intensity*$_U,2)"
-        elif f == 'omega';
-            #calc "1.5*pow($_k_intensity*$_U,2)"
+        if f_base in ('k', 'epsilon', 'omega'):
+            internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
+            i = parameter.find_element(
+                [{'except type': 'whitespace|linebreak'}], start = internalField['index'] - 1, reverse = True)
+            if (i['element'] is None or
+                i['element']['type'] not in ('line_comment|block_comment') or
+                'の初期値' not in i['element']['value']):
+                if f_base == 'k':
+                    c = ('// 初期値の例\n'
+                        '// <内部流/外部流/管内流の場合>\n'
+                        '// _U\t〇〇; // 流速 [m/s]\n'
+                        '// _k_intensity\t〇〇; // 流速にかかる係数\n'
+                        '//   低乱流: 0.001〜0.01 | 一般的な乱流: 0.01〜0.05 | 建築物まわりの流れや大気流: 0.05〜0.10\n'
+                        '// _k_init\t#calc "1.5*pow($_k_intensity*$_U,2)"; // kの初期値 [m^2/s^2]\n'
+                        '// <管内流の場合>\n'
+                        '// _Re\t〇〇; //レイノルズ数\n'
+                        '// _k_init\t#calc "1.5*pow(0.16*pow($_Re,-0.125)*$_U,2)"; // kの初期値 [m^2/s^2]\n')
+                else:
+                    c = ('// 初期値の例\n'
+                        '// _k_init\t〇〇; // kの初期値 [m^2/s^2]\n'
+                        '// _L\t〇〇; 代表長さ [m]\n'
+                        '// _L_mixing\t〇〇; // 乱流渦の代表的な混合距離 [m]\n'
+                        '//   内部流: #calc "0.07*$_L" | 外部流: #calc "0.1*$_L"〜#calc "0.01*$_L"\n')
+                if f_base == 'epsilon':
+                    c += '// _epsilon_init\t#calc "pow(0.09,0.75)*pow($_k_init,1.5)/$_L_mixing"; // epsilonの初期値 [m^2/s^3]\n'
+                elif f_base == 'omega':
+                    c += '// _omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
+                parameter.elements[
+                    internalField['index']:internalField['index']] = dictParse.DictParser2(string = c).elements
 
         boundaryField = parameter.find_element([{'type': 'block', 'key': 'boundaryField'}])['element']
         if boundaryField is None:
