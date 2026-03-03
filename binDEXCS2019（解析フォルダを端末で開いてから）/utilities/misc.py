@@ -213,20 +213,31 @@ def convertLengthUnitInMillimeterToMeter():
     print('長さの単位をミリメートルからメートルに変換しました．')
 
 def wasRenumberMeshDone():
-    with open(os.path.join('constant', 'polyMesh', 'boundary'), 'r') as f:
+    boundary = os.path.join('constant', 'polyMesh', 'boundary')
+    with open(boundary, 'r') as f:
         s = f.read()
-    return False s.find('// renumberMesh was done') == -1 else True
+    #           0123456789012345678901234
+    i = s.find('// renumberMesh was done')
+    if i != -1:
+        if i == 0:
+            with open(boundary, 'w') as f:
+                f.write(s[24:].lstrip())
+            writeRenumberMeshWasDone()
+        return True
+    else:
+        return False
 
 def writeRenumberMeshWasDone():
-    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    boundary = dictParse.DictParser2(file_name = boundary_path)
-    insetrion = boundary.find_element([{'type': 'linebreak'}],
-        start = boundary.find_element([{'type': 'list'}])['index'] - 1, reverse = True)['index']
-    boudary.elements[insetrion:insetrion] = dictParse.DictParser2(string =
-        '\n// renumberMesh was done\n').elements
-#    os.rename(fvSolution_path, fvSolution_path + '_back')
-    with open(boundary_path, 'w') as f:
-        f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
+    boundary = os.path.join('constant', 'polyMesh', 'boundary')
+    with open(boundary, 'r') as f:
+        s = f.read()
+    m = re.search(r'// (\* )+//\n', s)
+    if m is not None:
+        s = s[:m.end()] + '// renumberMesh was done\n' + s[m.end():]
+    else:
+        s = s.rstrip() + '\n// renumberMesh was done\n'
+    with open(boundary, 'w') as f:
+        f.write(s)
 
 def renumberMesh():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()

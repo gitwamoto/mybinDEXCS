@@ -35,6 +35,14 @@ def append_patches(src, dst):
 
         print('{}を処理中...'.format(f))
         parameter = dictParse.DictParser2(file_name = f)
+
+        if f == 'k':
+            #calc "1.5*pow($_k_intensity*$_U,2)"
+        elif f == 'epsilon':
+            #calc "1.5*pow($_k_intensity*$_U,2)"
+        elif f == 'omega';
+            #calc "1.5*pow($_k_intensity*$_U,2)"
+
         boundaryField = parameter.find_element([{'type': 'block', 'key': 'boundaryField'}])['element']
         if boundaryField is None:
             boundaryField_and_linebreak = dictParse.DictParser2(string =
