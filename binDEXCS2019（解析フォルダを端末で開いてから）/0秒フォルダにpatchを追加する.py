@@ -12,8 +12,8 @@ import os
 import signal
 import glob
 import re
-#from utilities import misc
-#from utilities import rmObjects
+from utilities import misc
+from utilities import rmObjects
 from utilities import dictParse
 
 def append_patches(src, dst):
