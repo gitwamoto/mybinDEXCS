@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:04:25 PM
+# 2026/3/5 1:20:07 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,13 +24,16 @@ from utilities import misc
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
 
+from utilities import dictParse # DictParser2
+
+
 two_dimensional = False
-meshDict = os.path.join('system', 'meshDict')
-meshDict_3D = meshDict + '_3D'
+meshDict_path = os.path.join('system', 'meshDict')
+meshDict_3D_path = meshDict_path + '_3D'
 
 def handler(signal, frame):
-    if two_dimensional and os.path.isfile(meshDict_3D):
-        os.rename(meshDict_3D, meshDict) # can overwrite
+    if two_dimensional and os.path.isfile(meshDict_3D_path):
+        os.rename(meshDict_3D_path, meshDict_path) # can overwrite
     rmObjects.removeInessentials()
     sys.exit(1)
 
@@ -63,8 +66,8 @@ if __name__ == '__main__':
                 domains = max(int(sys.argv[i]), 1)
             i += 1
 
-    if not os.path.isfile(meshDict):
-        print('エラー: {}ファイルがありません．'.format(meshDict))
+    if not os.path.isfile(meshDict_path):
+        print('エラー: {}ファイルがありません．'.format(meshDict_path))
         sys.exit(1)
     if os.path.isdir('dynamicCode'):
         shutil.rmtree('dynamicCode')
@@ -89,20 +92,20 @@ if __name__ == '__main__':
     domains = min(domains, threads)
 
     if two_dimensional:
-        dp_meshDict = DictParser(meshDict)
+        meshDict = dictParse.DictParser2(file_name = meshDict_path)
         empty_list = []
-        for x in dp_meshDict.getValueForKey(['renameBoundary', 'newPatchNames']):
-            if DictParserList.isType(x, DictParserList.BLOCK):
-                bname = tname = None
-                for y in x.value():
-                    if DictParserList.isType(y, DictParserList.DICT):
-                        if y.key() == 'newName':
-                            bname = y.value()[0]
-                        elif y.key() == 'type':
-                            tname = y.value()[0]
-                        if bname is not None and tname is not None and tname == 'empty':
-                            empty_list.append(bname)
-                            break
+        for patch in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
+            {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}])
+            newName = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = patch['element'])['element']['value']
+            newType = dictParse.find_element([{'type': 'dictionary', 'key': 'newType'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = patch['element'])['element']['value']
+            if newType == 'empty':
+                empty_list.append(newName)
+ここまで！！
+
         x = dp_meshDict.getItemAtIndex(dp_meshDict.getIndexOfItem(['surfaceFile'])[:-1])
         stl_file_name_wo_ext = os.path.splitext(x.value()[0].strip('"'))[0]
         stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl'
@@ -117,8 +120,8 @@ if __name__ == '__main__':
                     elif should_write:
                         f2d.write(line)
         x.setValue(['"' + os.path.basename(stl_2D_file_name) + '"'])
-        os.rename(meshDict, meshDict_3D) # can overwrite
-        dp_meshDict.writeFile(meshDict)
+        os.rename(meshDict_path, meshDict_3D_path) # can overwrite
+        dp_meshDict.writeFile(meshDict_path)
 
     cfMesh = 'cartesian2DMesh' if two_dimensional else 'cartesianMesh'
     if domains != 1:
@@ -160,8 +163,8 @@ if __name__ == '__main__':
 
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     if two_dimensional:
-        os.rename(meshDict, meshDict + '_2D') # can overwrite
-        os.rename(meshDict_3D, meshDict) # can overwrite
+        os.rename(meshDict_path, meshDict_path + '_2D') # can overwrite
+        os.rename(meshDict_3D_path, meshDict_path) # can overwrite
         if interactive:
             front_name = (raw_input if sys.version_info.major <= 2 else input)(
                 '(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
@@ -190,7 +193,7 @@ if __name__ == '__main__':
             if DictParserList.isType(a, DictParserList.LISTP):
                 a = a.value()
                 break
-        for x in DictParser(meshDict).getValueForKey(['renameBoundary', 'newPatchNames']):
+        for x in DictParser(meshDict_path).getValueForKey(['renameBoundary', 'newPatchNames']):
             if DictParserList.isType(x, DictParserList.BLOCK):
                 bname = tname = None
                 for y in x.value():
