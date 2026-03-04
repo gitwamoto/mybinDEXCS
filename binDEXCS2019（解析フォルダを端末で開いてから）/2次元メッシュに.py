@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:03:55 PM
+# 2026/3/5 12:57:07 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -20,43 +20,54 @@ import subprocess
 import shutil
 from utilities import misc
 from utilities import listFile
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
 
 def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
     with open(os.path.join('system', 'extrudeMeshDict'), 'w') as f:
-        f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-        f.write('\tlocation\t"system";\n')
-        f.write('\tobject\textrudeMeshDict;\n')
-        f.write('}\n')
-        f.write('constructFrom\tpatch;\n')
-        f.write('sourceCase\t".";\n')
+        f.write(
+            'FoamFile\n'
+            '{\n'
+            '\tversion\t2.0;\n'
+            '\tformat\tascii;\n'
+            '\tclass\tdictionary;\n'
+            '\tlocation\t"system";\n'
+            '\tobject\textrudeMeshDict;\n'
+            '}\n'
+            'constructFrom\tpatch;\n'
+            'sourceCase\t".";\n'
+        )
         f.write('sourcePatches\t({});\n'.format(front_name))
         f.write('exposedPatchName\t{};\n'.format(back_name))
         f.write('flipNormals\tfalse;\n')
         if wedge: # wedge境界
-            f.write('extrudeModel\twedge;\n')
-            f.write('nLayers\t1;\n')
-            f.write('expansionRatio\t1.0;\n')
-            f.write('sectorCoeffs\n')
-            f.write('{\n')
-            f.write('\taxisPt\t(0 0 0);\n')
-            f.write('\taxis\t(1 0 0);\n')
-            f.write('\tangle\t2;\t// [degrees]\n')
-            f.write('}\n')
-            f.write('mergeFaces\tfalse;\n')
-            f.write('mergeTol\t1.0e-10;\n')
+            f.write(
+                'extrudeModel\twedge;\n'
+                'nLayers\t1;\n'
+                'expansionRatio\t1.0;\n'
+                'sectorCoeffs\n'
+                '{\n'
+                '\taxisPt\t(0 0 0);\n'
+                '\taxis\t(1 0 0);\n'
+                '\tangle\t2;\t// [degrees]\n'
+                '}\n'
+                'mergeFaces\tfalse;\n'
+                'mergeTol\t1.0e-10;\n'
+            )
             print('wedgeのくさび角は2度に設定しています．')
         else: # empty境界
-            f.write('extrudeModel\tlinearNormal;\n')
-            f.write('nLayers\t1;\n')
-            f.write('expansionRatio\t1.0;\n')
-            f.write('linearNormalCoeffs\n')
-            f.write('{\n')
+            f.write(
+                'extrudeModel\tlinearNormal;\n'
+                'nLayers\t1;\n'
+                'expansionRatio\t1.0;\n'
+                'linearNormalCoeffs\n'
+                '{\n'
+            )
             f.write('\tthickness\t{};\n'.format(z_thickness))
-            f.write('}\n')
-            f.write('mergeFaces\tfalse;\n')
-            f.write('mergeTol\t0;\n')
+            f.write(
+                '}\n'
+                'mergeFaces\tfalse;\n'
+                'mergeTol\t0;\n'
+            )
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
