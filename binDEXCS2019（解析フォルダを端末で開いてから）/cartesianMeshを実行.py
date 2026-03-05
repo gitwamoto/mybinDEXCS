@@ -26,7 +26,6 @@ from utilities import rmObjects
 
 from utilities import dictParse # DictParser2
 
-
 two_dimensional = False
 meshDict_path = os.path.join('system', 'meshDict')
 meshDict_3D_path = meshDict_path + '_3D'
