@@ -98,10 +98,10 @@ if __name__ == '__main__':
             newName = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'},
                 {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                 parent = patch['element'])['element']['value']
-            newType = dictParse.find_element([{'type': 'dictionary', 'key': 'newType'},
+            type_ = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
                 {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                 parent = patch['element'])['element']['value']
-            if newType == 'empty':
+            if type_ == 'empty':
                 empty_list.append(newName)
 ここまで！！
 
