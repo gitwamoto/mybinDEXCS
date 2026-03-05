@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/5 9:20:24 PM
+# 2026/3/5 9:22:48 PM
 
 # ---- オプションはない ----
 
@@ -12,8 +12,8 @@ import os
 import signal
 import glob
 import re
-#from utilities import misc
-#from utilities import rmObjects
+from utilities import misc
+from utilities import rmObjects
 from utilities import dictParse
 
 def append_patches(src, dst):
@@ -146,8 +146,8 @@ def append_patches(src, dst):
                 f.write(string)
 
 if __name__ == '__main__':
-#    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
-#    misc.showDirForPresentAnalysis(__file__)
+    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+    misc.showDirForPresentAnalysis(__file__)
 
     regions = []
     for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
@@ -161,4 +161,4 @@ if __name__ == '__main__':
             if os.path.isdir(d):
                 append_patches(src = os.path.join('constant', i), dst = d)
 
-#    rmObjects.removeInessentials()
+    rmObjects.removeInessentials()
