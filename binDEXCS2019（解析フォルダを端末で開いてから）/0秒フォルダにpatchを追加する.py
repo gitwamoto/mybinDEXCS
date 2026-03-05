@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/3 7:53:47 PM
+# 2026/3/5 9:20:24 PM
 
 # ---- オプションはない ----
 
@@ -12,8 +12,8 @@ import os
 import signal
 import glob
 import re
-from utilities import misc
-from utilities import rmObjects
+#from utilities import misc
+#from utilities import rmObjects
 from utilities import dictParse
 
 def append_patches(src, dst):
@@ -54,16 +54,16 @@ def append_patches(src, dst):
                         '// <管内流の場合>\n'
                         '// _Re\t〇〇; //レイノルズ数\n'
                         '// _k_init\t#calc "1.5*pow(0.16*pow($_Re,-0.125)*$_U,2)"; // kの初期値 [m^2/s^2]\n')
-                else:
+                else: # epsilon, omega
                     c = ('// 初期値の例\n'
                         '// _k_init\t〇〇; // kの初期値 [m^2/s^2]\n'
                         '// _L\t〇〇; 代表長さ [m]\n'
                         '// _L_mixing\t〇〇; // 乱流渦の代表的な混合距離 [m]\n'
                         '//   内部流: #calc "0.07*$_L" | 外部流: #calc "0.1*$_L"〜#calc "0.01*$_L"\n')
-                if f_base == 'epsilon':
-                    c += '// _epsilon_init\t#calc "pow(0.09,0.75)*pow($_k_init,1.5)/$_L_mixing"; // epsilonの初期値 [m^2/s^3]\n'
-                elif f_base == 'omega':
-                    c += '// _omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
+                    if f_base == 'epsilon':
+                        c += '// _epsilon_init\t#calc "pow(0.09,0.75)*pow($_k_init,1.5)/$_L_mixing"; // epsilonの初期値 [m^2/s^3]\n'
+                    else: # omega
+                        c += '// _omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
                 parameter.elements[
                     internalField['index']:internalField['index']] = dictParse.DictParser2(string = c).elements
 
@@ -87,13 +87,50 @@ def append_patches(src, dst):
                 v = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
                     {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
                     parent = p['element'])['element']['value']
-                if v not in ('empty', 'symmetryPlane', 'symmetry', 'wedge'):
-                    v = 'zeroGradient'
-                b = dictParse.DictParser2(string = '\n' +
+                s = ('\n' +
                     p['element']['key'] + '\n' +
                     '{\n' +
-                    'type\t' + v + ';\n' +
-                    '}\n').elements
+                    'type\t')
+                if v == 'wall':
+                    if f_base == 'U':
+                        s += ('noSlip;\n'
+                            '// U = (0 0 0)に規定\n')
+                    elif f_base == 'k':
+                        s += ('kqRWallFunction;\n'
+                            '// 高レイノルズ数型乱流モデルにおけるk, q, Rの壁面境界条件\n'
+                            '// zeroGrdientのラッパー\n'
+                            'value\t$internalField; // 実際には使わないけど必要\n')
+                    elif f_base == 'epsilon':
+                        s += ('epsilonWallFunction;\n'
+                            '// epsilonの壁面境界条件\n'
+                            'value\t$internalField; // 実際には使わないけど必要\n')
+                    elif f_base == 'omega':
+                        s += ('omegaWallFunction;\n'
+                            '// omegaの壁面境界条件\n'
+                            'value\t$internalField; // 実際には使わないけど必要\n')
+                    elif f_base == 'p':
+                        s += ('zeroGradient\n'
+                            '// こう配が0，境界での値 = セル中心での値にする．\n')
+                    elif f_base == 'nut':
+                        s += ('nutkWallFunction;\n'
+                            '// nutの壁面境界条件，標準的\n'
+                            '// yPlus = C_mu^0.25*sqrt(k)*y/nuから格子中心のyPlusを求め，\n'
+                            '// 対数則領域内に格子中心があるかどうかを判断する．\n'
+                            '// ある場合，対数速度分布から得られる壁面せん断応力\n'
+                            '// tau_w = mu*kappa*yPlus/log(E*yPlus)*(u/y)\n'
+                            '// になるように乱流粘性係数を設定する．\n'
+                            '// https://www.slideshare.net/fumiyanozaki96/openfoam-36426892\n'
+                            'value\t$internalField; // 実際には使わないけど必要\n')
+                    else:
+                        s += 'zeroGradient;\n'
+                elif f_base == 'nut':
+                    s += ('calculated;\n'
+                        '// 他の変数から計算可能であることを表す．\n'
+                        '// 壁面でない境界におけるnutの境界条件としてよく使われる．\n'
+                        'value\t$internalField; // 実際には使わないけど必要\n')
+                else:
+                    s += (v if v in ('empty', 'symmetryPlane', 'symmetry', 'wedge') else 'zeroGradient') + ';\n'
+                b = dictParse.DictParser2(string = s + '}\n').elements
                 boundaryField['value'][boundaryField_end:boundaryField_end] = b
                 boundaryField_end += len(b)
             else:

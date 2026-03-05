@@ -149,7 +149,7 @@
 }
 {
 	type nutkWallFunction;
-	// 壁面に対するnutの境界条件，標準的
+	// nutの壁面境界条件，標準的
 	// yPlus = C_mu^0.25*sqrt(k)*y/nuから格子中心のyPlusを求め，
 	// 対数則領域内に格子中心があるかどうかを判断する．
 	// ある場合，対数速度分布から得られる壁面せん断応力
@@ -160,7 +160,7 @@
 }
 {
 	type nutUWallFunction;
-	// 壁面に対するnutの境界条件
+	// nutの壁面境界条件
 	// 格子中心での速度u，壁からの距離y，対数速度分布から得られる関係
 	// yPlus*log(E*yPlus) = kappa*u*y/nuから格子中心のyPlusを求め，
 	// 対数則領域内に格子中心があるかどうかを判断する．
@@ -177,7 +177,7 @@
 // Oで始まるもの
 {
 	type omegaWallFunction;
-	// 壁面に対するomegaの境界条件
+	// omegaの壁面境界条件
 	value $internalField; // 実際には使わないけど必要
 }
 {

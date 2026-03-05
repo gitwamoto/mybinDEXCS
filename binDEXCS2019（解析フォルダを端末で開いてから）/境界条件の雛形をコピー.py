@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 境界条件の雛形をコピー.py
 # by Yukiharu Iwamoto
-# 2025/3/18 9:08:08 AM
+# 2026/3/5 9:02:46 PM
 
 import os
 import sys
@@ -123,14 +123,14 @@ boundary_conditions = (
     'value $internalField; // 実際には使わないけど必要',
     src + 'TurbulenceModels/turbulenceModels/derivedFvPatchFields/wallFunctions/nutWallFunctions/nutkRoughWallFunction'),
     ('nutkWallFunction',
-    '壁面に対するnutの境界条件，標準的\n' +
+    'nutの壁面境界条件，標準的\n' +
     'yPlus = C_mu^0.25*sqrt(k)*y/nuから格子中心のyPlusを求め，\n対数則領域内に格子中心があるかどうかを判断する．\n' +
     'ある場合，対数速度分布から得られる壁面せん断応力\ntau_w = mu*kappa*yPlus/log(E*yPlus)*(u/y)\n' +
     'になるように乱流粘性係数を設定する．\nhttps://www.slideshare.net/fumiyanozaki96/openfoam-36426892',
     'value $internalField; // 実際には使わないけど必要',
     src + 'TurbulenceModels/turbulenceModels/derivedFvPatchFields/wallFunctions/nutWallFunctions/nutkWallFunction'),
     ('nutUWallFunction',
-    '壁面に対するnutの境界条件\n' +
+    'nutの壁面境界条件\n' +
     '格子中心での速度u，壁からの距離y，対数速度分布から得られる関係\n' +
     'yPlus*log(E*yPlus) = kappa*u*y/nuから格子中心のyPlusを求め，\n対数則領域内に格子中心があるかどうかを判断する．\n' +
     'ある場合，対数速度分布から得られる壁面せん断応力\ntau_w = mu*kappa*yPlus/log(E*yPlus)*(u/y)\n' +
@@ -142,7 +142,7 @@ boundary_conditions = (
     '',
     src + 'finiteVolume/fields/fvPatchFields/derived/noSlip'),
     ('omegaWallFunction',
-    '壁面に対するomegaの境界条件',
+    'omegaの壁面境界条件',
     'value $internalField; // 実際には使わないけど必要',
     src + 'TurbulenceModels/turbulenceModels/derivedFvPatchFields/wallFunctions/omegaWallFunctions/omegaWallFunction'),
     ('outletInlet',
