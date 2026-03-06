@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/5 1:20:07 AM
+# 2026/3/7 12:15:01 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -103,24 +103,25 @@ if __name__ == '__main__':
                 parent = patch['element'])['element']['value']
             if type_ == 'empty':
                 empty_list.append(newName)
-ここまで！！
-
-        x = dp_meshDict.getItemAtIndex(dp_meshDict.getIndexOfItem(['surfaceFile'])[:-1])
-        stl_file_name_wo_ext = os.path.splitext(x.value()[0].strip('"'))[0]
-        stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl'
+        surfaceFile = meshDict.find_element([{'type': 'dictionary', 'key': 'surfaceFile'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'}])
+        surface_file_name = surfaceFile['element']['value'].strip('"')
+        surface_2D_file_name = os.path.splitext(surface_file_name)[0] + '_2D.stl'
         should_write = True
-        with open(stl_2D_file_name, 'w') as f2d:
-            with open(stl_file_name_wo_ext + '.stl', 'r') as f:
-                for line in f:
-                    if 'endsolid' in line and line.split()[-1] in empty_list:
-                        should_write = True
-                    elif 'solid' in line and line.split()[-1] in empty_list:
-                        should_write = False
-                    elif should_write:
-                        f2d.write(line)
-        x.setValue(['"' + os.path.basename(stl_2D_file_name) + '"'])
+        with open(surface_2D_file_name, 'w') as f:
+            for line in open(surface_file_name, 'r'):
+                if 'endsolid' in line and line.split()[-1] in empty_list:
+                    should_write = True
+                elif 'solid' in line and line.split()[-1] in empty_list:
+                    should_write = False
+                elif should_write:
+                    f.write(line)
+        surfaceFile['parent']['value'] = dictParse.DictParser2(string = '\t"' + surface_2D_file_name + '";')
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
-        dp_meshDict.writeFile(meshDict_path)
+        string = dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0]
+        with open(meshDict_path, 'w') as f:
+            f.write(string)
+ここまで！！
 
     cfMesh = 'cartesian2DMesh' if two_dimensional else 'cartesianMesh'
     if domains != 1:
