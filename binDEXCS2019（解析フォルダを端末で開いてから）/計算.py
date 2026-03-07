@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/2/2 4:35:53 PM
+# 2026/3/7 7:37:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -61,7 +61,7 @@ best_steps_idle = 0
 best_folder_idle = None
 best_folder_idle_suffix = '_best_idle_calc'
 
-def handler(signal, frame):
+def handler(signum, frame):
     if domains != 1:
         if best_folder_idle is None:
             command = 'reconstructPar -newTimes -noFunctionObjects'

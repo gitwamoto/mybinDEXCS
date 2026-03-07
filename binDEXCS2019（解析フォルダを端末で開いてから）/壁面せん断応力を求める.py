@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 壁面せん断応力を求める.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:08:33 PM
+# 2026/3/7 7:36:39 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -23,7 +23,7 @@ import shutil
 from utilities import misc
 from utilities import rmObjects
 
-def handler(signal, frame):
+def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 

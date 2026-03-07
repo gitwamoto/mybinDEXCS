@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/7 12:15:01 AM
+# 2026/3/7 7:36:05 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -15,22 +15,22 @@
 # -p -> paraFoamを実行する
 # -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
 
+# DictParser2で書き直し済み
+
 import os
 import sys
 import signal
 import subprocess
 import shutil
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
-
-from utilities import dictParse # DictParser2
+from utilities import dictParse
 
 two_dimensional = False
 meshDict_path = os.path.join('system', 'meshDict')
 meshDict_3D_path = meshDict_path + '_3D'
 
-def handler(signal, frame):
+def handler(signum, frame):
     if two_dimensional and os.path.isfile(meshDict_3D_path):
         os.rename(meshDict_3D_path, meshDict_path) # can overwrite
     rmObjects.removeInessentials()
@@ -90,19 +90,22 @@ if __name__ == '__main__':
             ).strip().lower() == 'y' else False
     domains = min(domains, threads)
 
+    meshDict = dictParse.DictParser2(file_name = meshDict_path)
+    patch_types = {}
+    empty_list = []
+    for patch in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
+        {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
+        n = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'},
+            {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            parent = patch['element'])['element']['value']
+        t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
+            {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            parent = patch['element'])['element']['value']
+        patch_types[n] = t
+        if t == 'empty':
+            empty_list.append(n)
+
     if two_dimensional:
-        meshDict = dictParse.DictParser2(file_name = meshDict_path)
-        empty_list = []
-        for patch in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
-            {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}])
-            newName = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                parent = patch['element'])['element']['value']
-            type_ = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                parent = patch['element'])['element']['value']
-            if type_ == 'empty':
-                empty_list.append(newName)
         surfaceFile = meshDict.find_element([{'type': 'dictionary', 'key': 'surfaceFile'},
                 {'except type': 'whitespace|line_comment|block_comment|linebreak'}])
         surface_file_name = surfaceFile['element']['value'].strip('"')
@@ -118,29 +121,33 @@ if __name__ == '__main__':
                     f.write(line)
         surfaceFile['parent']['value'] = dictParse.DictParser2(string = '\t"' + surface_2D_file_name + '";')
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
-        string = dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0]
         with open(meshDict_path, 'w') as f:
-            f.write(string)
-ここまで！！
+            f.write(dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0])
 
     cfMesh = 'cartesian2DMesh' if two_dimensional else 'cartesianMesh'
     if domains != 1:
         rmObjects.removeProcessorDirs()
-        decomposeParDict = os.path.join('system', 'decomposeParDict')
-        decomposeParDict_bak = decomposeParDict + '_bak'
-        if os.path.isfile(decomposeParDict):
-            os.rename(decomposeParDict, decomposeParDict_bak)
-        with open(decomposeParDict, 'w') as f:
-            f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\tdecomposeParDict;\n')
-            f.write('}\n')
+        decomposeParDict_path = os.path.join('system', 'decomposeParDict')
+        decomposeParDict_back_path = decomposeParDict_path + '_bak'
+        if os.path.isfile(decomposeParDict_path):
+            os.rename(decomposeParDict_path, decomposeParDict_back_path)
+        with open(decomposeParDict_path, 'w') as f:
+            f.write('FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\tdecomposeParDict;\n'
+                '}\n')
             f.write('numberOfSubdomains\t{};\n'.format(domains))
-            f.write('method\tscotch;\n')
-            f.write('scotchCoeffs\n')
-            f.write('{\n\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n}\n')
-            f.write('distributed\tno;\n')
-            f.write('roots\t();\n')
+            f.write('method\tscotch;\n'
+                'scotchCoeffs\n'
+                '{\n')
+            f.write('\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n')
+            f.write('}\n'
+                'distributed\tno;\n'
+                'roots\t();\n')
         command = 'preparePar -noFunctionObjects'
         r = subprocess.call(command, shell = True)
         if r == 0:
@@ -150,8 +157,8 @@ if __name__ == '__main__':
             command = 'reconstructParMesh -constant -mergeTol 1.0e-06 -noFunctionObjects'
             r = subprocess.call(command, shell = True)
         rmObjects.removeProcessorDirs()
-        if os.path.isfile(decomposeParDict_bak):
-            os.rename(decomposeParDict_bak, decomposeParDict)
+        if os.path.isfile(decomposeParDict_back_path):
+            os.rename(decomposeParDict_back_path, decomposeParDict_path)
         if r != 0:
             print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
             sys.exit(1)
@@ -161,7 +168,8 @@ if __name__ == '__main__':
             print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
             sys.exit(1)
 
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
+    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+    boundary = dictParse.DictParser2(file_name = boundary_path)
     if two_dimensional:
         os.rename(meshDict_path, meshDict_path + '_2D') # can overwrite
         os.rename(meshDict_3D_path, meshDict_path) # can overwrite
@@ -174,49 +182,28 @@ if __name__ == '__main__':
                 '(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
             if back_name == '':
                 back_name = 'back'
-        dp_boundary = DictParser(boundary)
-        for a in dp_boundary.contents:
-            if DictParserList.isType(a, DictParserList.LISTP):
-                a = a.value()
-                break
-        for b in a:
-            if DictParserList.isType(b, DictParserList.BLOCK):
-                if b.key() == 'topEmptyFaces':
-                    b.setKey(front_name)
-                elif b.key() == 'bottomEmptyFaces':
-                    b.setKey(back_name)
-        dp_boundary.writeFile(boundary)
+        topEmptyFaces = boundary.find_element([{'type': 'list'}, {'type': 'block', 'key': 'topEmptyFaces'}])
+        topEmptyFaces['element']['key'] = dictParse.DictParser2(string = front_name).elements[0]
+        bottomEmptyFaces = boundary.find_element([{'type': 'list'}, {'type': 'block', 'key': 'bottomEmptyFaces'}])
+        bottomEmptyFaces['element']['key'] = dictParse.DictParser2(string = back_name).elements[0]
+        with open(boundary_path, 'w') as f:
+            f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
     else: # not two_dimensional
-        dp_boundary = DictParser(boundary)
-        s_old = dp_boundary.toString()
-        for a in dp_boundary.contents:
-            if DictParserList.isType(a, DictParserList.LISTP):
-                a = a.value()
-                break
-        for x in DictParser(meshDict_path).getValueForKey(['renameBoundary', 'newPatchNames']):
-            if DictParserList.isType(x, DictParserList.BLOCK):
-                bname = tname = None
-                for y in x.value():
-                    if DictParserList.isType(y, DictParserList.DICT):
-                        if y.key() == 'newName':
-                            bname = y.value()[0]
-                        elif y.key() == 'type':
-                            tname = y.value()[0]
-                        if bname is not None and tname is not None:
-                            for b in a:
-                                if DictParserList.isType(b, DictParserList.BLOCK) and b.key() == bname:
-                                    for c in b.value():
-                                        if DictParserList.isType(c, DictParserList.DICT):
-                                            if c.key() == 'type':
-                                                c.setValue([tname])
-                                            elif (c.key() == 'inGroups' and
-                                                DictParserList.isType(c.value()[0], DictParserList.LISTP)):
-                                                c.value()[0].setValue([tname])
-                            break
-        s = dp_boundary.toString()
-        if s != s_old:
-            with open(boundary, 'w') as f:
-                f.write(s)
+        for p in boundary.find_all_elements([{'type': 'list',}, {'type': 'block'}]):
+            i = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = p['element'])
+            t = patch_types[p['element']['key']]
+            if i['element']['value'] != t:
+                i['parent'][i['index']] = dictParse.DictParser2(string = t).elements[0]
+                i = dictParse.find_element([{'type': 'dictionary', 'key': 'inGroups'},
+                    {'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = p['element'])
+                if i['element'] is not None:
+                    i['parent'][i['index']] = dictParse.DictParser2(string = '1(' + t + ')').elements[0]
+        string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
+        if boundary.string != string:
+#            os.rename(boundary_path, boundary_path + '_back')
+            with open(boundary_path, 'w') as f:
+                f.write(string)
 
     misc.convertLengthUnitInMillimeterToMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く

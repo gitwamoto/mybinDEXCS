@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 壁面熱流束を求める.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:08:43 PM
+# 2026/3/7 7:36:45 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,7 +24,7 @@ from utilities import misc
 from utilities import listFile
 from utilities import rmObjects
 
-def handler(signal, frame):
+def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 

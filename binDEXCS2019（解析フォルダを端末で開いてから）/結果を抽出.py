@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/1/23 8:36:28 PM
+# 2026/3/7 7:37:02 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -28,7 +28,7 @@ from utilities import rmObjects
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
-def handler(signal, frame):
+def handler(signum, frame):
     setFuncsInCD.setAllEnabled(False)
     rmObjects.removeInessentials()
     sys.exit(1)

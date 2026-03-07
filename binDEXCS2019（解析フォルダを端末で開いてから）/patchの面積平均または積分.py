@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:07:54 PM
+# 2026/3/7 7:36:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -27,7 +27,7 @@ from utilities import listFile
 from utilities import folderTime
 from utilities import rmObjects
 
-def handler(signal, frame):
+def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 

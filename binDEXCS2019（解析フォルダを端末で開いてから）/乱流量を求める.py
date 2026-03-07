@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 乱流量を求める.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:08:17 PM
+# 2026/3/7 7:36:27 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -21,7 +21,7 @@ import shutil
 from utilities import misc
 from utilities import rmObjects
 
-def handler(signal, frame):
+def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 

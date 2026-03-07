@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2025/9/14 7:16:50 PM
+# 2026/3/7 7:36:15 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -35,7 +35,7 @@ blockMeshDict_3D = blockMeshDict + '_3D'
 sHMeshDict = os.path.join('system', 'snappyHexMeshDict')
 sHMeshDict_3D = sHMeshDict + '_3D'
 
-def handler(signal, frame):
+def handler(signum, frame):
     if os.path.isdir('0_bak'):
         if os.path.isdir('0'):
             shutil.rmtree('0')

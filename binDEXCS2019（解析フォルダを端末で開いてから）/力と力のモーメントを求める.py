@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2025/4/4 2:12:34 PM
+# 2026/3/7 7:36:32 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -40,7 +40,7 @@ def appropriate_tick(xmin, xmax, n):
             return i*tick
     return 10.0*tick
 
-def handler(signal, frame):
+def handler(signum, frame):
     setFuncsInCD.setAllEnabled(False)
     rmObjects.removeInessentials()
     sys.exit(1)

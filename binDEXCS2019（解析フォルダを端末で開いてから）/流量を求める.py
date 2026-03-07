@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 流量を求める.py
 # by Yukiharu Iwamoto
-# 2023/5/8 12:08:57 PM
+# 2026/3/7 7:36:57 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,7 +24,7 @@ from utilities import misc
 from utilities import listFile
 from utilities import rmObjects
 
-def handler(signal, frame):
+def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
