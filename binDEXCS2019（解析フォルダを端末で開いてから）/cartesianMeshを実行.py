@@ -119,7 +119,8 @@ if __name__ == '__main__':
                     should_write = False
                 elif should_write:
                     f.write(line)
-        surfaceFile['parent']['value'] = dictParse.DictParser2(string = '\t"' + surface_2D_file_name + '";')
+        surfaceFile['parent']['value'] = dictParse.DictParser2(string =
+            'surfaceFile\t"' + surface_2D_file_name + '";').elements[0]['value']
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
         with open(meshDict_path, 'w') as f:
             f.write(dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0])
