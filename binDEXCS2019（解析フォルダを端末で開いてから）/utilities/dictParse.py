@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/3 11:55:40 AM
+# 2026/3/8 4:42:26 PM
 
 import sys
 import os
@@ -803,6 +803,7 @@ class DictParser2:
             raise Exception('Error in parser' +
                 ('' if self.file_name is None else ' (File: ' + os.path.basename(self.file_name) + ')') +
                 ': ' + message + ' | ' + self.string[max(last_index - 20, 0): last_index])
+        # ssss -> Python string.
         # @@@@ -> Essential words, such as word, string.
         # _scn -> Nonessential words, such as whitespace, comments, linebreak, which doesn't always exist.
         # _sc_ -> Nonessential words, such as whitespace, comments, which doesn't always exist.
@@ -811,11 +812,11 @@ class DictParser2:
         # -------------------------------------------------------
         #                | key     | value
         #                |---------------------------------------
-        #  directive     | #@@@@   | _scn @@@@ _sc_
-        #                | #@@@@   | _scn
-        #  dictionary    | @@@@    | _scn @@@@ ... ; _sc_
-        #                | @@@@    | _scn          ; _sc_
-        #  block         | @@@@    | _scn { _scn @@@@ ... } _sc_
+        #  directive     | #ssss   | _scn @@@@ _sc_
+        #                | #ssss   | _scn
+        #  dictionary    | ssss    | _scn @@@@ ... ; _sc_
+        #                | ssss    | _scn          ; _sc_
+        #  block         | ssss    | _scn { _scn @@@@ ... } _sc_
         #                |         |      { _scn @@@@ ... } _sc_
         # -------------------------------------------------------
         #                | length  | value
