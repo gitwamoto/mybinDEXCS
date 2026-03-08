@@ -142,13 +142,13 @@ if __name__ == '__main__':
                 '\tobject\tdecomposeParDict;\n'
                 '}\n')
             f.write('numberOfSubdomains\t{};\n'.format(domains))
-            f.write('method\tscotch;\n'
-                'scotchCoeffs\n'
-                '{\n')
-            f.write('\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n')
-            f.write('}\n'
-                'distributed\tno;\n'
-                'roots\t();\n')
+            f.write('method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+#                'scotchCoeffs\n'
+#                '{\n')
+#            f.write('\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n')
+#            f.write('}\n'
+#                'distributed\tno;\n'
+#                'roots\t();\n')
         command = 'preparePar -noFunctionObjects'
         r = subprocess.call(command, shell = True)
         if r == 0:
