@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/8 4:53:09 PM
+# 2026/3/8 5:20:05 PM
 
 # ---- オプションはない ----
 
@@ -42,10 +42,10 @@ def append_patches(src, dst):
             i = parameter.find_element(
                 [{'except type': 'whitespace|linebreak'}], start = internalField['index'] - 1, reverse = True)
             if (i['element'] is None or
-                i['element']['type'] not in ('line_comment|block_comment') or
+                i['element']['type'] not in ('line_comment', 'block_comment') or
                 'の初期値' not in i['element']['value']):
                 if f_base == 'k':
-                    c = ('// 初期値の例\n'
+                    c = ('/* 初期値の例\n'
                         '// <内部流/外部流/管内流の場合>\n'
                         '// _U\t〇〇; // 流速 [m/s]\n'
                         '// _k_intensity\t〇〇; // 流速にかかる係数\n'

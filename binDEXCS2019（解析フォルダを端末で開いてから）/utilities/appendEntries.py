@@ -28,9 +28,29 @@ def intoFvSolution():
 
         fvSolution = dictParse.DictParser2(file_name = fvSolution_path)
 
-        # solvers/Phi
         solvers = fvSolution.find_element([{'type': 'block', 'key': 'solvers'}])['element']
         if solvers is not None:
+            stable = False
+            for c in dictParse.find_all_elements(
+                [{'type': 'line_comment|block_comment'}], parent = solvers):
+                if '安定だと思われる設定 (2026/3/8)' in c['element']['value']:
+                p
+    {
+        solver          GAMG;
+        tolerance       1e-07;
+        relTol          0.1;
+        smoother        GaussSeidel;
+    }
+
+    "(U|k|omega|epsilon|nut)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-08;
+        relTol          0.1;
+    }
+
+            # solvers/Phi
             params = ','.join([i['element']['key'] for i in
                 dictParse.find_all_elements([{'type': 'block'}], parent = solvers)])
             if 'Phi' not in params and ('p' in params or 'p_rgh' in params):
@@ -41,6 +61,7 @@ def intoFvSolution():
                     '{\n' +
                     ('$p' if re.search('p(?!_rgh)', params) else '$p_rgh') + ';\n' +
                     '}\n').elements
+
             dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
 
         footer_index = fvSolution.find_separators(footer_index_not_found = len(fvSolution.elements))[1]['index']
