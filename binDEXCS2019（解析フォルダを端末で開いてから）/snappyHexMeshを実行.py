@@ -248,21 +248,27 @@ if __name__ == '__main__':
 
     if domains != 1:
         rmObjects.removeProcessorDirs()
-        decomposeParDict = os.path.join('system', 'decomposeParDict')
-        decomposeParDict_bak = decomposeParDict + '_bak'
-        if os.path.isfile(decomposeParDict):
-            os.rename(decomposeParDict, decomposeParDict_bak)
-        with open(decomposeParDict, 'w') as f:
-            f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\tdecomposeParDict;\n')
-            f.write('}\n')
+        decomposeParDict_path = os.path.join('system', 'decomposeParDict')
+        decomposeParDict_bak_path = decomposeParDict_path + '_bak'
+        if os.path.isfile(decomposeParDict_path):
+            os.rename(decomposeParDict_path, decomposeParDict_bak_path)
+        with open(decomposeParDict_path, 'w') as f:
+            f.write('FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\tdecomposeParDict;\n'
+                '}\n')
             f.write('numberOfSubdomains\t{};\n'.format(domains))
-            f.write('method\tscotch;\n')
-            f.write('scotchCoeffs\n')
-            f.write('{\n\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n}\n')
-            f.write('distributed\tno;\n')
-            f.write('roots\t();\n')
+            f.write('method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+#                'scotchCoeffs\n'
+#                '{\n')
+#            f.write('\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n')
+#            f.write('}\n'
+#                'distributed\tno;\n'
+#                'roots\t();\n')
         command = 'decomposePar -noZero -noFunctionObjects'
         r = subprocess.call(command, shell = True)
         if r == 0:
@@ -272,8 +278,8 @@ if __name__ == '__main__':
             command = 'reconstructParMesh -constant -mergeTol 1.0e-06 -noFunctionObjects'
             r = subprocess.call(command, shell = True)
         rmObjects.removeProcessorDirs()
-        if os.path.isfile(decomposeParDict_bak):
-            os.rename(decomposeParDict_bak, decomposeParDict)
+        if os.path.isfile(decomposeParDict_bak_path):
+            os.rename(decomposeParDict_bak_path, decomposeParDict_path)
         if r != 0:
             print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
             sys.exit(1)
