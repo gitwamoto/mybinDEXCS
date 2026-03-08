@@ -180,7 +180,7 @@ def intoFvSolution():
 
         string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
         if fvSolution.string != string:
-#            os.rename(fvSolution_path, fvSolution_path + '_back')
+#            os.rename(fvSolution_path, fvSolution_path + '_bak')
             with open(fvSolution_path, 'w') as f:
                 f.write(string)
 
@@ -224,7 +224,7 @@ def intoFvSchemes():
 
         string = dictParse.normalize(string = fvSchemes.file_string(pretty_print = True))[0]
         if fvSchemes.string != string:
-#            os.rename(fvSchemes_path, fvSchemes_path + '_back')
+#            os.rename(fvSchemes_path, fvSchemes_path + '_bak')
             with open(fvSchemes_path, 'w') as f:
                 f.write(string)
 
@@ -375,7 +375,7 @@ def intoControlDict():
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
     if controlDict.string != string:
-#        os.rename(controlDict_path, controlDict_path + '_back')
+#        os.rename(controlDict_path, controlDict_path + '_bak')
         with open(controlDict_path, 'w') as f:
             f.write(string)
 
