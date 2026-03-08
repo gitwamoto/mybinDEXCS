@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:36:05 PM
+# 2026/3/8 4:54:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -183,10 +183,10 @@ if __name__ == '__main__':
                 '(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
             if back_name == '':
                 back_name = 'back'
-        topEmptyFaces = boundary.find_element([{'type': 'list'}, {'type': 'block', 'key': 'topEmptyFaces'}])
-        topEmptyFaces['element']['key'] = dictParse.DictParser2(string = front_name).elements[0]
-        bottomEmptyFaces = boundary.find_element([{'type': 'list'}, {'type': 'block', 'key': 'bottomEmptyFaces'}])
-        bottomEmptyFaces['element']['key'] = dictParse.DictParser2(string = back_name).elements[0]
+        boundary.find_element(
+            [{'type': 'list'},{'type': 'block', 'key': 'topEmptyFaces'}])['element']['key'] = front_name
+        boundary.find_element(
+            [{'type': 'list'}, {'type': 'block', 'key': 'bottomEmptyFaces'}])['element']['key'] = back_name
         with open(boundary_path, 'w') as f:
             f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
     else: # not two_dimensional
@@ -195,14 +195,15 @@ if __name__ == '__main__':
                 {'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = p['element'])
             t = patch_types[p['element']['key']]
             if i['element']['value'] != t:
-                i['parent'][i['index']] = dictParse.DictParser2(string = t).elements[0]
-                i = dictParse.find_element([{'type': 'dictionary', 'key': 'inGroups'},
-                    {'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = p['element'])
+                i['element']['value'] = t
+                i = dictParse.find_element([{'type': 'dictionary', 'key': 'inGroups'}, {'type': 'list'},
+                    {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
+                    parent = p['element'])
                 if i['element'] is not None:
-                    i['parent'][i['index']] = dictParse.DictParser2(string = '1(' + t + ')').elements[0]
+                    i['element']['value'] = t
         string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
         if boundary.string != string:
-#            os.rename(boundary_path, boundary_path + '_back')
+#            os.rename(boundary_path, boundary_path + '_bak')
             with open(boundary_path, 'w') as f:
                 f.write(string)
 
