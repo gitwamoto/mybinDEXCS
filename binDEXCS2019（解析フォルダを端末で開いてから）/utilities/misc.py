@@ -291,7 +291,7 @@ def correctLocation():
                 '"' + os.path.dirname(file_name) + '"').elements
         string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
         if parser.string != string:
-#            os.rename(file_name, file_name + '_back')
+#            os.rename(file_name, file_name + '_bak')
             with open(file_name, 'w') as f:
                 f.write(string)
 
