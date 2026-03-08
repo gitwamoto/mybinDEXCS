@@ -93,14 +93,14 @@ if __name__ == '__main__':
     meshDict = dictParse.DictParser2(file_name = meshDict_path)
     patch_types = {}
     empty_list = []
-    for patch in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
+    for p in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
         {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
         n = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'},
             {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-            parent = patch['element'])['element']['value']
-        t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
+            parent = p['element'])['element']['value']
+        t = dictParse.find_element([{'type': 'dictionary', 'key': 'newType'},
             {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-            parent = patch['element'])['element']['value']
+            parent = p['element'])['element']['value']
         patch_types[n] = t
         if t == 'empty':
             empty_list.append(n)
@@ -129,9 +129,9 @@ if __name__ == '__main__':
     if domains != 1:
         rmObjects.removeProcessorDirs()
         decomposeParDict_path = os.path.join('system', 'decomposeParDict')
-        decomposeParDict_back_path = decomposeParDict_path + '_bak'
+        decomposeParDict_bak_path = decomposeParDict_path + '_bak'
         if os.path.isfile(decomposeParDict_path):
-            os.rename(decomposeParDict_path, decomposeParDict_back_path)
+            os.rename(decomposeParDict_path, decomposeParDict_bak_path)
         with open(decomposeParDict_path, 'w') as f:
             f.write('FoamFile\n'
                 '{\n'
@@ -158,8 +158,8 @@ if __name__ == '__main__':
             command = 'reconstructParMesh -constant -mergeTol 1.0e-06 -noFunctionObjects'
             r = subprocess.call(command, shell = True)
         rmObjects.removeProcessorDirs()
-        if os.path.isfile(decomposeParDict_back_path):
-            os.rename(decomposeParDict_back_path, decomposeParDict_path)
+        if os.path.isfile(decomposeParDict_bak_path):
+            os.rename(decomposeParDict_bak_path, decomposeParDict_path)
         if r != 0:
             print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
             sys.exit(1)
