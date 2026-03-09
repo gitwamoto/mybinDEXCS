@@ -40,7 +40,7 @@ def append_patches(src, dst):
         if f_base in ('k', 'epsilon', 'omega'):
             internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
             i = parameter.find_element([{'type': 'block_comment'}], start = internalField['index'] - 1, reverse = True)
-            if (i['element'] is None or '初期値の例' not in i['element']['value']):
+            if i['element'] is None or '初期値の例' not in i['element']['value']:
                 if f_base == 'k':
                     c = ('/*\n'
                         '初期値の例\n'
