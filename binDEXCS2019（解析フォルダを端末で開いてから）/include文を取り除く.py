@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 # include文を取り除く.py
 # by Yukiharu Iwamoto
-# 2021/7/21 1:00:23 PM
+# 2026/3/9 8:44:02 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -f include_file -> 取り除きたいincludeファイルの名前をinclude_fileにする
 # -p -> パスが一致していなくても，ファイル名が同じならば取り除く
+
+# DictParser2で書き直し済み
 
 import signal
 import os
@@ -15,17 +17,14 @@ import sys
 import glob
 import re
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
-from utilities import dictFormat
 from utilities import rmObjects
-
 from utilities import dictParse
 
 def remove_include_sentence(dir_name, include_file_name, ignore_path):
     if not os.path.isdir(dir_name):
         return
-    if ignore_path:
-        include_file_name = re.sub(r'^(\.\.' + os.sep + ')+', '', include_file_name)
+    include_file_name = (re.sub(r'^(?:\.\./)+', '', include_file_name) if ignore_path
+        else os.path.relpath(include_file_name, dir_name))
     for f in glob.iglob(os.path.join(dir_name, '*')):
         if not os.path.isfile(f):
             continue
@@ -37,15 +36,15 @@ def remove_include_sentence(dir_name, include_file_name, ignore_path):
         for i in reversed(parser.find_all_elements([{'type': 'directive'}])):
             if i['element']['key'] != '#include':
                 continue
-            n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['value'].strip('"')
+            n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['element']['value'].strip('"')
             if ignore_path:
                 n = re.sub(r'^(?:\.\./)+', '', n)
             if n == include_file_name:
                 del i['parent'][i['index']:
                     dictParse.find_element([{'except type': 'whitespace|linebreak'}],
-                        parent = i['parent'], start = start + 1, index_not_found = start + 1)['index']]
-        string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
-        if parameter.string != string:
+                        parent = i['parent'], start = i['index'] + 1, index_not_found = i['index'] + 1)['index']]
+        string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+        if parser.string != string:
 #            os.rename(f, f + '_bak')
             with open(f, 'w') as fp:
                 fp.write(string)
@@ -74,12 +73,10 @@ if __name__ == '__main__':
         print('エラー: includeファイルが指定されていません．')
         sys.exit(1)
 
-    include_file = os.path.join(os.pardir, include_file)
     remove_include_sentence(dir_name = '0', include_file_name = include_file, ignore_path = ignore_path)
     remove_include_sentence(dir_name = 'constant', include_file_name = include_file, ignore_path = ignore_path)
     remove_include_sentence(dir_name = 'system', include_file_name = include_file, ignore_path = ignore_path)
 
-    include_file = os.path.join(os.pardir, include_file)
     for d in glob.iglob(os.path.join('0', '*' + os.sep)):
         remove_include_sentence(dir_name = d, include_file_name = include_file, ignore_path = ignore_path)
     for d in glob.iglob(os.path.join('constant', '*' + os.sep)):

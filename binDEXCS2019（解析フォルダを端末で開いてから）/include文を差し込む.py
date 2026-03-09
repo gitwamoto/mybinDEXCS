@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 # include文を差し込む.py
 # by Yukiharu Iwamoto
-# 2021/7/21 12:59:52 PM
+# 2026/3/9 8:55:39 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -f include_file -> 差し込みたいincludeファイルの名前をinclude_fileにする
+
+# DictParser2で書き直し済み
 
 import signal
 import os
@@ -14,49 +16,46 @@ import sys
 import glob
 import re
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
-from utilities import dictFormat
 from utilities import appendEntries
 from utilities import rmObjects
+from utilities import dictParse
 
 def append_include_sentence(dir_name, include_file_name):
     if not os.path.isdir(dir_name):
         return
+    include_file_name = os.path.relpath(include_file_name, dir_name)
     for f in glob.iglob(os.path.join(dir_name, '*')):
-        if os.path.isfile(f):
-            os.chmod(f, 0o0666)
-            if os.path.basename(f) != 'cellToRegion':
-                with open(f, 'r') as fp:
-                    s_old = fp.read()
-                print('{}を処理中...'.format(f))
-                dp = DictParser(f)
-                i = 0
-                while i < len(dp.contents):
-                    x = dp.contents[i]
-                    if DictParserList.isType(x, DictParserList.INCLUDE) and x.value().strip('"') == include_file_name:
-                        del dp.contents[i]
-                        if i < len(dp.contents) and (type(dp.contents[i]) is str):
-                            dp.contents[i] = dp.contents[i].lstrip()
-                    i += 1
-                i = dp.searchString(r'// (\* )+//')
-                if i is not None and len(i) == 1 and type(dp.contents[i[0]]) is str:
-                    dp.contents[i[0]] = dp.contents[i[0]].rstrip() + '\n\n'
-                    dp.contents[i[0] + 1:i[0] + 1] = [
-                        DictParserList(DictParserList.INCLUDE, ['', '"' + include_file_name + '"']), '\n\n']
-                else:
-                    i = dp.getIndexOfItem(['FoamFile'])
-                    if (i is not None and len(i) == 2 and
-                        DictParserList.isType(dp.contents[i[0]], DictParserList.BLOCK)):
-                        dp.contents[i[0] + 1:i[0] + 1] = ['\n\n',
-                            DictParserList(DictParserList.INCLUDE, ['', '"' + include_file_name + '"']), '\n\n']
-                    else:
-                        dp.contents[0:0] = [
-                            DictParserList(DictParserList.INCLUDE, ['', '"' + include_file_name + '"']), '\n\n']
-                dp = dictFormat.moveLineToBottom(dp)
-                s = re.sub(r'\n\n\n+', '\n\n', dp.toString())
-                if s != s_old:
-                    with open(f, 'w') as fp:
-                        fp.write(s)
+        if not os.path.isfile(f):
+            continue
+        os.chmod(f, 0o0666)
+        if os.path.basename(f) == 'cellToRegion':
+            continue
+        print('{}を処理中...'.format(f))
+        parser = dictParse.DictParser2(file_name = f)
+        inserted = False
+        for i in reversed(parser.find_all_elements([{'type': 'directive'}])):
+            if i['element']['key'] != '#include':
+                continue
+            n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['element']['value'].strip('"')
+            if n == include_file_name:
+                inserted = True
+                break
+        if inserted:
+            continue
+        i = parser.find_element([{'type': 'block_comment'}])
+        if i['element'] is not None and '-*- C++ -*-' in i['element']['value']:
+            i = i['index'] + 1
+        else:
+            i = 0
+        i = parser.find_element([{'type': 'block', 'key': 'FoamFile'}], start = i, index_not_found = i - 1)['index'] + 1
+        head_index = parser.find_element([{'except type': 'whitespace|linebreak|separator'}], start = i)['index']
+        parser.elements[head_index:head_index] = dictParse.DictParser2(string = 
+            f'#include "{include_file_name}"\n' +
+            '\n').elements
+        string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+#        os.rename(f, f + '_bak')
+        with open(f, 'w') as fp:
+            fp.write(string)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
@@ -83,12 +82,10 @@ if __name__ == '__main__':
         with open(include_file, 'w') as f:
             pass
 
-    include_file = os.path.join(os.pardir, include_file)
     append_include_sentence(dir_name = '0', include_file_name = include_file)
     append_include_sentence(dir_name = 'constant', include_file_name = include_file)
     append_include_sentence(dir_name = 'system', include_file_name = include_file)
 
-    include_file = os.path.join(os.pardir, include_file)
     for d in glob.iglob(os.path.join('0', '*' + os.sep)):
         append_include_sentence(dir_name = d, include_file_name = include_file)
     for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
