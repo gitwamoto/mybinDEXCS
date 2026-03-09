@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/3/3 5:37:53 PM
+# 2026/3/9 1:10:47 PM
 
 # DictParser2で書き直し済み
 
