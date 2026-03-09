@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/3/3 12:28:40 AM
+# 2026/3/9 11:54:13 AM
 
 # DictParser2で書き直し済み
 
@@ -30,37 +30,53 @@ def intoFvSolution():
 
         solvers = fvSolution.find_element([{'type': 'block', 'key': 'solvers'}])['element']
         if solvers is not None:
-            stable = False
-            for c in dictParse.find_all_elements(
-                [{'type': 'line_comment|block_comment'}], parent = solvers):
-                if '安定だと思われる設定 (2026/3/8)' in c['element']['value']:
-                p
-    {
-        solver          GAMG;
-        tolerance       1e-07;
-        relTol          0.1;
-        smoother        GaussSeidel;
-    }
-
-    "(U|k|omega|epsilon|nut)"
-    {
-        solver          PBiCGStab;
-        preconditioner  DILU;
-        tolerance       1e-08;
-        relTol          0.1;
-    }
+            information_date = '2026/3/9' # 情報の日付
+            solvers_start = dictParse.find_element([{'type': 'block_start'}], parent = solvers)['index'] + 1
+            i = dictParse.find_element([{'type': 'block_comment'}], parent = solvers, start = solvers_start)
+            if i['element'] is not None and '数値的に安定だと思われる設定' in i['element']['value']:
+                s = re.search(r'数値的に安定だと思われる設定[ 　]*[(（][ 　]*([0-9/]+)[ 　]*現在[ 　]*[)）]', i['element']['value'])
+                if s is None or s.group(1) != information_date:
+                    del i['parent'][i['index']]
+                    i['element'] = None
+            if i['element'] is None or '数値的に安定だと思われる設定' not in i['element']['value']:
+                solvers['value'][solvers_start:solvers_start] = dictParse.DictParser2(string =
+                '\n' +
+                '/*\n' +
+                '\t数値的に安定だと思われる設定 (' + information_date + '現在)\n' +
+                '\t残差は\n' +
+                '\t「方程式の右辺 - 方程式の左辺」の絶対値の全格子点に対する総和/「方程式の右辺」の絶対値の全格子点に対する総和\n' +
+                '\tのこと\n' +
+                '\t"p|p_rgh"\n' +
+                '\t{\n' +
+                '\t\tsolver\tGAMG;\n' +
+                '\t\tsmoother\tDIC;\n' +
+                '\t\ttolerance\t1.0e-06; // 残差がこれより小さくなったら繰り返し計算をやめる\n' +
+                '\t\trelTol\t0.001; // 残差が「relTol*繰り返し計算1回目の残差」より小さくなったら繰り返し計算をやめる\n' +
+                '\t}\n' +
+                '\t"U|k|epsilon|omega"\n' +
+                '\t{\n' +
+                '\t\tsolver\tPBiCGStab;\n' +
+                '\t\tpreconditioner\tDILU;\n' +
+                '\t\ttolerance\t1.0e-06; // 残差がこれより小さくなったら繰り返し計算をやめる\n' +
+                '\t\trelTol\t0.001; // 残差が「relTol*繰り返し計算1回目の残差」より小さくなったら繰り返し計算をやめる\n' +
+                '\t}\n' +
+                '\t*/\n').elements
 
             # solvers/Phi
-            params = ','.join([i['element']['key'] for i in
+            params = '|'.join([i['element']['key'].strip('"') for i in
                 dictParse.find_all_elements([{'type': 'block'}], parent = solvers)])
-            if 'Phi' not in params and ('p' in params or 'p_rgh' in params):
-                block_end = dictParse.find_element([{'type': 'block_end'}], parent = solvers, reverse = True)
-                block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
-                    '\n' +
-                    'Phi\n' +
-                    '{\n' +
-                    ('$p' if re.search('p(?!_rgh)', params) else '$p_rgh') + ';\n' +
-                    '}\n').elements
+            if re.search(params, 'Phi') is None:
+                p = re.search(params, 'p')
+                if p is None:
+                    p = re.search(params, 'p_rgh')
+                if p is not None:
+                    block_end = dictParse.find_element([{'type': 'block_end'}], parent = solvers, reverse = True)
+                    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+                        '\n' +
+                        'Phi\n' +
+                        '{\n' +
+                        '$' + p.groups() + ';\n' +
+                        '}\n').elements
 
             dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
 
@@ -262,13 +278,13 @@ def intoControlDict():
     controlDict = dictParse.DictParser2(file_name = controlDict_path)
 
     deltaT = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}])
-    i = controlDict.find_element([{'except type': 'whitespace|linebreak'}], start = deltaT['index'] - 1, reverse = True)
-    if (i['element'] is None or
-        i['element']['type'] not in ('line_comment|block_comment') or
-        'simpleFoam' not in i['element']['value']):
+    i = controlDict.find_element([{'type': 'block_comment'}], start = deltaT['index'] - 1, reverse = True)
+    if i['element'] is None or 'simpleFoam' not in i['element']['value']:
         controlDict.elements[deltaT['index']:deltaT['index']] = dictParse.DictParser2(string =
-            '// simpleFoamnの場合 -> deltaTはいくらでも良い．'
-            '安定性はfvSolution/relaxationFactorsで制御する．\n').elements
+            '/*\n'
+            'simpleFoamnの場合，deltaTは使っていないのでいくらでも良い．\n'
+            '計算の安定性はsystem/fvSolutionの中のrelaxationFactorsで制御する．\n'
+            '*/\n').elements
 
     footer_index = controlDict.find_separators(footer_index_not_found = len(controlDict.elements))[1]['index']
 
