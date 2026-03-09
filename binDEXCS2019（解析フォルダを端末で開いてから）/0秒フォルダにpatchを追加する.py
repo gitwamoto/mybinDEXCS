@@ -143,8 +143,8 @@ def append_patches(src, dst):
         string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
         if parameter.string != string:
 #            os.rename(f, f + '_bak')
-            with open(f, 'w') as f:
-                f.write(string)
+            with open(f, 'w') as fp:
+                fp.write(string)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
