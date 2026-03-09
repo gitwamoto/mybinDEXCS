@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/8 5:20:05 PM
+# 2026/3/9 9:11:32 AM
 
 # ---- オプションはない ----
 
@@ -39,31 +39,32 @@ def append_patches(src, dst):
 
         if f_base in ('k', 'epsilon', 'omega'):
             internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
-            i = parameter.find_element(
-                [{'except type': 'whitespace|linebreak'}], start = internalField['index'] - 1, reverse = True)
-            if (i['element'] is None or
-                i['element']['type'] not in ('line_comment', 'block_comment') or
-                'の初期値' not in i['element']['value']):
+            i = parameter.find_element([{'type': 'block_comment'}], start = internalField['index'] - 1, reverse = True)
+            if (i['element'] is None or '初期値の例' not in i['element']['value']):
                 if f_base == 'k':
-                    c = ('/* 初期値の例\n'
-                        '// <内部流/外部流/管内流の場合>\n'
-                        '// _U\t〇〇; // 流速 [m/s]\n'
-                        '// _k_intensity\t〇〇; // 流速にかかる係数\n'
-                        '//   低乱流: 0.001〜0.01 | 一般的な乱流: 0.01〜0.05 | 建築物まわりの流れや大気流: 0.05〜0.10\n'
-                        '// _k_init\t#calc "1.5*pow($_k_intensity*$_U,2)"; // kの初期値 [m^2/s^2]\n'
-                        '// <管内流の場合>\n'
-                        '// _Re\t〇〇; //レイノルズ数\n'
-                        '// _k_init\t#calc "1.5*pow(0.16*pow($_Re,-0.125)*$_U,2)"; // kの初期値 [m^2/s^2]\n')
+                    c = ('/*\n'
+                        '初期値の例\n'
+                        '<内部流/外部流/管内流の場合>\n'
+                        '_U\t〇〇; // 流速 [m/s]\n'
+                        '_k_intensity\t〇〇; // 流速にかかる係数\n'
+                        '// 低乱流: 0.001〜0.01 | 一般的な乱流: 0.01〜0.05 | 建築物まわりの流れや大気流: 0.05〜0.10\n'
+                        '_k_init\t#calc "1.5*pow($_k_intensity*$_U,2)"; // kの初期値 [m^2/s^2]\n'
+                        '<管内流の場合>\n'
+                        '_Re\t〇〇; //レイノルズ数\n'
+                        '_k_init\t#calc "1.5*pow(0.16*pow($_Re,-0.125)*$_U,2)"; // kの初期値 [m^2/s^2]\n'
+                        '*/\n')
                 else: # epsilon, omega
-                    c = ('// 初期値の例\n'
-                        '// _k_init\t〇〇; // kの初期値 [m^2/s^2]\n'
-                        '// _L\t〇〇; 代表長さ [m]\n'
-                        '// _L_mixing\t〇〇; // 乱流渦の代表的な混合距離 [m]\n'
-                        '//   内部流: #calc "0.07*$_L" | 外部流: #calc "0.1*$_L"〜#calc "0.01*$_L"\n')
+                    c = ('/*\n'
+                        '初期値の例\n'
+                        '_k_init\t〇〇; // kの初期値 [m^2/s^2]\n'
+                        '_L\t〇〇; 代表長さ [m]\n'
+                        '_L_mixing\t〇〇; // 乱流渦の代表的な混合距離 [m]\n'
+                        '// 内部流: #calc "0.07*$_L" | 外部流: #calc "0.1*$_L"〜#calc "0.01*$_L"\n')
                     if f_base == 'epsilon':
-                        c += '// _epsilon_init\t#calc "pow(0.09,0.75)*pow($_k_init,1.5)/$_L_mixing"; // epsilonの初期値 [m^2/s^3]\n'
+                        c += '_epsilon_init\t#calc "pow(0.09,0.75)*pow($_k_init,1.5)/$_L_mixing"; // epsilonの初期値 [m^2/s^3]\n'
                     else: # omega
-                        c += '// _omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
+                        c += '_omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
+                    c += '*/\n'
                 parameter.elements[
                     internalField['index']:internalField['index']] = dictParse.DictParser2(string = c).elements
 
