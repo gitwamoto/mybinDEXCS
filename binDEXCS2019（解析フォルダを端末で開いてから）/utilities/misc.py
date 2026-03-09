@@ -322,6 +322,22 @@ def cpu_count():
     else:
         return len(os.sched_getaffinity(0))
 
+def volFieldList(path = os.curdir):
+    fields = []
+    for i in os.listdir(path):
+        tmp = os.path.join(path, i)
+        if os.path.isfile(tmp) and os.sep + '.' not in tmp:
+            vol_field = False
+            for line in open(tmp, 'r'):
+                if 'volScalarField' in line or 'volVectorField' in line:
+                    vol_field = True
+                    break
+                elif 'surfaceScalarField' in line or 'surfaceVectorField' in line:
+                    break
+            if vol_field:
+                fields.append(i)
+    return fields
+
 if __name__ == '__main__':
 #    showDirForPresentAnalysis()
 #    execParaFoam()
