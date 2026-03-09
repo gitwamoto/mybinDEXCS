@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:04:32 PM
+# 2026/3/9 1:12:22 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -18,7 +18,6 @@ import subprocess
 import numpy as np
 from struct import pack
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
 
 if __name__ == '__main__':
