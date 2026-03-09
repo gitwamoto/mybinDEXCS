@@ -813,7 +813,7 @@ class DictParser2:
         #                | key     | value
         #                |---------------------------------------
         #  directive     | #ssss   | _scn @@@@ _sc_
-        #                | #ssss   | _scn
+        #                | #ssss   | _sc_ 
         #  dictionary    | ssss    | _scn @@@@ ... ; _sc_
         #                | ssss    | _scn          ; _sc_
         #  block         | ssss    | _scn { _scn @@@@ ... } _sc_
