@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/8 4:42:26 PM
+# 2026/3/9 8:52:03 PM
 
 import sys
 import os
@@ -634,7 +634,7 @@ def find_element(path_list, parent, start = None, end = None, reverse = False, i
     elif len(path_list) == 1:
         return {'parent': parent, 'index': c['index'], 'element': c['element']}
     else:
-        return find_element(path_list[1:], c['element'], start, end, reverse)
+        return find_element(path_list[1:], c['element'], start, end, reverse, index_not_found)
 
 def find_all_elements(path_list, parent):
     # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
@@ -742,11 +742,12 @@ def file_string(parent, indent_level = 0, pretty_print = True, commentless = Fal
             start = find_element([{'type': i['type'] + '_start'}], i['value'])['index'] + 1
             end = find_element([{'type': i['type'] + '_end'}], i['value'], reverse = True)['index']
             j = find_element([{'except type': 'whitespace'}], i['value'], end - 1, start - 1, reverse = True)
-            end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
-            s += (i.get('key', '') + i.get('length', '') +
-                file_string(i['value'][:start], indent_level, pretty_print, commentless) +
-                file_string(i['value'][start:end], indent_level + 1, pretty_print, commentless) +
-                file_string(i['value'][end:], indent_level, pretty_print, commentless))
+            if j['element'] is not None:
+                end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
+                s += (i.get('key', '') + i.get('length', '') +
+                    file_string(i['value'][:start], indent_level, pretty_print, commentless) +
+                    file_string(i['value'][start:end], indent_level + 1, pretty_print, commentless) +
+                    file_string(i['value'][end:], indent_level, pretty_print, commentless))
         else:
             if commentless and i['type'] == 'block_comment':
                 if not s.endswith(' '):
@@ -934,8 +935,8 @@ class DictParser2:
         return [{'parent': None, 'index': header_index_not_found, 'element': None}
             if len(separators) == 1 else separators[0], separators[-1]] # header, footer
 
-    def find_element(self, path_list, start = None, end = None, reverse = False):
-        return find_element(path_list, self.elements, start, end, reverse)
+    def find_element(self, path_list, start = None, end = None, reverse = False, index_not_found = None):
+        return find_element(path_list, self.elements, start, end, reverse, index_not_found)
 
     def find_all_elements(self, path_list):
         return find_all_elements(path_list, self.elements)

@@ -70,14 +70,15 @@ def append_patches(src, dst):
 
         boundaryField = parameter.find_element([{'type': 'block', 'key': 'boundaryField'}])['element']
         if boundaryField is None:
-            boundaryField_and_linebreak = dictParse.DictParser2(string =
+            linebreak_and_boundaryField = dictParse.DictParser2(string =
+                '\n'
                 'boundaryField\n'
                 '{\n'
-                '}\n'
-                '\n').elements
-            footer_index = parameter.find_separators(footer_index_not_found = len(parameter.elements))[1]['index']
-            parameter.elements[footer_index:footer_index] = boundaryField_and_linebreak
-            boundaryField = boundaryField_and_linebreak[0]
+                '}\n').elements
+            tail_index = parameter.find_element([{'except type': 'whitespace|linebreak|separator'}],
+                reverse = True, index_not_found = len(parameter.elements) - 1)['index'] + 1
+            parameter.elements[tail_index:tail_index] = linebreak_and_boundaryField
+            boundaryField = linebreak_and_boundaryField[1]
         i = dictParse.find_element([{'type': 'block_end'}], parent = boundaryField, reverse = True)['index']
         boundaryField_end = dictParse.find_element([{'type': 'linebreak'}], parent = boundaryField, start = i - 1,
             reverse = True, index_not_found = i)['index']

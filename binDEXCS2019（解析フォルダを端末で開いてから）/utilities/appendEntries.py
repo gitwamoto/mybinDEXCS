@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/3/9 11:54:13 AM
+# 2026/3/9 9:07:17 PM
 
 # DictParser2で書き直し済み
 
@@ -80,19 +80,21 @@ def intoFvSolution():
 
             dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
 
-        footer_index = fvSolution.find_separators(footer_index_not_found = len(fvSolution.elements))[1]['index']
+        tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
+            reverse = True, index_not_found = len(fvSolution.elements) - 1)['index'] + 1
 
         # potentialFlow
         potentialFlow = fvSolution.find_element([{'type': 'block', 'key': 'potentialFlow'}])['element']
         if potentialFlow is None:
-            potentialFlow = dictParse.DictParser2(string =
-                'potentialFlow\n' +
-                '{\n' +
-                'nNonOrthogonalCorrectors\t10;\n' +
-                '}\n' +
-                '\n').elements
-            fvSolution.elements[footer_index:footer_index] = potentialFlow
-            footer_index += len(potentialFlow)
+            linebreak_and_potentialFlow = dictParse.DictParser2(string =
+                '\n'
+                '\n'
+                'potentialFlow\n'
+                '{\n'
+                'nNonOrthogonalCorrectors\t10;\n'
+                '}').elements
+            fvSolution.elements[tail_index:tail_index] = linebreak_and_potentialFlow
+            tail_index += len(linebreak_and_potentialFlow)
         else:
             nNonOrthogonalCorrectors = dictParse.find_element(
                 [{'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = potentialFlow)['element']
@@ -106,14 +108,15 @@ def intoFvSolution():
         for k in ('SIMPLE', 'PIMPLE', 'PISO'):
             block = fvSolution.find_element([{'type': 'block', 'key': k}])['element']
             if block is None:
-                block_and_linebreak = dictParse.DictParser2(string =
+                linebreak_and_block = dictParse.DictParser2(string =
+                    '\n' +
+                    '\n' +
                     str(k) + '\n' +
                     '{\n' +
-                    '}\n' +
-                    '\n').elements
-                fvSolution.elements[footer_index:footer_index] = block_and_linebreak
-                footer_index += len(block_and_linebreak)
-                block = block_and_linebreak[0]
+                    '}').elements
+                fvSolution.elements[tail_index:tail_index] = linebreak_and_block
+                tail_index += len(linebreak_and_block)
+                block = linebreak_and_block[-1]
             i = dictParse.find_element([{'type': 'block_start'}], parent = block)['index'] + 1
             block_start = dictParse.find_element([{'type': 'linebreak'}], parent = block, start = i,
                 index_not_found = i - 1)['index'] + 1
@@ -173,12 +176,15 @@ def intoFvSolution():
 
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
-            relaxationFactors = dictParse.DictParser2(string =
+            linebreak_and_relaxationFactors = dictParse.DictParser2(string =
+                '\n'
+                '\n'
                 'relaxationFactors\n'
                 '{\n'
-                '}\n\n').elements
-            fvSolution.elements[footer_index:footer_index] = relaxationFactors
-            footer_index += len(relaxationFactors)
+                '}').elements
+            fvSolution.elements[tail_index:tail_index] = linebreak_and_relaxationFactors
+            tail_index += len(linebreak_and_relaxationFactors)
+            relaxationFactors = linebreak_and_relaxationFactors[-1]
         i = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
         relaxationFactors_start = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors,
             start = i, index_not_found = i - 1)['index'] + 1
@@ -236,7 +242,8 @@ def intoFvSchemes():
 
         fvSchemes = dictParse.DictParser2(file_name = fvSchemes_path)
 
-        footer_index = fvSchemes.find_separators(footer_index_not_found = len(fvSchemes.elements))[1]['index']
+        tail_index = fvSchemes.find_element([{'except type': 'whitespace|linebreak|separator'}],
+            reverse = True, index_not_found = len(fvSchemes.elements) - 1)['index'] + 1
 
         # divSchemes, laplacianSchemes, wallDist
         for b, k, v in (
@@ -245,14 +252,15 @@ def intoFvSchemes():
             ('wallDist', 'method', 'meshWave')):
             block = fvSchemes.find_element([{'type': 'block', 'key': b}])['element']
             if block is None:
-                block = dictParse.DictParser2(string =
+                linebreak_and_block = dictParse.DictParser2(string =
+                    '\n' +
+                    '\n' +
                     b + '\n' +
                     '{\n' +
                     k + '\t' + v + ';\n' +
-                    '}\n' +
-                    '\n').elements
-                fvSchemes.elements[footer_index:footer_index] = block
-                footer_index += len(block)
+                    '}').elements
+                fvSchemes.elements[tail_index:tail_index] = linebreak_and_block
+                tail_index += len(linebreak_and_block)
             else:
                 if dictParse.find_element([{'type': 'dictionary', 'key': k}], parent = block)['element'] is None:
                     block_end = dictParse.find_element([{'type': 'block_end'}], parent = block, reverse = True)
@@ -286,19 +294,21 @@ def intoControlDict():
             '計算の安定性はsystem/fvSolutionの中のrelaxationFactorsで制御する．\n'
             '*/\n').elements
 
-    footer_index = controlDict.find_separators(footer_index_not_found = len(controlDict.elements))[1]['index']
+    tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
+        reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
 
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])
     if functions['element'] is None:
-        functions_and_linebreak = dictParse.DictParser2(string =
+        linebreak_and_functions = dictParse.DictParser2(string =
+            '\n'
+            '\n'
             'functions\n'
             '{\n'
-            '}\n'
-            '\n').elements
-        controlDict.elements[footer_index:footer_index] = functions_and_linebreak
-        functions_index = footer_index
-        footer_index += len(functions_and_linebreak)
-        functions = functions_and_linebreak[0]
+            '}').elements
+        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+        functions_index = tail_index
+        tail_index += len(linebreak_and_functions)
+        functions = linebreak_and_functions[-1]
     else:
         functions_index = functions['index']
         functions = functions['element']
@@ -399,12 +409,12 @@ def intoControlDict():
 
     runTimeModifiable = controlDict.find_element([{'type': 'dictionary', 'key': 'runTimeModifiable'}])['element']
     if runTimeModifiable is None:
-        runTimeModifiable = dictParse.DictParser2(string =
-            'runTimeModifiable\tyes;\n' +
-            '\n').elements
-        controlDict.elements[functions_index:functions_index] = runTimeModifiable
-        functions_index += len(runTimeModifiable)
-        footer_index += len(runTimeModifiable)
+        linebreak_and_runTimeModifiable = dictParse.DictParser2(string =
+            '\n'
+            'runTimeModifiable\tyes;\n').elements
+        controlDict.elements[functions_index:functions_index] = linebreak_and_runTimeModifiable
+        functions_index += len(linebreak_and_runTimeModifiable)
+        tail_index += len(linebreak_and_runTimeModifiable)
     else:
         i = dictParse.find_element(
             [{'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = runTimeModifiable)
