@@ -19,43 +19,44 @@ from utilities.dictParse import DictParser, DictParserList
 from utilities import dictFormat
 from utilities import rmObjects
 
+from utilities import dictParse
+
 def remove_include_sentence(dir_name, include_file_name, ignore_path):
     if not os.path.isdir(dir_name):
         return
     if ignore_path:
         include_file_name = re.sub(r'^(\.\.' + os.sep + ')+', '', include_file_name)
     for f in glob.iglob(os.path.join(dir_name, '*')):
-        if os.path.isfile(f):
+        if not os.path.isfile(f):
+            continue
             os.chmod(f, 0o0666)
-            if os.path.basename(f) != 'cellToRegion':
-                with open(f, 'r') as fp:
-                    s_old = fp.read()
-                print('{}を処理中...'.format(f))
-                dp = DictParser(f)
-                i = 0
-                while i < len(dp.contents):
-                    x = dp.contents[i]
-                    if DictParserList.isType(x, DictParserList.INCLUDE) and (ignore_path and
-                        re.sub(r'^(\.\.' + os.sep + ')+', '', x.value().strip('"')) == include_file_name or
-                        not ignore_path and x.value().strip('"') == include_file_name):
-                        del dp.contents[i]
-                        if i < len(dp.contents) and (type(dp.contents[i]) is str):
-                            dp.contents[i] = dp.contents[i].lstrip()
-                    i += 1
-                dp = dictFormat.moveLineToBottom(dp)
-                s = re.sub(r'\n\n\n+', '\n\n', dp.toString())
-                if s != s_old:
-                    with open(f, 'w') as fp:
-                        fp.write(s)
+        if os.path.basename(f) == 'cellToRegion':
+            continue
+        print('{}を処理中...'.format(f))
+        parser = dictParse.DictParser2(file_name = f)
+        for i in reversed(parser.find_all_elements([{'type': 'directive'}])):
+            if i['element']['key'] != '#include':
+                continue
+            n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['value'].strip('"')
+            if ignore_path:
+                n = re.sub(r'^(?:\.\./)+', '', n)
+            if n == include_file_name:
+                del i['parent'][i['index']:
+                    dictParse.find_element([{'except type': 'whitespace|linebreak'}],
+                        parent = i['parent'], start = start + 1, index_not_found = start + 1)['index']]
+        string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
+        if parameter.string != string:
+#            os.rename(f, f + '_bak')
+            with open(f, 'w') as fp:
+                fp.write(string)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
     if len(sys.argv) == 1:
-        include_file = (raw_input if sys.version_info.major <= 2 else input)(
-            '取り除きたいincludeファイルの名前を教えて下さい． > ').strip()
-        ignore_path = True if (raw_input if sys.version_info.major <= 2 else input)(
+        include_file = input('取り除きたいincludeファイルの名前を教えて下さい． > ').strip()
+        ignore_path = True if input(
             'パスが一致していなくても，ファイル名が同じならば取り除きますか？ (y/n) > '
             ).strip().lower() == 'y' else False
     else:
