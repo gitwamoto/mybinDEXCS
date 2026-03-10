@@ -72,7 +72,7 @@ wget_from_github_public() {
 
 cd ~
 
-# dakuten.py -j -f <path> で濁点を結合しておく
+# dakuten.py -j <path> で濁点を結合しておく
 binDEXCS=binDEXCS（解析フォルダを端末で開いてから）
 
 if [ ! -d Desktop/"$binDEXCS" ]; then
@@ -223,7 +223,7 @@ if s != s_orig:
     with open(bookmarks, 'w') as f:
         f.write(s)
 
-BD_alias = 'alias BD=\'xdg-open ~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）'
+BD_alias = 'alias BD=\'xdg-open ~/Desktop/binDEXCS（解析フォルダを端末で開いてから）'
 if dexcs_version == '2021':
     BD_alias += '*'
 BD_alias += '\'\n'

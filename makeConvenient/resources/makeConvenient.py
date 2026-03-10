@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeConvenient.py
 # by Yukiharu Iwamoto
-# 2023/10/31 7:01:39 PM
+# 2026/3/10 2:57:27 PM
 
 # 引数をつけて実行すると，sudoでしか行えないコマンドを行わない．
 
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     source_command = '. ~/.bashrc-OF4v' + ('1906' if dexcs_version == '2019' else '2106') + '\n'
-    BD_alias = 'alias BD=\'xdg-open ~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）'
+    BD_alias = 'alias BD=\'xdg-open ~/Desktop/binDEXCS（解析フォルダを端末で開いてから）'
     if dexcs_version == '2021':
         BD_alias += '*'
     BD_alias += '\'\n'
@@ -299,7 +299,7 @@ if __name__ == '__main__':
 
     join_dakuten_in('.')
     join_dakuten_in('/home/' + user + '/Desktop')
-    for d in ('binDEXCS2019（解析フォルダを端末で開いてから）', 'matplotlibwx'):
+    for d in ('binDEXCS（解析フォルダを端末で開いてから）', 'matplotlibwx'):
         if os.path.isdir(d):
             print('{}をデスクトップにコピー中...'.format(d))
             subprocess.call('rsync -a ' + d + ' /home/' + user + '/Desktop', shell = True)
@@ -339,9 +339,9 @@ if __name__ == '__main__':
                 f.write(s)
             subprocess.call('update-grub', shell = True)
 
-    f = '/home/' + user + '/Desktop/copybinDEXCS2019.sh'
-    if os.path.isfile('copybinDEXCS2019.sh'):
-        shutil.copy2('copybinDEXCS2019.sh', f)
+    f = '/home/' + user + '/Desktop/copybinDEXCS.sh'
+    if os.path.isfile('copybinDEXCS.sh'):
+        shutil.copy2('copybinDEXCS.sh', f)
         subprocess.call('chown ' + user_and_group + ' ' + f, shell = True)
         subprocess.call('chmod +x ' + f, shell = True)
 

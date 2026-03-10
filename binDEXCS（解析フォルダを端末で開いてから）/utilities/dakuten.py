@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dakuten.py
 # by Yukiharu Iwamoto
-# 2022/6/22 2:03:43 PM
+# 2022/6/21 7:58:31 PM
 
 import os
 import glob
@@ -96,7 +96,8 @@ def join_dakuten_in(path):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        print('Usage: %s {-d[ivide] | -j[oin]} {[<path>] | -s[tring] <string> | -f[ile] <path>} ' % os.path.basename(sys.argv[0]))
+        print('Usage: {} '.format(os.path.basename(sys.argv[0])) +
+            '{-j[oin] | -d[ivide]} {<folder_path> | <file_path> | -s[tring] <string>} ')
         quit()
 
 # For test
@@ -104,19 +105,14 @@ if __name__ == '__main__':
 #        f.write(u'た' + u'\u3099')
 
     i = 1
-    operation = ''
-    path = u''
+    operation = path = None
     while i < len(sys.argv):
         if sys.argv[i].startswith('-d'):
-            operation += 'divide'
+            operation = 'divide'
         elif sys.argv[i].startswith('-j'):
-            operation += 'join'
+            operation = 'join'
         elif sys.argv[i].startswith('-s'):
-            operation += 'string'
-            i += 1
-            path = decode_if_necessary(sys.argv[i])
-        elif sys.argv[i].startswith('-f'):
-            operation += 'file'
+            operation = 'string'
             i += 1
             path = decode_if_necessary(sys.argv[i])
         else:
@@ -129,8 +125,8 @@ if __name__ == '__main__':
             print(path + u' -> ' + r)
         else:
             print('Not changed.')
-    elif 'file' in operation:
-        with open(path, 'r') as f:
+    elif os.path.isfile(path):
+        with open(path, 'rb') as f:
             s = f.read()
         if s == '':
             print('Not changed.')
@@ -145,8 +141,6 @@ if __name__ == '__main__':
             else:
                 print('Not changed.')
     else:
-        if path == u'':
-            path = os.getcwd()
         if 'divide' in operation:
             divide_dakuten_in(path)
         else:
