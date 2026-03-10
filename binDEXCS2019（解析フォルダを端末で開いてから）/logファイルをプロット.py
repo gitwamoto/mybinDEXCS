@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # logファイルをプロット.py
 # by Yukiharu Iwamoto
-# 2022/7/14 4:53:23 PM
+# 2026/3/10 9:27:33 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -61,8 +61,7 @@ if __name__ == '__main__':
         elif len(log_file) == 1:
             log_file = log_file[0]
         elif interactive:
-            log_file = (raw_input if sys.version_info.major <= 2 else input)(
-                ' '.join(log_file) + ' という複数のlogファイルがあります．どれを使いますか？ > ').strip()
+            log_file = input(' '.join(log_file) + ' という複数のlogファイルがあります．どれを使いますか？ > ').strip()
         else:
             print(', '.join(log_file) + 'という複数のlogファイルがあるので．どれを使うか分かりません．')
             sys.exit(1)

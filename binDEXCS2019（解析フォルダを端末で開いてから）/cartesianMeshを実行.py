@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/8 4:54:41 PM
+# 2026/3/10 9:21:23 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -79,13 +79,12 @@ if __name__ == '__main__':
     if interactive:
         while True:
             try:
-                domains = max(int((raw_input if sys.version_info.major <= 2 else input)(
+                domains = max(int(input(
                     '計算領域を何個に分割して並列計算しますか？ ({}個まで, 1だと普通の計算) > '.format(threads)).strip()), 1)
                 break
             except ValueError:
                 pass
-        two_dimensional = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\ncartesian2DMeshで2次元メッシュを作りますか？\n' +
+        two_dimensional = True if input('\ncartesian2DMeshで2次元メッシュを作りますか？\n'
             '*** 2次元メッシュでは，empty境界はx-y平面に平行でなければならなりません． (y/n) > '
             ).strip().lower() == 'y' else False
     domains = min(domains, threads)
@@ -175,12 +174,10 @@ if __name__ == '__main__':
         os.rename(meshDict_path, meshDict_path + '_2D') # can overwrite
         os.rename(meshDict_3D_path, meshDict_path) # can overwrite
         if interactive:
-            front_name = (raw_input if sys.version_info.major <= 2 else input)(
-                '(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
+            front_name = input('(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
             if front_name == '':
                 front_name = 'front'
-            back_name = (raw_input if sys.version_info.major <= 2 else input)(
-                '(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
+            back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
             if back_name == '':
                 back_name = 'back'
         boundary.find_element(
@@ -220,8 +217,7 @@ if __name__ == '__main__':
         shutil.rmtree(sets)
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()

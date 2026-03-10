@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # blockMeshを実行.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:04:11 PM
+# 2026/3/10 9:25:39 AM
 
 import os
 import sys
@@ -27,8 +27,7 @@ if __name__ == '__main__':
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
 
-    exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-        '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+    exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/3/5 12:57:07 AM
+# 2026/3/10 9:21:08 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -115,26 +115,24 @@ if __name__ == '__main__':
         patches = ' '.join(plist)
         sys.stdout.write('2次元メッシュに使う(z = {}にある)patchの名前を教えて下さい． ( {} の中から選択'.format(z_front, patches))
         if 'front' in plist:
-            front_name = (raw_input if sys.version_info.major <= 2 else input)(', Enterのみ: front) > ').strip()
+            front_name = input(', Enterのみ: front) > ').strip()
             if front_name == '':
                 front_name = 'front'
         else:
-            front_name = (raw_input if sys.version_info.major <= 2 else input)(') > ').strip()
+            front_name = input(') > ').strip()
         sys.stdout.write('押し出したpatchの裏側にあるpatchの名前を決めて下さい． ( {} の中から選択'.format(patches))
         if 'back' in plist:
-            back_name = (raw_input if sys.version_info.major <= 2 else input)(', Enterのみ: back) > ').strip()
+            back_name = input(', Enterのみ: back) > ').strip()
             if back_name == '':
                 back_name = 'back'
         else:
-            back_name = (raw_input if sys.version_info.major <= 2 else input)(') > ').strip()
-        wedge = True if (raw_input if sys.version_info.major <= 2 else input)(
-            'wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+            back_name = input(') > ').strip()
+        wedge = True if input('wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
         if not converted_millimeter_into_meter:
             print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
                 bouding_box[0][0], bouding_box[0][1], bouding_box[1][0], bouding_box[1][1],
                 bouding_box[2][0], bouding_box[2][1]))
-            scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
-                'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
+            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？ (y/n, yだと0.001倍してメートルに直します．) > '
                 ).strip().lower() == 'y' else False
 
     if not os.path.isdir('system'):
@@ -163,8 +161,7 @@ if __name__ == '__main__':
         shutil.rmtree(sets)
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()

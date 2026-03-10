@@ -93,8 +93,7 @@ if __name__ == '__main__':
             box = misc.bounding_box_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
             print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
                 box[0][0], box[0][1], box[1][0], box[1][1], box[2][0], box[2][1]))
-            scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
-                'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
+            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？ (y/n, yだと0.001倍してメートルに直します．) > '
                 ).strip().lower() == 'y' else False
         if scaleMesh_0p001:
             misc.convertLengthUnitInMillimeterToMeter()
@@ -102,8 +101,7 @@ if __name__ == '__main__':
     misc.execCheckMesh()
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()

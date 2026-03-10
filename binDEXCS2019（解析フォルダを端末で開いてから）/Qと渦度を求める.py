@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Qと渦度を求める.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:35:59 PM
+# 2026/3/10 9:25:25 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -80,8 +80,7 @@ if __name__ == '__main__':
     print('\n結果は各時間のフォルダに書き出されます．')
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()
