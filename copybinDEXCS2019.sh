@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2026/3/9 1:09:34 PM
+# 2026/3/10 8:06:28 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -13,12 +13,10 @@
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
-RSYNC_OPTION='--delete'
-
 if [ -e /opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc ]; then
-	dexcs_version=2019
+	dexcs_version="2019"
 elif [ -e /usr/lib/openfoam/openfoam2106/etc/bashrc ]; then
-	dexcs_version=2021
+	dexcs_version="2021"
 else
 	zenity --error --text='未対応のDEXCSのバージョンです．' --width=500
 	exit 1
@@ -30,7 +28,7 @@ wget_from_github_public() {
 	# $3: branch
 	# $4: file path
 	# $5: path to a file to save
-	document=$(mktemp /tmp/document.XXXXXXX)
+	document="$(mktemp /tmp/document.XXXXXXX)"
 	wget --no-check-certificate --output-document="$document" "https://raw.githubusercontent.com/$1/$2/$3/$4"
 	if [ -s "$document" ]; then # -s -> True if a file size is greater than 0
 		mv -f "$document" "$5"
@@ -42,20 +40,20 @@ wget_from_github_public() {
 cd ~
 
 # dakuten.py -j <path> で濁点を結合しておく
-binDEXCS2019=binDEXCS2019（解析フォルダを端末で開いてから）
-binDEXCS=binDEXCS（解析フォルダを端末で開いてから）
+binDEXCS2019="binDEXCS2019（解析フォルダを端末で開いてから）"
+binDEXCS="binDEXCS（解析フォルダを端末で開いてから）"
 
-if [ -d Desktop/"$binDEXCS2019" ] && [ ! -d Desktop/"$binDEXCS" ]; then
-	mv Desktop/"$binDEXCS2019" Desktop/"$binDEXCS"
+if [ -d "Desktop/$binDEXCS2019" ] && [ ! -d "Desktop/$binDEXCS" ]; then
+	mv "Desktop/$binDEXCS2019" "Desktop/$binDEXCS"
 fi
-if [ ! -d Desktop/"$binDEXCS" ]; then
-	mkdir Desktop/"$binDEXCS"
+if [ ! -d "Desktop/$binDEXCS" ]; then
+	mkdir "Desktop/$binDEXCS"
 fi
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-	if [ -d "$d" ] && [ -n "$(ls -A $d)" ]; then
-		rsync -av "$d"/マニュアル/bin/copybinDEXCS.sh Desktop/copybinDEXCS.sh
+	if [ -d "$d" ] && [ -n "$(ls -A "$d")" ]; then
+		rsync -av "$d/マニュアル/bin/copybinDEXCS.sh" Desktop/copybinDEXCS.sh
 		chmod +x Desktop/copybinDEXCS.sh
 		break
 	fi
@@ -86,3 +84,6 @@ if BD_alias not in s:
 "
 
 Desktop/copybinDEXCS.sh
+
+# --（ダブルハイフン）は、**「これ以降の引数はコマンドのオプションではなく、ただの『ファイル名』として扱ってください」**という指示を出すための重要な記号です。
+rm -- "$0"

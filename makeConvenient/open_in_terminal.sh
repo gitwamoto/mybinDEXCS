@@ -1,28 +1,28 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2025/6/5 11:46:44 PM
+# 2026/3/10 8:25:01 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
 if [ -e /opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc ]; then
-	dexcs_version=2019
+	dexcs_version="2019"
 elif [ -e /usr/lib/openfoam/openfoam2106/etc/bashrc ]; then
-	dexcs_version=2021
+	dexcs_version="2021"
 else
 	zenity --error --text='未対応のDEXCSのバージョンです．' --width=500
 	exit 1
 fi
 
-cd $(dirname $0)
+cd "$(dirname "$0")"
 
 if [ $# -eq 0 ]; then
-	imsudoer=true
+	imsudoer=true # trueコマンドを代入
 else
-	imsudoer=false
+	imsudoer=false # falseコマンドを代入
 fi
 
-if $imsudoer && [ "$dexcs_version" = '2021' ]; then
+if $imsudoer && [ "$dexcs_version" = "2021" ]; then
 	sudo ln -s /usr/bin/python3 /usr/bin/python
 fi
 
@@ -37,13 +37,13 @@ echo '必要なプログラムをダウンロード中...'
 
 # ----------------------------------------------------------
 
-apt_installed=$(apt list --installed)
+apt_installed="$(apt list --installed)"
 
-if [ "$dexcs_version" = '2019' ]; then
+if [ "$dexcs_version" = "2019" ]; then
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt python-openpyxl python-requests; do
-			if echo "$apt_installed" | grep --quiet "$p"/; then
+			if echo "$apt_installed" | grep --quiet "$p/;" then
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
@@ -59,10 +59,10 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
 	for p in pexpect pyperclip chardet xlrd Pillow urllib3; do
-		if [ -e ~/.local/lib/python2.7/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python2.7/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
-		if $imsudoer && [ -e /usr/local/lib/python2.7/dist-packages/"$p" ]; then
+		if $imsudoer && [ -e "/usr/local/lib/python2.7/dist-packages/$p" ]; then
 			sudo pip uninstall -y "$p"
 		fi
 	done
@@ -75,7 +75,7 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
 	for p in numpy scipy matplotlib zenhan GPyOpt GPy geomdl openpyxl requests; do
-		if [ -e ~/.local/lib/python2.7/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python2.7/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
 	done
@@ -93,7 +93,7 @@ if [ "$dexcs_version" = '2019' ]; then
 			python-pexpect python-pyperclip python-chardet python-xlrd python-pil python-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
 			gedit-plugins wxmaxima handbrake xsel; do
-			if ! echo "$apt_installed" | grep --quiet "$p"/; then
+			if ! echo "$apt_installed" | grep --quiet "$p/;" then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -103,7 +103,7 @@ if [ "$dexcs_version" = '2019' ]; then
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
 		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests; do
-			if [ ! -e /usr/local/lib/python2.7/dist-packages/"$p" ]; then
+			if [ ! -e "/usr/local/lib/python2.7/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
 		done
@@ -119,7 +119,7 @@ if [ "$dexcs_version" = '2019' ]; then
 		fi
 	fi
 
-	snap_installed=$(snap list)
+	snap_installed="$(snap list)"
 
 	if ! echo "$snap_installed" | grep --quiet notepadqq; then
 		sudo snap install notepadqq --devmode
@@ -129,8 +129,8 @@ else # 2021
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python3-pyperclip; do
-			if echo "$apt_installed" | grep --quiet "$p"/; then
-				echo '1: '$p
+			if echo "$apt_installed" | grep --quiet "$p/;" then
+				echo "1: $p"
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
@@ -146,10 +146,10 @@ else # 2021
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
 	for p in pexpect chardet xlrd Pillow urllib3 numpy scipy matplotlib openpyxl requests; do
-		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
-		if $imsudoer && [ -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
+		if $imsudoer && [ -e "/usr/local/lib/python3.8/dist-packages/$p" ]; then
 			sudo pip uninstall -y "$p"
 		fi
 	done
@@ -162,7 +162,7 @@ else # 2021
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
 	for p in zenhan GPyOpt GPy geomdl openpyxl pyperclip; do
-		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
 	done
@@ -185,7 +185,7 @@ else # 2021
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
 			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
 			gedit-plugins wxmaxima handbrake notepadqq xsel; do
-			if ! echo "$apt_installed" | grep --quiet "$p"/; then
+			if ! echo "$apt_installed" | grep --quiet "$p/;" then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -199,7 +199,7 @@ else # 2021
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
 		for p in zenhan GPyOpt geomdl pyperclip; do
-			if [ ! -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
+			if [ ! -e "/usr/local/lib/python3.8/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
 		done
@@ -244,37 +244,47 @@ size=8' ~/.config/copyq/copyq-commands.ini
 
 	# 2025年5月ごろ，freecad-daily-python3が破損することがあった．
 	# 破損していればこれを修正する．
-	if echo $(sudo apt-get check 2>&1) | grep -q freecad-daily-python3; then
+	if echo "$(sudo apt-get check 2>&1)" | grep -q freecad-daily-python3; then
 		sudo aptitude install -y freecad-daily
 	fi
+	# freecad-daily-python3の破損に対する対処療法として，FreeCAD_weekly-buildsのAppImageをgithubからダウンロードした．
+	# これで大丈夫と思いきや，makeSnappyHexMeshDict.FCMacroでgnome-terminalが起動しないトラブルが発生した．
+	# おそらく，AppImageはgnome-terminalにアクセスできない制限がかかっているのであろう．
+	# そのため．FreeCAD_weekly-buildsのAppImageは使えないと判断した．
+	# もしAppImageが残っているのであれば消す．
+	sudo find /opt -type f -name "FreeCAD_weekly-builds-*" -exec rm -v {} \;
+	# 対処療法でシンボリックリンクも付け替えてしまったので，元に戻す．
+	if [ "$(readlink /usr/bin/freecad)" != "/usr/bin/freecad-daily" ]; then
+		sudo ln -sf /usr/bin/freecad-daily /usr/bin/freecad
+	fi
 
-fi # end of if [ "$dexcs_version" = '2019' ]; then
+fi # end of if [ "$dexcs_version" = "2019" ]; then
 
 # デスクトップアイコンの表示設定
-if [ "$dexcs_version" = '2019' ]; then
+if [ "$dexcs_version" = "2019" ]; then
 	entry=org.gnome.nautilus.desktop
 else # 2021
 	entry=org.nemo.desktop
 fi
 for key in 'computer-icon-visible' 'network-icon-visible' 'volumes-visible' 'home-icon-visible' 'trash-icon-visible'; do
-	if [ "$key" = 'computer-icon-visible' ] && [ "$dexcs_version" = '2019' ]; then
+	if [ "$key" = 'computer-icon-visible' ] && [ "$dexcs_version" = "2019" ]; then
 		: # do nothing
-	elif [ "$(gsettings get $entry $key)" != 'true' ]; then
-		gsettings set $entry $key 'true'
+	elif [ "$(gsettings get "$entry" "$key")" != 'true' ]; then
+		gsettings set "$entry" "$key" 'true'
 	fi
 done
 
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
-if [ -z "$(dconf read $key)" ] || [ "$(dconf read $key)" -gt 24 ]; then
-	dconf write $key 24
+if [ -z "$(dconf read "$key")" ] || [ "$(dconf read "$key")" -gt 24 ]; then
+	dconf write "$key" 24
 fi
 
 # デスクトップ上の時計表示の設定
 for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/interface/clock-show-seconds'; do
-	# $(dconf read $key)が空白になる時のために""で括っている
-	if [ "$(dconf read $key)" != 'true' ]; then
-		dconf write $key 'true'
+	# $(dconf read "$key")が空白になる時のために""で括っている
+	if [ "$(dconf read "$key")" != "true" ]; then
+		dconf write "$key" "true"
 	fi
 done
 
@@ -293,17 +303,17 @@ fi
 
 # 壁紙の設定
 key=/org/gnome/desktop/background/picture-uri
-if [ "$dexcs_version" = '2019' ]; then
+if [ "$dexcs_version" = "2019" ]; then
 	dexcs_wall_paper="'file:///usr/share/backgrounds/dexcs-desktop-1.jpg'"
 else # 2021
 	dexcs_wall_paper="'file:///opt/DEXCS/backgrounds/dexcs-desktop-1.jpeg'"
 fi
-if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
-	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
+if [ "$(dconf read "$key")" = "$dexcs_wall_paper" ]; then
+	dconf write "$key" "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
 fi
 key=/org/gnome/desktop/screensaver/picture-uri
-if [ "$(dconf read $key)" = "$dexcs_wall_paper" ]; then
-	dconf write $key "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
+if [ "$(dconf read "$key")" = "$dexcs_wall_paper" ]; then
+	dconf write "$key" "'file:///usr/share/backgrounds/ubuntu-default-greyscale-wallpaper.png'"
 fi
 
 cd -

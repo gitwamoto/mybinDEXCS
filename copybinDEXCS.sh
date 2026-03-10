@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/3/10 2:21:53 PM
+# 2026/3/10 8:24:51 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -13,39 +13,39 @@
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
-RSYNC_OPTION='--delete'
+RSYNC_OPTION="--delete"
 
 if [ -e /opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc ]; then
-	dexcs_version=2019
+	dexcs_version="2019"
 elif [ -e /usr/lib/openfoam/openfoam2106/etc/bashrc ]; then
-	dexcs_version=2021
+	dexcs_version="2021"
 else
 	zenity --error --text='未対応のDEXCSのバージョンです．' --width=500
 	exit 1
 fi
 
 if [ $# -eq 0 ]; then
-	imsudoer=true
+	imsudoer=true # trueコマンドを代入
 else
-	imsudoer=false
+	imsudoer=false # falseコマンドを代入
 fi
 
 #wget_from_google_drive() {
 #	# $1: id
 #	# $2: path to a file to save
-#	cookie=$(mktemp /tmp/cookie.XXXXXXX)
-#	document=$(mktemp /tmp/document.XXXXXXX)
+#	cookie="$(mktemp /tmp/cookie.XXXXXXX)"
+#	document="$(mktemp /tmp/document.XXXXXXX)"
 #	wget --no-check-certificate --save-cookies="$cookie" --output-document="$document" \
-#		'https://drive.google.com/uc?export=download&id='"$1"
-#	if grep --quiet 'Google Drive - Virus scan warning' "$document" ; then
+#		"https://drive.google.com/uc?export=download&id=$1"
+#	if grep --quiet "Google Drive - Virus scan warning" "$document" ; then
 #		# https://qiita.com/IsHYuhi/items/e4afc0163019343d9664
-#		code=$(awk '/_warning_/ {print $NF}' "$cookie")
+#		code="$(awk '/_warning_/ {print $NF}' "$cookie")"
 #		if [ -z "$code" ]; then # zオプションは文字列の長さが0の時にtrueになります。
-#			code=$(grep -E -o 'id='\"'downloadForm'\"' action='\"'[^'\"']+' "$document" | \
-#			awk -F ';' '{for(i = 1; i <= NF; i++){if(substr($i, 1, 8) == '\"'confirm='\"') print substr($i, 9)}}')
+#			code=$(grep -E -o 'id="downloadForm" action="[^"]+' "$document" | \
+#			awk -F ';' '{for(i = 1; i <= NF; i++){if(substr($i, 1, 8) == "confirm=") print substr($i, 9)}}')
 #		fi
 #		wget --no-check-certificate --load-cookies="$cookie" --output-document="$document" \
-#			'https://drive.google.com/uc?export=download&confirm='"$code"'&id='"$1"
+#			”https://drive.google.com/uc?export=download&confirm=$code&id=$1"
 #	fi
 #	if [ -s "$document" ]; then # -s -> True if a file size is greater than 0
 #		mv -f "$document" "$2"
@@ -61,7 +61,7 @@ wget_from_github_public() {
 	# $3: branch
 	# $4: file path
 	# $5: path to a file to save
-	document=$(mktemp /tmp/document.XXXXXXX)
+	document="$(mktemp /tmp/document.XXXXXXX)"
 	wget --no-check-certificate --output-document="$document" "https://raw.githubusercontent.com/$1/$2/$3/$4"
 	if [ -s "$document" ]; then # -s -> True if a file size is greater than 0
 		mv -f "$document" "$5"
@@ -73,41 +73,41 @@ wget_from_github_public() {
 cd ~
 
 # dakuten.py -j <path> で濁点を結合しておく
-binDEXCS=binDEXCS（解析フォルダを端末で開いてから）
+binDEXCS="binDEXCS（解析フォルダを端末で開いてから）"
 
-if [ ! -d Desktop/"$binDEXCS" ]; then
-	mkdir Desktop/"$binDEXCS"
+if [ ! -d "Desktop/$binDEXCS" ]; then
+	mkdir "Desktop/$binDEXCS"
 fi
 
-rm -f Desktop/"$binDEXCS"/utilities/showDir.py # -fオプション付きだと，ファイルがなくてもエラーを吐かない
-rm -f Desktop/"$binDEXCS"/utilities/listFile.py # -fオプション付きだと，ファイルがなくてもエラーを吐かない
+rm -f "Desktop/$binDEXCS/utilities/showDir.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
+rm -f "Desktop/$binDEXCS/utilities/listFile.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-	if [ -d "$d" ] && [ -n "$(ls -A $d)" ]; then
-		rsync -av "$RSYNC_OPTION" \
+	if [ -d "$d" ] && [ -n "$(ls -A "$d")" ]; then
+		rsync -av $RSYNC_OPTION \
 			--exclude '.*DS_Store' \
 			--exclude '._*' \
 			--exclude '~*' \
 			--exclude '*.pyc' \
-			"$d"/Desktop/"$binDEXCS"/ Desktop/"$binDEXCS"
-		chmod -R +x Desktop/"$binDEXCS"/*.py
+			"$d/Desktop/$binDEXCS/" "Desktop/$binDEXCS"
+		chmod -R +x "Desktop/$binDEXCS/*.py"
 
-		rsync -av "$RSYNC_OPTION" \
+		rsync -av $RSYNC_OPTION \
 			--include '*.FCMacro' \
 			--include 'sHM.png' \
 			--exclude '*' \
-			"$d"/.FreeCAD/ .FreeCAD
+			"$d/.FreeCAD/" .FreeCAD
 		chmod -R +x .FreeCAD/*.FCMacro
 
-		rsync -av "$d"/マニュアル/bin/copybinDEXCS.sh Desktop/copybinDEXCS.sh
+		rsync -av "$d/マニュアル/bin/copybinDEXCS.sh" Desktop/copybinDEXCS.sh
 		chmod +x Desktop/copybinDEXCS.sh
 
-		rsync -av "$RSYNC_OPTION" \
+		rsync -av $RSYNC_OPTION \
 			--exclude '.*DS_Store' \
 			--exclude '._*' \
 			--exclude '~*' \
-			"$d"/Desktop/matplotlibwx/ Desktop/matplotlibwx
+			"$d/Desktop/matplotlibwx/" Desktop/matplotlibwx
 		chmod -R +x Desktop/matplotlibwx/*.py
 
 		break
@@ -115,8 +115,8 @@ for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
 	((++trial))
 done
 if [ "$trial" -eq 2 ]; then
-	[ ! -d Desktop/"$binDEXCS"/utilities ] && mkdir -p Desktop/"$binDEXCS"/utilities
-	[ ! -d Desktop/"$binDEXCS" ] && mkdir -p Desktop/"$binDEXCS"
+	[ ! -d "Desktop/$binDEXCS/utilities" ] && mkdir -p "Desktop/$binDEXCS/utilities"
+	[ ! -d "Desktop/$binDEXCS" ] && mkdir -p "Desktop/$binDEXCS"
 	for f in '0_OPENFOAMメモ.pdf' '0秒フォルダにpatchを追加する.py' '0秒以外のフォルダを消す.py' \
 		'0秒以外を除いてコピーを作る.py' '2次元メッシュに.py' 'Qと渦度を求める.py' \
 		'blockMeshを実行.py' 'cartesianMeshを実行.py' 'improveMeshQualityを実行.py' \
@@ -129,19 +129,19 @@ if [ "$trial" -eq 2 ]; then
 		'時間平均流れ場を作る.py' '並列計算結果をまとめる.py' '境界条件の雛形をコピー.py' \
 		'壁面せん断応力を求める.py' '力と力のモーメントを求める.py' '半角に出来る文字は全て半角に.py' \
 		'格子点数と領域の大きさを調べる.py'; do
-		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS"/"$f" Desktop/"$binDEXCS"/"$f"
+		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS/$f" "Desktop/$binDEXCS/$f"
 	done
 	for f in '__init__.py' 'appendEntries.py' 'dakuten.py' 'dictFormat.py' 'dictParse.py' \
 		'findMaxMin.py' 'folderTime.py' 'misc.py' 'ofpolymesh.py' 'rmObjects.py' \
 		'setComment.py' 'setFuncsInCD.py'; do
-		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS"/utilities/"$f" \
-			Desktop/"$binDEXCS"/utilities/"$f"
+		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS/utilities/$f" \
+			"Desktop/$binDEXCS/utilities/$f"
 	done
-	chmod -R +x Desktop/"$binDEXCS"/*.py
+	chmod -R +x "Desktop/$binDEXCS/*.py"
 
 	for f in 'exportStl.FCMacro' 'makeCfMeshSetting.FCMacro' \
 		'makeSnappyHexMeshSetting.FCMacro' 'sHM.png'; do
-		wget_from_github_public gitwamoto mybinDEXCS main FCMacro/"$f" .FreeCAD/"$f"
+		wget_from_github_public gitwamoto mybinDEXCS main "FCMacro/$f" ".FreeCAD/$f"
 	done
 	chmod -R +x .FreeCAD/*.FCMacro
 
@@ -165,12 +165,12 @@ fi
 cd -
 
 # update importDXF.py
-if [ "$dexcs_version" = '2019' ] && [ ! -f /usr/local/Mod/Draft/importDXF.py.orig ]; then
+if [ "$dexcs_version" = "2019" ] && [ ! -f /usr/local/Mod/Draft/importDXF.py.orig ]; then
 	sudo mv /usr/local/Mod/Draft/importDXF.py /usr/local/Mod/Draft/importDXF.py.orig
 	((trial = 0))
 	for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-		if [ -d "$d" ] && [ -n "$(ls -A $d)" ]; then
-			sudo rsync -av "$d"/マニュアル/bin/importDXF.py /usr/local/Mod/Draft/importDXF.py
+		if [ -d "$d" ] && [ -n "$(ls -A "$d")" ]; then
+			sudo rsync -av "$d/マニュアル/bin/importDXF.py" /usr/local/Mod/Draft/importDXF.py
 			break
 		fi
 		((++trial))
@@ -180,8 +180,8 @@ if [ "$dexcs_version" = '2019' ] && [ ! -f /usr/local/Mod/Draft/importDXF.py.ori
 	fi
 fi
 
-if [ -e ~/Desktop/makeConvenient ]; then
-	rm -r ~/Desktop/makeConvenient
+if [ -e "$HOME/Desktop/makeConvenient" ]; then
+	rm -r "$HOME/Desktop/makeConvenient"
 fi
 
 python -c "
@@ -337,13 +337,13 @@ fi
 
 # ----------------------------------------------------------
 
-apt_installed=$(apt list --installed)
+apt_installed="$(apt list --installed)"
 
-if [ "$dexcs_version" = '2019' ]; then
+if [ "$dexcs_version" = "2019" ]; then
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt python-openpyxl python-requests; do
-			if echo "$apt_installed" | grep --quiet "$p"/; then
+			if echo "$apt_installed" | grep --quiet "$p/;" then
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
@@ -359,14 +359,14 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
 	for p in pexpect pyperclip chardet xlrd Pillow urllib3; do
-		if [ -e ~/.local/lib/python2.7/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python2.7/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
-		if $imsudoer && [ -e /usr/local/lib/python2.7/dist-packages/"$p" ]; then
+		if $imsudoer && [ -e "/usr/local/lib/python2.7/dist-packages/$p" ]; then
 			sudo pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python2.7/site-packages/PIL ]; then
+	if [ -e "$HOME/.local/lib/python2.7/site-packages/PIL" ]; then
 		pip uninstall -y pillow
 	fi
 	if $imsudoer && [ -e /usr/local/lib/python2.7/dist-packages/PIL ]; then
@@ -375,14 +375,14 @@ if [ "$dexcs_version" = '2019' ]; then
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
 	for p in numpy scipy matplotlib zenhan GPyOpt GPy geomdl openpyxl requests; do
-		if [ -e ~/.local/lib/python2.7/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python2.7/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python2.7/site-packages/wx ]; then
+	if [ -e "$HOME/.local/lib/python2.7/site-packages/wx" ]; then
 		pip uninstall -y wxPython
 	fi
-	if [ -e ~/.local/lib/python2.7/site-packages/stl ]; then
+	if [ -e "$HOME/.local/lib/python2.7/site-packages/stl" ]; then
 		pip uninstall -y numpy-stl
 	fi
 
@@ -393,7 +393,7 @@ if [ "$dexcs_version" = '2019' ]; then
 			python-pexpect python-pyperclip python-chardet python-xlrd python-pil python-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
 			gedit-plugins wxmaxima handbrake xsel; do
-			if ! echo "$apt_installed" | grep --quiet "$p"/; then
+			if ! echo "$apt_installed" | grep --quiet "$p/;" then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -403,7 +403,7 @@ if [ "$dexcs_version" = '2019' ]; then
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
 		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests; do
-			if [ ! -e /usr/local/lib/python2.7/dist-packages/"$p" ]; then
+			if [ ! -e "/usr/local/lib/python2.7/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
 		done
@@ -419,7 +419,7 @@ if [ "$dexcs_version" = '2019' ]; then
 		fi
 	fi
 
-	snap_installed=$(snap list)
+	snap_installed="$(snap list)"
 
 	if ! echo "$snap_installed" | grep --quiet notepadqq; then
 		sudo snap install notepadqq --devmode
@@ -429,8 +429,8 @@ else # 2021
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python3-pyperclip; do
-			if echo "$apt_installed" | grep --quiet "$p"/; then
-				echo '1: '$p
+			if echo "$apt_installed" | grep --quiet "$p/;" then
+				echo "1: $p"
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
@@ -446,14 +446,14 @@ else # 2021
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
 	for p in pexpect chardet xlrd Pillow urllib3 numpy scipy matplotlib openpyxl requests; do
-		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
-		if $imsudoer && [ -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
+		if $imsudoer && [ -e "/usr/local/lib/python3.8/dist-packages/$p" ]; then
 			sudo pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python3.8/site-packages/PIL ]; then
+	if [ -e "$HOME/.local/lib/python3.8/site-packages/PIL" ]; then
 		pip uninstall -y pillow
 	fi
 	if $imsudoer && [ -e /usr/local/lib/python3.8/dist-packages/PIL ]; then
@@ -462,14 +462,14 @@ else # 2021
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
 	for p in zenhan GPyOpt GPy geomdl openpyxl pyperclip; do
-		if [ -e ~/.local/lib/python3.8/site-packages/"$p" ]; then
+		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python3.8/site-packages/wx ]; then
+	if [ -e "$HOME/.local/lib/python3.8/site-packages/wx" ]; then
 		pip uninstall -y wxPython
 	fi
-	if [ -e ~/.local/lib/python3.8/site-packages/stl ]; then
+	if [ -e "$HOME/.local/lib/python3.8/site-packages/stl" ]; then
 		pip uninstall -y numpy-stl
 	fi
 
@@ -485,7 +485,7 @@ else # 2021
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
 			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
 			gedit-plugins wxmaxima handbrake notepadqq xsel; do
-			if ! echo "$apt_installed" | grep --quiet "$p"/; then
+			if ! echo "$apt_installed" | grep --quiet "$p/;" then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -499,7 +499,7 @@ else # 2021
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
 		for p in zenhan GPyOpt geomdl pyperclip; do
-			if [ ! -e /usr/local/lib/python3.8/dist-packages/"$p" ]; then
+			if [ ! -e "/usr/local/lib/python3.8/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
 		done
@@ -528,23 +528,23 @@ else # 2021
 8\\Icon=\\xf01c\
 8\\IsGlobalShortcut=true\
 8\\Name=\\x30c8\\x30ec\\x30a4\\x30e1\\x30cb\\x30e5\\x30fc\\x3092\\x8868\\x793a\
-size=8' ~/.config/copyq/copyq-commands.ini
+size=8' "$HOME/.config/copyq/copyq-commands.ini"
 			copyq exit
 			copyq &
 		fi
 	fi
 
-	# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-	if [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
-		if [ -e ~/.config/FreeCAD/user.cfg ]; then
-			mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	# 更新したFreeCADのconfigファイルは"$HOME/.config/FreeCADにある．"
+	if [ -d "$HOME/.config/FreeCAD" ] && [ ! -e "$HOME/.config/FreeCAD/user.cfg_orig" ]; then
+		if [ -e "$HOME/.config/FreeCAD/user.cfg" ]; then
+			mv "$HOME/.config/FreeCAD/user.cfg" "$HOME/.config/FreeCAD/user.cfg_orig"
 		fi
-		cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
+		cp -f "$HOME/.FreeCAD/user.cfg" "$HOME/.config/FreeCAD/user.cfg"
 	fi
 
 	# 2025年5月ごろ，freecad-daily-python3が破損することがあった．
 	# 破損していればこれを修正する．
-	if echo $(sudo apt-get check 2>&1) | grep -q freecad-daily-python3; then
+	if echo "$(sudo apt-get check 2>&1)" | grep -q freecad-daily-python3; then
 		sudo aptitude install -y freecad-daily
 	fi
 	# freecad-daily-python3の破損に対する対処療法として，FreeCAD_weekly-buildsのAppImageをgithubからダウンロードした．
@@ -554,37 +554,37 @@ size=8' ~/.config/copyq/copyq-commands.ini
 	# もしAppImageが残っているのであれば消す．
 	sudo find /opt -type f -name "FreeCAD_weekly-builds-*" -exec rm -v {} \;
 	# 対処療法でシンボリックリンクも付け替えてしまったので，元に戻す．
-	if [ $(readlink /usr/bin/freecad) != /usr/bin/freecad-daily ]; then
+	if [ "$(readlink /usr/bin/freecad)" != "/usr/bin/freecad-daily" ]; then
 		sudo ln -sf /usr/bin/freecad-daily /usr/bin/freecad
 	fi
 
-fi # end of if [ "$dexcs_version" = '2019' ]; then
+fi # end of if [ "$dexcs_version" = "2019" ]; then
 
 # デスクトップアイコンの表示設定
-if [ "$dexcs_version" = '2019' ]; then
+if [ "$dexcs_version" = "2019" ]; then
 	entry=org.gnome.nautilus.desktop
 else # 2021
 	entry=org.nemo.desktop
 fi
 for key in 'computer-icon-visible' 'network-icon-visible' 'volumes-visible' 'home-icon-visible' 'trash-icon-visible'; do
-	if [ "$key" = 'computer-icon-visible' ] && [ "$dexcs_version" = '2019' ]; then
+	if [ "$key" = 'computer-icon-visible' ] && [ "$dexcs_version" = "2019" ]; then
 		: # do nothing
-	elif [ "$(gsettings get $entry $key)" != 'true' ]; then
-		gsettings set $entry $key 'true'
+	elif [ "$(gsettings get "$entry" "$key")" != 'true' ]; then
+		gsettings set "$entry" "$key" 'true'
 	fi
 done
 
 # Dockのアイコンサイズ変更
 key=/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size
-if [ -z "$(dconf read $key)" ] || [ "$(dconf read $key)" -gt 24 ]; then
-	dconf write $key 24
+if [ -z "$(dconf read "$key")" ] || [ "$(dconf read "$key")" -gt 24 ]; then
+	dconf write "$key" 24
 fi
 
 # デスクトップ上の時計表示の設定
 for key in '/org/gnome/desktop/interface/clock-show-date' '/org/gnome/desktop/interface/clock-show-seconds'; do
-	# $(dconf read $key)が空白になる時のために""で括っている
-	if [ "$(dconf read $key)" != 'true' ]; then
-		dconf write $key 'true'
+	# $(dconf read "$key")が空白になる時のために""で括っている
+	if [ "$(dconf read "$key")" != "true" ]; then
+		dconf write "$key" "true"
 	fi
 done
 
@@ -632,14 +632,14 @@ if $imsudoer; then
 		sudo sed -i -e 's/Y_drive cifs vers=1.0,/Y_drive cifs /g' /etc/fstab
 		needs_remount=true
 	fi
-	if "$needs_remount"; then
+	if $needs_remount; then
 		sudo mount -a
 	fi
 fi
 
 #tips='\n\n[お知らせ] '
 tips=''
-if [ "$dexcs_version" = '2021' ]; then
+if [ "$dexcs_version" = "2019" ]; then
 	tips='(変更点1) Pythonのバージョンは3です．\n(変更点2) 端末からfreecadを実行するコマンドは，freecad-dailyとfreecadcmd-dailyです．\n(変更点3) Paraviewで取り込むファイルの拡張子が.foamになりました.\n'
 fi
 zenity --title='終了' --info --text="$tips"'\n(DEXCS ver. '"$dexcs_version"')' --width=500
