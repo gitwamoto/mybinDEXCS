@@ -59,30 +59,32 @@ def makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name):
         z_max = bounding_box[5] + 0.5*max_cell_size
         n_z = max(int((z_max - z_min)/max_cell_size + 0.5), 1)
     with open(blockMeshDict, 'w') as f:
-        f.write('FoamFile\n{')
-        f.write('\n\tversion\t2.0;\n')
-        f.write('\tformat\tascii;\n')
-        f.write('\tclass\tdictionary;\n')
-        f.write('\tlocation\t"system";\n')
-        f.write('\tobject\tblockMeshDict;\n')
-        f.write('}\n') # FoamFile
-        f.write('\nscale\t1;\n\n')
-        f.write('//     7 ------- 6\n')
-        f.write('//   / |       / |\n')
-        f.write('// 4 ------- 5   |\n')
-        f.write('// |   |     |   |\n')
-        f.write('// |   3 --- | - 2\n')
-        f.write('// | /       | /\n')
-        f.write('// 0 ------- 1\n')
-        f.write('vertices\n(\n')
-        f.write('\t({} {} {})\n'.format(x_min, y_min, z_min))
-        f.write('\t({} {} {})\n'.format(x_max, y_min, z_min))
-        f.write('\t({} {} {})\n'.format(x_max, y_max, z_min))
-        f.write('\t({} {} {})\n'.format(x_min, y_max, z_min))
-        f.write('\t({} {} {})\n'.format(x_min, y_min, z_max))
-        f.write('\t({} {} {})\n'.format(x_max, y_min, z_max))
-        f.write('\t({} {} {})\n'.format(x_max, y_max, z_max))
-        f.write('\t({} {} {})\n'.format(x_min, y_max, z_max))
+        f.write('FoamFile\n'
+            '{\n'
+            '\tversion\t2.0;\n'
+            '\tformat\tascii;\n'
+            '\tclass\tdictionary;\n'
+            '\tlocation\t"system";\n'
+            '\tobject\tblockMeshDict;\n'
+            '}\n'
+            '\nscale\t1;\n'
+            '\n'
+            '//     7 ------- 6\n'
+            '//   / |       / |\n'
+            '// 4 ------- 5   |\n'
+            '// |   |     |   |\n'
+            '// |   3 --- | - 2\n'
+            '// | /       | /\n'
+            '// 0 ------- 1\n'
+            'vertices\n(\n')
+        f.write(f'\t({x_min} {y_min} {z_min})\n')
+        f.write(f'\t({x_max} {y_min} {z_min})\n')
+        f.write(f'\t({x_max} {y_max} {z_min})\n')
+        f.write(f'\t({x_min} {y_max} {z_min})\n')
+        f.write(f'\t({x_min} {y_min} {z_max})\n')
+        f.write(f'\t({x_max} {y_min} {z_max})\n')
+        f.write(f'\t({x_max} {y_max} {z_max})\n')
+        f.write(f'\t({x_min} {y_max} {z_max})\n')
         f.write(');\n\n')
         f.write('blocks\n(\n')
         f.write('\thex (0 1 2 3 4 5 6 7) ({} {} {}) simpleGrading (1 1 1)\n'.format(n_x, n_y, n_z))

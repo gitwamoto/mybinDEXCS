@@ -1,0 +1,1 @@
+/Users/iwamoto/Documents/GitHub/mybinDEXCS/copybinDEXCS.sh
