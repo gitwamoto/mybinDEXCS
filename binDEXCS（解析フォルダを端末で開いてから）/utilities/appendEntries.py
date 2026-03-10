@@ -10,11 +10,11 @@ import os
 import sys
 import glob
 import re
-# {
-# DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
-if os.path.dirname(__file__) not in sys.path:
-    sys.path.append(os.path.dirname(__file__))
-# }
+## {
+## DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
+#if os.path.dirname(__file__) not in sys.path:
+#    sys.path.append(os.path.dirname(__file__))
+## }
 import dictParse
 
 def intoFvSolution():
