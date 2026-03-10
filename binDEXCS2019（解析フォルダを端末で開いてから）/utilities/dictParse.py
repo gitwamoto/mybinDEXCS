@@ -795,9 +795,9 @@ class DictParser2:
                 self.string = f.read()
         else:
             self.string = string
-        self.elements = self.elements_list(index = 0, terminator = None)[0]
+        self.elements = self.elements_list()[0]
 
-    def elements_list(self, index, terminator = None, essentials_required = 0):
+    def elements_list(self, index = 0, terminator = None, essentials_required = 0):
         # terminator = 'block_end' | 'list_end' | 'dimension_end' | 'reached'
         debug = False
         def raise_error(message, last_index):
