@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFuncsInCD.py
 # by Yukiharu Iwamoto
-# 2022/6/9 1:56:04 PM
+# 2026/3/10 2:05:49 PM
 
 import os
 import sys
@@ -10,8 +10,7 @@ import subprocess
 import re
 # {
 # DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
-if os.path.dirname(__file__) not in ([i.encode('UTF-8') if type(i) is unicode else i
-    for i in sys.path] if sys.version_info.major <= 2 else sys.path):
+if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
 # }
 from dictParse import DictParser

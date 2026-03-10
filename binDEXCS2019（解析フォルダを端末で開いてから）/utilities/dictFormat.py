@@ -2,14 +2,13 @@
 # -*- coding: utf-8 -*-
 # dictFormat.py
 # by Yukiharu Iwamoto
-# 2022/11/25 5:39:21 PM
+# 2026/3/10 2:05:21 PM
 
 import sys
 # {
 # DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
 import os
-if os.path.dirname(__file__) not in ([i.encode('UTF-8') if type(i) is unicode else i
-    for i in sys.path] if sys.version_info.major <= 2 else sys.path):
+if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
 # }
 from dictParse import DictParser
