@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/9 9:11:32 AM
+# 2026/3/12 7:46:02 PM
 
 # ---- オプションはない ----
 
@@ -34,7 +34,7 @@ def append_patches(src, dst):
         if f_base == 'cellToRegion':
             continue
 
-        print('{}を処理中...'.format(f))
+        print(f'{f}を処理中...')
         parameter = dictParse.DictParser2(file_name = f)
 
         if f_base in ('k', 'epsilon', 'omega'):
