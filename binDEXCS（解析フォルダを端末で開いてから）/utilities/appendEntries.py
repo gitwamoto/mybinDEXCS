@@ -39,26 +39,26 @@ def intoFvSolution():
                     i['element'] = None
             if i['element'] is None or '数値的に安定だと思われる設定' not in i['element']['value']:
                 solvers['value'][solvers_start:solvers_start] = dictParse.DictParser2(string =
-                '\n' +
-                '/*\n' +
-                '\t数値的に安定だと思われる設定 (' + information_date + '現在)\n' +
-                '\t残差は\n' +
-                '\t「方程式の右辺 - 方程式の左辺」の絶対値の全格子点に対する総和/「方程式の右辺」の絶対値の全格子点に対する総和\n' +
-                '\tのこと\n' +
-                '\t"p|p_rgh"\n' +
-                '\t{\n' +
-                '\t\tsolver\tGAMG;\n' +
-                '\t\tsmoother\tDIC;\n' +
-                '\t\ttolerance\t1.0e-06; // 残差がこれより小さくなったら繰り返し計算をやめる\n' +
-                '\t\trelTol\t0.001; // 残差が「relTol*繰り返し計算1回目の残差」より小さくなったら繰り返し計算をやめる\n' +
-                '\t}\n' +
-                '\t"U|k|epsilon|omega"\n' +
-                '\t{\n' +
-                '\t\tsolver\tPBiCGStab;\n' +
-                '\t\tpreconditioner\tDILU;\n' +
-                '\t\ttolerance\t1.0e-06; // 残差がこれより小さくなったら繰り返し計算をやめる\n' +
-                '\t\trelTol\t0.001; // 残差が「relTol*繰り返し計算1回目の残差」より小さくなったら繰り返し計算をやめる\n' +
-                '\t}\n' +
+                '\n'
+                '/*\n'
+                f'\t数値的に安定だと思われる設定 ({information_date}現在)\n'
+                '\t残差は\n'
+                '\t「方程式の右辺 - 方程式の左辺」の絶対値の全格子点に対する総和/「方程式の右辺」の絶対値の全格子点に対する総和\n'
+                '\tのこと\n'
+                '\t"p|p_rgh"\n'
+                '\t{\n'
+                '\t\tsolver\tGAMG;\n'
+                '\t\tsmoother\tDIC;\n'
+                '\t\ttolerance\t1.0e-06; // 残差がこれより小さくなったら繰り返し計算をやめる\n'
+                '\t\trelTol\t0.001; // 残差が「relTol*繰り返し計算1回目の残差」より小さくなったら繰り返し計算をやめる\n'
+                '\t}\n'
+                '\t"U|k|epsilon|omega"\n'
+                '\t{\n'
+                '\t\tsolver\tPBiCGStab;\n'
+                '\t\tpreconditioner\tDILU;\n'
+                '\t\ttolerance\t1.0e-06; // 残差がこれより小さくなったら繰り返し計算をやめる\n'
+                '\t\trelTol\t0.001; // 残差が「relTol*繰り返し計算1回目の残差」より小さくなったら繰り返し計算をやめる\n'
+                '\t}\n'
                 '\t*/\n').elements
 
             # solvers/Phi
@@ -71,10 +71,10 @@ def intoFvSolution():
                 if p is not None:
                     block_end = dictParse.find_element([{'type': 'block_end'}], parent = solvers, reverse = True)
                     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
-                        '\n' +
-                        'Phi\n' +
-                        '{\n' +
-                        '$' + p.groups() + ';\n' +
+                        '\n'
+                        'Phi\n'
+                        '{\n'
+                        f'${p.groups()};\n'
                         '}\n').elements
 
             dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
@@ -108,10 +108,10 @@ def intoFvSolution():
             block = fvSolution.find_element([{'type': 'block', 'key': k}])['element']
             if block is None:
                 linebreak_and_block = dictParse.DictParser2(string =
-                    '\n' +
-                    '\n' +
-                    str(k) + '\n' +
-                    '{\n' +
+                    '\n'
+                    '\n'
+                    f'{k}\n'
+                    '{\n'
                     '}').elements
                 fvSolution.elements[tail_index:tail_index] = linebreak_and_block
                 tail_index += len(linebreak_and_block)
@@ -168,7 +168,7 @@ def intoFvSolution():
                     parent = momentumPredictor['element'])['element']['value']
                 del block['value'][momentumPredictor['index']]
             block['value'][block_start:block_start] = dictParse.DictParser2(string =
-                'momentumPredictor\t' + v + ';' +
+                f'momentumPredictor\t{v};'
                 ' // yes -> 圧力方程式を解く前に，運動方程式を解いて速度を求める．\n').elements
 
             dictParse.set_blank_line(block, number_of_blank_lines = 0)
@@ -252,11 +252,11 @@ def intoFvSchemes():
             block = fvSchemes.find_element([{'type': 'block', 'key': b}])['element']
             if block is None:
                 linebreak_and_block = dictParse.DictParser2(string =
-                    '\n' +
-                    '\n' +
-                    b + '\n' +
-                    '{\n' +
-                    k + '\t' + v + ';\n' +
+                    '\n'
+                    '\n'
+                    f'{b}\n'
+                    '{\n'
+                    f'{k}\t{v};\n'
                     '}').elements
                 fvSchemes.elements[tail_index:tail_index] = linebreak_and_block
                 tail_index += len(linebreak_and_block)
@@ -264,7 +264,7 @@ def intoFvSchemes():
                 if dictParse.find_element([{'type': 'dictionary', 'key': k}], parent = block)['element'] is None:
                     block_end = dictParse.find_element([{'type': 'block_end'}], parent = block, reverse = True)
                     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
-                        k + '\t' + v + ';\n').elements
+                        f'{k}\t{v};\n').elements
 
         string = dictParse.normalize(string = fvSchemes.file_string(pretty_print = True))[0]
         if fvSchemes.string != string:
@@ -330,7 +330,7 @@ def intoControlDict():
         insertion = dictParse.find_element(
             [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
         block['value'][insertion:insertion] = dictParse.DictParser2(string =
-            'enabled\t' + v + '; // yesで実行\n'
+            f'enabled\t{v}; // yesで実行\n'
             ).elements
         dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
