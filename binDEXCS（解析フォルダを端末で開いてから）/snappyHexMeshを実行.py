@@ -30,10 +30,10 @@ from utilities import rmObjects
 from utilities import folderTime
 
 two_dimensional = False
-blockMeshDict = os.path.join('system', 'blockMeshDict')
-blockMeshDict_3D = blockMeshDict + '_3D'
-sHMeshDict = os.path.join('system', 'snappyHexMeshDict')
-sHMeshDict_3D = sHMeshDict + '_3D'
+blockMeshDict_path = os.path.join('system', 'blockMeshDict')
+blockMeshDict_3D_path = blockMeshDict_path + '_3D'
+snappyHexMeshDict_path = os.path.join('system', 'snappyHexMeshDict')
+snappyHexMeshDict_3D_path = snappyHexMeshDict_path + '_3D'
 
 def handler(signum, frame):
     if os.path.isdir('0_bak'):
@@ -52,13 +52,13 @@ def makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name):
         z_min = bounding_box[2]
         z_max = bounding_box[5]
         n_z = 1
-        if os.path.isfile(blockMeshDict):
-            os.rename(blockMeshDict, blockMeshDict_3D) # can overwrite
+        if os.path.isfile(blockMeshDict_path):
+            os.rename(blockMeshDict_path, blockMeshDict_3D_path) # can overwrite
     else:
         z_min = bounding_box[2] - 0.5*max_cell_size
         z_max = bounding_box[5] + 0.5*max_cell_size
         n_z = max(int((z_max - z_min)/max_cell_size + 0.5), 1)
-    with open(blockMeshDict, 'w') as f:
+    with open(blockMeshDict_path, 'w') as f:
         f.write('FoamFile\n'
             '{\n'
             '\tversion\t2.0;\n'
@@ -67,7 +67,8 @@ def makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name):
             '\tlocation\t"system";\n'
             '\tobject\tblockMeshDict;\n'
             '}\n'
-            '\nscale\t1;\n'
+            '\n'
+            'scale\t1;\n'
             '\n'
             '//     7 ------- 6\n'
             '//   / |       / |\n'
@@ -76,34 +77,72 @@ def makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name):
             '// |   3 --- | - 2\n'
             '// | /       | /\n'
             '// 0 ------- 1\n'
-            'vertices\n(\n')
-        f.write(f'\t({x_min} {y_min} {z_min})\n')
-        f.write(f'\t({x_max} {y_min} {z_min})\n')
-        f.write(f'\t({x_max} {y_max} {z_min})\n')
-        f.write(f'\t({x_min} {y_max} {z_min})\n')
-        f.write(f'\t({x_min} {y_min} {z_max})\n')
-        f.write(f'\t({x_max} {y_min} {z_max})\n')
-        f.write(f'\t({x_max} {y_max} {z_max})\n')
-        f.write(f'\t({x_min} {y_max} {z_max})\n')
-        f.write(');\n\n')
-        f.write('blocks\n(\n')
-        f.write('\thex (0 1 2 3 4 5 6 7) ({} {} {}) simpleGrading (1 1 1)\n'.format(n_x, n_y, n_z))
-        f.write(');\n\n')
-        f.write('edges\n(\n);\n\n')
-        f.write('boundary\n(\n')
-        f.write('\tbMXMin\n\t{\n\t\ttype\tpatch;\n\t\tfaces\t((0 4 7 3));\n\t}\n')
-        f.write('\tbMXMax\n\t{\n\t\ttype\tpatch;\n\t\tfaces\t((2 6 5 1));\n\t}\n')
-        f.write('\tbMYMin\n\t{\n\t\ttype\tpatch;\n\t\tfaces\t((1 5 4 0));\n\t}\n')
-        f.write('\tbMYMax\n\t{\n\t\ttype\tpatch;\n\t\tfaces\t((3 7 6 2));\n\t}\n')
+            'vertices\n'
+            '(\n'
+            f'\t({x_min} {y_min} {z_min})\n'
+            f'\t({x_max} {y_min} {z_min})\n'
+            f'\t({x_max} {y_max} {z_min})\n'
+            f'\t({x_min} {y_max} {z_min})\n'
+            f'\t({x_min} {y_min} {z_max})\n'
+            f'\t({x_max} {y_min} {z_max})\n'
+            f'\t({x_max} {y_max} {z_max})\n'
+            f'\t({x_min} {y_max} {z_max})\n'
+            ');\n'
+            '\n'
+            'blocks\n'
+            '(\n'
+            f'\thex (0 1 2 3 4 5 6 7) ({n_x} {n_y} {n_z}) simpleGrading (1 1 1)\n'
+            ');\n'
+            '\n'
+            'edges\t();\n'
+            '\n'
+            'boundary\n'
+            '(\n'
+            '\tbMXMin\n'
+            '\t{\n'
+            '\t\ttype\tpatch;\n'
+            '\t\tfaces\t((0 4 7 3));\n'
+            '\t}\n'
+            '\tbMXMax\n'
+            '\t{\n'
+            '\t\ttype\tpatch;\n'
+            '\t\tfaces\t((2 6 5 1));\n'
+            '\t}\n'
+            '\tbMYMin\n'
+            '\t{\n'
+            '\t\ttype\tpatch;\n'
+            '\t\tfaces\t((1 5 4 0));\n'
+            '\t}\n'
+            '\tbMYMax\n'
+            '\t{\n'
+            '\t\ttype\tpatch;\n'
+            '\t\tfaces\t((3 7 6 2));\n'
+            '\t}\n')
         if two_dimensional:
-            f.write('\t' + front_name + '\n\t{\n\t\ttype\tempty;\n\t\tfaces\t((0 3 2 1));\n\t}\n')
-            f.write('\t' + back_name + '\n\t{\n\t\ttype\tempty;\n\t\tfaces\t((4 5 6 7));\n\t}\n')
+            f.write(f'\t{front_name}\n'
+                '\t{\n\t\ttype\tempty;\n'
+                '\t\tfaces\t((0 3 2 1));\n'
+                '\t}\n'
+                f'\t{back_name}\n'
+                '\t{\n'
+                '\t\ttype\tempty;\n'
+                '\t\tfaces\t((4 5 6 7));\n'
+                '\t}\n')
         else:
-            f.write('\tbMZMin\n\t{\n\t\ttype\tpatch;\n\t\tfaces\t((0 3 2 1));\n\t}\n')
-            f.write('\tbMZMax\n\t{\n\t\ttype\tpatch;\n\t\tfaces\t((4 5 6 7));\n\t}\n')
-        f.write(');\n\n')
-        f.write('mergePatchPairs\n(\n);\n')
-        os.chmod(blockMeshDict, 0o0666)
+            f.write('\tbMZMin\n'
+                '\t{\n'
+                '\t\ttype\tpatch;\n'
+                '\t\tfaces\t((0 3 2 1));\n'
+                '\t}\n'
+                '\tbMZMax\n'
+                '\t{\n'
+                '\t\ttype\tpatch;\n'
+                '\t\tfaces\t((4 5 6 7));\n'
+                '\t}\n')
+        f.write(');\n'
+            '\n'
+            'mergePatchPairs\t();\n')
+        os.chmod(blockMeshDict_path, 0o0666)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -138,8 +177,8 @@ if __name__ == '__main__':
                 domains = max(int(sys.argv[i]), 1)
             i += 1
 
-    if not os.path.isfile(sHMeshDict):
-        print('エラー: {}ファイルがありません．'.format(sHMeshDict))
+    if not os.path.isfile(snappyHexMeshDict_path):
+        print('エラー: {}ファイルがありません．'.format(snappyHexMeshDict_path))
         sys.exit(1)
     if float(folderTime.latestTime()) != 0.0:
         print('エラー: 0秒以外のフォルダがあるとうまくいきません．')
@@ -166,7 +205,7 @@ if __name__ == '__main__':
             ).strip().lower() == 'y' else False
     domains = min(domains, threads)
 
-    dp_sHMeshDict = DictParser(sHMeshDict)
+    dp_sHMeshDict = DictParser(snappyHexMeshDict_path)
     max_cell_size = float(dp_sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])[0])
     x = dp_sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'boundingBox'])[0].value()
     #       0                                           1                   2
@@ -191,7 +230,7 @@ if __name__ == '__main__':
         x = dp_sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementSurfaces',
             stl_file_name_wo_ext, 'regions'])
         if x is None:
-            print(sHMeshDict + 'にcastellatedMeshControls.refinementSurfaces.' +
+            print(snappyHexMeshDict_path + 'にcastellatedMeshControls.refinementSurfaces.' +
                 stl_file_name_wo_ext + '.regionsがありません．')
             sys.exit(1)
         i = 0
@@ -226,8 +265,8 @@ if __name__ == '__main__':
                     elif should_write:
                         f2d.write(line)
         stl_geometry.setKey(stl_2D_file_name)
-        os.rename(sHMeshDict, sHMeshDict_3D) # can overwrite
-        dp_sHMeshDict.writeFile(sHMeshDict)
+        os.rename(snappyHexMeshDict_path, snappyHexMeshDict_3D_path) # can overwrite
+        dp_sHMeshDict.writeFile(snappyHexMeshDict_path)
         if interactive:
             front_name = (raw_input if sys.version_info.major <= 2 else input)(
                 '(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
@@ -244,9 +283,9 @@ if __name__ == '__main__':
         print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
         sys.exit(1)
     if two_dimensional:
-        os.rename(blockMeshDict, blockMeshDict + '_2D') # can overwrite
-        if os.path.isfile(blockMeshDict_3D):
-            os.rename(blockMeshDict_3D, blockMeshDict) # can overwrite
+        os.rename(blockMeshDict_path, blockMeshDict_path + '_2D') # can overwrite
+        if os.path.isfile(blockMeshDict_3D_path):
+            os.rename(blockMeshDict_3D_path, blockMeshDict_path) # can overwrite
 
     if domains != 1:
         rmObjects.removeProcessorDirs()
@@ -292,8 +331,8 @@ if __name__ == '__main__':
             sys.exit(1)
 
     if two_dimensional:
-        os.rename(sHMeshDict, sHMeshDict + '_2D') # can overwrite
-        os.rename(sHMeshDict_3D, sHMeshDict) # can overwrite
+        os.rename(snappyHexMeshDict_path, snappyHexMeshDict_path + '_2D') # can overwrite
+        os.rename(snappyHexMeshDict_3D_path, snappyHexMeshDict_path) # can overwrite
 
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     if stl_file_name_wo_ext is not None:
