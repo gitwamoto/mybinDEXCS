@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/10 9:21:23 AM
+# 2026/3/12 7:27:49 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -44,7 +44,8 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = exec_paraFoam = False
-        front_name, back_name = 'front', 'back'
+        front_name = 'front'
+        back_name = 'back'
         domains = 1
         i = 1
         while i < len(sys.argv):
@@ -66,7 +67,7 @@ if __name__ == '__main__':
             i += 1
 
     if not os.path.isfile(meshDict_path):
-        print('エラー: {}ファイルがありません．'.format(meshDict_path))
+        print(f'エラー: {meshDict_path}ファイルがありません．')
         sys.exit(1)
     if os.path.isdir('dynamicCode'):
         shutil.rmtree('dynamicCode')
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         while True:
             try:
                 domains = max(int(input(
-                    '計算領域を何個に分割して並列計算しますか？ ({}個まで, 1だと普通の計算) > '.format(threads)).strip()), 1)
+                    f'計算領域を何個に分割して並列計算しますか？ ({threads}個まで, 1だと普通の計算) > ').strip()), 1)
                 break
             except ValueError:
                 pass
@@ -140,7 +141,7 @@ if __name__ == '__main__':
                 '\tlocation\t"system";\n'
                 '\tobject\tdecomposeParDict;\n'
                 '}\n')
-            f.write('numberOfSubdomains\t{};\n'.format(domains))
+            f.write(f'numberOfSubdomains\t{domains};\n')
             f.write('method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
 #                'scotchCoeffs\n'
 #                '{\n')
@@ -151,7 +152,7 @@ if __name__ == '__main__':
         command = 'preparePar -noFunctionObjects'
         r = subprocess.call(command, shell = True)
         if r == 0:
-            command = 'mpirun -np {} {} -parallel -noFunctionObjects | tee {}.log'.format(domains, cfMesh, cfMesh)
+            command = f'mpirun -np {domains} {cfMesh} -parallel -noFunctionObjects | tee {cfMesh}.log'
             r = subprocess.call(command, shell = True)
         if r == 0:
             command = 'reconstructParMesh -constant -mergeTol 1.0e-06 -noFunctionObjects'
@@ -160,12 +161,12 @@ if __name__ == '__main__':
         if os.path.isfile(decomposeParDict_bak_path):
             os.rename(decomposeParDict_bak_path, decomposeParDict_path)
         if r != 0:
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
     else:
-        command = '{} -noFunctionObjects | tee {}.log'.format(cfMesh, cfMesh)
+        command = f'{cfMesh} -noFunctionObjects | tee {cfMesh}.log'
         if subprocess.call(command, shell = True) != 0:
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
@@ -209,7 +210,7 @@ if __name__ == '__main__':
     if two_dimensional:
         command = 'flattenMesh'
         if subprocess.call(command, shell = True) != 0:
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
     misc.execCheckMesh()
     sets = os.path.join('constant', 'polyMesh', 'sets')
