@@ -84,7 +84,7 @@ rm -f "Desktop/$binDEXCS/utilities/listFile.py" # -fオプション付きだと�
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-	if [ -d "$d" ] && [ -n "$(ls -A "$d")" ]; then
+	if [ -d "$d" ] && [ -n "$(ls -A "$d" 2>/dev/null)" ]; then
 		rsync -av $RSYNC_OPTION \
 			--exclude '.*DS_Store' \
 			--exclude '._*' \
@@ -169,7 +169,7 @@ if [ "$dexcs_version" = "2019" ] && [ ! -f /usr/local/Mod/Draft/importDXF.py.ori
 	sudo mv /usr/local/Mod/Draft/importDXF.py /usr/local/Mod/Draft/importDXF.py.orig
 	((trial = 0))
 	for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-		if [ -d "$d" ] && [ -n "$(ls -A "$d")" ]; then
+		if [ -d "$d" ] && [ -n "$(ls -A "$d" 2>/dev/null)" ]; then
 			sudo rsync -av "$d/マニュアル/bin/importDXF.py" /usr/local/Mod/Draft/importDXF.py
 			break
 		fi

@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2026/3/10 8:25:01 PM
+# 2026/3/11 9:49:33 AM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -66,7 +66,7 @@ if [ "$dexcs_version" = "2019" ]; then
 			sudo pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python2.7/site-packages/PIL ]; then
+	if [ -e "$HOME/.local/lib/python2.7/site-packages/PIL" ]; then
 		pip uninstall -y pillow
 	fi
 	if $imsudoer && [ -e /usr/local/lib/python2.7/dist-packages/PIL ]; then
@@ -79,10 +79,10 @@ if [ "$dexcs_version" = "2019" ]; then
 			pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python2.7/site-packages/wx ]; then
+	if [ -e "$HOME/.local/lib/python2.7/site-packages/wx" ]; then
 		pip uninstall -y wxPython
 	fi
-	if [ -e ~/.local/lib/python2.7/site-packages/stl ]; then
+	if [ -e "$HOME/.local/lib/python2.7/site-packages/stl" ]; then
 		pip uninstall -y numpy-stl
 	fi
 
@@ -153,7 +153,7 @@ else # 2021
 			sudo pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python3.8/site-packages/PIL ]; then
+	if [ -e "$HOME/.local/lib/python3.8/site-packages/PIL" ]; then
 		pip uninstall -y pillow
 	fi
 	if $imsudoer && [ -e /usr/local/lib/python3.8/dist-packages/PIL ]; then
@@ -166,10 +166,10 @@ else # 2021
 			pip uninstall -y "$p"
 		fi
 	done
-	if [ -e ~/.local/lib/python3.8/site-packages/wx ]; then
+	if [ -e "$HOME/.local/lib/python3.8/site-packages/wx" ]; then
 		pip uninstall -y wxPython
 	fi
-	if [ -e ~/.local/lib/python3.8/site-packages/stl ]; then
+	if [ -e "$HOME/.local/lib/python3.8/site-packages/stl" ]; then
 		pip uninstall -y numpy-stl
 	fi
 
@@ -228,18 +228,18 @@ else # 2021
 8\\Icon=\\xf01c\
 8\\IsGlobalShortcut=true\
 8\\Name=\\x30c8\\x30ec\\x30a4\\x30e1\\x30cb\\x30e5\\x30fc\\x3092\\x8868\\x793a\
-size=8' ~/.config/copyq/copyq-commands.ini
+size=8' "$HOME/.config/copyq/copyq-commands.ini"
 			copyq exit
 			copyq &
 		fi
 	fi
 
-	# 更新したFreeCADのconfigファイルは~/.config/FreeCADにある．
-	if [ -d ~/.config/FreeCAD ] && [ ! -e ~/.config/FreeCAD/user.cfg_orig ]; then
-		if [ -e ~/.config/FreeCAD/user.cfg ]; then
-			mv ~/.config/FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg_orig
+	# 更新したFreeCADのconfigファイルは"$HOME/.config/FreeCADにある．"
+	if [ -d "$HOME/.config/FreeCAD" ] && [ ! -e "$HOME/.config/FreeCAD/user.cfg_orig" ]; then
+		if [ -e "$HOME/.config/FreeCAD/user.cfg" ]; then
+			mv "$HOME/.config/FreeCAD/user.cfg" "$HOME/.config/FreeCAD/user.cfg_orig"
 		fi
-		cp -f ~/.FreeCAD/user.cfg ~/.config/FreeCAD/user.cfg
+		cp -f "$HOME/.FreeCAD/user.cfg" "$HOME/.config/FreeCAD/user.cfg"
 	fi
 
 	# 2025年5月ごろ，freecad-daily-python3が破損することがあった．

@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2026/3/10 8:06:28 PM
+# 2026/3/11 9:20:48 AM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -10,8 +10,6 @@
 # という内容のウインドウが表示されず，単にテキストエディタが開く場合の対処法
 # (1) copybinDEXCS2019.sh を右クリック→「プロパティ」→「アクセス権」
 # (2) 「プログラムとして実行可能」をチェック
-
-# 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
 if [ -e /opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc ]; then
 	dexcs_version="2019"
@@ -52,7 +50,7 @@ fi
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
-	if [ -d "$d" ] && [ -n "$(ls -A "$d")" ]; then
+	if [ -d "$d" ] && [ -n "$(ls -A "$d" 2>/dev/null)" ]; then
 		rsync -av "$d/マニュアル/bin/copybinDEXCS.sh" Desktop/copybinDEXCS.sh
 		chmod +x Desktop/copybinDEXCS.sh
 		break
@@ -83,7 +81,8 @@ if BD_alias not in s:
         f.write(BD_alias)
 "
 
-Desktop/copybinDEXCS.sh
-
-# --（ダブルハイフン）は、**「これ以降の引数はコマンドのオプションではなく、ただの『ファイル名』として扱ってください」**という指示を出すための重要な記号です。
-rm -- "$0"
+if [ -f Desktop/copybinDEXCS.sh ]; then
+	Desktop/copybinDEXCS.sh
+	# --（ダブルハイフン）は、**「これ以降の引数はコマンドのオプションではなく、ただの『ファイル名』として扱ってください」**という指示を出すための重要な記号です。
+	rm -- "$0"
+fi
