@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:37:09 PM
+# 2026/3/13 11:26:56 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -569,14 +569,8 @@ if __name__ == '__main__':
                     '\tlocation\t"system";\n'
                     '\tobject\tdecomposeParDict;\n'
                     '}\n')
-                f.write('numberOfSubdomains\t{};\n'.format(domains))
-                f.write('method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-#                    'scotchCoeffs\n'
-#                    '{\n')
-#                f.write('\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n')
-#                f.write('}\n'
-#                    'distributed\tno;\n'
-#                    'roots\t();\n')
+                    f'numberOfSubdomains\t{domains};\n'
+                    'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
             for d in glob.iglob(os.path.join('system', '*' + os.sep)):
                 if os.path.isfile(os.path.join(d, 'fvSolution')):
                     os.chdir(d)
