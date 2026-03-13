@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/12 7:27:49 PM
+# 2026/3/13 11:27:08 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -80,8 +80,8 @@ if __name__ == '__main__':
     if interactive:
         while True:
             try:
-                domains = max(int(input(
-                    f'計算領域を何個に分割して並列計算しますか？ ({threads}個まで, 1だと普通の計算) > ').strip()), 1)
+                domains = max(int(input('計算領域を何個に分割して並列計算しますか？ '
+                    f'({threads}個まで, 1だと普通の計算) > ').strip()), 1)
                 break
             except ValueError:
                 pass
@@ -140,15 +140,9 @@ if __name__ == '__main__':
                 '\tclass\tdictionary;\n'
                 '\tlocation\t"system";\n'
                 '\tobject\tdecomposeParDict;\n'
-                '}\n')
-            f.write(f'numberOfSubdomains\t{domains};\n')
-            f.write('method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-#                'scotchCoeffs\n'
-#                '{\n')
-#            f.write('\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n')
-#            f.write('}\n'
-#                'distributed\tno;\n'
-#                'roots\t();\n')
+                '}\n'
+                f'numberOfSubdomains\t{domains};\n'
+                'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
         command = 'preparePar -noFunctionObjects'
         r = subprocess.call(command, shell = True)
         if r == 0:
