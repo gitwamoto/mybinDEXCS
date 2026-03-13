@@ -120,7 +120,8 @@ def makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name):
             '\t}\n')
         if two_dimensional:
             f.write(f'\t{front_name}\n'
-                '\t{\n\t\ttype\tempty;\n'
+                '\t{\n'
+                '\t\ttype\tempty;\n'
                 '\t\tfaces\t((0 3 2 1));\n'
                 '\t}\n'
                 f'\t{back_name}\n'
@@ -148,7 +149,8 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
 
-    front_name, back_name = 'front', 'back'
+    front_name = 'front'
+    back_name = 'back'
     if len(sys.argv) == 1:
         interactive = True
     else:
@@ -194,13 +196,12 @@ if __name__ == '__main__':
     if interactive:
         while True:
             try:
-                domains = max(int((raw_input if sys.version_info.major <= 2 else input)(
-                    '計算領域を何個に分割して並列計算しますか？ ({}個まで, 1だと普通の計算) > '.format(threads)).strip()), 1)
+                domains = max(int(input('計算領域を何個に分割して並列計算しますか？ '
+                    f'({threads}個まで, 1だと普通の計算) > ').strip()), 1)
                 break
             except ValueError:
                 pass
-        two_dimensional = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\n2次元メッシュを作りますか？\n' +
+        two_dimensional = True if input('\n2次元メッシュを作りますか？\n' +
             '*** 2次元メッシュでは，empty境界はx-y平面に平行でなければならなりません． (y/n) > '
             ).strip().lower() == 'y' else False
     domains = min(domains, threads)
@@ -268,12 +269,10 @@ if __name__ == '__main__':
         os.rename(snappyHexMeshDict_path, snappyHexMeshDict_3D_path) # can overwrite
         dp_sHMeshDict.writeFile(snappyHexMeshDict_path)
         if interactive:
-            front_name = (raw_input if sys.version_info.major <= 2 else input)(
-                '(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
+            front_name = input('(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
             if front_name == '':
                 front_name = 'front'
-            back_name = (raw_input if sys.version_info.major <= 2 else input)(
-                '(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
+            back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
             if back_name == '':
                 back_name = 'back'
 
@@ -302,14 +301,8 @@ if __name__ == '__main__':
                 '\tlocation\t"system";\n'
                 '\tobject\tdecomposeParDict;\n'
                 '}\n')
-            f.write('numberOfSubdomains\t{};\n'.format(domains))
-            f.write('method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-#                'scotchCoeffs\n'
-#                '{\n')
-#            f.write('\tprocessorWeights\t(1' + ' 1'*(domains - 1) + ');\n')
-#            f.write('}\n'
-#                'distributed\tno;\n'
-#                'roots\t();\n')
+                f'numberOfSubdomains\t{domains};\n'
+                'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
         command = 'decomposePar -noZero -noFunctionObjects'
         r = subprocess.call(command, shell = True)
         if r == 0:
@@ -381,19 +374,23 @@ if __name__ == '__main__':
             if os.path.isdir(i + 'polyMesh'):
                 regions.append(os.path.basename(os.path.dirname(i)))
         if interactive:
-            fluid_regions = (raw_input if sys.version_info.major <= 2 else input)(
-                ' '.join(regions) +
+            fluid_regions = input(' '.join(regions) +
                 ' の中から，流体側の領域名全てをスペース区切りで指定して下さい． > ').split()
         solid_regions = list(set(regions)^set(fluid_regions))
         with open(regionProperties, 'w') as f:
-            f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-            f.write('\tlocation\t"constant";\n')
-            f.write('\tobject\tregionProperties;\n')
-            f.write('}\n')
-            f.write('regions\n(\n')
-            f.write('\tsolid\t(' + ' '.join(solid_regions) + ')\n')
-            f.write('\tfluid\t(' + ' '.join(fluid_regions) + ')\n')
-            f.write(');\n')
+            f.write('FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"constant";\n'
+                '\tobject\tregionProperties;\n'
+                '}\n'
+                'regions\n'
+                '(\n'
+                f'\tsolid\t({" ".join(solid_regions)})\n'
+                f'\tfluid\t({' '.join(fluid_regions)})\n'
+                ');\n')
         for i in glob.iglob(os.path.join('0_bak', '*')):
             ib = os.path.basename(i)
             i0 = os.path.join('0', ib)
@@ -445,8 +442,7 @@ if __name__ == '__main__':
             shutil.rmtree(sets)
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()
