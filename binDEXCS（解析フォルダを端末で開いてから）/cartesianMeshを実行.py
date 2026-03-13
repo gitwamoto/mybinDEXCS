@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/13 6:33:32 PM
+# 2026/3/13 6:56:55 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -91,6 +91,7 @@ if __name__ == '__main__':
     domains = min(domains, threads)
 
     meshDict = dictParse.DictParser2(file_name = meshDict_path)
+
     patch_types = {}
     empty_list = []
     for p in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
