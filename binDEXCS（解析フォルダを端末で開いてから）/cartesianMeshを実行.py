@@ -107,12 +107,12 @@ if __name__ == '__main__':
 
     if two_dimensional:
         surfaceFile = meshDict.find_element([{'type': 'dictionary', 'key': 'surfaceFile'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'}])
-        stl_file_name = surfaceFile['element']['value'].strip('"')
-        stl_2D_file_name = os.path.splitext(stl_file_name)[0] + '_2D.stl'
+            {'except type': 'whitespace|line_comment|block_comment|linebreak'}])
+        stl_file_name_wo_ext = os.path.splitext(surfaceFile['element']['value'].strip('"'))[0] # .fmsを取り除く
+        stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl'
         should_write = True
         with open(stl_2D_file_name, 'w') as f:
-            for line in open(stl_file_name, 'r'):
+            for line in open(stl_file_name_wo_ext + '.stl', 'r'):
                 if 'endsolid' in line and line.split()[-1] in empty_list:
                     should_write = True
                 elif 'solid' in line and line.split()[-1] in empty_list:
@@ -120,7 +120,7 @@ if __name__ == '__main__':
                 elif should_write:
                     f.write(line)
         surfaceFile['parent']['value'] = dictParse.DictParser2(string =
-            'surfaceFile\t"' + stl_2D_file_name + '";').elements[0]['value']
+            f'surfaceFile\t"{stl_2D_file_name}";').elements[0]['value']
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
         with open(meshDict_path, 'w') as f:
             f.write(dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0])
