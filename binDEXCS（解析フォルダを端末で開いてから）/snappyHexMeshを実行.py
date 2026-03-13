@@ -180,7 +180,7 @@ if __name__ == '__main__':
             i += 1
 
     if not os.path.isfile(snappyHexMeshDict_path):
-        print('エラー: {}ファイルがありません．'.format(snappyHexMeshDict_path))
+        print(f'エラー: {snappyHexMeshDict_path}ファイルがありません．')
         sys.exit(1)
     if float(folderTime.latestTime()) != 0.0:
         print('エラー: 0秒以外のフォルダがあるとうまくいきません．')
@@ -204,82 +204,80 @@ if __name__ == '__main__':
         two_dimensional = True if input('\n2次元メッシュを作りますか？\n' +
             '*** 2次元メッシュでは，empty境界はx-y平面に平行でなければならなりません． (y/n) > '
             ).strip().lower() == 'y' else False
-    domains = min(domains, threads)
-
-    dp_sHMeshDict = DictParser(snappyHexMeshDict_path)
-    max_cell_size = float(dp_sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])[0])
-    x = dp_sHMeshDict.getValueForKey(['CUSTOM_OPTIONS', 'boundingBox'])[0].value()
-    #       0                                           1                   2
-    # x = [[listp|'', '', ['-20', '', '-20', '', '0']], '', [listp|'', '', ['40', '', '20', '', '1']]]
-    bounding_box = [float(i) for i in (x[0].value()[::2] + x[2].value()[::2])]
-
-    stl_file_name_wo_ext = None
-    x = dp_sHMeshDict.getValueForKey(['geometry'])
-    for y in x:
-        if DictParserList.isType(y, DictParserList.BLOCK):
-            if y.key().endswith('.stl'):
-                for z in y.value():
-                    if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
-                        stl_file_name_wo_ext = z.value()[0]
-                        stl_geometry = y
-                        break
-    multi_regions = False if dp_sHMeshDict.getIndexOfItem(
-        ['castellatedMeshControls', 'locationsInMesh']) is None else True
-
-    if two_dimensional:
-        empty_list = []
-        x = dp_sHMeshDict.getValueForKey(['castellatedMeshControls', 'refinementSurfaces',
-            stl_file_name_wo_ext, 'regions'])
-        if x is None:
-            print(snappyHexMeshDict_path + 'にcastellatedMeshControls.refinementSurfaces.' +
-                stl_file_name_wo_ext + '.regionsがありません．')
-            sys.exit(1)
-        i = 0
-        while i < len(x):
-            found = False
-            if DictParserList.isType(x[i], DictParserList.BLOCK):
-                for y in x[i].value():
-                    if DictParserList.isType(y, DictParserList.BLOCK) and y.key() == 'patchInfo':
-                        for z in y.value():
-                            if (DictParserList.isType(z, DictParserList.DICT) and z.key() == 'type' and
-                                z.value()[0] == 'empty'):
-                                empty_list.append(x[i].key())
-                                found = True
-                                break
-                    if found:
-                        break
-            if found:
-                del x[i]
-                if x[i] == '\n' and x[i - 1] == '\n':
-                    del x[i]
-            else:
-                i += 1
-        stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl'
-        should_write = True
-        with open(os.path.join('constant', 'triSurface', stl_2D_file_name), 'w') as f2d:
-            with open(os.path.join('constant', 'triSurface', stl_file_name_wo_ext + '.stl'), 'r') as f:
-                for line in f:
-                    if 'endsolid' in line and line.split()[-1] in empty_list:
-                        should_write = True
-                    elif 'solid' in line and line.split()[-1] in empty_list:
-                        should_write = False
-                    elif should_write:
-                        f2d.write(line)
-        stl_geometry.setKey(stl_2D_file_name)
-        os.rename(snappyHexMeshDict_path, snappyHexMeshDict_3D_path) # can overwrite
-        dp_sHMeshDict.writeFile(snappyHexMeshDict_path)
-        if interactive:
+        if two_dimensional:
             front_name = input('(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
             if front_name == '':
                 front_name = 'front'
             back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
             if back_name == '':
                 back_name = 'back'
+    domains = min(domains, threads)
 
-    makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name)
+    snappyHexMeshDict = dictParse.DictParser2(file_name = snappyHexMeshDict_path)
+
+    # CUSTOM_OPTIONS
+    # {
+    #   maxCellSize	10; // used to generate blockMeshDict
+    #   boundingBox	((-150.0 -280.0 -30.0) (150.0 700.0 170.0)); // used to generate blockMeshDict
+    # }
+    CUSTOM_OPTIONS = snappyHexMeshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'}]
+    makeBlockMeshDict(
+        max_cell_size = float(
+            dictParse.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = CUSTOM_OPTIONS)['element']['value']),
+        bounding_box = [float(i['element']['value']) for i in
+            dictParse.find_all_elements([{'type': 'dictionary', 'key': 'boundingBox'},
+                {'type': 'list'}, {'type': 'list'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start|list_end'}],
+                parent = CUSTOM_OPTIONS)]
+        front_name = front_name, back_name = back_name)
+
+    geometry_stl_name = None
+    for b in snappyHexMeshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block']):
+        if b['element']['key'].endswith('.stl'): # STLファイルは1つにまとめられていると仮定
+            geometry_stl = b['element']
+            stl_file_name = os.path.splitext(b['element']['key'])
+            n = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}], parent = b)['element']
+            if n is not None:
+                geometry_stl_name = dictParse.find_element(
+                    [{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                    parent = n)['element']['value'] # 最終的なパッチ名は nameの値 + _ + STL内のsolid名 になります。
+            break
+
+    if two_dimensional:
+        empty_list = []
+        path_list = [{'type': 'block', 'key': 'castellatedMeshControls'},
+            {'type': 'block', 'key': 'refinementSurfaces'}]
+        if geometry_stl_name is not None:
+            path_list += [{'type': 'block', 'key': geometry_stl_name},
+                {'type': 'block', 'key': 'regions'}]
+        path_list.append({'type': 'block'})
+        for b in reversed(snappyHexMeshDict.find_all_elements(path_list):
+            if dictParse.find_element([{'type': 'block', 'key': 'patchInfo'},
+                {'type': 'dictionary', 'key': 'type'},
+                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                parent = b)['element']['value'] == 'empty':
+                empty_list.append(b['key'])
+                del b['parent'][b['index']]
+        stl_2D_file_name = os.path.splitext(stl_file_name)[0] + '_2D.stl'
+        should_write = True
+        with open(os.path.join('constant', 'triSurface', stl_2D_file_name), 'w') as f:
+            for line in open(os.path.join('constant', 'triSurface', stl_file_name), 'r'):
+                if 'endsolid' in line and line.split()[-1] in empty_list:
+                    should_write = True
+                elif 'solid' in line and line.split()[-1] in empty_list:
+                    should_write = False
+                elif should_write:
+                    f.write(line)
+        geometry_stl['value'] = stl_2D_file_name
+        os.rename(snappyHexMeshDict_path, snappyHexMeshDict_3D_path) # can overwrite
+        with open(snappyHexMeshDict_path, 'w') as f:
+            f.write(dictParse.normalize(string = snappyHexMeshDict.file_string(pretty_print = True))[0])
+
     command = 'blockMesh'
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     if two_dimensional:
         os.rename(blockMeshDict_path, blockMeshDict_path + '_2D') # can overwrite
@@ -300,13 +298,13 @@ if __name__ == '__main__':
                 '\tclass\tdictionary;\n'
                 '\tlocation\t"system";\n'
                 '\tobject\tdecomposeParDict;\n'
-                '}\n')
+                '}\n'
                 f'numberOfSubdomains\t{domains};\n'
                 'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
         command = 'decomposePar -noZero -noFunctionObjects'
         r = subprocess.call(command, shell = True)
         if r == 0:
-            command = 'mpirun -np {} snappyHexMesh -parallel -overwrite | tee snappyHexMesh.log'.format(domains)
+            command = f'mpirun -np {domains} snappyHexMesh -parallel -overwrite | tee snappyHexMesh.log'
             r = subprocess.call(command, shell = True)
         if r == 0:
             command = 'reconstructParMesh -constant -mergeTol 1.0e-06 -noFunctionObjects'
@@ -315,43 +313,44 @@ if __name__ == '__main__':
         if os.path.isfile(decomposeParDict_bak_path):
             os.rename(decomposeParDict_bak_path, decomposeParDict_path)
         if r != 0:
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
     else:
         command = 'snappyHexMesh -overwrite | tee snappyHexMesh.log'
         if subprocess.call(command, shell = True) != 0:
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
 
     if two_dimensional:
         os.rename(snappyHexMeshDict_path, snappyHexMeshDict_path + '_2D') # can overwrite
         os.rename(snappyHexMeshDict_3D_path, snappyHexMeshDict_path) # can overwrite
 
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    if stl_file_name_wo_ext is not None:
-        stl_file_name_wo_ext += '_'
-        l = len(stl_file_name_wo_ext)
-        dp_boundary = DictParser(boundary)
-        for a in dp_boundary.contents:
-            if DictParserList.isType(a, DictParserList.LISTP):
-                a = a.value()
-                break
-        for b in a:
-            if DictParserList.isType(b, DictParserList.BLOCK) and b.key().startswith(stl_file_name_wo_ext):
-                b.setKey(b.key()[l:])
-        dp_boundary.writeFile(boundary)
+    if geometry_stl_name is not None:
+        prefix = geometry_stl_name + '_'
+        len_prefix = len(prefix)
+        boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+        boundary = dictParse.DictParser2(file_name = boundary_path)
+        for p in boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}]):
+            if p['element']['key'].startswith(prefix):
+                p['element']['key'] = p['element']['key'][len_prefix:]
+        with open(boundary_path, 'w') as f:
+            f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
 
     misc.convertLengthUnitInMillimeterToMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     if two_dimensional:
         command = 'flattenMesh'
         if subprocess.call(command, shell = True) != 0:
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
         subprocess.call(os.path.join(os.path.dirname(os.path.abspath(__file__)), '2次元メッシュに.py') +
-            ' -f ' + front_name + ' -b ' + back_name + ' -s', shell = True)
-    regionProperties = os.path.join('constant', 'regionProperties')
-    if multi_regions:
+            f' -f {front_name} -b {back_name} -s', shell = True)
+
+ここまで！！！！
+
+    regionProperties_path = os.path.join('constant', 'regionProperties')
+    if snappyHexMeshDict.find_element({'type': 'block', 'key': 'castellatedMeshControls'},
+        {'type': 'dictionary', 'key': 'locationsInMesh'}])['element'] is not None:
         for i in glob.iglob(os.path.join('constant', '*' + os.sep)):
             i += 'polyMesh'
             if os.path.isdir(i):
@@ -377,7 +376,7 @@ if __name__ == '__main__':
             fluid_regions = input(' '.join(regions) +
                 ' の中から，流体側の領域名全てをスペース区切りで指定して下さい． > ').split()
         solid_regions = list(set(regions)^set(fluid_regions))
-        with open(regionProperties, 'w') as f:
+        with open(regionProperties_path, 'w') as f:
             f.write('FoamFile\n'
                 '{\n'
                 '\tversion\t2.0;\n'
@@ -432,8 +431,8 @@ if __name__ == '__main__':
                     shutil.copy(os.path.join('system', 'fvSolution'), d) # can overwrite
                     shutil.copy(os.path.join('system', 'fvSchemes'), d) # can overwrite
         misc.correctLocation()
-    elif os.path.isfile(regionProperties):
-        os.remove(regionProperties)
+    elif os.path.isfile(regionProperties_path):
+        os.remove(regionProperties_path)
 
     if not two_dimensional:
         misc.execCheckMesh()
