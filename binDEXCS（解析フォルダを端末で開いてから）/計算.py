@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/3/13 11:26:56 AM
+# 2026/3/13 6:28:59 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -568,7 +568,7 @@ if __name__ == '__main__':
                     '\tclass\tdictionary;\n'
                     '\tlocation\t"system";\n'
                     '\tobject\tdecomposeParDict;\n'
-                    '}\n')
+                    '}\n'
                     f'numberOfSubdomains\t{domains};\n'
                     'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
             for d in glob.iglob(os.path.join('system', '*' + os.sep)):
