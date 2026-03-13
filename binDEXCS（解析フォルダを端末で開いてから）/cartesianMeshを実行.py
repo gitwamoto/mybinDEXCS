@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/13 5:49:07 PM
+# 2026/3/13 6:33:32 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -109,7 +109,7 @@ if __name__ == '__main__':
         surfaceFile = meshDict.find_element([{'type': 'dictionary', 'key': 'surfaceFile'},
             {'except type': 'whitespace|line_comment|block_comment|linebreak'}])
         stl_file_name_wo_ext = os.path.splitext(surfaceFile['element']['value'].strip('"'))[0] # .fmsを取り除く
-        stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl'
+        stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl' # 2次元の場合はfmsファイルでなくても十分であることが多い
         should_write = True
         with open(stl_2D_file_name, 'w') as f:
             for line in open(stl_file_name_wo_ext + '.stl', 'r'):
@@ -176,7 +176,7 @@ if __name__ == '__main__':
             if back_name == '':
                 back_name = 'back'
         boundary.find_element(
-            [{'type': 'list'},{'type': 'block', 'key': 'topEmptyFaces'}])['element']['key'] = front_name
+            [{'type': 'list'}, {'type': 'block', 'key': 'topEmptyFaces'}])['element']['key'] = front_name
         boundary.find_element(
             [{'type': 'list'}, {'type': 'block', 'key': 'bottomEmptyFaces'}])['element']['key'] = back_name
         with open(boundary_path, 'w') as f:
