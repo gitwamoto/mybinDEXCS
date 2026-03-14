@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/9 8:52:03 PM
+# 2026/3/14 3:16:05 PM
 
 import sys
 import os
@@ -706,24 +706,26 @@ def set_blank_line(parent, number_of_blank_lines = 1):
         else:
             i += 1
 
-def structure_string(parent, indent_level = 0):
+def structure_string(parent, parent_header = '', indent_level = 0):
     if not isinstance(parent, list):
         parent = parent['value']
     l = len(str(len(parent) - 1))
+    h = ' '*l
     s = '[\n'
-    indent = '  '*(indent_level + 1)
+    indent = '  '*indent_level
     for n, i in enumerate(parent):
+        s += f'{str(n).zfill(l)}: {indent}'
         if i['type'] in ('dictionary', 'block'):
-            s += (str(n).zfill(l) + ': ' + indent + "{'type': '" + i['type'] + "', " +
-                ("'key': '" + i['key'] + "', " if 'key' in i else "") + 
-                "'value': " + structure_string(i['value'], indent_level + 1) + "},\n")
+            s += (f"{{'type': '{i['type']}', "  +
+                (f"'key': '{i['key']}', " if 'key' in i else "") + 
+                f"'value': {structure_string(i['value'], h, indent_level + 1)}}},\n")
         elif i['type'] == 'list':
-            s += (str(n).zfill(l) + ': ' + indent + "{'type': 'list', " +
-                ("'length': {}, ".format(i['length']) if 'length' in i else "") +
-                "'value': " + structure_string(i['value'], indent_level + 1) + "},\n")
+            s += ("{'type': 'list', " +
+                (f"'length': {i['length']}, " if 'length' in i else "") +
+                f"'value': {structure_string(i['value'], h, indent_level + 1)}}},\n")
         else:
-            s += str(n).zfill(l) + ': ' + indent + str(i) + ',\n'
-    return s + '  '*indent_level + ']'
+            s += f'{i},\n'
+    return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '') + ']'
 
 def file_string(parent, indent_level = 0, pretty_print = True, commentless = False):
     if not isinstance(parent, list):
@@ -951,20 +953,7 @@ class DictParser2:
         return file_string(self.elements, indent_level, pretty_print, commentless)
 
 if __name__ == '__main__':
-#    file_name = sys.argv[1]
-#    base_name = os.path.basename(file_name)
-#    dp = DictParser(file_name = file_name)
-#    root, ext = os.path.splitext(base_name)
-#    dp.writeFileAsItIs(os.path.join(os.path.dirname(file_name), root + 'r' + ext))
-#    dp.writeFile(os.path.join(os.path.dirname(file_name), root + 'p' + ext))
-#    index = dp.getIndexOfItem(['solvers', 'Phi'])
-#    print('index = ' + str(index))
-#    if index is not None:
-#        print('item = ' + str(dp.getItemAtIndex(index[:-1])))
-
-# ------------------------------------------------------------------------------
-
-    normalize(file_name = sys.argv[1])
+#    normalize(file_name = sys.argv[1])
 #    try:
 #        dp = DictParser2(file_name = sys.argv[1])
 #    except:
@@ -983,3 +972,6 @@ if __name__ == '__main__':
 #        print(i, e)
 #    separators = dp.find_separators()
 #    print([(s['index'], s['element']) for s in separators])
+    stl_2D_file_name = '1111'
+    print(structure_string(DictParser2(string =
+        f'surfaceFile\t"{stl_2D_file_name}";\n').elements))
