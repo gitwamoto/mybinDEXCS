@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/13 6:56:55 PM
+# 2026/3/15 11:44:12 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -96,19 +96,17 @@ if __name__ == '__main__':
     empty_list = []
     for p in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
         {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
-        n = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'},
-            {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+        n = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'}, {'except type': 'ignorable'}],
             parent = p['element'])['element']['value']
-        t = dictParse.find_element([{'type': 'dictionary', 'key': 'newType'},
-            {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+        t = dictParse.find_element([{'type': 'dictionary', 'key': 'newType'}, {'except type': 'ignorable'}],
             parent = p['element'])['element']['value']
         patch_types[n] = t
         if t == 'empty':
             empty_list.append(n)
 
     if two_dimensional:
-        surfaceFile = meshDict.find_element([{'type': 'dictionary', 'key': 'surfaceFile'},
-            {'except type': 'whitespace|line_comment|block_comment|linebreak'}])
+        surfaceFile = meshDict.find_element(
+            [{'type': 'dictionary', 'key': 'surfaceFile'}, {'except type': 'ignorable'}])
         stl_file_name_wo_ext = os.path.splitext(surfaceFile['element']['value'].strip('"'))[0] # .fmsを取り除く
         stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl' # 2次元の場合はfmsファイルでなくても十分であることが多い
         should_write = True
@@ -184,14 +182,13 @@ if __name__ == '__main__':
             f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
     else: # not two_dimensional
         for p in boundary.find_all_elements([{'type': 'list',}, {'type': 'block'}]):
-            i = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = p['element'])
+            i = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}],
+                parent = p['element'])
             t = patch_types[p['element']['key']]
             if i['element']['value'] != t:
                 i['element']['value'] = t
                 i = dictParse.find_element([{'type': 'dictionary', 'key': 'inGroups'}, {'type': 'list'},
-                    {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
-                    parent = p['element'])
+                    {'except type': 'ignorable|list_start'}], parent = p['element'])
                 if i['element'] is not None:
                     i['element']['value'] = t
         string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]

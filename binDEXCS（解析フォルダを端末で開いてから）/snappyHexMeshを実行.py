@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:36:15 PM
+# 2026/3/15 11:44:22 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -223,13 +223,11 @@ if __name__ == '__main__':
     CUSTOM_OPTIONS = snappyHexMeshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'}]
     makeBlockMeshDict(
         max_cell_size = float(
-            dictParse.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            dictParse.find_element([{'type': 'dictionary', 'key': 'maxCellSize'}, {'except type': 'ignorable'}],
                 parent = CUSTOM_OPTIONS)['element']['value']),
         bounding_box = [float(i['element']['value']) for i in
-            dictParse.find_all_elements([{'type': 'dictionary', 'key': 'boundingBox'},
-                {'type': 'list'}, {'type': 'list'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start|list_end'}],
+            dictParse.find_all_elements([{'type': 'dictionary', 'key': 'boundingBox'}, {'type': 'list'},
+                {'type': 'list'}, {'except type': 'ignorable|list_start|list_end'}],
                 parent = CUSTOM_OPTIONS)]
         front_name = front_name, back_name = back_name)
 
@@ -240,8 +238,7 @@ if __name__ == '__main__':
             stl_file_name = os.path.splitext(b['element']['key'])
             n = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}], parent = b)['element']
             if n is not None:
-                geometry_stl_name = dictParse.find_element(
-                    [{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                geometry_stl_name = dictParse.find_element([{'except type': 'ignorable'}],
                     parent = n)['element']['value'] # 最終的なパッチ名は nameの値 + _ + STL内のsolid名 になります。
             break
 
@@ -254,10 +251,8 @@ if __name__ == '__main__':
                 {'type': 'block', 'key': 'regions'}]
         path_list.append({'type': 'block'})
         for b in reversed(snappyHexMeshDict.find_all_elements(path_list):
-            if dictParse.find_element([{'type': 'block', 'key': 'patchInfo'},
-                {'type': 'dictionary', 'key': 'type'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
-                parent = b)['element']['value'] == 'empty':
+            if dictParse.find_element([{'type': 'block', 'key': 'patchInfo'}, {'type': 'dictionary', 'key': 'type'},
+                {'except type': 'ignorable'}], parent = b)['element']['value'] == 'empty':
                 empty_list.append(b['key'])
                 del b['parent'][b['index']]
         stl_2D_file_name = os.path.splitext(stl_file_name)[0] + '_2D.stl'

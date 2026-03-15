@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/3/10 2:05:03 PM
+# 2026/3/15 11:46:31 AM
 
 # DictParser2で書き直し済み
 
@@ -164,7 +164,7 @@ def intoFvSolution():
             if momentumPredictor['element'] is None:
                 v = 'yes'
             else:
-                v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                v = dictParse.find_element([{'except type': 'ignorable'}],
                     parent = momentumPredictor['element'])['element']['value']
                 del block['value'][momentumPredictor['index']]
             block['value'][block_start:block_start] = dictParse.DictParser2(string =
@@ -319,7 +319,7 @@ def intoControlDict():
         if enabled['element'] is None:
             v = 'yes'
         else:
-            v = dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            v = dictParse.find_element([{'except type': 'ignorable'}],
                 parent = enabled['element'])['element']['value']
             del block['value'][enabled['index']]
         insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'libs'}], parent = block)
@@ -341,26 +341,23 @@ def intoControlDict():
     types = dictParse.find_all_elements([{'type': 'block'}, {'type': 'dictionary', 'key': 'type'}], parent = functions)
     for t in types:
         if (not has_limitNut and
-            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            (dictParse.find_element([{'except type': 'ignorable'}],
                 parent = t['element'])['element']['value'] == 'limitFields' and
             dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}, 
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
+                {'except type': 'ignorable'}, {'except type': 'ignorable|list_start'}],
                 parent = t['parent'])['element']['value'] == 'nut' and
-            dictParse.find_element([{'type': 'dictionary', 'key': 'limit'},
-                {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+            dictParse.find_element([{'type': 'dictionary', 'key': 'limit'}, {'except type': 'ignorable'}],
                     parent = t['parent'])['element']['value'] == 'max')):
             has_limitNut = True
 #        elif (not has_calcCo and
-#            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+#            (dictParse.find_element([{'except type': 'ignorable'}],
 #                parent = t['element'])['element']['value'] == 'CourantNo')):
 #            has_calcCo = True
 #        elif (not has_printCoMinMax and
-#            (dictParse.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+#            (dictParse.find_element([{'except type': 'ignorable'}],
 #                parent = t['element'])['element']['value'] == 'fieldMinMax' and
 #            dictParse.find_element([{'type': 'dictionary', 'key': 'fields'}, 
-#                {'except type': 'whitespace|line_comment|block_comment|linebreak'},
-#                {'except type': 'whitespace|line_comment|block_comment|linebreak|list_start'}],
+#                {'except type': 'ignorable'}, {'except type': 'ignorable|list_start'}],
 #                parent = t['parent'])['element']['value'] == 'Co')):
 #            has_printCoMinMax = True
 
@@ -415,8 +412,7 @@ def intoControlDict():
         functions_index += len(linebreak_and_runTimeModifiable)
         tail_index += len(linebreak_and_runTimeModifiable)
     else:
-        i = dictParse.find_element(
-            [{'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = runTimeModifiable)
+        i = dictParse.find_element([{'except type': 'ignorable'}], parent = runTimeModifiable)
         i['parent'][i['index']] = dictParse.DictParser2(string = 'yes').elements[0]
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]

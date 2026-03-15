@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/3/10 2:05:31 PM
+# 2026/3/15 11:45:58 AM
 
 # DictParser2で書き直し済み
 
@@ -284,8 +284,7 @@ def correctLocation():
             return
         location = dictparse.find_element([{'type': 'dictionary', 'key': 'lcation'}], parent = FoamFile)['element']
         if location is not None:
-            i = dictparse.find_element(
-                [{'except type': 'whitespace|line_comment|block_comment|linebreak'}], parent = location)
+            i = dictparse.find_element([{'except type': 'ignorable'}], parent = location)
             i['parent']['value'][i['index']:i['index'] + 1] = dictParse.DictParser2(string =
                 '"' + os.path.dirname(file_name) + '"').elements
         string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]

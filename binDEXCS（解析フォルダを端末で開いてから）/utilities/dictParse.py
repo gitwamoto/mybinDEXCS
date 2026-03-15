@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/14 3:16:05 PM
+# 2026/3/15 11:46:16 AM
 
 import sys
 import os
@@ -625,10 +625,14 @@ def find_element(path_list, parent, start = None, end = None, reverse = False, i
         start = len(parent) - 1 if reverse else 0
     if end is None:
         end = -1 if reverse else len(parent)
+    p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
+        for k, v in path_list[0].items()}
     # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
+    # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
+    # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
     c = next(({'index': i, 'element': parent[i]} for i in range(start, end, -1 if reverse else 1)
-        if all(parent[i].get(k[7:]) not in v.split('|') if k.startswith('except ') else parent[i].get(k) in v.split('|')
-        for k, v in path_list[0].items())), None)
+        if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
+            for k, v in p.items())), None)
     if c is None:
         return {'parent': None, 'index': index_not_found, 'element': None}
     elif len(path_list) == 1:
@@ -646,9 +650,13 @@ def find_all_elements(path_list, parent):
         path_list = [path_list]
     elif len(path_list) == 0:
         return []
+    p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
+        for k, v in path_list[0].items()}
+    # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
+    # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
     c = [{'index': i, 'element': parent[i]} for i in range(len(parent))
-        if all(parent[i].get(k[7:]) not in v.split('|') if k.startswith('except ') else parent[i].get(k) in v.split('|')
-        for k, v in path_list[0].items())]
+        if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
+            for k, v in path_list[0].items())]
     if len(c) == 0 or len(path_list) == 1:
         return [{'parent': parent, 'index': i['index'], 'element': i['element']} for i in c]
     else:
@@ -885,7 +893,7 @@ class DictParser2:
                 v, index = self.elements_list(index = s.end(), terminator = type_string + '_end')
                 if len(l) > 0:
                     for i in range(len(l) - 1, -1, -1):
-                        if l[i]['type'] not in ('whitespace', 'line_comment', 'block_comment', 'linebreak'):
+                        if l[i]['type'] not in ('whitespace', 'linebreak', 'line_comment', 'block_comment'):
                             if type_string == 'block' and l[i]['type'] in ('word', 'string'):
                                 l[i:] = [{'type': type_string, 'key': l[i]['value'],
                                     'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
@@ -913,7 +921,7 @@ class DictParser2:
                 else:
                     l.append({'type': s.lastgroup, 'value': s.group()})
                 index = s.end()
-            if s.lastgroup not in ('whitespace', 'line_comment', 'block_comment', 'linebreak'):
+            if s.lastgroup not in ('whitespace', 'linebreak', 'line_comment', 'block_comment'):
                 essentials += 1
                 if essentials == essentials_required:
                     terminator_reached = True
@@ -930,7 +938,7 @@ class DictParser2:
         if len(separators) == 0:
             return [{'parent': None, 'index': header_index_not_found, 'element': None},
                 {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
-        if self.find_element([{'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+        if self.find_element([{'except type': 'ignorable'}],
             start = separators[-1]['index'] + 1)['element'] is not None:
             return [separators[0],
                 {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
@@ -965,7 +973,7 @@ if __name__ == '__main__':
 #    print(dp.file_string(pretty_print = True, commentless = False))
 #    print([i['index']
 #        for i in dp.find_all_elements([{'type': 'block', 'key': 'gradSchemes'}, {'type': 'dictionary'},
-#            {'type': 'whitespace|semicolon|linebreak'}])])
+#            {'type': 'whitespace|linebreak|semicolon'}])])
 #    print(dp.find_element([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}]))
 #    print([i['element']['key'] for i in dp.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}, {'type': 'dictionary'}])])
 #    for i, e in enumerate(dp.find_element([{'type': 'block', 'key': 'solvers'}])[1]['value']):

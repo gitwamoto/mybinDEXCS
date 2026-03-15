@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/12 7:46:02 PM
+# 2026/3/15 11:43:59 AM
 
 # ---- オプションはない ----
 
@@ -86,8 +86,7 @@ def append_patches(src, dst):
         for p in patches:
             i = dictParse.find_element([{'type': 'block', 'key': p['element']['key']}], parent = boundaryField)
             if i['element'] is None:
-                v = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
-                    {'except type': 'whitespace|line_comment|block_comment|linebreak'}],
+                v = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}],
                     parent = p['element'])['element']['value']
                 s = ('\n' +
                     p['element']['key'] + '\n' +
