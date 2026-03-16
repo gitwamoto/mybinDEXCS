@@ -33,9 +33,7 @@ def append_include_sentence(dir_name, include_file_name):
         print('{}を処理中...'.format(f))
         parser = dictParse.DictParser2(file_name = f)
         inserted = False
-        for i in reversed(parser.find_all_elements([{'type': 'directive'}])):
-            if i['element']['key'] != '#include':
-                continue
+        for i in reversed(parser.find_all_elements([{'type': 'directive', 'key': '#include'}])):
             n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['element']['value'].strip('"')
             if n == include_file_name:
                 inserted = True
