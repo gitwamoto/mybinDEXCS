@@ -341,13 +341,11 @@ if __name__ == '__main__':
         subprocess.call(os.path.join(os.path.dirname(os.path.abspath(__file__)), '2次元メッシュに.py') +
             f' -f {front_name} -b {back_name} -s', shell = True)
 
-ここまで！！！！
-
     regionProperties_path = os.path.join('constant', 'regionProperties')
     if snappyHexMeshDict.find_element({'type': 'block', 'key': 'castellatedMeshControls'},
         {'type': 'dictionary', 'key': 'locationsInMesh'}])['element'] is not None:
         for i in glob.iglob(os.path.join('constant', '*' + os.sep)):
-            i += 'polyMesh'
+            i += 'polyMesh' # i/polyMeshというパスのフォルダがあるはず
             if os.path.isdir(i):
                 shutil.rmtree(i)
         if os.path.isdir('0'):
@@ -361,12 +359,10 @@ if __name__ == '__main__':
             # |   +-- cellToregion
             # :
             # +-- cellToregion
-            print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
-        regions = []
-        for i in glob.iglob(os.path.join('constant', '*' + os.sep)):
-            if os.path.isdir(i + 'polyMesh'):
-                regions.append(os.path.basename(os.path.dirname(i)))
+        regions = [os.path.basename(os.path.dirname(i))
+            for i in glob.iglob(os.path.join('constant', '*' + os.sep)) if os.path.isdir(i + 'polyMesh')]
         if interactive:
             fluid_regions = input(' '.join(regions) +
                 ' の中から，流体側の領域名全てをスペース区切りで指定して下さい． > ').split()
@@ -383,36 +379,38 @@ if __name__ == '__main__':
                 'regions\n'
                 '(\n'
                 f'\tsolid\t({" ".join(solid_regions)})\n'
-                f'\tfluid\t({' '.join(fluid_regions)})\n'
+                f'\tfluid\t({" ".join(fluid_regions)})\n'
                 ');\n')
-        for i in glob.iglob(os.path.join('0_bak', '*')):
-            ib = os.path.basename(i)
-            i0 = os.path.join('0', ib)
-            if os.path.isfile(i) and ib != 'cellToRegion':
-                if os.path.isfile(i0):
+        for i0_bak in glob.iglob(os.path.join('0_bak', '*')):
+            i_name = os.path.basename(i0_bak)
+            i0 = os.path.join('0', i_name)
+            if os.path.isfile(i0_bak) and i_name != 'cellToRegion':
+                if os.path.isfile(i0): # i0 = 0/i_nameというパスを持つファイルまたはフォルダを消す
                     os.remove(i0)
                 elif os.path.isdir(i0):
                     os.rmtree(i0)
-                shutil.move(i, '0') # can't overwrite
-                dp = DictParser(i0)
-                for x in dp.contents:
-                    if DictParserList.isType(x, DictParserList.INCLUDE) and x.value().startswith('"../'):
-                        x.setValue('"../' + x.value()[1:])
-                s = dp.toString()
-                for d in regions:
-                    if not os.path.isdir(os.path.join('0_bak', d)):
-                        with open(os.path.join('0', d, ib), 'w') as f:
-                            f.write(s)
-            elif os.path.isdir(i) and os.path.isdir(i0):
-                for j in glob.iglob(os.path.join(i, '*')):
-                    jb = os.path.basename(j)
-                    j0 = os.path.join(i0, jb)
-                    if os.path.isfile(j0):
+                shutil.move(i0_bak, '0') # can't overwrite
+                parser = dictParse.DictParser2(file_name = i0) # i0 is file
+                for e in parser.find_all_elements([{'type': 'directive', 'key': '#include'}]):
+                    n = dictParse.find_element([{'type': 'string'}], parent = e['element'])
+                    if n['element']['value'].startswith('"../'):
+                        n['element']['value'] = '"../' + n['element']['value'][1:]
+                string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+                for r in regions:
+                    if not os.path.isdir(os.path.join('0_bak', r)):
+                        with open(os.path.join('0', r, i_name) as f:
+                            f.write(string)
+            elif os.path.isdir(i0_bak) and os.path.isdir(i0):
+                for j0_bak in glob.iglob(os.path.join(i0_bak, '*')):
+                    j_name = os.path.basename(j0_bak)
+                    j0 = os.path.join(i0, j_name)
+                    if os.path.isfile(j0): # j0 = i0/j_nameというパスを持つファイルまたはフォルダを消す
                         os.remove(j0)
                     elif os.path.isdir(j0):
                         os.rmtree(j0)
-                    shutil.move(j, i0) # can't overwrite
+                    shutil.move(j0_bak, i0) # can't overwrite
         shutil.rmtree('0_bak')
+        ここまで
         for d in glob.iglob(os.path.join('system', '*' + os.sep)):
             fvSolution = os.path.join(d, 'fvSolution')
             if os.path.isfile(fvSolution):
