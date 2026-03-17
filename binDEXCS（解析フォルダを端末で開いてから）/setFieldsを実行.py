@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 10:20:51 PM
+# 2026/3/17 11:08:33 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行．system/setFieldsDictに設定値に関する指示を書き込んでいることが前提
-# -o -> 0秒のフォルダに.origで終わるファイルがある場合，それに対してsetFieldsを行う
 
 # DictParser2で書き直し済み
 
@@ -105,21 +104,11 @@ if __name__ == '__main__':
             i += 1
     fields_set = sorted(list(fields_set))
 
-    orig_fields = [i for i in fields_set if os.path.isfile(os.path.join('0', i) + '.orig')]
-    if interactive and len(orig_fields) > 0:
-        set_for_orig = True if input(
-            f'0秒フォルダにある{".orig, ".join(orig_fields)}.origに対してもsetFieldsを行いますか？ (y/n) > '
-            ).strip().lower() == 'y' else False
-    if set_for_orig:
-        for i in orig_fields:
-            i = os.path.join('0', i)
+    for i in fields_set:
+        i = os.path.join('0', i)
+        if os.path.isfile( i + '.orig'):
             shutil.copy(i + '.orig', i)
-        for i in set(fields_set) - set(orig_fields):
-            i = os.path.join('0', i)
-            shutil.copy(i, i + '.orig')
-    else:
-        for i in fields_set:
-            i = os.path.join('0', i)
+        else:
             shutil.copy(i, i + '.orig')
 
     command = 'setFields -noFunctionObjects'
