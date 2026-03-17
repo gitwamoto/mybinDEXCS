@@ -95,6 +95,16 @@ if __name__ == '__main__':
 
     meshDict = dictParse.DictParser2(file_name = meshDict_path)
 
+    # renameBoundary
+    # {
+    #   newPatchNames
+    #   {
+    #     PATCH_NAME
+    #     {
+    #       newName PATCH_NAME;
+    #       type empty;
+    #     }
+    #     ...
     patch_types = {}
     empty_list = []
     for p in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
@@ -108,9 +118,10 @@ if __name__ == '__main__':
             empty_list.append(n)
 
     if two_dimensional:
+        # surfaceFile "constant/triSurface/FMS_NAME.fms"; // (mandatory)
         surfaceFile = meshDict.find_element(
-            [{'type': 'dictionary', 'key': 'surfaceFile'}, {'except type': 'ignorable'}])
-        stl_file_name_wo_ext = os.path.splitext(surfaceFile['element']['value'].strip('"'))[0] # .fmsを取り除く
+            [{'type': 'dictionary', 'key': 'surfaceFile'}, {'except type': 'ignorable'}])['element']
+        stl_file_name_wo_ext = os.path.splitext(surfaceFile['value'].strip('"'))[0] # .fmsを取り除く
         stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl' # 2次元の場合はfmsファイルでなくても十分であることが多い
         should_write = True
         with open(stl_2D_file_name, 'w') as f:
@@ -121,8 +132,7 @@ if __name__ == '__main__':
                     should_write = False
                 elif should_write:
                     f.write(line)
-        surfaceFile['parent']['value'] = dictParse.DictParser2(string =
-            f'surfaceFile\t"{stl_2D_file_name}";').elements[0]['value']
+        surfaceFile['value'] = '"' + stl_2D_file_name + '"'
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
         with open(meshDict_path, 'w') as f:
             f.write(dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0])
