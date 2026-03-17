@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/3/15 11:45:58 AM
+# 2026/3/17 12:33:07 PM
 
 # DictParser2で書き直し済み
 
@@ -282,7 +282,7 @@ def correctLocation():
         FoamFile = parser.find_element([{'type': 'block', 'key': 'FoamFile'}])['element']
         if FoamFile is None:
             return
-        location = dictparse.find_element([{'type': 'dictionary', 'key': 'lcation'}], parent = FoamFile)['element']
+        location = dictparse.find_element([{'type': 'dictionary', 'key': 'location'}], parent = FoamFile)['element']
         if location is not None:
             i = dictparse.find_element([{'except type': 'ignorable'}], parent = location)
             i['parent']['value'][i['index']:i['index'] + 1] = dictParse.DictParser2(string =
