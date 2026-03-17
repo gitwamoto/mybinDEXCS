@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 # blockMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 8:37:45 PM
+# 2026/3/17 10:37:41 PM
 
 import sys
 import signal
 import subprocess
-import shutil
 from utilities import misc
 from utilities import rmObjects
 
