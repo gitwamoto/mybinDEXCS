@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 5:51:27 PM
+# 2026/3/17 8:04:25 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -38,10 +38,17 @@ snappyHexMeshDict_path = os.path.join('system', 'snappyHexMeshDict')
 snappyHexMeshDict_3D_path = snappyHexMeshDict_path + '_3D'
 
 def handler(signum, frame):
+    if two_dimensional:
+        if os.path.isfile(blockMeshDict_3D_path):
+            os.rename(blockMeshDict_3D_path, blockMeshDict_path) # can overwrite
+        if os.path.isfile(snappyHexMeshDict_3D_path):
+            os.rename(snappyHexMeshDict_3D_path, snappyHexMeshDict_path) # can overwrite
     if os.path.isdir('0_bak'):
         if os.path.isdir('0'):
             shutil.rmtree('0')
         shutil.move('0_bak', '0')
+    rmObjects.removeInessentials()
+    sys.exit(1)
 
 def makeBlockMeshDict(max_cell_size, bounding_box, front_name, back_name):
     x_min = bounding_box[0] - 0.5*max_cell_size
@@ -218,39 +225,59 @@ if __name__ == '__main__':
     #   maxCellSize	10; // used to generate blockMeshDict
     #   boundingBox	((-150.0 -280.0 -30.0) (150.0 700.0 170.0)); // used to generate blockMeshDict
     # }
-    CUSTOM_OPTIONS = snappyHexMeshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'}])
+    CUSTOM_OPTIONS = snappyHexMeshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'}])['element']
     makeBlockMeshDict(
-        max_cell_size = float(
-            dictParse.find_element([{'type': 'dictionary', 'key': 'maxCellSize'}, {'except type': 'ignorable'}],
-                parent = CUSTOM_OPTIONS)['element']['value']),
+        max_cell_size = float(dictParse.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
+            {'except type': 'ignorable'}], parent = CUSTOM_OPTIONS)['element']['value']),
         bounding_box = [float(i['element']['value']) for i in
             dictParse.find_all_elements([{'type': 'dictionary', 'key': 'boundingBox'}, {'type': 'list'},
-                {'type': 'list'}, {'except type': 'ignorable|list_start|list_end'}],
-                parent = CUSTOM_OPTIONS)]
+                {'type': 'list'}, {'except type': 'ignorable|list_start|list_end'}], parent = CUSTOM_OPTIONS)]
         front_name = front_name, back_name = back_name)
 
+    # geometry
+    # {
+	#   // geometry_stl_block
+    #   STL_NAME.stl // stl_file_name
+    #   {
+    #     type triSurfaceMesh;
+    #     name STL_NAME; // geometry_stl_name
+    #   }
+    #   ...
     geometry_stl_name = None
     for b in snappyHexMeshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block'}]):
         if b['element']['key'].endswith('.stl'): # STLファイルは1つにまとめられていると仮定
-            geometry_stl = b['element']
+            geometry_stl_block = b['element']
             stl_file_name = b['element']['key']
-            n = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}], parent = b)['element']
+            n = dictParse.find_element([{'type': 'dictionary', 'key': 'name'},
+                {'except type': 'ignorable'}], parent = b['element'])['element']
             if n is not None:
-                geometry_stl_name = dictParse.find_element([{'except type': 'ignorable'}],
-                    parent = n)['element']['value'] # 最終的なパッチ名は nameの値 + _ + STL内のsolid名 になります。
+                geometry_stl_name = n['value'] # 最終的なパッチ名は nameの値 + _ + STL内のsolid名 になります。
             break
 
     if two_dimensional:
+        # castellatedMeshControls
+        # {
+        #   refinementSurfaces
+        #   {
+        #     STL_NAME // geometry_stl_name
+		#     {
+		#       regions
+		#       {
+		#         PATCH_NAME
+		#         {
+		#           level (0 1); // (min max)
+		#           patchInfo {type	empty;}
+		#         }
+        #         ...
         empty_list = []
         path_list = [{'type': 'block', 'key': 'castellatedMeshControls'},
             {'type': 'block', 'key': 'refinementSurfaces'}]
         if geometry_stl_name is not None:
-            path_list += [{'type': 'block', 'key': geometry_stl_name},
-                {'type': 'block', 'key': 'regions'}]
+            path_list += [{'type': 'block', 'key': geometry_stl_name}, {'type': 'block', 'key': 'regions'}]
         path_list.append({'type': 'block'})
         for b in reversed(snappyHexMeshDict.find_all_elements(path_list)):
             if dictParse.find_element([{'type': 'block', 'key': 'patchInfo'}, {'type': 'dictionary', 'key': 'type'},
-                {'except type': 'ignorable'}], parent = b)['element']['value'] == 'empty':
+                {'except type': 'ignorable'}], parent = b['element'])['element']['value'] == 'empty':
                 empty_list.append(b['key'])
                 del b['parent'][b['index']]
         stl_2D_file_name = os.path.splitext(stl_file_name)[0] + '_2D.stl'
@@ -263,7 +290,7 @@ if __name__ == '__main__':
                     should_write = False
                 elif should_write:
                     f.write(line)
-        geometry_stl['value'] = stl_2D_file_name
+        geometry_stl_block['value'] = stl_2D_file_name
         os.rename(snappyHexMeshDict_path, snappyHexMeshDict_3D_path) # can overwrite
         with open(snappyHexMeshDict_path, 'w') as f:
             f.write(dictParse.normalize(string = snappyHexMeshDict.file_string(pretty_print = True))[0])
@@ -389,8 +416,8 @@ if __name__ == '__main__':
                     os.rmtree(i0)
                 shutil.move(i0_bak, '0') # can't overwrite, 0_bak/i_name -> 0/i_name
                 parser = dictParse.DictParser2(file_name = i0) # i0 is file
-                for e in parser.find_all_elements([{'type': 'directive', 'key': '#include'}]):
-                    n = dictParse.find_element([{'type': 'string'}], parent = e['element'])
+                for i in parser.find_all_elements([{'type': 'directive', 'key': '#include'}]):
+                    n = dictParse.find_element([{'type': 'string'}], parent = i['element'])
                     if n['element']['value'].startswith('"../'):
                         n['element']['value'] = '"../' + n['element']['value'][1:]
                 string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
