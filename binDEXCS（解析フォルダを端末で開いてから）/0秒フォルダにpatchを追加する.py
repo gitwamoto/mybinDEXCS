@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/15 11:43:59 AM
+# 2026/3/17 10:30:34 PM
 
 # ---- オプションはない ----
 
@@ -26,16 +26,16 @@ def append_patches(src, dst):
     patches.sort(key = lambda p: p['element']['key'])
 
     linebreak = dictParse.DictParser2(string = '\n').elements[0]
-    for f in glob.iglob(os.path.join(dst, '*')):
-        if not os.path.isfile(f):
+    for f_path in glob.iglob(os.path.join(dst, '*')):
+        if not os.path.isfile(f_path):
             continue
-        os.chmod(f, 0o0666)
-        f_base = os.path.basename(f)
+        os.chmod(f_path, 0o0666)
+        f_base = os.path.basename(f_path)
         if f_base == 'cellToRegion':
             continue
 
-        print(f'{f}を処理中...')
-        parameter = dictParse.DictParser2(file_name = f)
+        print(f'{f_path}を処理中...')
+        parameter = dictParse.DictParser2(file_name = f_path)
 
         if f_base in ('k', 'epsilon', 'omega'):
             internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
@@ -142,9 +142,9 @@ def append_patches(src, dst):
 
         string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
         if parameter.string != string:
-#            os.rename(f, f + '_bak')
-            with open(f, 'w') as fp:
-                fp.write(string)
+#            os.rename(f_path, f_path + '_bak')
+            with open(f_path, 'w') as f:
+                f.write(string)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
