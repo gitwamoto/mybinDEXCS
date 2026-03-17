@@ -115,16 +115,12 @@ if __name__ == '__main__':
         patches = ' '.join(plist)
         sys.stdout.write('2次元メッシュに使う(z = {}にある)patchの名前を教えて下さい． ( {} の中から選択'.format(z_front, patches))
         if 'front' in plist:
-            front_name = input(', Enterのみ: front) > ').strip()
-            if front_name == '':
-                front_name = 'front'
+            front_name = input(', Enterのみ: front) > ').strip() or 'front'
         else:
             front_name = input(') > ').strip()
         sys.stdout.write('押し出したpatchの裏側にあるpatchの名前を決めて下さい． ( {} の中から選択'.format(patches))
         if 'back' in plist:
-            back_name = input(', Enterのみ: back) > ').strip()
-            if back_name == '':
-                back_name = 'back'
+            back_name = input(', Enterのみ: back) > ').strip() or 'back'
         else:
             back_name = input(') > ').strip()
         wedge = True if input('wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
