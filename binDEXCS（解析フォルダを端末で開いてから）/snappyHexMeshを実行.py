@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/15 11:44:22 AM
+# 2026/3/17 12:33:11 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -18,6 +18,8 @@
 # -p -> paraFoamを実行する
 # -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
 
+# DictParser2で書き直し済み
+
 import os
 import sys
 import signal
@@ -25,9 +27,9 @@ import subprocess
 import shutil
 import glob
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
 from utilities import folderTime
+from utilities import dictParse
 
 two_dimensional = False
 blockMeshDict_path = os.path.join('system', 'blockMeshDict')
@@ -220,7 +222,7 @@ if __name__ == '__main__':
     #   maxCellSize	10; // used to generate blockMeshDict
     #   boundingBox	((-150.0 -280.0 -30.0) (150.0 700.0 170.0)); // used to generate blockMeshDict
     # }
-    CUSTOM_OPTIONS = snappyHexMeshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'}]
+    CUSTOM_OPTIONS = snappyHexMeshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'}])
     makeBlockMeshDict(
         max_cell_size = float(
             dictParse.find_element([{'type': 'dictionary', 'key': 'maxCellSize'}, {'except type': 'ignorable'}],
@@ -232,10 +234,10 @@ if __name__ == '__main__':
         front_name = front_name, back_name = back_name)
 
     geometry_stl_name = None
-    for b in snappyHexMeshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block']):
+    for b in snappyHexMeshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block'}]):
         if b['element']['key'].endswith('.stl'): # STLファイルは1つにまとめられていると仮定
             geometry_stl = b['element']
-            stl_file_name = os.path.splitext(b['element']['key'])
+            stl_file_name = b['element']['key']
             n = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}], parent = b)['element']
             if n is not None:
                 geometry_stl_name = dictParse.find_element([{'except type': 'ignorable'}],
@@ -250,7 +252,7 @@ if __name__ == '__main__':
             path_list += [{'type': 'block', 'key': geometry_stl_name},
                 {'type': 'block', 'key': 'regions'}]
         path_list.append({'type': 'block'})
-        for b in reversed(snappyHexMeshDict.find_all_elements(path_list):
+        for b in reversed(snappyHexMeshDict.find_all_elements(path_list)):
             if dictParse.find_element([{'type': 'block', 'key': 'patchInfo'}, {'type': 'dictionary', 'key': 'type'},
                 {'except type': 'ignorable'}], parent = b)['element']['value'] == 'empty':
                 empty_list.append(b['key'])
@@ -352,10 +354,10 @@ if __name__ == '__main__':
             shutil.move('0', '0_bak')
         command = 'splitMeshRegions -cellZones -overwrite' 
         if subprocess.call(command, shell = True) != 0:
-            # 0
-            # +-- regionA
+            # 0/
+            # +-- regionA/
             # |   +-- cellToregion
-            # +-- regionB
+            # +-- regionB/
             # |   +-- cellToregion
             # :
             # +-- cellToregion
@@ -389,7 +391,7 @@ if __name__ == '__main__':
                     os.remove(i0)
                 elif os.path.isdir(i0):
                     os.rmtree(i0)
-                shutil.move(i0_bak, '0') # can't overwrite
+                shutil.move(i0_bak, '0') # can't overwrite, 0_bak/i_name -> 0/i_name
                 parser = dictParse.DictParser2(file_name = i0) # i0 is file
                 for e in parser.find_all_elements([{'type': 'directive', 'key': '#include'}]):
                     n = dictParse.find_element([{'type': 'string'}], parent = e['element'])
@@ -398,31 +400,36 @@ if __name__ == '__main__':
                 string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
                 for r in regions:
                     if not os.path.isdir(os.path.join('0_bak', r)):
-                        with open(os.path.join('0', r, i_name) as f:
+                        with open(os.path.join('0', r, i_name)) as f:
                             f.write(string)
             elif os.path.isdir(i0_bak) and os.path.isdir(i0):
                 for j0_bak in glob.iglob(os.path.join(i0_bak, '*')):
                     j_name = os.path.basename(j0_bak)
                     j0 = os.path.join(i0, j_name)
-                    if os.path.isfile(j0): # j0 = i0/j_nameというパスを持つファイルまたはフォルダを消す
+                    if os.path.isfile(j0): # j0 = 0_bak/i_name/jnameというパスを持つファイルまたはフォルダを消す
                         os.remove(j0)
                     elif os.path.isdir(j0):
                         os.rmtree(j0)
-                    shutil.move(j0_bak, i0) # can't overwrite
+                    shutil.move(j0_bak, i0) # can't overwrite, 0_bak/i_name/jname -> 0/i_name/j_name
         shutil.rmtree('0_bak')
-        ここまで
-        for d in glob.iglob(os.path.join('system', '*' + os.sep)):
-            fvSolution = os.path.join(d, 'fvSolution')
-            if os.path.isfile(fvSolution):
-                dp = DictParser(fvSolution)
-                while len(dp.contents) > 0:
-                    if type(dp.contents[0]) is str or dp.contents[0].key() == 'FoamFile':
-                        del dp.contents[0]
-                    else:
-                        break
-                if len(dp.contents) == 0:
-                    shutil.copy(os.path.join('system', 'fvSolution'), d) # can overwrite
-                    shutil.copy(os.path.join('system', 'fvSchemes'), d) # can overwrite
+        for r in glob.iglob(os.path.join('system', '*' + os.sep)):
+            # system/
+            # +-- regionA/
+            # |   +-- fvSolution
+            # |   +-- fvSchemes
+            # +-- regionB/
+            # |   +-- fvSolution
+            # :   +-- fvSchemes
+            fvSolution_path = os.path.join(r, 'fvSolution')
+            if os.path.isfile(fvSolution_path):
+                parser = dictParse.DictParser2(file_name = fvSolution_path)
+                contents = parser.find_all_elements([{'except type': 'ignorable|separator'}])
+                for c in contents:
+                    if c['element']['type'] == 'block' and c['element']['key'] == 'FoamFile':
+                        del c['parent'][c['index']]
+                if len(contents) == 0:
+                    shutil.copy(os.path.join('system', 'fvSolution'), r) # can overwrite
+                    shutil.copy(os.path.join('system', 'fvSchemes'), r) # can overwrite
         misc.correctLocation()
     elif os.path.isfile(regionProperties_path):
         os.remove(regionProperties_path)
