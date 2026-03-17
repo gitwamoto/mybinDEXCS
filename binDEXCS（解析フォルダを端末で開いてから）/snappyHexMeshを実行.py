@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 12:33:11 PM
+# 2026/3/17 5:51:27 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -203,16 +203,12 @@ if __name__ == '__main__':
                 break
             except ValueError:
                 pass
-        two_dimensional = True if input('\n2次元メッシュを作りますか？\n' +
-            '*** 2次元メッシュでは，empty境界はx-y平面に平行でなければならなりません． (y/n) > '
+        two_dimensional = True if input('\n2次元メッシュを作りますか？\n'
+            '*** 2次元メッシュでは，empty境界がx-y平面に平行でないといけません． (y/n) > '
             ).strip().lower() == 'y' else False
         if two_dimensional:
-            front_name = input('(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
-            if front_name == '':
-                front_name = 'front'
-            back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
-            if back_name == '':
-                back_name = 'back'
+            front_name = input('(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip() or 'front'
+            back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip() or 'back'
     domains = min(domains, threads)
 
     snappyHexMeshDict = dictParse.DictParser2(file_name = snappyHexMeshDict_path)
@@ -333,7 +329,7 @@ if __name__ == '__main__':
         with open(boundary_path, 'w') as f:
             f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
 
-    misc.convertLengthUnitInMillimeterToMeter()
+    misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     if two_dimensional:
         command = 'flattenMesh'

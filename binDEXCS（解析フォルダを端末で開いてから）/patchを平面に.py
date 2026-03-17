@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:04:39 PM
+# 2026/3/17 5:40:38 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -208,7 +208,7 @@ if __name__ == '__main__':
                 'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
                 ).strip().lower() == 'y' else False
         if scaleMesh_0p001:
-            misc.convertLengthUnitInMillimeterToMeter()
+            misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
 

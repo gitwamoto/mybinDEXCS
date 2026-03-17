@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 12:33:16 PM
+# 2026/3/17 5:40:25 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -86,8 +86,11 @@ if __name__ == '__main__':
             except ValueError:
                 pass
         two_dimensional = True if input('\ncartesian2DMeshで2次元メッシュを作りますか？\n'
-            '*** 2次元メッシュでは，empty境界はx-y平面に平行でなければならなりません． (y/n) > '
+            '*** 2次元メッシュでは，empty境界がx-y平面に平行でないといけません． (y/n) > '
             ).strip().lower() == 'y' else False
+        if two_dimensional:
+            front_name = input('(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip() or 'front'
+            back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip() or 'back'
     domains = min(domains, threads)
 
     meshDict = dictParse.DictParser2(file_name = meshDict_path)
@@ -167,13 +170,6 @@ if __name__ == '__main__':
     if two_dimensional:
         os.rename(meshDict_path, meshDict_path + '_2D') # can overwrite
         os.rename(meshDict_3D_path, meshDict_path) # can overwrite
-        if interactive:
-            front_name = input('(zが大きい)前側patchの名前を決めて下さい． (Enterのみ: front) > ').strip()
-            if front_name == '':
-                front_name = 'front'
-            back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip()
-            if back_name == '':
-                back_name = 'back'
         boundary.find_element(
             [{'type': 'list'}, {'type': 'block', 'key': 'topEmptyFaces'}])['element']['key'] = front_name
         boundary.find_element(
@@ -197,7 +193,7 @@ if __name__ == '__main__':
             with open(boundary_path, 'w') as f:
                 f.write(string)
 
-    misc.convertLengthUnitInMillimeterToMeter()
+    misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     if two_dimensional:
         command = 'flattenMesh'

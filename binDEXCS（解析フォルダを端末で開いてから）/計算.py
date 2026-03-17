@@ -469,7 +469,7 @@ if __name__ == '__main__':
             rmObjects.removeProcessorDirs('' if not os.path.isdir(os.path.join('processor0', latest_time))
                 else 'noLatest')
 
-    renumberMesh_was_done = misc.wasRenumberMeshDone()
+    renumberMesh_was_done = misc.isRenumberMeshDone()
     if not renumberMesh_was_done:
         misc.renumberMesh()
 

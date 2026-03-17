@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # ミリをメートルに.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:04:53 PM
+# 2026/3/17 5:40:52 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     if misc.isConvertedMillimeterIntoMeter():
         print('長さの単位はすでにメートルです．')
     else:
-        misc.convertLengthUnitInMillimeterToMeter()
+        misc.convertMillimeterIntoMeter()
 
     if interactive:
         exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(

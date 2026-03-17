@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/3/10 9:21:08 AM
+# 2026/3/17 5:40:12 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     if converted_millimeter_into_meter:
         misc.writeConvertedMillimeterIntoMeter()
     elif scaleMesh_0p001:
-        misc.convertLengthUnitInMillimeterToMeter()
+        misc.convertMillimeterIntoMeter()
 
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()

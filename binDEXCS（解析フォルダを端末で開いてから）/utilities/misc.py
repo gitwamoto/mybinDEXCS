@@ -32,9 +32,9 @@ assert dexcs_version is not None
 
 def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
     # https://qiita.com/PruneMazui/items/8a023347772620025ad6
-    print('\033[7;1m----- 現在の解析フォルダは {} です． -----\033[m'.format(path))
+    print(f'\033[7;1m----- 現在の解析フォルダは {path} です． -----\033[m')
     # https://joppot.info/2013/12/17/235, http://tldp.org/HOWTO/Xterm-Title-3.html
-    print('\033]2;{} - {}\007'.format(path, os.path.basename(file)))
+    print(f'\033]2;{path} - {os.path.basename(file)}\007')
 
 def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
     for f in glob.iglob('*.OpenFOAM' if dexcs_version == '2019' else '*.foam'):
@@ -64,8 +64,8 @@ def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0):
     paraview_json_home = os.path.expanduser('~/.config/ParaView/ParaView-UserSettings.json')
     with open(paraview_json_home, 'r') as f:
         s = f.read()
-    t = re.sub(r'"Ambient"\s*:\s*[0-9.]+', '"Ambient" : {}'.format(ambient),
-            re.sub(r'"Diffuse"\s*:\s*[0-9.]+', '"Diffuse" : {}'.format(diffuse), s))
+    t = re.sub(r'"Ambient"\s*:\s*[0-9.]+', f'"Ambient" : {ambient}',
+            re.sub(r'"Diffuse"\s*:\s*[0-9.]+', '"Diffuse" : {diffuse}', s))
     if s != t:
         with open(paraview_json_home, 'w') as f:
             f.write(t)
@@ -76,17 +76,16 @@ def execCheckMesh():
             os.remove(f)
     command = 'checkMesh -noFunctionObjects | tee checkMesh.log'
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
-    print('{}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m'.format(command))
+    print(f'{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m')
 
 def setTimeBeginEnd(action):
     first_time = float(folderTime.firstTime())
     latest_time = float(folderTime.latestTime())
     while True:
-        time_begin = (raw_input if sys.version_info.major <= 2 else input)(
-            '{}を開始する時間を入力して下さい． ({} ~ {} または l (= {}), Enterのみ: {}) > '.format(
-            action, first_time, latest_time, latest_time, first_time)).strip()
+        time_begin = input(f'{action}を開始する時間を入力して下さい． '
+            f'({first_time} ~ {latest_time} または l (= {latest_time}), Enterのみ: {first_time}) > ').strip()
         if time_begin == '':
             time_begin = '-inf'
             break
@@ -100,8 +99,7 @@ def setTimeBeginEnd(action):
             except ValueError:
                 pass
     while True:
-        time_end = (raw_input if sys.version_info.major <= 2 else input)(
-            '{}を終了する時間を入力して下さい． (Enterのみ: {}) > '.format(action, latest_time)).strip()
+        time_end = input(f'{action}を終了する時間を入力して下さい． (Enterのみ: {latest_time}) > ').strip()
         if time_end == '':
             time_end = 'inf'
             break
@@ -158,19 +156,23 @@ def removePatchesHavingNoFaces():
     if os.path.isfile(createPatchDict):
         os.rename(createPatchDict, createPatchDict_bak)
     with open(createPatchDict, 'w') as f:
-        f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-        f.write('\tlocation\t"system";\n')
-        f.write('\tobject\tcreatePatchDict;\n')
-        f.write('}\n')
-        f.write('pointSync\tfalse;\n')
-        f.write('patches\t();\n')
+        f.write('FoamFile\n'
+            '{\n'
+            '\tversion\t2.0;\n'
+            '\tformat\tascii;\n'
+            '\tclass\tdictionary;\n'
+            '\tlocation\t"system";\n'
+            '\tobject\tcreatePatchDict;\n'
+            '}\n'
+            'pointSync\tfalse;\n'
+            'patches\t();\n')
     command = 'createPatch -overwrite'
     r = subprocess.call(command, shell = True)
     os.remove(createPatchDict)
     if os.path.isfile(createPatchDict_bak):
         os.rename(createPatchDict_bak, createPatchDict)
     if r != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     if converted_millimeter_into_meter:
         writeConvertedMillimeterIntoMeter()
@@ -202,16 +204,16 @@ def writeConvertedMillimeterIntoMeter():
     with open(boundary, 'w') as f:
         f.write(s)
 
-def convertLengthUnitInMillimeterToMeter():
+def convertMillimeterIntoMeter():
     command = 'transformPoints -scale 0.001'
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     writeConvertedMillimeterIntoMeter()
     print('長さの単位をミリメートルからメートルに変換しました．')
 
-def wasRenumberMeshDone():
+def isRenumberMeshDone():
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     with open(boundary, 'r') as f:
         s = f.read()
@@ -242,7 +244,7 @@ def renumberMesh():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
     command = 'renumberMesh -overwrite'
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     writeRenumberMeshWasDone()

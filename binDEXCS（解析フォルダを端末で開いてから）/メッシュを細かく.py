@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2025/6/10 5:04:59 PM
+# 2026/3/17 5:41:02 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -203,7 +203,7 @@ if __name__ == '__main__':
                 'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
                 ).strip().lower() == 'y' else False
         if scaleMesh_0p001:
-            misc.convertLengthUnitInMillimeterToMeter()
+            misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
 
