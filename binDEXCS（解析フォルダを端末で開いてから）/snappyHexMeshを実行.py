@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 8:04:25 PM
+# 2026/3/17 9:51:28 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -386,12 +386,12 @@ if __name__ == '__main__':
             # +-- cellToregion
             print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
-        regions = [os.path.basename(os.path.dirname(i))
-            for i in glob.iglob(os.path.join('constant', '*' + os.sep)) if os.path.isdir(i + 'polyMesh')]
+        regions = sorted([os.path.basename(os.path.dirname(i))
+            for i in glob.iglob(os.path.join('constant', '*' + os.sep)) if os.path.isdir(i + 'polyMesh')])
         if interactive:
             fluid_regions = input(' '.join(regions) +
                 ' の中から，流体側の領域名全てをスペース区切りで指定して下さい． > ').split()
-        solid_regions = list(set(regions)^set(fluid_regions))
+        solid_regions = sorted(list(set(regions) - set(fluid_regions)))
         with open(regionProperties_path, 'w') as f:
             f.write('FoamFile\n'
                 '{\n'
