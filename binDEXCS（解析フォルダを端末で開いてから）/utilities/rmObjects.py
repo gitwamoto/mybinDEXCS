@@ -17,7 +17,7 @@ def removeInessentials():
     for path in (os.curdir, dir_name, os.path.normpath(os.path.join(dir_name, os.pardir))):
         for curDir, dirs, files in os.walk(path):
             for name in files:
-                if re.match('\._.+|[._]+DS_Store', name):
+                if re.match(r'\._.+|[._]+DS_Store', name):
                     os.remove(os.path.join(curDir, name))
     try:
         if os.path.isdir('dynamicCode'):
