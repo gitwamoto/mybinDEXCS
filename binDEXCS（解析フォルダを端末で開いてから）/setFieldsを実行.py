@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 11:08:33 PM
+# 2026/3/17 11:40:35 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -85,7 +85,6 @@ if __name__ == '__main__':
 
     setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
 
-    fields_set = set()
     fieldValues = (
         setFieldsDict.find_all_elements(
             [{'type': 'dictionary', 'key': 'defaultFieldValues'}, {'type': 'list'},
@@ -94,15 +93,7 @@ if __name__ == '__main__':
             [{'type': 'dictionary', 'key': 'regions'}, {'type': 'list'}, {'type': 'block'},
             {'type': 'dictionary', 'value': 'fieldValues'}, {'type': 'list'},
             {'except type': 'ignorable|list_start|list_end'}]))
-    i = 0
-    while i < len(fieldValues):
-        if (fieldValues[i]['element']['type'] == 'word' and
-            fieldValues[i]['element']['value'] in ('volScalarFieldValue', 'volVectorFieldValue')):
-            fields_set.add(fieldValues[i + 1]['element']['value'])
-            i += 3
-        else:
-            i += 1
-    fields_set = sorted(list(fields_set))
+    fields_set = sorted({fieldValues[i]['element']['value'] for i in range(1, len(fieldValues), 3)}) # list
 
     for i in fields_set:
         i = os.path.join('0', i)

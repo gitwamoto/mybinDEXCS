@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 9:51:28 PM
+# 2026/3/17 11:40:08 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -391,7 +391,7 @@ if __name__ == '__main__':
         if interactive:
             fluid_regions = input(' '.join(regions) +
                 ' の中から，流体側の領域名全てをスペース区切りで指定して下さい． > ').split()
-        solid_regions = sorted(list(set(regions) - set(fluid_regions)))
+        solid_regions = sorted(set(regions) - set(fluid_regions)) # list
         with open(regionProperties_path, 'w') as f:
             f.write('FoamFile\n'
                 '{\n'
