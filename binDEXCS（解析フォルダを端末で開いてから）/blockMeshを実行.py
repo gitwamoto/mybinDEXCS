@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 # blockMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/10 9:25:39 AM
+# 2026/3/17 8:37:45 PM
 
-import os
 import sys
 import signal
 import subprocess
@@ -16,12 +15,9 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    if os.path.isdir('dynamicCode'):
-        shutil.rmtree('dynamicCode')
-
     command = 'blockMesh'
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
