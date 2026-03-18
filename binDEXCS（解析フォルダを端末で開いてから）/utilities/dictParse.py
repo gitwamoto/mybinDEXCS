@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/15 11:46:16 AM
+# 2026/3/18 7:18:59 PM
 
 import sys
 import os
@@ -778,7 +778,7 @@ class DictParser2:
         r'(?P<line_comment>//.*)' '|'
         r'(?P<block_comment>/\*[\s\S]*?\*/)' '|' # [\s\S]*?の?がないと\*/も[\s\S]*が取り込んでしまう
         r'(?P<code>#\{[\s\S]*?#\})' '|' # block_startよりも前！
-        r'(?P<string>"([^"\\]|\\.)*")' '|'
+        r'(?P<string>"(?:[^"\\]|\\.)*")' '|'
         r'(?P<directive>#[^{}][a-zA-Z]*)' '|'
         r'(?P<word>(?:[a-zA-Z_$](?:[a-zA-Z0-9_.:,*]|/(?![/*]))*(?:\([^\s\n;]*\))?)+)' '|'
         # /(?![/*])で行コメントやブロックコメントの始まりを排除
