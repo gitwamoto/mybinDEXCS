@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を取り除く.py
 # by Yukiharu Iwamoto
-# 2026/3/9 8:44:02 PM
+# 2026/3/18 7:06:36 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -33,9 +33,7 @@ def remove_include_sentence(dir_name, include_file_name, ignore_path):
             continue
         print('{}を処理中...'.format(f))
         parser = dictParse.DictParser2(file_name = f)
-        for i in reversed(parser.find_all_elements([{'type': 'directive'}])):
-            if i['element']['key'] != '#include':
-                continue
+        for i in reversed(parser.find_all_elements([{'type': 'directive', 'key': '#include'}])):
             n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['element']['value'].strip('"')
             if ignore_path:
                 n = re.sub(r'^(?:\.\./)+', '', n)
