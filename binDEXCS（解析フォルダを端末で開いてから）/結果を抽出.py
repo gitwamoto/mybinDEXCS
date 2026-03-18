@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/3/9 1:08:59 PM
+# 2026/3/18 9:54:51 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -20,7 +20,6 @@ import os
 import shutil
 from utilities import misc
 from utilities import setFuncsInCD
-from utilities import folderTime
 from utilities import dictFormat
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
@@ -33,7 +32,7 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict):
-    fields = ' '.join(misc.volFieldList(folderTime.latestTime()))
+    fields = ' '.join(misc.volFieldList(misc.latestTime()))
     patches = ' '.join(listFile.patchList())
     a = (
         'setSampling // postProcessingフォルダ内に作られるフォルダの名前\n' +

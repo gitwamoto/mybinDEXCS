@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/3/17 12:41:19 PM
+# 2026/3/18 9:53:15 AM
 
 # DictParser2で書き直し済み
 
@@ -17,7 +17,6 @@ import numpy as np
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
 # }
-import folderTime
 import setFuncsInCD
 
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
@@ -81,8 +80,8 @@ def execCheckMesh():
     print(f'{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m')
 
 def setTimeBeginEnd(action):
-    first_time = float(folderTime.firstTime())
-    latest_time = float(folderTime.latestTime())
+    first_time = float(firstTime())
+    latest_time = float(latestTime())
     while True:
         time_begin = input(f'{action}を開始する時間を入力して下さい． '
             f'({first_time} ~ {latest_time} または l (= {latest_time}), Enterのみ: {first_time}) > ').strip()
@@ -337,6 +336,28 @@ def volFieldList(path = os.curdir):
             if vol_field:
                 fields.append(i)
     return fields
+
+def firstTime(path = os.curdir):
+    t = timesFolders(path)
+    return None if len(t) == 0 else t[0]
+
+def latestTime(path = os.curdir):
+    t = timesFolders(path)
+    return None if len(t) == 0 else t[-1]
+
+def timesFolders(path = os.curdir):
+    times = []
+    for i in os.listdir(path):
+        if os.path.isdir(os.path.join(path, i)):
+            try:
+                times.append([i, float(i)])
+            except:
+                pass
+    return [i[0] for i in sorted(times, key = lambda x: x[1])]
+
+if __name__ == '__main__':
+    print('firstTime = ' + firstTime())
+    print('latestTime = ' + latestTime())
 
 if __name__ == '__main__':
 #    showDirForPresentAnalysis()

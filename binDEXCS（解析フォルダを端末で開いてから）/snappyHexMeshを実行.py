@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 11:40:08 PM
+# 2026/3/18 9:52:50 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -28,7 +28,6 @@ import shutil
 import glob
 from utilities import misc
 from utilities import rmObjects
-from utilities import folderTime
 from utilities import dictParse
 
 two_dimensional = False
@@ -191,7 +190,7 @@ if __name__ == '__main__':
     if not os.path.isfile(snappyHexMeshDict_path):
         print(f'エラー: {snappyHexMeshDict_path}ファイルがありません．')
         sys.exit(1)
-    if float(folderTime.latestTime()) != 0.0:
+    if float(misc.latestTime()) != 0.0:
         print('エラー: 0秒以外のフォルダがあるとうまくいきません．')
         sys.exit(1)
     if os.path.isdir('dynamicCode'):

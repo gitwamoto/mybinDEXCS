@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/3/13 6:28:59 PM
+# 2026/3/18 9:55:04 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -35,7 +35,6 @@ import numpy as np
 from utilities import misc
 from utilities.dictParse import DictParser, DictParserList
 from utilities import dictFormat
-from utilities import folderTime
 from utilities import appendEntries
 from utilities import rmObjects
 
@@ -227,7 +226,7 @@ def calculate_idle(x):
             if os.path.exists(regionProperties):
                 command += ' -allRegions'
             subprocess.call(command, shell = True)
-        latest_time = folderTime.latestTime()
+        latest_time = misc.latestTime()
         if float(latest_time) > 0.0:
             with open(os.path.join(latest_time, idle_calc_report_txt), 'w') as f:
                 f.write('datetime: ' + date_time_now + '\n')
@@ -449,7 +448,7 @@ if __name__ == '__main__':
         if os.path.exists(regionProperties):
             command += ' -allRegions'
         subprocess.call(command, shell = True)
-    latest_time = folderTime.latestTime()
+    latest_time = misc.latestTime()
     if latest_time is None:
         print('エラー: 結果フォルダがありません．')
         if os.path.isdir('0_bak'):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2026/3/9 1:09:11 PM
+# 2026/3/18 9:49:10 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -23,7 +23,6 @@ import glob
 import shutil
 import re
 from utilities import misc
-from utilities import folderTime
 from utilities import rmObjects
 
 def handler(signum, frame):
@@ -71,7 +70,7 @@ if __name__ == '__main__':
 
     if interactive:
         patches = ' '.join(listFile.patchList())
-        fields = ' '.join(misc.volFieldList(folderTime.latestTime()))
+        fields = ' '.join(misc.volFieldList(misc.latestTime()))
         ans = True if (raw_input if sys.version_info.major <= 2 else input)(
             '面積平均を行いますか？ (y/n) > ').strip().lower() == 'y' else False
         if ans:

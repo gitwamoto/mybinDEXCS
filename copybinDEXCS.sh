@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/3/10 8:24:51 PM
+# 2026/3/18 10:05:02 AM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -81,6 +81,7 @@ fi
 
 rm -f "Desktop/$binDEXCS/utilities/showDir.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
 rm -f "Desktop/$binDEXCS/utilities/listFile.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
+rm -f "Desktop/$binDEXCS/utilities/folderTime.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
@@ -117,23 +118,59 @@ done
 if [ "$trial" -eq 2 ]; then
 	[ ! -d "Desktop/$binDEXCS/utilities" ] && mkdir -p "Desktop/$binDEXCS/utilities"
 	[ ! -d "Desktop/$binDEXCS" ] && mkdir -p "Desktop/$binDEXCS"
-	for f in '0_OPENFOAMメモ.pdf' '0秒フォルダにpatchを追加する.py' '0秒以外のフォルダを消す.py' \
-		'0秒以外を除いてコピーを作る.py' '2次元メッシュに.py' 'Qと渦度を求める.py' \
-		'blockMeshを実行.py' 'cartesianMeshを実行.py' 'improveMeshQualityを実行.py' \
-		'include文を取り除く.py' 'include文を差し込む.py' 'logファイルをプロット.py' \
-		'paraFoamを実行.py' 'patchを平面に.py' 'patchをまとめる.py' \
-		'patchの面積平均または積分.py' 'setFieldsを実行.py' 'snappyHexMeshを実行.py' \
-		'texteditwx.py' 'yPlusを求める.py' '計算.py' 'インデント.py' '結果を抽出.py' \
-		'流量を求める.py' '連続計算雛形.py' '乱流量を求める.py' 'ミリをメートルに.py' \
-		'メッシュを細かく.py' '境界条件あれこれ.txt' '他の結果からコピー.py' '壁面熱流束を求める.py' \
-		'時間平均流れ場を作る.py' '並列計算結果をまとめる.py' '境界条件の雛形をコピー.py' \
-		'壁面せん断応力を求める.py' '力と力のモーメントを求める.py' '半角に出来る文字は全て半角に.py' \
-		'格子点数と領域の大きさを調べる.py'; do
+#		"PlotRunner.py" \ をpatchを平面に.pyの次の行に入れる予定
+	for f in "0_OPENFOAMメモ.pdf" \
+		"0秒フォルダにpatchを追加する.py" \
+		"0秒以外のフォルダを消す.py" \
+		"0秒以外を除いてコピーを作る.py" \
+		"2次元メッシュに.py" \
+		"blockMeshを実行.py" \
+		"cartesianMeshを実行.py" \
+		"improveMeshQualityを実行.py" \
+		"include文を差し込む.py" \
+		"include文を取り除く.py" \
+		"logファイルをプロット.py" \
+		"paraFoamを実行.py" \
+		"patchの面積平均または積分.py" \
+		"patchをまとめる.py" \
+		"patchを平面に.py" \
+		"Qと渦度を求める.py" \
+		"setFieldsを実行.py" \
+		"snappyHexMeshを実行.py" \
+		"texteditwx.py" \
+		"utilities" \
+		"yPlusを求める.py" \
+		"インデント.py" \
+		"ミリをメートルに.py" \
+		"メッシュを細かく.py" \
+		"格子点数と領域の大きさを調べる.py" \
+		"境界条件あれこれ.txt" \
+		"境界条件の雛形をコピー.py" \
+		"計算.py" \
+		"結果を抽出.py" \
+		"時間平均流れ場を作る.py" \
+		"他の結果からコピー.py" \
+		"半角に出来る文字は全て半角に.py" \
+		"並列計算結果をまとめる.py" \
+		"壁面せん断応力を求める.py" \
+		"壁面熱流束を求める.py" \
+		"乱流量を求める.py" \
+		"流量を求める.py" \
+		"力と力のモーメントを求める.py" \
+		"連続計算雛形.py"; do
 		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS/$f" "Desktop/$binDEXCS/$f"
 	done
-	for f in '__init__.py' 'appendEntries.py' 'dakuten.py' 'dictFormat.py' 'dictParse.py' \
-		'findMaxMin.py' 'folderTime.py' 'misc.py' 'ofpolymesh.py' 'rmObjects.py' \
-		'setComment.py' 'setFuncsInCD.py'; do
+	for f in "__init__.py" \
+		"dictParse.py" \
+		"rmObjects.py" \
+		"appendEntries.py" \
+		"findMaxMin.py" \
+		"setComment.py" \
+		"dakuten.py" \
+		"misc.py" \
+		"setFuncsInCD.py" \
+		"dictFormat.py" \
+		"ofpolymesh.py"; do
 		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS/utilities/$f" \
 			"Desktop/$binDEXCS/utilities/$f"
 	done

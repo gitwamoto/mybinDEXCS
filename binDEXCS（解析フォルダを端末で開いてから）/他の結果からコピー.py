@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2021/7/21 2:51:20 PM
+# 2026/3/18 9:54:14 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -16,7 +16,6 @@ import sys
 import shutil
 from utilities import misc
 from utilities.dictParse import DictParser, DictParserList
-from utilities import folderTime
 from utilities import rmObjects
 
 if __name__ == '__main__':
@@ -52,13 +51,13 @@ if __name__ == '__main__':
         sys.exit(1)
     startFrom = startFrom[0]
     if startFrom == 'latestTime':
-        start_from = folderTime.latestTime()
+        start_from = misc.latestTime()
         if start_from is None:
             print('エラー: 結果フォルダがありません．')
             sys.exit(1)
         start_from = 'latestTime = ' + start_from
     elif startFrom == 'firstTime':
-        start_from = folderTime.firstTime()
+        start_from = misc.firstTime()
         if start_from is None:
             print('エラー: 結果フォルダがありません．')
             sys.exit(1)

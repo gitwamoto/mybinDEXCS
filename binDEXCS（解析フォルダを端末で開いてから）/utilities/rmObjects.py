@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:45:32 AM
+# 2026/3/18 9:53:57 AM
 
 import os
 import glob
@@ -10,7 +10,6 @@ import re
 import shutil
 import sys
 import filecmp
-import folderTime
 
 def removeInessentials():
     dir_name = os.path.dirname(__file__)
@@ -49,7 +48,7 @@ def removeProcessorDirs(option = '', path = os.curdir):
             if pat.match(p):
                 shutil.rmtree(p)
     else:
-        latest_time = folderTime.latestTime(path)
+        latest_time = misc.latestTime(path)
         if latest_time is None:
             return
         latest_time = float(latest_time)
@@ -80,7 +79,7 @@ def removeProcessorDirs(option = '', path = os.curdir):
                     pass
 
 def removeResultDirsWoZeroAndLatest(path = os.curdir):
-    latest_time = folderTime.latestTime(path)
+    latest_time = misc.latestTime(path)
     if latest_time is None:
         return
     latest_time = float(latest_time)
