@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/1/15 1:28:20 PM
+# 2026/3/19 8:16:22 PM
 
 import os
 import signal
@@ -13,17 +13,14 @@ import glob
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 if path_binDEXCS not in sys.path:
     sys.path.append(path_binDEXCS)
-from utilities.dictParse import DictParser, DictParserList
-from utilities import dictFormat
 from utilities import appendEntries
-from utilities import ofpolymesh
-from utilities import folderTime
-from utilities import rmObjects
 from utilities import dakuten
-from utilities import listFile
-from utilities import setComment
+from utilities import dictParse
 from utilities import findMaxMin
 from utilities import misc
+from utilities import ofpolymesh
+from utilities import rmObjects
+from utilities import setComment
 from utilities import setFuncsInCD
 
 regions = 32 # 分割領域
