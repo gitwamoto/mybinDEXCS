@@ -24,21 +24,21 @@ from utilities import listFile
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
 
-#def inverse_power_method(A, eps = 1.0e-10):
-#    # A.r = lambda*r
-#    # A^^(-1).r = 1/lambda*r
-#    A_inv = np.linalg.inv(A)
-#    r = np.ones(A.shape[0])/math.sqrt(A.shape[0])
-#    ev_min = float('inf')
-#    while True:
-#        Ar = np.dot(A_inv, r)
-#        r = Ar/np.linalg.norm(Ar)
-#        ev_min_old = ev_min
-#        ev_min = 1.0/np.dot(r, Ar)
-#        if abs(1.0 - ev_min_old/ev_min) < eps:
-#            return ev_min, r
-#
 #def flatten(points):
+#    def inverse_power_method(A, eps = 1.0e-10):
+#        # A.r = lambda*r
+#        # A^^(-1).r = 1/lambda*r
+#        A_inv = np.linalg.inv(A)
+#        r = np.ones(A.shape[0])/math.sqrt(A.shape[0])
+#        ev_min = float('inf')
+#        while True:
+#            Ar = np.dot(A_inv, r)
+#            r = Ar/np.linalg.norm(Ar)
+#            ev_min_old = ev_min
+#            ev_min = 1.0/np.dot(r, Ar)
+#            if abs(1.0 - ev_min_old/ev_min) < eps:
+#                return ev_min, r
+#
 #    # obtain a plane
 #    # n[0]*(points[0] - gc[0]) + n[1]*(points[1] - gc[1]) + n[2]*(points[2] - gc[2]) = 0
 #    # by the least square method
@@ -85,10 +85,10 @@ if __name__ == '__main__':
                 value = float(sys.argv[i])
             i += 1
 
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    faces = os.path.join('constant', 'polyMesh', 'faces')
-    points = os.path.join('constant', 'polyMesh', 'points')
-    for i in (boundary, faces, points):
+    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+    faces_path = os.path.join('constant', 'polyMesh', 'faces')
+    points_path = os.path.join('constant', 'polyMesh', 'points')
+    for i in (boundary_path, faces_path, points_path):
         if not os.path.isfile(i):
             print('エラー: {}ファイルがありません．'.format(i))
             sys.exit(1)
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         value = float(ans[1])
 
     nFaces = startFace = -1
-    dp = DictParser(boundary)
+    dp = DictParser(boundary_path)
     s_old = dp.toString()
     for a in dp.contents:
         if DictParserList.isType(a, DictParserList.LISTP):
@@ -134,10 +134,10 @@ if __name__ == '__main__':
         sys.exit(1)
     s = dp.toString()
     if s != s_old:
-        with open(boundary, 'w') as f:
+        with open(boundary_path, 'w') as f:
             f.write(s)
 
-    with open(faces, 'r') as f:
+    with open(faces_path, 'r') as f:
         s = f.read()
     ph = s.find('(') + 1
     pf = s.rfind(')')
@@ -172,7 +172,7 @@ if __name__ == '__main__':
             faces_data.append(np.fromstring(i, dtype = 'u4', sep = ' '))
     faces_data = list(set([j for i in faces_data[startFace:startFace + nFaces] for j in i]))
 
-    with open(points, 'r') as f:
+    with open(points_path, 'r') as f:
         s = f.read()
     ph = s.find('(') + 1
     pf = s.rfind(')')
@@ -181,8 +181,8 @@ if __name__ == '__main__':
         points_data = np.fromstring(s[ph:ph + 8*3*n], dtype = '<d').reshape(-1, 3)
         points_data[faces_data, coordinate] = value
 #        points_data[faces_data] = flatten(points_data[faces_data])
-#        os.rename(points, points + '_bak')
-        with open(points, 'wb') as f: # can overwrite
+#        os.rename(points_path, points_path + '_bak')
+        with open(points_path, 'wb') as f: # can overwrite
             f.write(s[:ph])
             points_data.astype('<d').tofile(f)
             f.write(s[pf:])
@@ -192,8 +192,8 @@ if __name__ == '__main__':
         points_data = np.fromstring(s[ph:pf].replace('(', '').replace(')', ''), dtype = 'd', sep = ' ').reshape(-1, 3)
         points_data[faces_data, coordinate] = value
 #        points_data[faces_data] = flatten(points_data[faces_data])
-#        os.rename(points, points + '_bak')
-        with open(points, 'w') as f: # can overwrite
+#        os.rename(points_path, points_path + '_bak')
+        with open(points_path, 'w') as f: # can overwrite
             f.write(s[:ph])
             for i in points_data:
                 f.write('({} {} {})\n'.format(i[0], i[1], i[2]))
@@ -201,7 +201,7 @@ if __name__ == '__main__':
 
     if not converted_millimeter_into_meter:
         if interactive:
-            box = misc.bounding_box_of_calculation_range(points)[1]
+            box = misc.bounding_box_of_calculation_range(points_path)[1]
             print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
                 box[0][0], box[0][1], box[1][0], box[1][1], box[2][0], box[2][1]))
             scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
