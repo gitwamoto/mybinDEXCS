@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:54:14 AM
+# 2026/4/3 10:55:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     controlDict = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict):
-        print('エラー: %sファイルがありません．' % controlDict)
+        print(f'エラー: ファイル {controlDict} がありません．')
         sys.exit(1)
 
     dp_controlDict = DictParser(controlDict)

@@ -90,7 +90,7 @@ if __name__ == '__main__':
     points_path = os.path.join('constant', 'polyMesh', 'points')
     for i in (boundary_path, faces_path, points_path):
         if not os.path.isfile(i):
-            print('エラー: {}ファイルがありません．'.format(i))
+            print(f'エラー: ファイル {i} がありません．')
             sys.exit(1)
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 

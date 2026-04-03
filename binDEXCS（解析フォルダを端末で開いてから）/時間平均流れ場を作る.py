@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:54:37 AM
+# 2026/4/3 10:55:45 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     controlDict = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict):
-        print('エラー: {}ファイルがありません．'.format(controlDict))
+        print(f'エラー: ファイル {controlDict} がありません．')
         sys.exit(1)
 
     fieldAverage_related_files_txt = os.path.join('postProcessing', '_fieldAverage_related_files.txt')

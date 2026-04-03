@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:55:04 AM
+# 2026/4/3 10:56:35 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -410,9 +410,9 @@ if __name__ == '__main__':
                 domains = max(int(sys.argv[i]), 1)
             i += 1
 
-    for f in (controlDict, os.path.join('system', 'fvSolution'), boundary):
-        if not os.path.isfile(f):
-            print('エラー: {}ファイルがありません．'.format(f))
+    for i in (controlDict, os.path.join('system', 'fvSolution'), boundary):
+        if not os.path.isfile(i):
+            print(f'エラー: ファイル {i} がありません．')
             sys.exit(1)
 
     for p in ('*.foam', '*.OpenFOAM', '*.blockMesh'):

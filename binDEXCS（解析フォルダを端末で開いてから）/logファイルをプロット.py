@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # logファイルをプロット.py
 # by Yukiharu Iwamoto
-# 2026/3/10 9:27:33 AM
+# 2026/4/3 10:53:48 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     if log_file is None:
         log_file = glob.glob('*Foam.logfile')
         if len(log_file) == 0:
-            print('logファイルがありません．')
+            print(f'ファイル {log_file} がありません．')
             sys.exit(1)
         elif len(log_file) == 1:
             log_file = log_file[0]

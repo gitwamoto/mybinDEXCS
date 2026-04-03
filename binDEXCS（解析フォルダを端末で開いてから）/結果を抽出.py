@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:54:51 AM
+# 2026/4/3 10:56:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
     controlDict = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict):
-        print('エラー: {}ファイルがありません．'.format(controlDict))
+        print(f'エラー: ファイル {controlDict} がありません．')
         sys.exit(1)
 
     sampling_related_folders_txt = os.path.join('postProcessing', '_sampling_related_folders.txt')

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 5:40:25 PM
+# 2026/4/3 10:53:10 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -67,7 +67,7 @@ if __name__ == '__main__':
             i += 1
 
     if not os.path.isfile(meshDict_path):
-        print(f'エラー: {meshDict_path}ファイルがありません．')
+        print(f'エラー: ファイル {meshDict_path} がありません．')
         sys.exit(1)
     if os.path.isdir('dynamicCode'):
         shutil.rmtree('dynamicCode')

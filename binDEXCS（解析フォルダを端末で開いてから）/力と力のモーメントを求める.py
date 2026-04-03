@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:36:32 PM
+# 2026/4/3 10:55:29 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
     controlDict = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict):
-        print('エラー: {}ファイルがありません．'.format(controlDict))
+        print(f'エラー: ファイル {controlDict} がありません．')
         sys.exit(1)
 
     forces_related_folders_txt = os.path.join('postProcessing', '_forces_related_folders.txt')
