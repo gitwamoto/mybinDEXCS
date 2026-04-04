@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:49:10 AM
+# 2026/4/4 8:40:19 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,6 +24,7 @@ import shutil
 import re
 from utilities import misc
 from utilities import rmObjects
+from utilities import dictParse
 
 def handler(signum, frame):
     rmObjects.removeInessentials()
@@ -69,30 +70,29 @@ if __name__ == '__main__':
         sys.exit(0) # 正常終了
 
     if interactive:
-        patches = ' '.join(listFile.patchList())
+        patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
+            os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+                [{'type': 'list'}, {'type': 'block'}])])
         fields = ' '.join(misc.volFieldList(misc.latestTime()))
-        ans = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '面積平均を行いますか？ (y/n) > ').strip().lower() == 'y' else False
+        ans = True if input('面積平均を行いますか？ (y/n) > ').strip().lower() == 'y' else False
         if ans:
-            average = [(raw_input if sys.version_info.major <= 2 else input)(
-                'どのパッチに対して面積平均しますか？ ' + patches + ' の中からスペース区切りで指定して下さい． > ').split()]
-            average.append(','.join((raw_input if sys.version_info.major <= 2 else input)(
-                'どのパラメータを面積平均しますか？ ' + fields + ' の中からスペース区切りで指定して下さい． > ').split()))
-        ans = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '面積積分を行いますか？ (y/n) > ').strip().lower() == 'y' else False
+            average = [input('どのパッチに対して面積平均しますか？'
+                f' {patches} の中からスペース区切りで指定して下さい． > ').split()]
+            average.append(','.join(input('どのパラメータを面積平均しますか？ '
+                f' {fields} の中からスペース区切りで指定して下さい． > ').split()))
+        ans = True if input('面積積分を行いますか？ (y/n) > ').strip().lower() == 'y' else False
         if ans:
-            integrate = [(raw_input if sys.version_info.major <= 2 else input)(
-                'どのパッチに対して面積積分しますか？ ' + patches + ' の中からスペース区切りで指定して下さい． > ').split()]
-            integrate.append(','.join(
-                (raw_input if sys.version_info.major <= 2 else input)(
-                'どのパラメータを面積積分しますか？ ' + fields + ' の中からスペース区切りで指定して下さい． > ').split()))
+            integrate = [input('どのパッチに対して面積積分しますか？'
+                f' {patches} の中からスペース区切りで指定して下さい． > ').split()]
+            integrate.append(','.join(input('どのパラメータを面積積分しますか？'
+                f' {fields} の中からスペース区切りで指定して下さい． > ').split()))
         time_begin, time_end, noZero = misc.setTimeBeginEnd('面積平均または面積積分')
 
     # http://penguinitis.g1.xrea.com/study/OpenFOAM/proc_results.html
     for i in average[0]:
-        misc.execPostProcess(time_begin, time_end, noZero, func = 'patchAverage(name=' + i + ',' + average[1] + ')')
+        misc.execPostProcess(time_begin, time_end, noZero, func = f'patchAverage(name={i},{average[1]})')
     for i in integrate[0]:
-        misc.execPostProcess(time_begin, time_end, noZero, func = 'patchIntegrate(name=' + i + ',' + integrate[1] + ')')
+        misc.execPostProcess(time_begin, time_end, noZero, func = f'patchIntegrate(name={i},{integrate[1]})')
 
     print('\n結果はpostProcessingフォルダに保存されています．')
 
