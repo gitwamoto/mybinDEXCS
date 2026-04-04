@@ -33,7 +33,9 @@ def handler(signum, frame):
 
 def append_functions_in_controlDict(controlDict):
     fields = ' '.join(misc.volFieldList(misc.latestTime()))
-    patches = ' '.join(listFile.patchList())
+    patches = ' '.join([i['element']['key'] for i in DictParser2(
+        os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+            [{'type': 'list'}, {'type': 'block'}])])
     a = (
         'setSampling // postProcessingフォルダ内に作られるフォルダの名前\n' +
         '{\n' +
