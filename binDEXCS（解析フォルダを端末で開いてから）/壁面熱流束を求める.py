@@ -21,7 +21,6 @@ import glob
 import shutil
 import re
 from utilities import misc
-from utilities import listFile
 from utilities import rmObjects
 
 def handler(signum, frame):
