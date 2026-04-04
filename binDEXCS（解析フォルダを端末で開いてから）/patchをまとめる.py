@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchをまとめる.py
 # by Yukiharu Iwamoto
-# 2021/7/2 8:49:45 PM
+# 2026/4/4 8:40:53 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -13,8 +13,8 @@ import signal
 import subprocess
 import os
 from utilities import misc
-from utilities import listFile
 from utilities import rmObjects
+from utilities import dictParse
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
@@ -45,30 +45,38 @@ if __name__ == '__main__':
         createPatchDict_bak = createPatchDict + '_bak'
         if os.path.isfile(createPatchDict):
             os.rename(createPatchDict, createPatchDict_bak)
-        patches = ' '.join(listFile.patchList())
         with open(createPatchDict, 'w') as f:
-            f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\tcreatePatchDict;\n')
-            f.write('}\n')
-            f.write('\npointSync\tfalse;\n\n')
-            f.write('patches\n(\n')
-            f.write('// まとめた後のパッチ名(A)，パッチの種類(B)，まとめたいパッチの名前(C)を書き換える．\n')
-            f.write('// まとめた後のパッチが複数になる場合，\n')
-            f.write('// {\n')
-            f.write('//     ...\n')
-            f.write('// }\n')
-            f.write('// の部分をコピーして使えば良い．\n')
-            f.write('\t{\n')
-            f.write('\t\tname\tassembledPatch1 /* <- (A) まとめた後のパッチ名 */;\n')
-            f.write('\t\tpatchInfo\n')
-            f.write('\t\t{\n')
-            f.write('\t\t\ttype\twall /* <- (B) まとめた後のパッチの種類 */;\n')
-            f.write('\t\t}\n')
-            f.write('\t\tconstructFrom\tpatches;\n')
-            f.write('\t\tpatches\t(' + patches + ') /* <- (C) まとめたいパッチの名前だけを残す */;\n')
-            f.write('\t}\n')
-            f.write(');\n')
+            f.write('FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\tcreatePatchDict;\n'
+                '}\n'
+                '\npointSync\tfalse;\n'
+                '\n'
+                'patches\n(\n'
+                '// まとめた後のパッチ名(A)，パッチの種類(B)，まとめたいパッチの名前(C)を書き換える．\n'
+                '// まとめた後のパッチが複数になる場合，\n'
+                '// {\n'
+                '//     ...\n'
+                '// }\n'
+                '// の部分をコピーして使えば良い．\n'
+                '\t{\n'
+                '\t\tname\tassembledPatch1 /* <- (A) まとめた後のパッチ名 */;\n'
+                '\t\tpatchInfo\n'
+                '\t\t{\n'
+                '\t\t\ttype\twall /* <- (B) まとめた後のパッチの種類 */;\n'
+                '\t\t}\n'
+                '\t\tconstructFrom\tpatches;\n'
+                '\t\tpatches\t('
+            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(
+                    os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+                        [{'type': 'list'}, {'type': 'block'}])]))
+            f.write(') /* <- (C) まとめたいパッチの名前だけを残す */;\n'
+                '\t}\n'
+                ');\n')
         print('\n\033[3;4;5m{}ファイルをtexteditwx.pyで開いています．'.format(createPatchDict))
         print('- 指示を読んで，必要に応じて書き換えて下さい．')
         print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
