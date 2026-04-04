@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:55:29 PM
+# 2026/4/4 9:27:58 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,10 +24,10 @@ import re
 import matplotlib.pyplot as plt
 from utilities import misc
 from utilities import setFuncsInCD
-from utilities import listFile
 from utilities import dictFormat
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
+from utilities.dictParse
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
@@ -60,7 +60,9 @@ def append_functions_in_controlDict(controlDict):
         'type\tforces;\n' +
         'libs\t("libforces.so");\n' +
         'enabled\tyes /* yesで実行 */;\n' +
-        'patches\t(' + ' '.join(listFile.patchList()) +
+        'patches\t(' + ' '.join([i['element']['key'] for i in dictParse.DictParser2(
+            os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+                [{'type': 'list'}, {'type': 'block'}])]) +
             ') /* <- (B) 複数のpatchを指定すると，それらにまとめてかかる力を求める． */;\n' +
         'rho\trhoInf /* 非圧縮性流体の場合のみ使用． */;\n' +
         'rhoInf\t1 /* 非圧縮性流体の場合，この密度が掛けられて力の単位N(ニュートン)になる． */;\n' +
