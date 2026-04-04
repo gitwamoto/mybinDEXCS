@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:53:04 PM
+# 2026/4/4 8:39:26 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -19,8 +19,8 @@ import signal
 import subprocess
 import shutil
 from utilities import misc
-from utilities import listFile
 from utilities import rmObjects
+from utilities import dictParse
 
 def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
     with open(os.path.join('system', 'extrudeMeshDict'), 'w') as f:
@@ -35,10 +35,9 @@ def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
             '}\n'
             'constructFrom\tpatch;\n'
             'sourceCase\t".";\n'
-        )
-        f.write('sourcePatches\t({});\n'.format(front_name))
-        f.write('exposedPatchName\t{};\n'.format(back_name))
-        f.write('flipNormals\tfalse;\n')
+            f'sourcePatches\t({front_name});\n'
+            f'exposedPatchName\t{back_name};\n'
+            'flipNormals\tfalse;\n')
         if wedge: # wedge境界
             f.write(
                 'extrudeModel\twedge;\n'
@@ -111,38 +110,43 @@ if __name__ == '__main__':
     z_back, z_front = bouding_box[2]
 
     if interactive:
-        plist = listFile.patchList()
-        patches = ' '.join(plist)
-        sys.stdout.write('2次元メッシュに使う(z = {}にある)patchの名前を教えて下さい． ( {} の中から選択'.format(z_front, patches))
-        if 'front' in plist:
+        patches = [i['element']['key'] for i in dictParse.DictParser2(
+            os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+                [{'type': 'list'}, {'type': 'block'}])]
+        space_delimited_patches = ' '.join(patches)
+        sys.stdout.write(f'2次元メッシュに使う(z = {z_front}にある)patchの名前を教えて下さい．'
+            f' ( {space_delimited_patches} の中から選択')
+        if 'front' in patches:
             front_name = input(', Enterのみ: front) > ').strip() or 'front'
         else:
             front_name = input(') > ').strip()
-        sys.stdout.write('押し出したpatchの裏側にあるpatchの名前を決めて下さい． ( {} の中から選択'.format(patches))
-        if 'back' in plist:
+        sys.stdout.write('押し出したpatchの裏側にあるpatchの名前を決めて下さい．'
+            f' ( {space_delimited_patches} の中から選択')
+        if 'back' in patches:
             back_name = input(', Enterのみ: back) > ').strip() or 'back'
         else:
             back_name = input(') > ').strip()
-        wedge = True if input('wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+        wedge = True if input('wedge (くさび) 境界にしますか？ '
+            '(y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
         if not converted_millimeter_into_meter:
-            print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
-                bouding_box[0][0], bouding_box[0][1], bouding_box[1][0], bouding_box[1][1],
-                bouding_box[2][0], bouding_box[2][1]))
-            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？ (y/n, yだと0.001倍してメートルに直します．) > '
-                ).strip().lower() == 'y' else False
+            print(f'元のメッシュの範囲は{bouding_box[0][0]} <= x <= {bouding_box[0][1]},'
+                f' {bouding_box[1][0]} <= y <= {bouding_box[1][1]},'
+                f' {bouding_box[2][0]} <= z <= {bouding_box[2][1]}です．')
+            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？'
+                ' (y/n, yだと0.001倍してメートルに直します．) > ').strip().lower() == 'y' else False
 
     if not os.path.isdir('system'):
         os.mkdir('system')
     makeExtrudeMeshDict(z_front - z_back, front_name, back_name, wedge)
 
-    command = "transformPoints -translate '(0 0 {})'".format(-z_front)
+    command = f"transformPoints -translate '(0 0 {-z_front})'"
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     command = 'extrudeMesh'
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if converted_millimeter_into_meter:
