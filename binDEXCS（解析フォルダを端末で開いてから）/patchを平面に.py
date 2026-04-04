@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/3/17 5:40:38 PM
+# 2026/4/4 8:20:55 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -20,7 +20,6 @@ import signal
 import numpy as np
 import math
 from utilities import misc
-from utilities import listFile
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
 
@@ -96,19 +95,19 @@ if __name__ == '__main__':
 
     print('x, y, z座標をある値に固定することでpatchを平面にします．')
 
+    boundary = DictParser2(boundary_path)
     if interactive:
-        patch_name = (raw_input if sys.version_info.major <= 2 else input)(
-            ' '.join(listFile.patchList()) + ' の中から平面にしたいpatchの名前を1つ入力して下さい． > ').strip()
-        ans = (raw_input if sys.version_info.major <= 2 else input)(
-            '座標=値の形式で座標と値を決めて下さい．(例: x=0.0) > ').strip().lower().split('=')
+        patch_name = input(' '.join([i['element']['key']
+            for i in boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])]) +
+            ' の中から平面にしたいpatchの名前を1つ入力して下さい． > ').strip()
+        ans = input('座標=値の形式で座標と値を決めて下さい．(例: x=0.0) > ').strip().lower().split('=')
         coordinate = ans[0].strip()
         coordinate = 0 if coordinate == 'x' else (1 if coordinate == 'y' else 2)
         value = float(ans[1])
 
     nFaces = startFace = -1
-    dp = DictParser(boundary_path)
-    s_old = dp.toString()
-    for a in dp.contents:
+    boundary.find_element([{'type': 'list'}, {'type': 'block', 'key': patch_name}
+    for a in boundary.contents:
         if DictParserList.isType(a, DictParserList.LISTP):
             a = a.value()
             break
@@ -118,9 +117,8 @@ if __name__ == '__main__':
                 if DictParserList.isType(c, DictParserList.DICT):
                     if c.key() == 'type':
                         if interactive:
-                            patch_type = (raw_input if sys.version_info.major <= 2 else input)(
-                                patch_name + 'のtypeは' + c.value()[0] + 'です．\n' +
-                                'typeを変更する場合は empty , symmetryPlane , wedge のうちのどれか，' +
+                            print(f'{patch_name}のtypeは{c.value()[0]}です．')
+                            patch_type = input('typeを変更する場合は empty , symmetryPlane , wedge のうちのどれか，'
                                 '変更しない場合はEnterのみを入力して下さい． > ').strip()
                         if patch_type not in ('', c.value()[0]):
                             c.setValue([patch_type])
@@ -132,10 +130,11 @@ if __name__ == '__main__':
     if nFaces == -1 or startFace == -1:
         print('エラー: {}という名前のpatchはありません．'.format(patch_name))
         sys.exit(1)
-    s = dp.toString()
-    if s != s_old:
+    string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
+    if boundary.string != string:
+#        os.rename(boundary_path, boundary_path + '_bak')
         with open(boundary_path, 'w') as f:
-            f.write(s)
+            f.write(string)
 
     with open(faces_path, 'r') as f:
         s = f.read()
