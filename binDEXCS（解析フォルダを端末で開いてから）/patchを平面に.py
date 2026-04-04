@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/4/4 8:20:55 PM
+# 2026/4/4 9:23:21 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -14,14 +14,16 @@
 # -y value -> 面のy座標をvalueに固定する
 # -z value -> 面のz座標をvalueに固定する
 
+# DictParser2で書き直し済み
+
 import os
 import sys
 import signal
 import numpy as np
 import math
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
+from utilities import dictParse
 
 #def flatten(points):
 #    def inverse_power_method(A, eps = 1.0e-10):
@@ -95,41 +97,44 @@ if __name__ == '__main__':
 
     print('x, y, z座標をある値に固定することでpatchを平面にします．')
 
-    boundary = DictParser2(boundary_path)
+    boundary = dictParse.DictParser2(boundary_path)
+    patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     if interactive:
-        patch_name = input(' '.join([i['element']['key']
-            for i in boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])]) +
-            ' の中から平面にしたいpatchの名前を1つ入力して下さい． > ').strip()
+        while True:
+            patch_name = input(' '.join([i['element']['key'] for i in patches]) +
+                ' の中から平面にしたいpatchの名前を1つ入力して下さい． > ').strip()
+            patch = next((i for i in patches if i['element']['key'] == patch_name), None)
+            if patch is not None:
+                break
         ans = input('座標=値の形式で座標と値を決めて下さい．(例: x=0.0) > ').strip().lower().split('=')
-        coordinate = ans[0].strip()
-        coordinate = 0 if coordinate == 'x' else (1 if coordinate == 'y' else 2)
-        value = float(ans[1])
+        while True:
+            coordinate = ans[0].strip()
+            coordinate = 0 if coordinate == 'x' else (1 if coordinate == 'y' else 2)
+            try:
+                value = float(ans[1])
+                break
+            except:
+                pass
 
     nFaces = startFace = -1
-    boundary.find_element([{'type': 'list'}, {'type': 'block', 'key': patch_name}
-    for a in boundary.contents:
-        if DictParserList.isType(a, DictParserList.LISTP):
-            a = a.value()
-            break
-    for b in a:
-        if DictParserList.isType(b, DictParserList.BLOCK) and b.key() == patch_name:
-            for c in b.value():
-                if DictParserList.isType(c, DictParserList.DICT):
-                    if c.key() == 'type':
-                        if interactive:
-                            print(f'{patch_name}のtypeは{c.value()[0]}です．')
-                            patch_type = input('typeを変更する場合は empty , symmetryPlane , wedge のうちのどれか，'
-                                '変更しない場合はEnterのみを入力して下さい． > ').strip()
-                        if patch_type not in ('', c.value()[0]):
-                            c.setValue([patch_type])
-                    if c.key() == 'nFaces':
-                        nFaces = int(c.value()[0])
-                    elif c.key() == 'startFace':
-                        startFace = int(c.value()[0])
-            break
-    if nFaces == -1 or startFace == -1:
-        print('エラー: {}という名前のpatchはありません．'.format(patch_name))
+    patch = next((i for i in patches if i['element']['key'] == patch_name), None)
+    if patch is None:
+        print(f'エラー: {patch_name}という名前のpatchはありません．')
         sys.exit(1)
+    patch_type_value = dictparse.find_element([{'type': 'dictionary', 'key': 'type'}, {'type': 'string'}],
+        parent = patch)['element']
+    if interactive:
+        print(f"{patch_name}のtypeは{patch_type_value['value']}です．")
+        while True:
+            patch_type = input('typeを変更する場合は empty , symmetryPlane , wedge のうちのどれか，'
+                '変更しない場合はEnterのみを入力して下さい． > ').strip()
+            if patch_type in ('empty', 'symmetryPlane', 'wedge'):
+                break
+    patch_type_value['value'] = patch_type
+    nFaces = int(dictparse.find_element([{'type': 'dictionary', 'key': 'nFaces'}, {'type': 'integer'}],
+        parent = patch)['element']['value'])
+    startFace = int(dictparse.find_element([{'type': 'dictionary', 'key': 'startFace'}, {'type': 'integer'}],
+        parent = patch)['element']['value'])
     string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
     if boundary.string != string:
 #        os.rename(boundary_path, boundary_path + '_bak')
@@ -201,11 +206,10 @@ if __name__ == '__main__':
     if not converted_millimeter_into_meter:
         if interactive:
             box = misc.bounding_box_of_calculation_range(points_path)[1]
-            print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
-                box[0][0], box[0][1], box[1][0], box[1][1], box[2][0], box[2][1]))
-            scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
-                'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
-                ).strip().lower() == 'y' else False
+            print(f'元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]},'
+                f' {box[1][0]} <= y <= {box[1][1]}, {box[2][0]} <= z <= {box[2][1]}です．')
+            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？'
+                ' (y/n, yだと1/1000倍してメートルに直します．) > ').strip().lower() == 'y' else False
         if scaleMesh_0p001:
             misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
