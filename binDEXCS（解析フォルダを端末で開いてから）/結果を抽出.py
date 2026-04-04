@@ -23,6 +23,7 @@ from utilities import setFuncsInCD
 from utilities import dictFormat
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
+from utilities import dictParse
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
@@ -33,7 +34,7 @@ def handler(signum, frame):
 
 def append_functions_in_controlDict(controlDict):
     fields = ' '.join(misc.volFieldList(misc.latestTime()))
-    patches = ' '.join([i['element']['key'] for i in DictParser2(
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
         os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
     a = (
