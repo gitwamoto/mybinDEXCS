@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:53:15 AM
+# 2026/4/10 10:00:13 PM
 
 # DictParser2で書き直し済み
 
@@ -12,11 +12,9 @@ import sys
 import re
 import subprocess
 import numpy as np
-# {
-# DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
+# このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
-# }
 import setFuncsInCD
 
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
@@ -75,7 +73,7 @@ def execCheckMesh():
             os.remove(f)
     command = 'checkMesh -noFunctionObjects | tee checkMesh.log'
     if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     print(f'{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m')
 
@@ -142,7 +140,7 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
             command += time_end
         command += "'"
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     if func is None:
         setFuncsInCD.setAllEnabled(False)
@@ -171,7 +169,7 @@ def removePatchesHavingNoFaces():
     if os.path.isfile(createPatchDict_bak):
         os.rename(createPatchDict_bak, createPatchDict)
     if r != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     if converted_millimeter_into_meter:
         writeConvertedMillimeterIntoMeter()
@@ -206,7 +204,7 @@ def writeConvertedMillimeterIntoMeter():
 def convertMillimeterIntoMeter():
     command = 'transformPoints -scale 0.001'
     if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     writeConvertedMillimeterIntoMeter()
@@ -243,7 +241,7 @@ def renumberMesh():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
     command = 'renumberMesh -overwrite'
     if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     writeRenumberMeshWasDone()
