@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 流量を求める.py
 # by Yukiharu Iwamoto
-# 2026/4/4 8:42:18 PM
+# 2026/4/10 6:28:07 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -66,7 +66,7 @@ if __name__ == '__main__':
         patch_list = input(
             'どのパッチに対して流量を計算しますか？ ' +
             ' '.join([i['element']['key'] for i in dictParse.DictParser2(
-                os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+                file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                     [{'type': 'list'}, {'type': 'block'}])]) +
             ' の中からスペース区切りで指定して下さい． > ').split()
         time_begin, time_end, noZero = misc.setTimeBeginEnd('流量計算')
