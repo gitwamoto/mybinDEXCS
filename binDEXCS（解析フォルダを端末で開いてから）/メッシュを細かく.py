@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:54:52 PM
+# 2026/4/10 10:05:06 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -41,7 +41,7 @@ if __name__ == '__main__':
                     i += 1
                     x_min = float(sys.argv[i])
                 except:
-                    print('-xrで指定されたx_maxまたはx_minが数値ではありません．')
+                    print('エラー: -xrで指定されたx_maxまたはx_minが数値ではありません．')
                     sys.exit(1)
             elif sys.argv[i] == '-yr':
                 try:
@@ -50,7 +50,7 @@ if __name__ == '__main__':
                     i += 1
                     y_min = float(sys.argv[i])
                 except:
-                    print('-yrで指定されたy_maxまたはy_minがが数値ではありません．')
+                    print('エラー: -yrで指定されたy_maxまたはy_minがが数値ではありません．')
                     sys.exit(1)
             elif sys.argv[i] == '-zr':
                 try:
@@ -59,7 +59,7 @@ if __name__ == '__main__':
                     i += 1
                     z_min = float(sys.argv[i])
                 except:
-                    print('-zrで指定されたz_maxまたはz_minがが数値ではありません．')
+                    print('エラー: -zrで指定されたz_maxまたはz_minがが数値ではありません．')
                     sys.exit(1)
             elif sys.argv[i] == '-xf':
                 x_fine = True
@@ -69,12 +69,12 @@ if __name__ == '__main__':
                 z_fine = True
             i += 1
         if x_max is None or x_min is None or y_max is None or y_min is None or z_max is None or z_min:
-            print('細かくする範囲が指定されていません．')
+            print('エラー: 細かくする範囲が指定されていません．')
             sys.exit(1)
 
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    if not os.path.isfile(boundary):
-        print(f'エラー: ファイル {boundary} がありません．')
+    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+    if not os.path.isfile(boundary_path):
+        print(f'エラー: ファイル {boundary_path} がありません．')
         sys.exit(1)
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     if os.path.isfile(topoSetDict_bak):
         os.rename(topoSetDict_bak, topoSetDict)
     if r != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if interactive:
@@ -190,7 +190,7 @@ if __name__ == '__main__':
     if os.path.isfile(refineMeshDict_bak):
         os.rename(refineMeshDict_bak, refineMeshDict)
     if r != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if converted_millimeter_into_meter:
