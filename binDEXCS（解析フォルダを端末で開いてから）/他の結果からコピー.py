@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:55:09 PM
+# 2026/4/10 10:05:42 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     command = 'mapFields -consistent -sourceTime latestTime ' + source_path
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if interactive:
