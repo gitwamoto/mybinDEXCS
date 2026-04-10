@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/4/10 4:57:31 PM
+# 2026/4/10 9:54:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -134,12 +134,12 @@ if __name__ == '__main__':
 
     command = f"transformPoints -translate '(0 0 {-z_front})'"
     if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     command = 'extrudeMesh'
     if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if converted_millimeter_into_meter:
