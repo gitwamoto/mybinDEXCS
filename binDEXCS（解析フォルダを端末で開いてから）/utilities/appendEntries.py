@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/3/15 11:46:31 AM
+# 2026/4/10 9:27:54 PM
 
 # DictParser2で書き直し済み
 
@@ -10,11 +10,9 @@ import os
 import sys
 import glob
 import re
-## {
-## DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
-#if os.path.dirname(__file__) not in sys.path:
-#    sys.path.append(os.path.dirname(__file__))
-## }
+# このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
+if os.path.dirname(__file__) not in sys.path:
+    sys.path.append(os.path.dirname(__file__))
 import dictParse
 
 def intoFvSolution():
@@ -241,9 +239,6 @@ def intoFvSchemes():
 
         fvSchemes = dictParse.DictParser2(file_name = fvSchemes_path)
 
-        tail_index = fvSchemes.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(fvSchemes.elements) - 1)['index'] + 1
-
         # divSchemes, laplacianSchemes, wallDist
         for b, k, v in (
             ('divSchemes', 'div(div(phi,U))', 'Gauss linear'),
@@ -258,8 +253,10 @@ def intoFvSchemes():
                     '{\n'
                     f'{k}\t{v};\n'
                     '}').elements
+                tail_index = fvSchemes.find_element([{'except type': 'whitespace|linebreak|separator'}],
+                    reverse = True, index_not_found = len(fvSchemes.elements) - 1)['index'] + 1
                 fvSchemes.elements[tail_index:tail_index] = linebreak_and_block
-                tail_index += len(linebreak_and_block)
+#                tail_index += len(linebreak_and_block)
             else:
                 if dictParse.find_element([{'type': 'dictionary', 'key': k}], parent = block)['element'] is None:
                     block_end = dictParse.find_element([{'type': 'block_end'}], parent = block, reverse = True)
