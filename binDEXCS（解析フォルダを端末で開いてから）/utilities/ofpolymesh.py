@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # ofpolymesh.py
 # by Yukiharu Iwamoto
-# 2022/6/25 5:46:35 PM
+# 2026/4/10 10:00:49 PM
 
 import sys
 import os
@@ -12,7 +12,7 @@ from struct import pack
 class boundary2D(object):
     def __init__(self, name, type, i0, i1, j0, j1):
         if i0 != i1 and j0 != j1:
-            print('Relationship i0 = i1 or j0 = j1 should be satisfied.')
+            print('Error: Relationship i0 = i1 or j0 = j1 should be satisfied.')
             sys.exit(1)
         self.i0 = i0
         self.i1 = i1
@@ -406,7 +406,7 @@ class structure2D(object):
 class boundary3D(object):
     def __init__(self, name, type, i0, i1, j0, j1, k0, k1):
         if i0 != i1 and j0 != j1 and k0 != k1:
-            print('Relationship i0 = i1 or j0 = j1 or k0 = k1 should be satisfied.')
+            print('Error: Relationship i0 = i1 or j0 = j1 or k0 = k1 should be satisfied.')
             sys.exit(1)
         self.i0 = i0
         self.i1 = i1
