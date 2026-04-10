@@ -5,12 +5,10 @@
 # 2026/3/10 2:05:21 PM
 
 import sys
-# {
-# DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
+# このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
 import os
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
-# }
 from dictParse import DictParser
 from dictParse import DictParserList
 
