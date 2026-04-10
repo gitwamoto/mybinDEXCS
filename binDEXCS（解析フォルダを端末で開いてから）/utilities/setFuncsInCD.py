@@ -8,17 +8,15 @@ import os
 import sys
 import subprocess
 import re
-# {
-# DEXCS2021だと，以下がないとfrom dictParse import DictParserでエラーが出る
+# このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
-# }
 from dictParse import DictParser
 from dictParse import DictParserList
 
 def setAllEnabled(enabled = True, path = os.curdir):
-    controlDict = os.path.join(path, 'system', 'controlDict')
-    dp = DictParser(controlDict)
+    controlDict_path = os.path.join(path, 'system', 'controlDict')
+    dp = DictParser(controlDict_path)
     s_old = dp.toString()
     v = ['yes' if enabled else 'no']
     x = dp.getValueForKey(['functions'])
@@ -43,12 +41,12 @@ def setAllEnabled(enabled = True, path = os.curdir):
                 x[n] = re.sub(r'//\s*(#includeFunc\s+)', r'\t\1', y)
     s = dp.toString()
     if s != s_old:
-        with open(controlDict, 'w') as f:
+        with open(controlDict_path, 'w') as f:
             f.write(s)
 
 def setEnabledForType(type_ = '', enabled = True, path = os.curdir):
-    controlDict = os.path.join(path, 'system', 'controlDict')
-    dp = DictParser(controlDict)
+    controlDict_path = os.path.join(path, 'system', 'controlDict')
+    dp = DictParser(controlDict_path)
     s_old = dp.toString()
     v = ['yes' if enabled else 'no']
     x = dp.getValueForKey(['functions'])
@@ -81,7 +79,7 @@ def setEnabledForType(type_ = '', enabled = True, path = os.curdir):
                 x[n] = re.sub(r'//\s*(#includeFunc\s+(?:/\*.+\*/\s*)?' + type_ + r'\()', r'\t\1', y)
     s = dp.toString()
     if s != s_old:
-        with open(controlDict, 'w') as f:
+        with open(controlDict_path, 'w') as f:
             f.write(s)
 
 if __name__ == '__main__':
