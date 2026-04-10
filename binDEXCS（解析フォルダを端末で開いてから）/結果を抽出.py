@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:56:01 PM
+# 2026/4/10 10:11:44 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -32,10 +32,10 @@ def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-def append_functions_in_controlDict(controlDict):
+def append_functions_in_controlDict(controlDict_path):
     fields = ' '.join(misc.volFieldList(misc.latestTime()))
     patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
-        os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+        file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
     a = (
         'setSampling // postProcessingフォルダ内に作られるフォルダの名前\n' +
@@ -132,7 +132,7 @@ def append_functions_in_controlDict(controlDict):
             ');\n' +
         '}\n'
     )
-    dp_controlDict = DictParser(controlDict)
+    dp_controlDict = DictParser(controlDict_path)
     x = dp_controlDict.getValueForKey(['functions'])
     if x is not None:
         dictFormat.insertEntryIntoBlockBottom(entry = DictParser(string = a).contents, block = x)
@@ -140,14 +140,14 @@ def append_functions_in_controlDict(controlDict):
         dictFormat.insertEntryIntoTopLayerBottom(
             entry = DictParser(string = '\nfunctions\n{\n' + a + '}\n').contents,
             contents = dp_controlDict.contents)
-    shutil.copy(controlDict, controlDict + '_bak')
+    shutil.copy(controlDict_path, controlDict_path + '_bak')
     dp_controlDict = dictFormat.moveLineToBottom(dp_controlDict)
-    dp_controlDict.writeFile(controlDict)
-    print('\n\033[3;4;5m' + controlDict + 'ファイルのfunctionsにsetsまたはsurfacesに関するテンプレートを追加して，' +
+    dp_controlDict.writeFile(controlDict_path)
+    print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにsetsまたはsurfacesに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' ' + controlDict, shell = True)
+    subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {controlDict_path}', shell = True)
     return dp_controlDict
 
 if __name__ == '__main__':
@@ -179,9 +179,9 @@ if __name__ == '__main__':
                 just_delete_previous_files = True
             i += 1
 
-    controlDict = os.path.join('system', 'controlDict')
-    if not os.path.isfile(controlDict):
-        print(f'エラー: ファイル {controlDict} がありません．')
+    controlDict_path = os.path.join('system', 'controlDict')
+    if not os.path.isfile(controlDict_path):
+        print(f'エラー: ファイル {controlDict_path} がありません．')
         sys.exit(1)
 
     sampling_related_folders_txt = os.path.join('postProcessing', '_sampling_related_folders.txt')
@@ -198,10 +198,9 @@ if __name__ == '__main__':
     setFuncsInCD.setEnabledForType('sets', True)
     setFuncsInCD.setEnabledForType('surfaces', True)
     if interactive:
-        sampling_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            controlDict + 'ファイルの内容を確認して下さい．functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > '
-            ).strip().lower() == 'y' else False
-    dp_controlDict = DictParser(controlDict) if sampling_is_written else append_functions_in_controlDict(controlDict)
+        sampling_is_written = True if input(f'ファイル {controlDict_path} の内容を確認して下さい．'
+            'functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
+    dp_controlDict = DictParser(controlDict_path) if sampling_is_written else append_functions_in_controlDict(controlDict_path)
 
     sets_dir_list = []
     surface_dir_list = []
@@ -216,7 +215,7 @@ if __name__ == '__main__':
                         surface_dir_list.append(x.key())
                         break
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
-        print('{}ファイルでsetsまたはsurfacesに関する指示がありません．'.format(controlDict))
+        print(f'エラー: ファイル {controlDict_path} でsetsまたはsurfacesに関する指示がありません．')
         sys.exit(1)
 
     if interactive:
