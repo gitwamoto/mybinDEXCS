@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/3/18 7:18:59 PM
+# 2026/4/10 11:01:16 PM
 
 import sys
 import os
@@ -794,6 +794,7 @@ class DictParser2:
         r'(?P<semicolon>;)' '|'
         r'(?P<whitespace>(?:[ \t]|\\\r?\n)+)' '|' # linebreakよりも前！
         r'(?P<linebreak>\r?\n)' '|' # whitespaceより後！
+        r'(?P<equal>=)' '|'
         r'(?P<unknown>.)'
     )
     CLOSING_SYMBOL = {'block_end': '}', 'list_end': ')', 'dimension_end': ']'}
@@ -824,7 +825,7 @@ class DictParser2:
         #                | key     | value
         #                |---------------------------------------
         #  directive     | #ssss   | _scn @@@@ _sc_
-        #                | #ssss   | _sc_ 
+        #                | #ssss   | _sc_
         #  dictionary    | ssss    | _scn @@@@ ... ; _sc_
         #                | ssss    | _scn          ; _sc_
         #  block         | ssss    | _scn { _scn @@@@ ... } _sc_
@@ -846,6 +847,7 @@ class DictParser2:
         #  float         |           float string
         #  integer       |           integer string
         #  semicolon     |           ;
+        #  equal         |           =
         #  whitespace    |           white space
         #  linebreak     |           line break
         #  separator     |           // * * ... * * //
@@ -982,4 +984,6 @@ if __name__ == '__main__':
 #    print([(s['index'], s['element']) for s in separators])
     stl_2D_file_name = '1111'
     print(structure_string(DictParser2(string =
-        f'surfaceFile\t"{stl_2D_file_name}";\n').elements))
+        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
+        #f'surfaceFile\t"{stl_2D_file_name}";\n'
+        ).elements))
