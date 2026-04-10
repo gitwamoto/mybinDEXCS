@@ -4,6 +4,8 @@
 # by Yukiharu Iwamoto
 # 2026/4/4 9:27:58 PM
 
+# DictParser2で書き直し済み
+
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行．system/controlDictのfunctionsにforcesに関する指示を書き込んでいることが前提
@@ -25,9 +27,8 @@ import matplotlib.pyplot as plt
 from utilities import misc
 from utilities import setFuncsInCD
 from utilities import dictFormat
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
-from utilities.dictParse
+from utilities import dictParse
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
@@ -45,50 +46,63 @@ def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-def append_functions_in_controlDict(controlDict):
-    a = (
-        '// patchかかる力を求める．\n' +
-        '// 少なくともpatches(B)は修正する必要がある．\n' +
-        '// 複数の条件に対して求めたい場合，\n' +
-        '// forces\n' +
-        '// {\n' +
-        '//     ...\n' +
-        '// }\n' +
-        '// の部分をコピーして使えば良い．\n' +
-        'forces // <- (A) postProcessingフォルダ内に作られるフォルダの名前，他と重複してはいけない！\n' +
-        '{\n' +
-        'type\tforces;\n' +
-        'libs\t("libforces.so");\n' +
-        'enabled\tyes /* yesで実行 */;\n' +
-        'patches\t(' + ' '.join([i['element']['key'] for i in dictParse.DictParser2(
-            os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-                [{'type': 'list'}, {'type': 'block'}])]) +
-            ') /* <- (B) 複数のpatchを指定すると，それらにまとめてかかる力を求める． */;\n' +
-        'rho\trhoInf /* 非圧縮性流体の場合のみ使用． */;\n' +
-        'rhoInf\t1 /* 非圧縮性流体の場合，この密度が掛けられて力の単位N(ニュートン)になる． */;\n' +
-        'log\tyes;\n' +
-        'writeControl\ttimeStep;\n' +
-        'writeInterval\t1;\n' +
-        'CofR\t(0 0 0) /* モーメントを求める中心の(x y z)座標 */;\n' +
-        '}\n'
-    )
-    dp_controlDict = DictParser(controlDict)
-    x = dp_controlDict.getValueForKey(['functions'])
-    if x is not None:
-        dictFormat.insertEntryIntoBlockBottom(entry = DictParser(string = a).contents, block = x)
-    else:
-        dictFormat.insertEntryIntoTopLayerBottom(
-            entry = DictParser(string = '\nfunctions\n{\n' + a + '}\n').contents,
-            contents = dp_controlDict.contents)
-    shutil.copy(controlDict, controlDict + '_bak')
-    dp_controlDict = dictFormat.moveLineToBottom(dp_controlDict)
-    dp_controlDict.writeFile(controlDict)
-    print('\n\033[3;4;5m' + controlDict + 'ファイルのfunctionsにforcesに関するテンプレートを追加して，' +
+def append_functions_in_controlDict(controlDict_path):
+    controlDict = DictParser2(file_name = controlDict_path)
+    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+    if functions is None:
+        linebreak_and_functions = dictParse.DictParser2(string =
+            '\n'
+            '\n'
+            'functions\n'
+            '{\n'
+            '}').elements
+        tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
+            reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
+        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+        functions = linebreak_and_functions[-1]
+
+    block_end = dictParse.find_element([{'except type': 'whitespace|linebreak|block_end'}],
+        parent = functions, reverse = True)
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
+        file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+            [{'type': 'list'}, {'type': 'block'}])])
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+        '\n'
+        '\n'
+        '\t// patchにかかる力を求める．\n'
+        '\t// 少なくともpatches(B)は修正する必要がある．\n'
+        '\t// 複数の条件に対して求めたい場合，\n'
+        '\t// forces\n'
+        '\t// {\n'
+        '\t//     ...\n'
+        '\t// }\n'
+        '\t// の部分をコピーして使えば良い．\n'
+        '\tforces // <- (A) postProcessingフォルダ内に作られるフォルダの名前，他と重複してはいけない！\n'
+        '\t{\n'
+        '\t\ttype\tforces;\n'
+        '\t\tlibs\t("libforces.so");\n'
+        '\t\tenabled\tyes; // yesで実行\n'
+        f'\t\tpatches\t({patches}); // <- (B) 複数のpatchを指定すると，それらにまとめてかかる力を求める．\n'
+        '\t\trho\trhoInf; // 非圧縮性流体の場合のみ使用\n'
+        '\t\trhoInf\t1; // 非圧縮性流体の場合，この密度がかけられて力の単位N（ニュートン）になる．\n'
+        '\t\tlog\tyes;\n'
+        '\t\twriteControl\ttimeStep;\n'
+        '\t\twriteInterval\t1;\n'
+        '\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n'
+        '\t}')
+
+    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    if controlDict.string != string:
+        os.rename(controlDict_path, controlDict_path + '_bak')
+        with open(controlDict_path, 'w') as f:
+            f.write(string)
+
+    print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにforcesに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' ' + controlDict, shell = True)
-    return dp_controlDict
+    subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {controlDict_path}', shell = True)
+    return controlDict
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -119,9 +133,9 @@ if __name__ == '__main__':
                 just_delete_previous_files = True
             i += 1
 
-    controlDict = os.path.join('system', 'controlDict')
-    if not os.path.isfile(controlDict):
-        print(f'エラー: ファイル {controlDict} がありません．')
+    controlDict_path = os.path.join('system', 'controlDict')
+    if not os.path.isfile(controlDict_path):
+        print(f'エラー: ファイル {controlDict_path} がありません．')
         sys.exit(1)
 
     forces_related_folders_txt = os.path.join('postProcessing', '_forces_related_folders.txt')
@@ -137,22 +151,17 @@ if __name__ == '__main__':
     setFuncsInCD.setAllEnabled(False)
     setFuncsInCD.setEnabledForType('forces', True)
     if interactive:
-        forces_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            controlDict + 'ファイルの内容を確認して下さい．functionsにforcesに関する指示が書き込まれていますか？ (y/n) > '
-            ).strip().lower() == 'y' else False
-    dp_controlDict = DictParser(controlDict) if forces_is_written else append_functions_in_controlDict(controlDict)
+        forces_is_written = True if input(f'ファイル {controlDict_path} の内容を確認して下さい．'
+            'functionsにforcesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
+    controlDict = (DictParser2(file_name = controlDict_path) if forces_is_written
+        else append_functions_in_controlDict(controlDict_path))
 
-    forces_dir_list = []
-    if dp_controlDict.getValueForKey(['functions']) is not None:
-        for x in dp_controlDict.getValueForKey(['functions']):
-            if DictParserList.isType(x, DictParserList.BLOCK):
-                for y in x.value():
-                    if (DictParserList.isType(y, DictParserList.DICT) and
-                        y.key() == 'type' and 'forces' in y.value()):
-                        forces_dir_list.append(x.key())
-                        break
+    types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
+        {'type': 'dictionary', 'key': 'type'}])
+    forces_dir_list = [i['parent']['key'] for i in types if dictParse.find_element([{'type': 'word'}],
+        parent = types['element'])['element'] == 'forces']
     if len(forces_dir_list) == 0:
-        print('{}ファイルでforcesに関する指示がありません．'.format(controlDict))
+        print(f'エラー: ファイル {controlDict_path} でforcesに関する指示がありません．')
         sys.exit(1)
 
     if interactive:
@@ -201,7 +210,8 @@ if __name__ == '__main__':
                         if re.match('#\\s*Time\\s+', linef):
                             fw.write('#Time\tFx\tFy\tFz\tTx\tTy\tTz\n')
                         elif linef[0] == '#':
-                            fw.write(re.sub('\\s+(?!$)', '\t', re.sub('[()]', '', re.sub('^#\\s+', '#', linef))).rstrip() + '\n')
+                            fw.write(re.sub('\\s+(?!$)', '\t', re.sub('[()]', '',
+                                re.sub('^#\\s+', '#', linef))).rstrip() + '\n')
                         else:
                             linef = re.sub('[()]', '', linef).split()
                             t = float(linef[0])
