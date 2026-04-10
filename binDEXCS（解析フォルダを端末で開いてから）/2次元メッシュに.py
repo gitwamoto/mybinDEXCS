@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/4/4 8:39:26 PM
+# 2026/4/10 4:57:31 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,8 +24,7 @@ from utilities import dictParse
 
 def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
     with open(os.path.join('system', 'extrudeMeshDict'), 'w') as f:
-        f.write(
-            'FoamFile\n'
+        f.write('FoamFile\n'
             '{\n'
             '\tversion\t2.0;\n'
             '\tformat\tascii;\n'
@@ -39,8 +38,7 @@ def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
             f'exposedPatchName\t{back_name};\n'
             'flipNormals\tfalse;\n')
         if wedge: # wedge境界
-            f.write(
-                'extrudeModel\twedge;\n'
+            f.write('extrudeModel\twedge;\n'
                 'nLayers\t1;\n'
                 'expansionRatio\t1.0;\n'
                 'sectorCoeffs\n'
@@ -50,23 +48,18 @@ def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
                 '\tangle\t2;\t// [degrees]\n'
                 '}\n'
                 'mergeFaces\tfalse;\n'
-                'mergeTol\t1.0e-10;\n'
-            )
+                'mergeTol\t1.0e-10;\n')
             print('wedgeのくさび角は2度に設定しています．')
         else: # empty境界
-            f.write(
-                'extrudeModel\tlinearNormal;\n'
+            f.write('extrudeModel\tlinearNormal;\n'
                 'nLayers\t1;\n'
                 'expansionRatio\t1.0;\n'
                 'linearNormalCoeffs\n'
                 '{\n'
-            )
-            f.write('\tthickness\t{};\n'.format(z_thickness))
-            f.write(
+                '\tthickness\t{z_thickness};\n'
                 '}\n'
                 'mergeFaces\tfalse;\n'
-                'mergeTol\t0;\n'
-            )
+                'mergeTol\t0;\n')
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
