@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:53:16 PM
+# 2026/4/10 9:55:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     command = 'improveMeshQuality -noFunctionObjects'
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if converted_millimeter_into_meter:
