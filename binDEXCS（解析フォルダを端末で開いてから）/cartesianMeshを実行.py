@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:53:10 PM
+# 2026/4/10 9:54:36 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -167,12 +167,12 @@ if __name__ == '__main__':
         if os.path.isfile(decomposeParDict_bak_path):
             os.rename(decomposeParDict_bak_path, decomposeParDict_path)
         if r != 0:
-            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
     else:
         command = f'{cfMesh} -noFunctionObjects | tee {cfMesh}.log'
         if subprocess.call(command, shell = True) != 0:
-            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     if two_dimensional:
         command = 'flattenMesh'
         if subprocess.call(command, shell = True) != 0:
-            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
     misc.execCheckMesh()
     sets = os.path.join('constant', 'polyMesh', 'sets')
