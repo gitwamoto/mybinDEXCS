@@ -918,7 +918,7 @@ class DictParser2:
             elif s.lastgroup == 'unknown':
                 raise_error('Unknown token "' + s.group() + '".', s.end())
             else:
-                if s.lastgroup == 'line_comment' and re.match(r'^// (?:\* ?)+//$', s.group()):
+                if s.lastgroup == 'line_comment' and re.match(r'// (?:\* ?)+//$', s.group()):
                     l.append({'type': 'separator', 'value': s.group()})
                 else:
                     l.append({'type': s.lastgroup, 'value': s.group()})
