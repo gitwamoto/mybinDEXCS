@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # blockMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/3/17 10:37:41 PM
+# 2026/4/10 9:54:14 PM
 
 import sys
 import signal
@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     command = 'blockMesh'
     if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
