@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:56:35 PM
+# 2026/4/10 10:15:13 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -41,7 +41,7 @@ from utilities import rmObjects
 domains = 1
 with_function_objects = False
 sigFpe_is_found = False
-controlDict = os.path.join('system', 'controlDict')
+controlDict_path = os.path.join('system', 'controlDict')
 regionProperties = os.path.join('constant', 'regionProperties')
 boundary = os.path.join('constant', 'polyMesh', 'boundary')
 bounds_idle = [
@@ -261,11 +261,11 @@ def remove_entires_in_DPL(contents, comment):
         i += 1
 
 def remove_unnecessary_entries_in_controlDict():
-    dp = DictParser(controlDict)
+    dp = DictParser(controlDict_path)
     s_old = dp.toString()
     startFrom = dp.getValueForKey(['startFrom'])
     if startFrom is None:
-        print('エラー: {}ファイルでstartFromが指定されていません．'.format(controlDict))
+        print(f'エラー: ファイル {controlDict_path}でstartFromが指定されていません．')
         if os.path.isdir('0_bak'):
             if os.path.isdir('0'):
                 shutil.rmtree('0')
@@ -273,12 +273,12 @@ def remove_unnecessary_entries_in_controlDict():
         sys.exit(1)
     if startFrom[0] != 'latestTime':
         dp.setValueForKey(['startFrom'], ['latestTime'])
-        print('!!! {}ファイルのstartFromをlatestTimeに書き換えました．'.format(controlDict))
+        print(f'!!! ファイル {controlDict_path} のstartFromをlatestTimeに書き換えました．')
     remove_entires_in_DPL(dp.contents, r'^/\* (\(DECREASED\) time step from .+|idle calculation )\*/$')
     dp = dictFormat.moveLineToBottom(dp)
     s = dp.toString()
     if s != s_old:
-        with open(controlDict, 'w') as f:
+        with open(controlDict_path, 'w') as f:
             f.write(s)
 
 def remove_unnecessary_entries_in_fvSolution():
@@ -301,7 +301,7 @@ def remove_unnecessary_entries_in_fvSolution():
 
 def change_dt_in_controlDict(exponent):
     remove_unnecessary_entries_in_controlDict()
-    dp = DictParser(controlDict)
+    dp = DictParser(controlDict_path)
     i_dt_last = i_dt = dp.getIndexOfItem(['deltaT'])[0]
     for i in range(i_dt + 1, len(dp.contents)):
         x = dp.contents[i]
@@ -312,7 +312,7 @@ def change_dt_in_controlDict(exponent):
         ['#calc "pow(10.0, {})*$deltaT"'.format(exponent)],
         '/* (DECREASED) time step from ' + datetime.now().strftime("%Y/%m/%d %H:%M:%S") + ' */'])
     dp.contents[i_dt_last + 1:i_dt_last + 1] = ['\n', y]
-    dp.writeFile(controlDict)
+    dp.writeFile(controlDict_path)
 
 def modify_dicts_for_idle(value_dict):
     remove_unnecessary_entries_in_controlDict()
@@ -364,7 +364,7 @@ def modify_dicts_for_idle(value_dict):
         if os.path.isfile(fvSolution):
             modify_dicts_for_idle_in(fvSolution)
 
-    dp = DictParser(controlDict)
+    dp = DictParser(controlDict_path)
     for k in ('stopAt', 'endTime', 'deltaT', 'writeControl', 'writeInterval', 'purgeWrite'):
         if k in value_dict:
             i_last = i = dp.getIndexOfItem([k])[0]
@@ -374,7 +374,7 @@ def modify_dicts_for_idle(value_dict):
                     i_last = j
             dp.contents[i_last + 1:i_last + 1] = [
                 '\n', DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])], '/* idle calculation */'])]
-    dp.writeFile(controlDict)
+    dp.writeFile(controlDict_path)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -410,7 +410,7 @@ if __name__ == '__main__':
                 domains = max(int(sys.argv[i]), 1)
             i += 1
 
-    for i in (controlDict, os.path.join('system', 'fvSolution'), boundary):
+    for i in (controlDict_path, os.path.join('system', 'fvSolution'), boundary):
         if not os.path.isfile(i):
             print(f'エラー: ファイル {i} がありません．')
             sys.exit(1)
@@ -433,8 +433,8 @@ if __name__ == '__main__':
                 c += count_dcmp(sub_dcmp)
             return c
         if count_dcmp(filecmp.dircmp('0', '0_bak')) > 0:
-            print('エラー: あるはずがない0_bakフォルダがあります．')
-            print('0フォルダと0_bakフォルダを比較して，正しい方を0フォルダに置き換えてから再実行して下さい．')
+            print('エラー: あるはずがない0_bakフォルダがあります．'
+                '0フォルダと0_bakフォルダを比較して，正しい方を0フォルダに置き換えてから再実行して下さい．')
             sys.exit(1)
         else:
             shutil.rmtree('0_bak')
@@ -502,8 +502,7 @@ if __name__ == '__main__':
 #            'そのファイルに書かれている境界条件をpの境界条件に使います． (y/n) > ').strip().lower() == 'y' else False
 
     if interactive:
-        with_function_objects = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '{}に書かれている'.format(controlDict) +
+        with_function_objects = True if input(f'ファイル {controlDict_path} に書かれている'
             'functionsの内容を計算中に実行しますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
 
     if float(latest_time) == 0.0 and interactive:
@@ -542,9 +541,8 @@ if __name__ == '__main__':
                 f.write('\t{}'.format(b['name']))
             f.write('\tsteps\n')
     elif interactive:
-        decrease_dt_if_fpe_occured = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '計算が発散した場合，時間ステップを小さくして計算を続けますか？ (y/n) > '
-            ).strip().lower() == 'y' else False
+        decrease_dt_if_fpe_occured = True if input('計算が発散した場合，'
+            '時間ステップを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if domains != 1:
         processor_dirs = set()
@@ -581,7 +579,7 @@ if __name__ == '__main__':
             if os.path.exists(regionProperties):
                 command += ' -allRegions'
             if subprocess.call(command, shell = True) != 0:
-                print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+                print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
                 if os.path.isdir('0_bak'):
                     if os.path.isdir('0'):
                         shutil.rmtree('0')
@@ -630,8 +628,7 @@ if __name__ == '__main__':
         shutil.move('0_bak', '0')
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()
