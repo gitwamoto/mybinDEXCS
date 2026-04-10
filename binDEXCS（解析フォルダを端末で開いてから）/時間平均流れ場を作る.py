@@ -34,7 +34,7 @@ def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-def append_functions_in_controlDict(controlDict):
+def append_functions_in_controlDict(controlDict_path):
     a = ''
     for f in misc.volFieldList(misc.latestTime()):
         a += (
@@ -62,7 +62,7 @@ def append_functions_in_controlDict(controlDict):
         '(\n' + a + ');\n' +
         '}\n'
     )
-    dp_controlDict = DictParser(controlDict)
+    dp_controlDict = DictParser(controlDict_path)
     x = dp_controlDict.getValueForKey(['functions'])
     if x is not None:
         dictFormat.insertEntryIntoBlockBottom(entry = DictParser(string = a).contents, block = x)
@@ -70,14 +70,14 @@ def append_functions_in_controlDict(controlDict):
         dictFormat.insertEntryIntoTopLayerBottom(
             entry = DictParser(string = '\nfunctions\n{\n' + a + '}\n').contents,
             contents = dp_controlDict.contents)
-    shutil.copy(controlDict, controlDict + '_bak')
+    shutil.copy(controlDict_path, controlDict_path + '_bak')
     dp_controlDict = dictFormat.moveLineToBottom(dp_controlDict)
-    dp_controlDict.writeFile(controlDict)
-    print('\n\033[3;4;5m' + controlDict + 'ファイルのfunctionsにfieldAverageに関するテンプレートを追加して，' +
+    dp_controlDict.writeFile(controlDict_path)
+    print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにfieldAverageに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' ' + controlDict, shell = True)
+    subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {controlDict_path}', shell = True)
     return dp_controlDict
 
 if __name__ == '__main__':
@@ -113,9 +113,9 @@ if __name__ == '__main__':
                 exec_paraFoam = True
             i += 1
 
-    controlDict = os.path.join('system', 'controlDict')
-    if not os.path.isfile(controlDict):
-        print(f'エラー: ファイル {controlDict} がありません．')
+    controlDict_path = os.path.join('system', 'controlDict')
+    if not os.path.isfile(controlDict_path):
+        print(f'エラー: ファイル {controlDict_path} がありません．')
         sys.exit(1)
 
     fieldAverage_related_files_txt = os.path.join('postProcessing', '_fieldAverage_related_files.txt')
@@ -138,9 +138,9 @@ if __name__ == '__main__':
     setFuncsInCD.setEnabledForType('fieldAverage', True)
     if interactive:
         fieldAverage_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            controlDict + 'ファイルの内容を確認して下さい．functionsにfieldAverageに関する指示が書き込まれていますか？ (y/n) > '
+            controlDict_path + 'ファイルの内容を確認して下さい．functionsにfieldAverageに関する指示が書き込まれていますか？ (y/n) > '
             ).strip().lower() == 'y' else False
-    dp_controlDict = DictParser(controlDict) if fieldAverage_is_written else append_functions_in_controlDict(controlDict)
+    dp_controlDict = DictParser(controlDict_path) if fieldAverage_is_written else append_functions_in_controlDict(controlDict_path)
 
     properties_list = []
     if dp_controlDict.getValueForKey(['functions']) is not None:
@@ -152,7 +152,7 @@ if __name__ == '__main__':
                         properties_list.append(x.key() + 'Properties')
                         break
     if len(properties_list) == 0:
-        print('{}ファイルでfieldAverageに関する指示がありません．'.format(controlDict))
+        print(f'エラー: ファイル {controlDict_path} でfieldAverageに関する指示がありません．')
         sys.exit(1)
 
     if interactive:
