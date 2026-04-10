@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:54:11 PM
+# 2026/4/10 9:59:13 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -296,7 +296,7 @@ if __name__ == '__main__':
 
     command = 'blockMesh'
     if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     if two_dimensional:
         os.rename(blockMeshDict_path, blockMeshDict_path + '_2D') # can overwrite
@@ -332,12 +332,12 @@ if __name__ == '__main__':
         if os.path.isfile(decomposeParDict_bak_path):
             os.rename(decomposeParDict_bak_path, decomposeParDict_path)
         if r != 0:
-            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
     else:
         command = 'snappyHexMesh -overwrite | tee snappyHexMesh.log'
         if subprocess.call(command, shell = True) != 0:
-            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
 
     if two_dimensional:
@@ -360,7 +360,7 @@ if __name__ == '__main__':
     if two_dimensional:
         command = 'flattenMesh'
         if subprocess.call(command, shell = True) != 0:
-            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
         subprocess.call(os.path.join(os.path.dirname(os.path.abspath(__file__)), '2次元メッシュに.py') +
             f' -f {front_name} -b {back_name} -s', shell = True)
@@ -383,7 +383,7 @@ if __name__ == '__main__':
             # |   +-- cellToregion
             # :
             # +-- cellToregion
-            print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
         regions = sorted([os.path.basename(os.path.dirname(i))
             for i in glob.iglob(os.path.join('constant', '*' + os.sep)) if os.path.isdir(i + 'polyMesh')])
