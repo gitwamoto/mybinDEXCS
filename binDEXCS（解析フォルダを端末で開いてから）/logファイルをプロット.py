@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # logファイルをプロット.py
 # by Yukiharu Iwamoto
-# 2026/4/3 10:53:48 PM
+# 2026/4/10 9:57:14 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -56,21 +56,21 @@ if __name__ == '__main__':
     if log_file is None:
         log_file = glob.glob('*Foam.logfile')
         if len(log_file) == 0:
-            print(f'ファイル {log_file} がありません．')
+            print(f'エラー: ファイル {log_file} がありません．')
             sys.exit(1)
         elif len(log_file) == 1:
             log_file = log_file[0]
         elif interactive:
-            log_file = input(' '.join(log_file) + ' という複数のlogファイルがあります．どれを使いますか？ > ').strip()
+            log_file = input(f'エラー: {" ".join(log_file)} という複数のlogファイルがあります．どれを使いますか？ > ').strip()
         else:
-            print(', '.join(log_file) + 'という複数のlogファイルがあるので．どれを使うか分かりません．')
+            print(f'エラー: ", ".join(log_file)}という複数のlogファイルがあるので．どれを使うか分かりません．')
             sys.exit(1)
 
     if os.path.isdir('logs'):
         shutil.rmtree('logs')
     command = 'foamLog {}'.format(log_file)
     if subprocess.call(command, shell = True) != 0:
-        print('{}で失敗しました．よく分かる人に相談して下さい．'.format(command))
+        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     print('\nlogsフォルダに残差 (residual) が書き出されます．')
     print('それぞれのファイル名についている最後の数字 (_0など) はサブイタレーションの回数を表します．0が最初のサブイタレーションです．')
