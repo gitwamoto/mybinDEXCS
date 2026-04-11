@@ -15,7 +15,7 @@ import numpy as np
 # このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
-import setFuncsInCD
+import dictParse
 
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 
@@ -139,7 +139,7 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     if func is None:
-        setFuncsInCD.setAllEnabled(False)
+        setEnabledInControlDictFunctions(enabled = False)
     return command
 
 def removePatchesHavingNoFaces():
@@ -348,6 +348,52 @@ def timesFolders(path = os.curdir):
             except:
                 pass
     return [i[0] for i in sorted(times, key = lambda x: x[1])]
+
+def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os.curdir):
+    controlDict_path = os.path.join(path, 'system', 'controlDict')
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+
+    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+    if function is None:
+        return
+    yesno = 'yes' if enabled else 'no'
+    for f in dictParse.find_all_elements([{'type': 'block'}], parent = functions):
+        f = f['element']
+        t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = f)
+        if t['element'] is None:
+            print(f'エラー: ファイル {controlDict_path} のfunctionsで，typeがない項目があります．')
+            sys.exit(1)
+        if type_name is not None and dictParse.find_element([{'type': 'word', 'value': type_name}],
+            parent = t['element'])['element'] is None:
+            continue
+        e = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = f)['element']
+        if e is None:
+            i = dictParse.find_element([{'type': 'dictionary', 'except key': 'libs'}], parent = f,
+                start = t['index'] + 1, index_not_found = t['index'])['index'] + 1
+            f['value'][i:i] = dictParse.DictParser2(string = '\n'
+                f'enabled\t{yesno}; yesで実行\n').elements
+        else:
+            e['value'][dictParse.find_element([{'type': 'word'}], parent = e)['index']] = yesno
+
+    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    if type_name is None:
+        if enabled:
+            string = dictParse.re_sub_except_comments(
+                r'(?<!\S)(#includeFunc)(?=[ \t])', r'// !!DISABLED!! \1', string)
+        else:
+            string = dictParse.re_sub_in_comments(
+                r'//[ \t]*!!DISABLED!![ \t]*(#includeFunc)(?=[ \t])', r'\1', string)
+    else:
+        if enabled:
+            string = dictParse.re_sub_except_comments(
+                f'(?<!\\S)(#includeFunc[ \\t]+{type_name})', r'// !!DISABLED!! \1', string)
+        else:
+            string = dictParse.re_sub_in_comments(
+                f'//[ \\t]*!!DISABLED!![ \\t]*(#includeFunc[ \\t]+{type_name})', r'\1', string)
+    if controlDict.string != string:
+#        os.rename(controlDict_path, controlDict_path + '_bak')
+        with open(controlDict_path, 'w') as f:
+            f.write(string)
 
 if __name__ == '__main__':
     print('firstTime = ' + firstTime())
