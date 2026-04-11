@@ -111,12 +111,8 @@ def setTimeBeginEnd(action):
     return time_begin, time_end, noZero
 
 def getApplication():
-    if sys.version_info.major <= 2:
-        return subprocess.check_output('foamDictionary -entry application -value system/controlDict',
-            shell = True).rstrip()
-    else:
-        return subprocess.check_output('foamDictionary -entry application -value system/controlDict',
-            shell = True, encoding = 'UTF-8').rstrip()
+    return subprocess.check_output('foamDictionary -entry application -value system/controlDict',
+        shell = True, encoding = 'UTF-8').rstrip()
 
 def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func = None, region = None, solver = True):
     if solver:
