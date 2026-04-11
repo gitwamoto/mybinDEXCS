@@ -1020,7 +1020,6 @@ if __name__ == '__main__':
 #        print(i, e)
 #    separators = dp.find_separators()
 #    print([(s['index'], s['element']) for s in separators])
-    stl_2D_file_name = '1111'
     print(structure_string(DictParser2(string =
         '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
         #f'surfaceFile\t"{stl_2D_file_name}";\n'
