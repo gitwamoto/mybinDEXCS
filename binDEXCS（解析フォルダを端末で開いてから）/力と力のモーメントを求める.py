@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/4/4 9:27:58 PM
+# 2026/4/11 7:41:15 PM
 
 # DictParser2で書き直し済み
 
@@ -25,8 +25,6 @@ import glob
 import re
 import matplotlib.pyplot as plt
 from utilities import misc
-from utilities import setFuncsInCD
-from utilities import dictFormat
 from utilities import rmObjects
 from utilities import dictParse
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
@@ -42,7 +40,7 @@ def appropriate_tick(xmin, xmax, n):
     return 10.0*tick
 
 def handler(signum, frame):
-    setFuncsInCD.setAllEnabled(False)
+    misc.setEnabledInControlDictFunctions(enabled = False)
     rmObjects.removeInessentials()
     sys.exit(1)
 
@@ -148,8 +146,8 @@ if __name__ == '__main__':
     if just_delete_previous_files:
         sys.exit(0) # 正常終了
 
-    setFuncsInCD.setAllEnabled(False)
-    setFuncsInCD.setEnabledForType('forces', True)
+    misc.setEnabledInControlDictFunctions(enabled = False)
+    misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'forces')
     if interactive:
         forces_is_written = True if input(f'ファイル {controlDict_path} の内容を確認して下さい．'
             'functionsにforcesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
