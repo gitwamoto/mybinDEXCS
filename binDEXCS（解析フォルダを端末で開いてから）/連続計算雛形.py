@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/3/19 8:16:22 PM
+# 2026/4/11 7:44:51 PM
 
 import os
 import signal
@@ -21,7 +21,6 @@ from utilities import misc
 from utilities import ofpolymesh
 from utilities import rmObjects
 from utilities import setComment
-from utilities import setFuncsInCD
 
 regions = 32 # 分割領域
 
