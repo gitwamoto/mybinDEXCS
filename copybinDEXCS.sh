@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/3/18 10:05:02 AM
+# 2026/4/11 7:22:53 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -82,6 +82,7 @@ fi
 rm -f "Desktop/$binDEXCS/utilities/showDir.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
 rm -f "Desktop/$binDEXCS/utilities/listFile.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
 rm -f "Desktop/$binDEXCS/utilities/folderTime.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
+rm -f "Desktop/$binDEXCS/utilities/setFuncsInCD.py" # -fオプション付きだと，ファイルがなくてもエラーを吐かない
 
 ((trial=0))
 for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
