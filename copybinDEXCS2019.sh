@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS2019.sh
 # by Yukiharu Iwamoto
-# 2026/3/11 9:20:48 AM
+# 2026/4/14 3:23:03 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -60,6 +60,10 @@ done
 if [ "$trial" -eq 2 ]; then
 	wget_from_github_public gitwamoto mybinDEXCS main copybinDEXCS.sh Desktop/copybinDEXCS.sh
 	chmod +x Desktop/copybinDEXCS.sh
+fi
+
+if [ -f "Desktop/copybinDEXCS.sh" ]; then
+	rm "$0"
 fi
 
 cd -

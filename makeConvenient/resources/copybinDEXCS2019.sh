@@ -1,1 +1,0 @@
-../../copybinDEXCS2019.sh
