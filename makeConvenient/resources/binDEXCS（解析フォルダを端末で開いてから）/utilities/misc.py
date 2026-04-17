@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/4/10 10:00:13 PM
+# 2026/4/15 9:08:23 PM
 
 # DictParser2で書き直し済み
 
@@ -120,9 +120,9 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
     else:
         command = 'postProcess'
     if func is not None:
-        command += ' -func "' + func + '"'
+        command += f' -func "{func}"'
     if region is not None:
-        command += ' -region ' + region
+        command += f' -region {region}'
     if noZero:
         command += ' -noZero'
     if time_begin.lower().startswith('l') or time_end.lower().startswith('l'):
@@ -141,6 +141,17 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
     if func is None:
         setEnabledInControlDictFunctions(enabled = False)
     return command
+
+def writeCommentInBoundary(comment):
+    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+    boundary = dictParse.DictParser2(boundary_path)
+    i = boundary.find_element([{'except type': 'whitespace|linebreak'}],
+        start = boundary.find_element([{'type': 'list'}])['index'] - 1,
+        reverse = True, index_not_found = 0)['index']
+    boundary.elements[i:i] = dictParse.DictParser2(string =
+        f'\n// {comment}' if i > 0 else '// {comment}\n').elements
+    with open(boundary_path, 'w') as f:
+        f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
 
 def removePatchesHavingNoFaces():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
@@ -168,7 +179,8 @@ def removePatchesHavingNoFaces():
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
     if converted_millimeter_into_meter:
-        writeConvertedMillimeterIntoMeter()
+        writeCommentInBoundary('converted millimeter into meter')
+
 
 def isConvertedMillimeterIntoMeter():
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
@@ -180,22 +192,13 @@ def isConvertedMillimeterIntoMeter():
         if i == 0:
             with open(boundary, 'w') as f:
                 f.write(s[34:].lstrip())
-            writeConvertedMillimeterIntoMeter()
+            writeCommentInBoundary('converted millimeter into meter')
         return True
     else:
         return False
 
 def writeConvertedMillimeterIntoMeter():
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    with open(boundary, 'r') as f:
-        s = f.read()
-    m = re.search(r'// (\* )+//\n', s)
-    if m is not None:
-        s = s[:m.end()] + '// converted millimeter into meter\n' + s[m.end():]
-    else:
-        s = s.rstrip() + '\n// converted millimeter into meter\n'
-    with open(boundary, 'w') as f:
-        f.write(s)
+    writeCommentInBoundary('converted millimeter into meter')
 
 def convertMillimeterIntoMeter():
     command = 'transformPoints -scale 0.001'
@@ -222,16 +225,7 @@ def isRenumberMeshDone():
         return False
 
 def writeRenumberMeshWasDone():
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    with open(boundary, 'r') as f:
-        s = f.read()
-    m = re.search(r'// (\* )+//\n', s)
-    if m is not None:
-        s = s[:m.end()] + '// renumberMesh was done\n' + s[m.end():]
-    else:
-        s = s.rstrip() + '\n// renumberMesh was done\n'
-    with open(boundary, 'w') as f:
-        f.write(s)
+    writeCommentInBoundary('renumberMesh was done')
 
 def renumberMesh():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()

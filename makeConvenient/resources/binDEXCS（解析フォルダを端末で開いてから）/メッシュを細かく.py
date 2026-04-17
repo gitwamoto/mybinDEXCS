@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/4/10 10:05:06 PM
+# 2026/4/15 9:08:09 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -83,112 +83,102 @@ if __name__ == '__main__':
         print('細かくする範囲を指定します．')
         while True:
             try:
-                r = re.sub(r'[\s,]+', ' ',
-                    (raw_input if sys.version_info.major <= 2 else input)(
-                    'x方向の最大，最小値x_max x_minをスペース区切りで入力して下さい．' +
-                    ' (%g <= x_max, x_min <= %g) > ', box[0]).strip()).split()
-                x_max = float(r[0])
-                x_min = float(r[1])
+                x_min, x_max = sorted([float(i) for i in
+                    input('x方向の最大，最小値x_max x_minをスペース区切りで入力して下さい．'
+                        f' ({box[0][0]} <= x_max, x_min <= {box[0][1]}) > ').replace(',', ' ').split()])
             except ValueError:
                 pass
         while True:
             try:
-                r = re.sub(r'[\s,]+', ' ',
-                    (raw_input if sys.version_info.major <= 2 else input)(
-                    'y方向の最大，最小値y_max y_minをスペース区切りで入力して下さい．' +
-                    ' (%g <= y_max, y_min <= %g) > ', box[1]).strip()).split()
-                y_max = float(r[0])
-                y_min = float(r[1])
+                y_min, y_max = sorted([float(i) for i in
+                    input('y方向の最大，最小値y_max y_minをスペース区切りで入力して下さい．'
+                        f' ({box[1][0]} <= y_max, y_min <= {box[1][1]}) > ').replace(',', ' ').split()])
             except ValueError:
                 pass
         while True:
             try:
-                r = re.sub(r'[\s,]+', ' ',
-                    (raw_input if sys.version_info.major <= 2 else input)(
-                    'z方向の最大，最小値z_max z_minをスペース区切りで入力して下さい．' +
-                    ' (%g <= z_max, z_min <= %g) > ', box[2]).strip()).split()
-                z_max = float(r[0])
-                z_min = float(r[1])
+                z_min, z_max = sorted([float(i) for i in
+                    input('z方向の最大，最小値z_max z_minをスペース区切りで入力して下さい．'
+                        f' ({box[2][0]} <= z_max, z_min <= {box[2][1]}) > ').replace(',', ' ').split()])
             except ValueError:
                 pass
-    if x_max < x_min:
-        x_max, x_min = x_min, x_max
-    if y_max < y_min:
-        y_max, y_min = y_min, y_max
-    if z_max < z_min:
-        z_max, z_min = z_min, z_max
 
-    topoSetDict = os.path.join('system', 'topoSetDict')
-    topoSetDict_bak = topoSetDict + '_bak'
-    if os.path.isfile(topoSetDict):
-        os.rename(topoSetDict, topoSetDict_bak)
-    with open(topoSetDict, 'w') as f:
-        f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-        f.write('\tlocation\t"system";\n')
-        f.write('\tobject\ttopoSetDict;\n')
-        f.write('}\n')
-        f.write('actions\n')
-        f.write('(\n')
-        f.write('\t{\n')
-        f.write('\t\tname\tc0;\n')
-        f.write('\t\ttype\tcellSet;\n')
-        f.write('\t\taction\tnew;\n')
-        f.write('\t\tsource\tboxToCell;\n')
-        f.write('\t\tsourceInfo\n')
-        f.write('\t\t{\n')
-        f.write('\t\t\tbox\t(%g %g %g) (%g %g %g);\n' % (x_min, y_min, z_min, x_max, y_max, z_max))
-        f.write('\t\t}\n')
-        f.write('\t}\n')
-        f.write(');\n')
+    topoSetDict_path = os.path.join('system', 'topoSetDict')
+    topoSetDict_bak_path = topoSetDict_path + '_bak'
+    if os.path.isfile(topoSetDict_path):
+        os.rename(topoSetDict_path, topoSetDict_bak_path)
+    with open(topoSetDict_path, 'w') as f:
+        f.write('FoamFile\n'
+            '{\n'
+            '\tversion\t2.0;\n'
+            '\tformat\tascii;\n'
+            '\tclass\tdictionary;\n'
+            '\tlocation\t"system";\n'
+            '\tobject\ttopoSetDict;\n'
+            '}\n'
+            'actions\n'
+            '(\n'
+            '\t{\n'
+            '\t\tname\tc0;\n'
+            '\t\ttype\tcellSet;\n'
+            '\t\taction\tnew;\n'
+            '\t\tsource\tboxToCell;\n'
+            '\t\tsourceInfo\n'
+            '\t\t{\n'
+            f'\t\t\tbox\t({x_min} {y_min} {z_min}) ({x_max} {y_max} {z_max});\n'
+            '\t\t}\n'
+            '\t}\n'
+            ');\n')
     command = 'topoSet'
     r = subprocess.call(command, shell = True)
-    os.remove(topoSetDict)
-    if os.path.isfile(topoSetDict_bak):
-        os.rename(topoSetDict_bak, topoSetDict)
+    os.remove(topoSetDict_path)
+    if os.path.isfile(topoSetDict_bak_path):
+        os.rename(topoSetDict_bak_path, topoSetDict_path)
     if r != 0:
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if interactive:
-        x_fine = True if (raw_input if sys.version_info.major <= 2 else input)(
-            'x方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
-        y_fine = True if (raw_input if sys.version_info.major <= 2 else input)(
-            'y方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
-        z_fine = True if (raw_input if sys.version_info.major <= 2 else input)(
-            'z方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
+        x_fine = True if input('x方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
+        y_fine = True if input('y方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
+        z_fine = True if input('z方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
 
-    refineMeshDict = os.path.join('system', 'refineMeshDict')
-    refineMeshDict_bak = refineMeshDict + '_bak'
-    if os.path.isfile(refineMeshDict):
-        os.rename(refineMeshDict, refineMeshDict_bak)
-    with open(refineMeshDict, 'w') as f:
-        f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-        f.write('\tlocation\t"system";\n')
-        f.write('\tobject\trefineMeshDict;\n')
-        f.write('}\n')
-        f.write('set\tc0;\n')
-        f.write('coordinateSystem\tglobal;\n')
-        f.write('globalCoeffs\n')
-        f.write('{\n')
-        f.write('\ttan1\t(1 0 0);\n')
-        f.write('\ttan2\t(0 1 0);\n')
-        f.write('}\n')
-        f.write('directions\t(')
+    refineMeshDict_path = os.path.join('system', 'refineMeshDict')
+    refineMeshDict_bak_path = refineMeshDict_path + '_bak'
+    if os.path.isfile(refineMeshDict_path):
+        os.rename(refineMeshDict_path, refineMeshDict_bak_path)
+    with open(refineMeshDict_path, 'w') as f:
+        f.write('FoamFile\n'
+            '{\n'
+            '\tversion\t2.0;\n'
+            '\tformat\tascii;\n'
+            '\tclass\tdictionary;\n'
+            '\tlocation\t"system";\n'
+            '\tobject\trefineMeshDict;\n'
+            '}\n'
+            'set\tc0;\n'
+            'coordinateSystem\tglobal;\n'
+            'globalCoeffs\n'
+            '{\n'
+            '\ttan1\t(1 0 0);\n'
+            '\ttan2\t(0 1 0);\n'
+            '}\n'
+            'directions\t(')
         if x_fine:
             f.write(' tan1')
         if y_fine:
             f.write(' tan2')
         if z_fine:
             f.write(' normal')
-        f.write(' );\n')
-        f.write('useHexTopology\tno;\n')
-        f.write('geometricCut\tyes;\n')
-        f.write('writeMesh\tno;\n')
+        f.write(' );\n'
+            'useHexTopology\tno;\n'
+            'geometricCut\tyes;\n'
+            'writeMesh\tno;\n')
     command = 'refineMesh -overwrite'
     r = subprocess.call(command, shell = True)
-    os.remove(refineMeshDict)
-    if os.path.isfile(refineMeshDict_bak):
-        os.rename(refineMeshDict_bak, refineMeshDict)
+    os.remove(refineMeshDict_path)
+    if os.path.isfile(refineMeshDict_bak_path):
+        os.rename(refineMeshDict_bak_path, refineMeshDict_path)
     if r != 0:
         print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
@@ -197,19 +187,17 @@ if __name__ == '__main__':
         misc.writeConvertedMillimeterIntoMeter()
     else:
         if interactive:
-            print('元のメッシュの範囲は%g <= x <= %g, %g <= y <= %g, %g <= z <= %gです．' %
-                (box[0][0], box[0][1], box[1][0], box[1][1], box[2][0], box[2][1]))
-            scaleMesh_0p001 = True if (raw_input if sys.version_info.major <= 2 else input)(
-                'この長さの単位はミリメートルですか？ (y/n, yだと1/1000倍してメートルに直します．) > '
-                ).strip().lower() == 'y' else False
+            print(f'元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]},'
+                f' {box[1][0]} <= y <= {box[1][1]}, {box[2][0]} <= z <= {box[2][1]}です．')
+            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？'
+                ' (y/n, yだと1/1000倍してメートルに直します．) > ').strip().lower() == 'y' else False
         if scaleMesh_0p001:
             misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()

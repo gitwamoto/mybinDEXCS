@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2026/3/11 9:49:33 AM
+# 2026/4/17 3:56:03 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -43,7 +43,7 @@ if [ "$dexcs_version" = "2019" ]; then
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt python-openpyxl python-requests; do
-			if echo "$apt_installed" | grep --quiet "$p/;" then
+			if echo "$apt_installed" | grep --quiet "$p/"; then
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
 				sudo apt autoremove -y
@@ -93,7 +93,7 @@ if [ "$dexcs_version" = "2019" ]; then
 			python-pexpect python-pyperclip python-chardet python-xlrd python-pil python-urllib3 \
 			libsdl2-2.0-0 libgtk-3-dev \
 			gedit-plugins wxmaxima handbrake xsel; do
-			if ! echo "$apt_installed" | grep --quiet "$p/;" then
+			if ! echo "$apt_installed" | grep --quiet "$p/"; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
@@ -129,7 +129,7 @@ else # 2021
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python3-pyperclip; do
-			if echo "$apt_installed" | grep --quiet "$p/;" then
+			if echo "$apt_installed" | grep --quiet "$p/"; then
 				echo "1: $p"
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
@@ -185,7 +185,7 @@ else # 2021
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
 			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
 			gedit-plugins wxmaxima handbrake notepadqq xsel; do
-			if ! echo "$apt_installed" | grep --quiet "$p/;" then
+			if ! echo "$apt_installed" | grep --quiet "$p/"; then
 				sudo apt install -y "$p"
 				sudo apt autoremove -y
 			fi
