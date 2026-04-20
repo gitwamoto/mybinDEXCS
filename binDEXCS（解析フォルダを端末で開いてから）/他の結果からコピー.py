@@ -4,12 +4,12 @@
 # by Yukiharu Iwamoto
 # 2026/4/20 12:10:34 PM
 
-# DictParser2で書き直し済み
-
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -s source_path -> コピー元となる解析フォルダのパスをsource_pathにする．解析フォルダからの相対パスでも良い
 # -p -> paraFoamを実行する
+
+# DictParser2で書き直し済み
 
 import signal
 import subprocess
