@@ -59,7 +59,7 @@ def append_functions_in_controlDict(controlDict_path):
         controlDict.elements[tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
-    block_start_index = dictParse.find_element(['type': 'block_start'], parent = functions)['index']
+    block_start_index = dictParse.find_element([{'type': 'block_start'}], parent = functions)['index']
     block_end = dictParse.find_element([{'except type': 'whitespace|linebreak|block_end'}],
         parent = functions, end = block_start_index, reverse = True, index_not_found = block_start_index + 1)
     patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
