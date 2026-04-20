@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/4/20 1:17:27 PM
-
-# DictParser2で書き直し済み
+# 2026/4/20 8:08:29 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -16,6 +14,8 @@
 # -d: 最も大きい値を持つ時間以外の平均を消去する．多くの場合必要
 # -j: 平均を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
 # -p -> paraFoamを実行する
+
+# DictParser2で書き直し済み
 
 import sys
 import signal
@@ -36,36 +36,6 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    a = ''
-    for f in misc.volFieldList(misc.latestTime()):
-        a += (
-            f'\t\t\t{f}\n'
-            '\t\t\t{\n'
-            '\t\t\t\tmean\ton; // 平均，onで計算\n'
-            '\t\t\t\tprime2Mean\ton; // '
-        ) + (
-            '変動^2の平均，onで計算' if f != 'U' else
-            '変動速度相関の平均（レイノルズ応力に-1をかけたもの），uu, uv, uw, vv, vw, wwの順で出力，onで計算'
-        ) + (
-            '\t\t\t\t\n'
-            '\t\t\t\tbase\ttime;\n'
-            '\t\t\t}\n'
-        )
-    a = (
-        '\t// 時間平均流れ場を作る．\n'
-        '\tFA // <- (A) 時間フォルダ内に作られるファイルの名前につく文字列，他と重複してはいけない！\n'
-        '\t{\n'
-        '\t\ttype\tfieldAverage;\n'
-        '\t\tlibs\t("libfieldFunctionObjects.so");\n'
-        '\t\tenabled\tyes; // yesで実行\n'
-        '\t\twriteControl\twriteTime;\n'
-        '\t\tfields // 時間平均を計算したいパラメータ\n'
-        '\t\t(\n'
-    ) + a + (
-        '\t\t);\n'
-        '\t}\n'
-    )
-
     controlDict = DictParser(controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
@@ -80,11 +50,38 @@ def append_functions_in_controlDict(controlDict_path):
         controlDict.elements[tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
-    block_start_index = dictParse.find_element([{'type': 'block_start'}], parent = functions)['index']
-    block_end = dictParse.find_element([{'except type': 'whitespace|linebreak|block_end'}],
-        parent = functions, end = block_start_index, reverse = True, index_not_found = block_start_index + 1)
-    functions[block_end['index']:block_end['index']] = dictParse.DictParser2(string =
-        ('\n' if block_end['index'] == block_start_index + 1 else '\n\n') + a)
+    string = (
+        '\n'
+        '\t// 時間平均流れ場を作る．\n'
+        '\tFA // <- (A) 時間フォルダ内に作られるファイルの名前につく文字列，他と重複してはいけない！\n'
+        '\t{\n'
+        '\t\ttype\tfieldAverage;\n'
+        '\t\tlibs\t("libfieldFunctionObjects.so");\n'
+        '\t\tenabled\tyes; // yesで実行\n'
+        '\t\twriteControl\twriteTime;\n'
+        '\t\tfields // 時間平均を計算したいパラメータ\n'
+        '\t\t(\n'
+    )
+    for field in misc.volFieldList(misc.latestTime()):
+        string += (
+            f'\t\t\t{field}\n'
+            '\t\t\t{\n'
+            '\t\t\t\tmean\ton; // 平均，onで計算\n'
+            '\t\t\t\tprime2Mean\ton; // '
+            f'{"変動^2の平均" if field != "U" else
+            "変動速度相関の平均（レイノルズ応力に-1をかけたもの），uu, uv, uw, vv, vw, wwの順で出力"}，onで計算'
+            '\t\t\t\t\n'
+            '\t\t\t\tbase\ttime;\n'
+            '\t\t\t}\n'
+        )
+    string += (
+        '\t\t);\n'
+        '\t}\n'
+    )
+
+    block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string = string).elements
+    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
     os.rename(controlDict_path, controlDict_path + '_bak')
@@ -162,8 +159,8 @@ if __name__ == '__main__':
 
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
-    properties_list = [f"{i['parent']['key']}Properties" for i in types if dictParse.find_element([{'type': 'word'}],
-        parent = i['element'])['element'] == 'fieldAverage']
+    properties_list = [f'{i["parent"]["key"]}Properties' for i in types
+        if dictParse.find_element([{'type': 'word'}], parent = i['element'])['element'] == 'fieldAverage']
     if len(properties_list) == 0:
         print(f'エラー: ファイル {controlDict_path} でfieldAverageに関する指示がありません．')
         sys.exit(1)
