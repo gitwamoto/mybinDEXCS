@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/4/20 11:39:02 AM
+# 2026/4/20 12:10:34 PM
 
 # DictParser2で書き直し済み
 
@@ -17,7 +17,6 @@ import os
 import sys
 import shutil
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
 from utilities import dictParse
 
