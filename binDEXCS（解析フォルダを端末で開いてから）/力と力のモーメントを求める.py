@@ -156,7 +156,7 @@ if __name__ == '__main__':
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     forces_dir_list = [i['parent']['key'] for i in types if dictParse.find_element([{'type': 'word'}],
-        parent = types['element'])['element'] == 'forces']
+        parent = i['element'])['element'] == 'forces']
     if len(forces_dir_list) == 0:
         print(f'エラー: ファイル {controlDict_path} でforcesに関する指示がありません．')
         sys.exit(1)
