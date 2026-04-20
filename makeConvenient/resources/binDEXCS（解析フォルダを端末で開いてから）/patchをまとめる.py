@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchをまとめる.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:58:19 PM
+# 2026/4/20 11:17:57 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                 '\t\t\ttype\twall /* <- (B) まとめた後のパッチの種類 */;\n'
                 '\t\t}\n'
                 '\t\tconstructFrom\tpatches;\n'
-                '\t\tpatches\t('
+                '\t\tpatches\t(')
             f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(
                     os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                         [{'type': 'list'}, {'type': 'block'}])]))

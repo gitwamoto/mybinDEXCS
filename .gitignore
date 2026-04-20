@@ -1,3 +1,5 @@
 .DS_Store
 ParaView*.tar.gz
 *.pyc
+__pycache__/
+__init__.py

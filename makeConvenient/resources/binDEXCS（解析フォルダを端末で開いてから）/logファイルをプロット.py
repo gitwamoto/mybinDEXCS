@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # logファイルをプロット.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:57:14 PM
+# 2026/4/20 11:15:39 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         elif interactive:
             log_file = input(f'エラー: {" ".join(log_file)} という複数のlogファイルがあります．どれを使いますか？ > ').strip()
         else:
-            print(f'エラー: ", ".join(log_file)}という複数のlogファイルがあるので．どれを使うか分かりません．')
+            print(f'エラー: {", ".join(log_file)}という複数のlogファイルがあるので．どれを使うか分かりません．')
             sys.exit(1)
 
     if os.path.isdir('logs'):

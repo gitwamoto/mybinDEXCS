@@ -59,14 +59,14 @@ def append_functions_in_controlDict(controlDict_path):
         controlDict.elements[tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
+    block_start_index = dictParse.find_element([{'type': 'block_start'}], parent = functions)['index']
     block_end = dictParse.find_element([{'except type': 'whitespace|linebreak|block_end'}],
-        parent = functions, reverse = True)
+        parent = functions, end = block_start_index, reverse = True, index_not_found = block_start_index + 1)
     patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
         file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
-        '\n'
-        '\n'
+    functions[block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+        ('\n' if block_end['index'] == block_start_index + 1 else '\n\n') + (
         '\t// patchにかかる力を求める．\n'
         '\t// 少なくともpatches(B)は修正する必要がある．\n'
         '\t// 複数の条件に対して求めたい場合，\n'
@@ -87,13 +87,12 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\twriteControl\ttimeStep;\n'
         '\t\twriteInterval\t1;\n'
         '\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n'
-        '\t}')
+        '\t}'))
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
-    if controlDict.string != string:
-        os.rename(controlDict_path, controlDict_path + '_bak')
-        with open(controlDict_path, 'w') as f:
-            f.write(string)
+    os.rename(controlDict_path, controlDict_path + '_bak')
+    with open(controlDict_path, 'w') as f:
+        f.write(string)
 
     print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにforcesに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
@@ -157,7 +156,7 @@ if __name__ == '__main__':
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     forces_dir_list = [i['parent']['key'] for i in types if dictParse.find_element([{'type': 'word'}],
-        parent = types['element'])['element'] == 'forces']
+        parent = i['element'])['element'] == 'forces']
     if len(forces_dir_list) == 0:
         print(f'エラー: ファイル {controlDict_path} でforcesに関する指示がありません．')
         sys.exit(1)
