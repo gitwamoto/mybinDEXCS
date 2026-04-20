@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/4/10 10:05:42 PM
+# 2026/4/20 11:39:02 AM
+
+# DictParser2で書き直し済み
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -17,6 +19,7 @@ import shutil
 from utilities import misc
 from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
+from utilities import dictParse
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
@@ -39,46 +42,47 @@ if __name__ == '__main__':
             print('エラー: -sオプションを使ってコピー元となる解析フォルダのパスを入力して下さい．')
             sys.exit(1)
 
-    controlDict = os.path.join('system', 'controlDict')
-    if not os.path.isfile(controlDict):
-        print(f'エラー: ファイル {controlDict} がありません．')
+    controlDict_path = os.path.join('system', 'controlDict')
+    if not os.path.isfile(controlDict_path):
+        print(f'エラー: ファイル {controlDict_path} がありません．')
         sys.exit(1)
 
-    dp_controlDict = DictParser(controlDict)
-    startFrom = dp_controlDict.getValueForKey(['startFrom'])
+    controlDict = DictParser2(file_name = controlDict_path)
+    startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
+        {'except type': 'ignorable'}])['element']
     if startFrom is None:
-        print('エラー: %sファイルにstartFromの指定がありません．' % controlDict)
+        print(f'エラー: ファイル {controlDict_path} にstartFromの指定がありません．')
         sys.exit(1)
-    startFrom = startFrom[0]
+    startFrom = startFrom['value']
     if startFrom == 'latestTime':
         start_from = misc.latestTime()
         if start_from is None:
             print('エラー: 結果フォルダがありません．')
             sys.exit(1)
-        start_from = 'latestTime = ' + start_from
+        start_from = f'latestTime = {start_from}'
     elif startFrom == 'firstTime':
         start_from = misc.firstTime()
         if start_from is None:
             print('エラー: 結果フォルダがありません．')
             sys.exit(1)
-        start_from = 'firstTime = ' + start_from
+        start_from = f'firstTime = {start_from}'
     elif startFrom == 'startTime':
-        start_from = dp_controlDict.getValueForKey(['startTime'])
+        start_from = controlDict.find_element([{'type': 'dictionary', 'key': 'startTime'},
+            {'except type': 'ignorable'}])['element']
         if start_from is None:
-            print('エラー: %sファイルにstartTimeの指定がありません．' % controlDict)
+            print(f'エラー: ファイル {controlDict_path} にstartTimeの指定がありません．')
             sys.exit(1)
-        start_from = 'startTime = ' + str(start_from)
+        start_from = f"startTime = {start_from['value']}"
     else:
-        print('エラー: %sファイルのstartFromの指定が正しくありません．' % controlDict)
+        print(f'エラー: ファイル {controlDict_path} のstartFromの指定が正しくありません．')
         sys.exit(1)
 
-    print('現在の解析フォルダにある' + controlDict + 'に書いてあるstartFrom = ' +
-        start_from + 'の結果を他の解析フォルダのlatestTimeの結果で書き換えます．')
+    print(f'現在の解析フォルダにある {controlDict_path} に書いてあるstartFrom = '
+        f'{start_from}の結果を他の解析フォルダのlatestTimeの結果で書き換えます．')
     print('メッシュが違っても良いですが，境界の形や境界条件は同じでないといけません．')
 
     if interactive:
-        source_path = (raw_input if sys.version_info.major <= 2 else input)(
-            'コピー元となる解析フォルダのパスを入力して下さい． > ').strip()
+        source_path = input('コピー元となる解析フォルダのパスを入力して下さい． > ').strip()
 
     command = 'mapFields -consistent -sourceTime latestTime ' + source_path
     if subprocess.call(command, shell = True) != 0:
@@ -86,8 +90,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()
