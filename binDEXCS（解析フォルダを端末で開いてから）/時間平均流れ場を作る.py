@@ -4,6 +4,8 @@
 # by Yukiharu Iwamoto
 # 2026/4/11 7:42:26 PM
 
+# DictParser2で書き直し済み
+
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行．system/controlDictのfunctionsにfieldAverageに関する指示を書き込んでいることが前提
@@ -23,8 +25,8 @@ import glob
 import shutil
 from utilities import misc
 from utilities import dictFormat
-from utilities.dictParse import DictParser, DictParserList
 from utilities import rmObjects
+from utilities import dictParse
 path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
@@ -37,47 +39,67 @@ def append_functions_in_controlDict(controlDict_path):
     a = ''
     for f in misc.volFieldList(misc.latestTime()):
         a += (
-            f + '\n' +
-            '{\n' +
-            'mean\ton /* 平均，onで計算 */;\n' +
-            'prime2Mean\ton /* ' + (
+            f'\t\t\t{f}\n'
+            '\t\t\t{\n'
+            '\t\t\t\tmean\ton; // 平均，onで計算\n'
+            '\t\t\t\tprime2Mean\ton; // '
+        ) + (
             '変動^2の平均，onで計算' if f != 'U' else
-            '変動速度相関の平均（レイノルズ応力に-1をかけたもの），' +
-                'uu, uv, uw, vv, vw, wwの順で出力，onで計算') +
-            ' */;\n' +
-            'base\ttime;\n' +
-            '}\n'
+            '変動速度相関の平均（レイノルズ応力に-1をかけたもの），uu, uv, uw, vv, vw, wwの順で出力，onで計算'
+        ) + (
+            '\t\t\t\t\n'
+            '\t\t\t\tbase\ttime;\n'
+            '\t\t\t}\n'
         )
     a = (
-        '// 時間平均流れ場を作る．\n' +
-        'FA // <- (A) 時間フォルダ内に作られるファイルの名前につく文字列，' +
-            '他と重複してはいけない！\n' +
-        '{\n' +
-        'type\tfieldAverage;\n' +
-        'libs\t("libfieldFunctionObjects.so");\n' +
-        'enabled\tyes /* yesで実行 */;\n' +
-        'writeControl\twriteTime;\n' +
-        'fields\t// 時間平均を計算したいパラメータ\n' +
-        '(\n' + a + ');\n' +
-        '}\n'
+        '\t// 時間平均流れ場を作る．\n'
+        '\tFA // <- (A) 時間フォルダ内に作られるファイルの名前につく文字列，他と重複してはいけない！\n'
+        '\t{\n'
+        '\t\ttype\tfieldAverage;\n'
+        '\t\tlibs\t("libfieldFunctionObjects.so");\n'
+        '\t\tenabled\tyes; // yesで実行\n'
+        '\t\twriteControl\twriteTime;\n'
+        '\t\tfields // 時間平均を計算したいパラメータ\n'
+        '\t\t(\n'
+    ) + a + (
+        '\t\t);\n'
+        '\t}\n'
     )
-    dp_controlDict = DictParser(controlDict_path)
-    x = dp_controlDict.getValueForKey(['functions'])
-    if x is not None:
-        dictFormat.insertEntryIntoBlockBottom(entry = DictParser(string = a).contents, block = x)
-    else:
-        dictFormat.insertEntryIntoTopLayerBottom(
-            entry = DictParser(string = '\nfunctions\n{\n' + a + '}\n').contents,
-            contents = dp_controlDict.contents)
+
+    controlDict = DictParser(controlDict_path)
+    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+    if functions is None:
+        linebreak_and_functions = dictParse.DictParser2(string =
+            '\n'
+            '\n'
+            'functions\n'
+            '{\n'
+            '}').elements
+        tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
+            reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
+        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+        functions = linebreak_and_functions[-1]
+
+    block_start_index = dictParse.find_element(['type': 'block_start'], parent = functions)['index']
+    block_end = dictParse.find_element([{'except type': 'whitespace|linebreak|block_end'}],
+        parent = functions, end = block_start_index, reverse = True, index_not_found = block_start_index + 1)
+    functions[block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+        ('\n' if block_end['index'] == block_start_index + 1 else '\n\n') + a)
+
+    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    os.rename(controlDict_path, controlDict_path + '_bak')
+    with open(controlDict_path, 'w') as f:
+        f.write(string)
+
     shutil.copy(controlDict_path, controlDict_path + '_bak')
-    dp_controlDict = dictFormat.moveLineToBottom(dp_controlDict)
-    dp_controlDict.writeFile(controlDict_path)
+    controlDict = dictFormat.moveLineToBottom(controlDict)
+    controlDict.writeFile(controlDict_path)
     print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにfieldAverageに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
     subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {controlDict_path}', shell = True)
-    return dp_controlDict
+    return controlDict
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -139,11 +161,11 @@ if __name__ == '__main__':
         fieldAverage_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
             controlDict_path + 'ファイルの内容を確認して下さい．functionsにfieldAverageに関する指示が書き込まれていますか？ (y/n) > '
             ).strip().lower() == 'y' else False
-    dp_controlDict = DictParser(controlDict_path) if fieldAverage_is_written else append_functions_in_controlDict(controlDict_path)
+    controlDict = DictParser(controlDict_path) if fieldAverage_is_written else append_functions_in_controlDict(controlDict_path)
 
     properties_list = []
-    if dp_controlDict.getValueForKey(['functions']) is not None:
-        for x in dp_controlDict.getValueForKey(['functions']):
+    if controlDict.getValueForKey(['functions']) is not None:
+        for x in controlDict.getValueForKey(['functions']):
             if DictParserList.isType(x, DictParserList.BLOCK):
                 for y in x.value():
                     if (DictParserList.isType(y, DictParserList.DICT) and
