@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:59:13 PM
+# 2026/4/20 11:17:26 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -230,7 +230,7 @@ if __name__ == '__main__':
             {'except type': 'ignorable'}], parent = CUSTOM_OPTIONS)['element']['value']),
         bounding_box = [float(i['element']['value']) for i in
             dictParse.find_all_elements([{'type': 'dictionary', 'key': 'boundingBox'}, {'type': 'list'},
-                {'type': 'list'}, {'except type': 'ignorable|list_start|list_end'}], parent = CUSTOM_OPTIONS)]
+                {'type': 'list'}, {'except type': 'ignorable|list_start|list_end'}], parent = CUSTOM_OPTIONS)],
         front_name = front_name, back_name = back_name)
 
     # geometry
@@ -366,7 +366,7 @@ if __name__ == '__main__':
             f' -f {front_name} -b {back_name} -s', shell = True)
 
     regionProperties_path = os.path.join('constant', 'regionProperties')
-    if snappyHexMeshDict.find_element({'type': 'block', 'key': 'castellatedMeshControls'},
+    if snappyHexMeshDict.find_element([{'type': 'block', 'key': 'castellatedMeshControls'},
         {'type': 'dictionary', 'key': 'locationsInMesh'}])['element'] is not None:
         for i in glob.iglob(os.path.join('constant', '*' + os.sep)):
             i += 'polyMesh' # i/polyMeshというパスのフォルダがあるはず
