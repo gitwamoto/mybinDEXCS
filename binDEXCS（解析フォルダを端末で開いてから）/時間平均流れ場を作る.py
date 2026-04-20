@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/4/11 7:42:26 PM
+# 2026/4/20 1:17:27 PM
 
 # DictParser2で書き直し済み
 
@@ -91,9 +91,6 @@ def append_functions_in_controlDict(controlDict_path):
     with open(controlDict_path, 'w') as f:
         f.write(string)
 
-    shutil.copy(controlDict_path, controlDict_path + '_bak')
-    controlDict = dictFormat.moveLineToBottom(controlDict)
-    controlDict.writeFile(controlDict_path)
     print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにfieldAverageに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
@@ -158,20 +155,15 @@ if __name__ == '__main__':
     misc.setEnabledInControlDictFunctions(enabled = False)
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'fieldAverage')
     if interactive:
-        fieldAverage_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            controlDict_path + 'ファイルの内容を確認して下さい．functionsにfieldAverageに関する指示が書き込まれていますか？ (y/n) > '
-            ).strip().lower() == 'y' else False
-    controlDict = DictParser(controlDict_path) if fieldAverage_is_written else append_functions_in_controlDict(controlDict_path)
+        fieldAverage_is_written = True if input(f'ファイル {controlDict_path} の内容を確認して下さい．'
+            'functionsにfieldAverageに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
+    controlDict = (DictParser2(file_name = controlDict_path) if fieldAverage_is_written
+        else append_functions_in_controlDict(controlDict_path))
 
-    properties_list = []
-    if controlDict.getValueForKey(['functions']) is not None:
-        for x in controlDict.getValueForKey(['functions']):
-            if DictParserList.isType(x, DictParserList.BLOCK):
-                for y in x.value():
-                    if (DictParserList.isType(y, DictParserList.DICT) and
-                        y.key() == 'type' and 'fieldAverage' in y.value()):
-                        properties_list.append(x.key() + 'Properties')
-                        break
+    types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
+        {'type': 'dictionary', 'key': 'type'}])
+    properties_list = [f"{i['parent']['key']}Properties" for i in types if dictParse.find_element([{'type': 'word'}],
+        parent = i['element'])['element'] == 'fieldAverage']
     if len(properties_list) == 0:
         print(f'エラー: ファイル {controlDict_path} でfieldAverageに関する指示がありません．')
         sys.exit(1)
@@ -179,7 +171,7 @@ if __name__ == '__main__':
     if interactive:
         time_begin, time_end, noZero = misc.setTimeBeginEnd('平均')
     # https://develop.openfoam.com/Development/openfoam/-/tree/maintenance-v1906/src/functionObjects/field/fieldAverage
-    command = 'Exec: ' + misc.execPostProcess(time_begin, time_end, noZero) + '\n'
+    command_string = f'Exec: {misc.execPostProcess(time_begin, time_end, noZero)}\n'
 
     if not os.path.isdir('postProcessing'):
         os.mkdir('postProcessing')
@@ -190,32 +182,30 @@ if __name__ == '__main__':
     time_begin = float(time_begin)
     time_end = float(time_end)
     for properties in properties_list:
-        print('\n結果は各時間のフォルダに書き出され，' +
-            'さらに各時間のフォルダの' + os.path.join('uniform', properties) +
-            'に情報（何秒間の平均かなど）が記録されます．')
+        print('\n結果は各時間のフォルダに書き出され，'
+            f'さらに各時間のフォルダの{os.path.join("uniform", properties)}に情報（何秒間の平均かなど）が記録されます．')
 
-        x = []
+        time_dirs = []
         for d in glob.iglob('*' + os.sep):
             try:
                 d = os.path.dirname(d)
                 t = float(d)
                 if t >= time_begin and t <= time_end:
-                    x.append(d)
+                    time_dirs.append(d)
                     p = os.path.join(d, 'uniform', properties)
                     if not os.path.isfile(p):
                         with open(p, 'w') as f:
-                            f.write(command)
+                            f.write(command_string)
             except:
                 pass
-        x.sort()
-        longest = x[-1]
-        x = x[:-1]
+        time_dirs.sort()
+        longest = time_dirs[-1]
+        time_dirs = time_dirs[:-1]
         if interactive:
-            delete_except_for_newest_folder = True if (raw_input if sys.version_info.major <= 2 else input)(
-                '{}以外のフォルダにある平均データを消しますか？ '.format(longest) + '(y/n, 多くの場合yのはず) > '
-                ).strip().lower() == 'y' else False
+            delete_except_for_newest_folder = True if input(f'{longest}以外のフォルダにある平均データを消しますか？'
+                ' (y/n, 多くの場合yのはず) > ').strip().lower() == 'y' else False
         if delete_except_for_newest_folder:
-            for d in x:
+            for d in time_dirs:
                 try:
                     for f in glob.iglob(os.path.join(d, '*Mean')):
                         os.remove(f)
@@ -225,8 +215,7 @@ if __name__ == '__main__':
                     pass
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()
