@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/4/22 2:19:20 PM
+# 2026/4/22 7:16:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -43,7 +43,7 @@ domains = 1
 with_function_objects = False
 sigFpe_is_found = False
 controlDict_path = os.path.join('system', 'controlDict')
-regionProperties = os.path.join('constant', 'regionProperties')
+regionProperties_path = os.path.join('constant', 'regionProperties')
 boundary = os.path.join('constant', 'polyMesh', 'boundary')
 bounds_idle = [
     {'name': 'nAlphaSubCycles', 'type': 'discrete', 'domain': range(1, 21)},
@@ -65,7 +65,7 @@ def handler(signum, frame):
     if domains != 1:
         if best_folder_idle is None:
             command = 'reconstructPar -newTimes -noFunctionObjects'
-            if os.path.exists(regionProperties):
+            if os.path.exists(regionProperties_path):
                 command += ' -allRegions'
             subprocess.call(command, shell = True)
             rmObjects.removeProcessorDirs('noLatest')
@@ -121,6 +121,7 @@ def potentialFoam(latest_time):
                     '\tlocation\t"system";\n'
                     '\tobject\tchangeDictionaryDict;\n'
                     '}\n'
+                    '\n'
                     'p\n'
                     '{\n')
                 f.write(dictparse.file_string([
@@ -145,8 +146,8 @@ def potentialFoam(latest_time):
                 os.rename(changeDictionaryDict_bak_path, changeDictionaryDict_path)
             os.remove(p_bak_path)
         if domains != 1:
-            command = "reconstructPar -withZero -time '{}' -noFunctionObjects".format(latest_time)
-            if os.path.exists(regionProperties):
+            command = f"reconstructPar -withZero -time '{latest_time}' -noFunctionObjects"
+            if os.path.exists(regionProperties_path):
                 command += ' -allRegions'
             subprocess.call(command, shell = True)
             #                 43210987654321
@@ -164,12 +165,12 @@ def calculate():
     for i in ('PyFoam*', '*.logfile', '*.logfile.restart*', 'log.*'):
         for f in glob.iglob(i):
             os.remove(f)
-    command = ('pyFoamPlotRunner.py ' +
-        '--hardcopy ' +
-        '--non-persist ' +
-        '--no-pickled-file ' +
-        '--with-courant ' +
-        '--with-deltat ' +
+    command = ('pyFoamPlotRunner.py '
+        '--hardcopy '
+        '--non-persist '
+        '--no-pickled-file '
+        '--with-courant '
+        '--with-deltat '
         '--frequency=10.0 ')
     if domains != 1:
         command += '--autosense-parallel '
@@ -178,7 +179,7 @@ def calculate():
     if not with_function_objects:
         command += ' -noFunctionObjects'
     subprocess.call(command, shell = True)
-    with open('PyFoamRunner.' + application + '.logfile', 'r') as f:
+    with open(f'PyFoamRunner.{application}.logfile', 'r') as f:
         s = f.read()
     global sigFpe_is_found
     sigFpe_is_found = False if s.rfind('Foam::sigFpe::sigHandler(int)') == -1 else True
@@ -232,7 +233,7 @@ def calculate_idle(x):
         best_steps_idle = steps
         if domains != 1:
             command = 'reconstructPar -latestTime -noFunctionObjects'
-            if os.path.exists(regionProperties):
+            if os.path.exists(regionProperties_path):
                 command += ' -allRegions'
             subprocess.call(command, shell = True)
         latest_time = misc.latestTime()
@@ -270,9 +271,8 @@ def remove_entires_in_DPL(contents, comment):
         i += 1
 
 def remove_unnecessary_entries_in_controlDict():
-    dp = DictParser(controlDict_path)
-    s_old = dp.toString()
-    startFrom = dp.getValueForKey(['startFrom'])
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'}])['element']
     if startFrom is None:
         print(f'エラー: ファイル {controlDict_path}でstartFromが指定されていません．')
         if os.path.isdir('0_bak'):
@@ -280,15 +280,23 @@ def remove_unnecessary_entries_in_controlDict():
                 shutil.rmtree('0')
             shutil.move('0_bak', '0')
         sys.exit(1)
-    if startFrom[0] != 'latestTime':
-        dp.setValueForKey(['startFrom'], ['latestTime'])
+    startFrom_value = dictParse.find_element(['except type': 'ignorable'], parent = startFrom)['element']
+    if startFrom_value != 'latestTime':
+        startFrom_value['patent'][startFrom_value['index']] = dictParse.DictParser2(string = 'latestTime').elements[0]
         print(f'!!! ファイル {controlDict_path} のstartFromをlatestTimeに書き換えました．')
-    remove_entires_in_DPL(dp.contents, r'^/\* (\(DECREASED\) time step from .+|idle calculation )\*/$')
-    dp = dictFormat.moveLineToBottom(dp)
-    s = dp.toString()
-    if s != s_old:
+    deltaT = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}]
+    comment = dictParse.find_element([{'type': 'line_comment|block_comment'}],
+        parent = deltaT['element'], reverse = True)['element']
+    if comment is not None and ('(DECREASED)' in comment['value'] or 'idle calculation' in comment['value']):
+        del deltaT['parent'][deltaT['index']]
+        if (deltaT['index'] < len(deltaT['parent']) and
+            deltaT['parent'][deltaT['index']]['type'] == 'linebreak'):
+            del deltaT['parent'][deltaT['index']]
+    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    if controlDict.string != string:
+#        os.rename(controlDict_path, controlDict_path + '_bak')
         with open(controlDict_path, 'w') as f:
-            f.write(s)
+            f.write(string)
 
 def remove_unnecessary_entries_in_fvSolution():
     def remove_unnecessary_entries_in(path):
@@ -454,7 +462,7 @@ if __name__ == '__main__':
 
     if os.path.isdir('processor0'):
         command = 'reconstructPar -newTimes -noFunctionObjects'
-        if os.path.exists(regionProperties):
+        if os.path.exists(regionProperties_path):
             command += ' -allRegions'
         subprocess.call(command, shell = True)
     latest_time = misc.latestTime()
@@ -585,7 +593,7 @@ if __name__ == '__main__':
                     os.symlink(os.path.join(os.pardir, 'decomposeParDict'), 'decomposeParDict') # can't overwrite
                     os.chdir(os.path.join(os.pardir, os.pardir))
             command = 'decomposePar -latestTime -noFunctionObjects'
-            if os.path.exists(regionProperties):
+            if os.path.exists(regionProperties_path):
                 command += ' -allRegions'
             if subprocess.call(command, shell = True) != 0:
                 print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
@@ -619,7 +627,7 @@ if __name__ == '__main__':
             calculate()
             if domains != 1:
                 command = 'reconstructPar -newTimes -noFunctionObjects'
-                if os.path.exists(regionProperties):
+                if os.path.exists(regionProperties_path):
                     command += ' -allRegions'
                 subprocess.call(command, shell = True)
                 rmObjects.removeProcessorDirs('noLatest')
