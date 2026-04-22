@@ -123,11 +123,13 @@ def potentialFoam(latest_time):
                     '}\n'
                     'p\n'
                     '{\n')
-                f.write(dictparse.file_string(dictParse.DictParser2(
-                    file_name = p_bak_path).find_element([{'type': 'block'}, {'key': 'boundaryField'}])['element'],
+                f.write(dictparse.file_string([
+                    dictParse.DictParser2(file_name = p_bak_path).find_element(
+                        [{'type': 'block'}, {'key': 'boundaryField'}])['element']
+                    ],
                     indent_level = 1, pretty_print = True))
-                f.write('\n}'
-                    '\n')
+                f.write('\n'
+                    '}\n')
             command = (('changeDictionary' if domains == 1 else f'mpirun -np {domains} changeDictionary -parallel') +
                 ' -enableFunctionEntries')
             if subprocess.call(command, shell = True) == 0:
