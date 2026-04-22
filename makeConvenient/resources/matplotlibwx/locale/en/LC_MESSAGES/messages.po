@@ -1,0 +1,880 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2019 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Yukiharu Iwamoto <iwamoto.yukiharu.mc@ehime-u.ac.jp>, 2019.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-08 12:45+0900\n"
+"PO-Revision-Date: 2019-09-02 21:52+0900\n"
+"Last-Translator: Yukiharu Iwamoto <iwamoto@iwamoto-4.local>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: matplotlibwx.py:118
+msgid "なし"
+msgstr "None"
+
+#: matplotlibwx.py:120
+msgid "実線"
+msgstr "Solid"
+
+#: matplotlibwx.py:120
+msgid "破線"
+msgstr "Broken"
+
+#: matplotlibwx.py:120
+msgid "一点鎖線"
+msgstr "Dash-dot"
+
+#: matplotlibwx.py:120
+msgid "点線"
+msgstr "Dotted"
+
+#: matplotlibwx.py:120
+msgid "線なし"
+msgstr "None"
+
+#: matplotlibwx.py:123 matplotlibwx.py:127
+msgid "虹色"
+msgstr "Rainbow colors"
+
+#: matplotlibwx.py:123 matplotlibwx.py:127
+msgid "白→黒"
+msgstr "White -> Black"
+
+#: matplotlibwx.py:123 matplotlibwx.py:127
+msgid "黒→白"
+msgstr "Black -> White"
+
+#: matplotlibwx.py:123 matplotlibwx.py:127
+msgid "白→赤"
+msgstr "White -> Red"
+
+#: matplotlibwx.py:123 matplotlibwx.py:127
+msgid "白→青"
+msgstr "White -> Blue"
+
+#: matplotlibwx.py:123
+msgid "記号の大きさ"
+msgstr "Marker sizes"
+
+#: matplotlibwx.py:124
+msgid "虹色+記号の大きさ"
+msgstr "Rainbow colors + Marker sizes"
+
+#: matplotlibwx.py:124
+msgid "白→黒+記号の大きさ"
+msgstr "White -> Black + Marker sizes"
+
+#: matplotlibwx.py:124
+msgid "黒→白+記号の大きさ"
+msgstr "Black -> White + Marker sizes"
+
+#: matplotlibwx.py:124
+msgid "白→赤+記号の大きさ"
+msgstr "White -> Red + Marker sizes"
+
+#: matplotlibwx.py:125
+msgid "白→青+記号の大きさ"
+msgstr "White -> Blue + Marker sizes"
+
+#: matplotlibwx.py:127
+msgid "塗りなし"
+msgstr "No paint"
+
+#: matplotlibwx.py:1176
+msgid ""
+"この後に現れる（Figure 1というタイトルを持つ）グラフウインドウは，ウインドウ"
+"が閉じられるまで処理をブロックします！\n"
+"グラフを描きなおしたい場合は，その前に必ずグラフウインドウを閉じて下さい．"
+msgstr ""
+"A graph window which appears next (titled Figure 1) will block procedures "
+"until the window is closed!\n"
+"Be sure to close the graph window before you redraw your graph."
+
+#: matplotlibwx.py:1178
+msgid "処理をブロックします！"
+msgstr "Procedures will be blocked!"
+
+#: matplotlibwx.py:1657
+msgid ""
+"$\\mathsf{ と }$ の間に書くとTeX形式になり，上付き，下付き文字やギリシア文字"
+"が使えます．\n"
+"例）"
+msgstr ""
+"Strings between $\\mathsf{ and }$ are interpretted as Tex style. Super and "
+"subscripts and Greek symbols are available.\n"
+"Example:"
+
+#: matplotlibwx.py:1666
+msgid "x軸"
+msgstr "x-axis"
+
+#: matplotlibwx.py:1666
+msgid "y軸"
+msgstr "y-axis"
+
+#: matplotlibwx.py:1666
+msgid "z軸"
+msgstr "z-axis"
+
+#: matplotlibwx.py:1675
+msgid "範囲(から)"
+msgstr "From"
+
+#: matplotlibwx.py:1675
+msgid "範囲(まで)"
+msgstr "To"
+
+#: matplotlibwx.py:1675
+msgid "刻み"
+msgstr "Ticks"
+
+#: matplotlibwx.py:1675
+msgid "対数軸"
+msgstr "Log scale"
+
+#: matplotlibwx.py:1675
+msgid "ラベル"
+msgstr "Label"
+
+#: matplotlibwx.py:1677
+msgid "空白の場合，自動スケールになります．"
+msgstr "Auto-scale if empty"
+
+#: matplotlibwx.py:1678
+msgid "等高線またはベクトルの大きさを表す色に対する軸\n"
+msgstr "Axis for a color contour and vector scale\n"
+
+#: matplotlibwx.py:1714
+msgid "大きいほど前面に描きます．"
+msgstr "The bigger, the more drawn on the front."
+
+#: matplotlibwx.py:1715
+msgid ""
+"axes座標はグラフ枠の左下を(0, 0), 右上を(1, 1)にとる座標，data座標はふつうの"
+"x, y座標"
+msgstr ""
+"axes takes (0, 0)/(1, 1) at bottom left/top right of the axes, data is "
+"general x, y coordinates"
+
+#: matplotlibwx.py:1729 matplotlibwx.py:1791 matplotlibwx.py:1850
+#: matplotlibwx.py:1904 matplotlibwx.py:1970
+msgid "座標系"
+msgstr "Coord. sys."
+
+#: matplotlibwx.py:1729
+msgid "横座標"
+msgstr "Horiz. loc."
+
+#: matplotlibwx.py:1729
+msgid "縦座標"
+msgstr "Vert. loc."
+
+#: matplotlibwx.py:1729
+msgid "文字揃え"
+msgstr "Align"
+
+#: matplotlibwx.py:1729 matplotlibwx.py:2407
+msgid "文字列"
+msgstr "Text"
+
+#: matplotlibwx.py:1729
+msgid "サイズ"
+msgstr "Size"
+
+#: matplotlibwx.py:1733
+msgid ":左,中央,右"
+msgstr ":Left,Center,Right"
+
+#: matplotlibwx.py:1742 matplotlibwx.py:1758
+msgid "左"
+msgstr "Left"
+
+#: matplotlibwx.py:1742 matplotlibwx.py:1758
+msgid "中央"
+msgstr "Center"
+
+#: matplotlibwx.py:1742
+msgid "右"
+msgstr "Right"
+
+#: matplotlibwx.py:1791
+msgid "始点横座標"
+msgstr "Horiz. loc. of start"
+
+#: matplotlibwx.py:1791
+msgid "始点縦座標"
+msgstr "Vert. loc. of start"
+
+#: matplotlibwx.py:1791
+msgid "終点横座標"
+msgstr "Horiz. loc. of end"
+
+#: matplotlibwx.py:1791
+msgid "終点縦座標"
+msgstr "Vert. loc. of end"
+
+#: matplotlibwx.py:1792 matplotlibwx.py:1851 matplotlibwx.py:1904
+#: matplotlibwx.py:1971
+msgid "線幅"
+msgstr "Line width"
+
+#: matplotlibwx.py:1792
+msgid "線種"
+msgstr "Line type:"
+
+#: matplotlibwx.py:1792
+msgid "矢の幅"
+msgstr "Arrow width"
+
+#: matplotlibwx.py:1795
+msgid "0にすれば直線になります"
+msgstr "Straight line if 0"
+
+#: matplotlibwx.py:1850
+msgid "中心横座標"
+msgstr "Horiz. loc. of center"
+
+#: matplotlibwx.py:1850
+msgid "中心縦座標"
+msgstr "Vert. loc. of center"
+
+#: matplotlibwx.py:1851
+msgid "幅"
+msgstr "Width"
+
+#: matplotlibwx.py:1851
+msgid "高さ"
+msgstr "Height"
+
+#: matplotlibwx.py:1851
+msgid "角度[deg]"
+msgstr "Angle[deg]"
+
+#: matplotlibwx.py:1851 matplotlibwx.py:1904 matplotlibwx.py:1971
+msgid "塗りつぶし"
+msgstr "Fill"
+
+#: matplotlibwx.py:1853
+msgid "反時計回りに正"
+msgstr "Positive in counter-clockwise"
+
+#: matplotlibwx.py:1904
+msgid "頂点の横座標と縦座標"
+msgstr "Horiz. and vert. locs. of vertices"
+
+#: matplotlibwx.py:1907
+msgid ""
+"1点目の横座標, 1点目の縦座標, 2点目の横座標, 2点目の縦座標, ...\n"
+"のようにコンマ区切りで記入"
+msgstr ""
+"Write with commma delimited values like\n"
+"horiz. loc. of 1st vertex, vert. loc. of 1st vertex, horiz. loc. of 2nd "
+"vertex, vert. loc. of 2nd vertex, ..."
+
+#: matplotlibwx.py:1970
+msgid "4桁"
+msgstr "4 digits"
+
+#: matplotlibwx.py:1970
+msgid "前縁横座標"
+msgstr "Horiz. loc. of L.E."
+
+#: matplotlibwx.py:1970
+msgid "前縁縦座標"
+msgstr "Vert. loc. of L.E."
+
+#: matplotlibwx.py:1971
+msgid "後縁横座標"
+msgstr "Horiz. loc. of T.E."
+
+#: matplotlibwx.py:1971
+msgid "後縁縦座標"
+msgstr "Vert. loc. of T.E."
+
+#: matplotlibwx.py:2025
+msgid "パラメータ"
+msgstr "Parameter"
+
+#: matplotlibwx.py:2025
+msgid "数値"
+msgstr "Number"
+
+#: matplotlibwx.py:2027
+msgid "数字で始まるパラメータは不可"
+msgstr "Not available for parameters which start with a number"
+
+#: matplotlibwx.py:2160
+msgid "どちらかが空白の場合，指定しません．"
+msgstr "Not designated if either is empty."
+
+#: matplotlibwx.py:2161
+msgid ""
+"空白の場合，指定しません．\n"
+"グラフ左/下端を0，右/上端を1とします．"
+msgstr ""
+"Not designated if empty.\n"
+"Left/bottom and right/top of a graph are designated respectively by 0 and 1."
+
+#: matplotlibwx.py:2162
+msgid ""
+"空白の場合，指定しません．\n"
+"画面左/下端を0，右/上を1とします．"
+msgstr ""
+"Not designated if empty.\n"
+"Left/bottom and right/top of a screen are designated respectively by 0 and 1."
+
+#: matplotlibwx.py:2163
+msgid "下に行を追加"
+msgstr "Append a row below"
+
+#: matplotlibwx.py:2164
+msgid "選択している行を削除"
+msgstr "Remove a row selected"
+
+#: matplotlibwx.py:2165
+msgid "リセット"
+msgstr "Reset"
+
+#: matplotlibwx.py:2166
+msgid ""
+"<テキストファイルの場合>\n"
+" 1以上の整数または ' と ' で囲んだ数式\n"
+" 数式中では列番号の前に$をつけます．\n"
+" 例）"
+msgstr ""
+"<In case of a text file>\n"
+" An integer greater than or equal to 1 or a formula between single quotes.\n"
+" Column number needs $ in its front in a formula mode.\n"
+" Example:"
+
+#: matplotlibwx.py:2170
+msgid ""
+"<エクセルファイル（拡張子がxlsまたはxlsx）またはcsvファイルの場合>\n"
+" 'シート番号!読み取り開始のセル番号' で指定します．\n"
+" 行方向にデータがあるものとします．\n"
+" テキストファイルの場合と同様に，数式が使えます．\n"
+" 例）"
+msgstr ""
+"<In cases of Excel (having \"xls\" or \"xlsx\" extensions) and csv files>\n"
+" Designated by 'sheet number!cell location which reading is started from' .\n"
+" Data is assumed to be recorded in a column direction.\n"
+" A formula mode is also available like a case of a text file.\n"
+" Example:"
+
+#: matplotlibwx.py:2175
+msgid ""
+"両側が空白の場合，指定しません．\n"
+"いずれかだけの場合，-+両側で同じデータを使用します．"
+msgstr ""
+"Not designated if both sides are empty.\n"
+"The same data is applied on -+ sides if either of them is written."
+
+#: matplotlibwx.py:2176
+msgid "ドラッグ&ドロップで決めることもできます．"
+msgstr "Drag and drop is also available."
+
+#: matplotlibwx.py:2177
+msgid ""
+"次の書式を用いた数式のプロットも可能です．\n"
+"分割数の前の'/'を'L/'にすれば，対数軸上で等分割にできます：\n"
+" 数式, 変数 = [最小値, 最大値]/分割数\n"
+" [xの数式, yの数式], 変数 = [最小値, 最大値]/分割数\n"
+"例）"
+msgstr ""
+"Equation plot is available by the following format:\n"
+"Equally division on the logarithmic axis can be done if the symbol '/' in "
+"front of division is replaced by 'L/':\n"
+" equation, variable for x = [min., max.]/division, y = [min., max.]/division\n"
+" [equation for x, equation for y], variable = [min., max.]/division\n"
+"Example:"
+
+#: matplotlibwx.py:2181 matplotlibwx.py:2621 matplotlibwx.py:2858
+#: matplotlibwx.py:3044
+msgid "ファイルを開く"
+msgstr "Open a file"
+
+#: matplotlibwx.py:2194
+msgid "設定ファイル："
+msgstr "Setting file:"
+
+#: matplotlibwx.py:2200 matplotlibwx.py:2210 matplotlibwx.py:3710
+msgid "設定ファイルを開く"
+msgstr "Open a setting file"
+
+#: matplotlibwx.py:2208 matplotlibwx.py:2629 matplotlibwx.py:2870
+#: matplotlibwx.py:3057 matplotlibwx.py:3159
+msgid "開く"
+msgstr "Open"
+
+#: matplotlibwx.py:2215
+msgid "画像"
+msgstr "Image"
+
+#: matplotlibwx.py:2217
+msgid "保存先："
+msgstr "Location to save:"
+
+#: matplotlibwx.py:2223
+msgid "pngファイルを保存"
+msgstr "Save a png file"
+
+#: matplotlibwx.py:2227
+#, fuzzy
+msgid "空白の場合，matplotlibのビューワーにグラフを表示します．\n"
+msgstr ""
+"A graph will be shown in a viewer of matplotlib if empty.\n"
+"Drag and drop is also available."
+
+#: matplotlibwx.py:2231 matplotlibwx.py:2740
+msgid "大きさ："
+msgstr "Size:"
+
+#: matplotlibwx.py:2258
+msgid "データファイル"
+msgstr "Data file"
+
+#: matplotlibwx.py:2260
+msgid "読み飛ばす行の先頭文字："
+msgstr "Leading character of a line to skip:"
+
+#: matplotlibwx.py:2269
+msgid "区切り文字："
+msgstr "Delimiter chatracter:"
+
+#: matplotlibwx.py:2276
+msgid "空白の場合，半角スペースかタブ区切りになります．"
+msgstr "Space or tab-delimited if empty."
+
+#: matplotlibwx.py:2279
+msgid "読み込み終了文字列："
+msgstr "Terminator string:"
+
+#: matplotlibwx.py:2286
+msgid "空白の場合，最後の行まで読み込みます．"
+msgstr "Read rows completely to the bottom if empty"
+
+#: matplotlibwx.py:2291
+msgid "グラフ"
+msgstr "Graph"
+
+#: matplotlibwx.py:2306
+msgid "x軸目盛線"
+msgstr "x grid"
+
+#: matplotlibwx.py:2311
+msgid "y軸目盛線"
+msgstr "y grid"
+
+#: matplotlibwx.py:2316
+msgid "y軸を1進む長さ/x軸を1進む長さ："
+msgstr "Unit length in y-axis/x-axis:"
+
+#: matplotlibwx.py:2326
+msgid ""
+"数値またはauto, equal\n"
+"数値は(y軸の長さ)/(x軸の長さ)*(x軸の最大値-最小値)/(y軸の最大値-最小値)の値を"
+"入力します．\n"
+"equalは1と同じ意味です．"
+msgstr ""
+"number or auto, equal\n"
+"number corresponds to (length of y-axis)/(length of x-axis)*(max - min value "
+"in x-axis)/(max - min value in y-axis)\n"
+"equal is the same as 1."
+
+#: matplotlibwx.py:2329
+msgid "グラフの上に書く題名："
+msgstr "Title above a graph"
+
+#: matplotlibwx.py:2343
+msgid "凡例の左端："
+msgstr "Left of legend:"
+
+#: matplotlibwx.py:2353 matplotlibwx.py:2393
+msgid "上端："
+msgstr "Top:"
+
+#: matplotlibwx.py:2363
+msgid "グラフの左端："
+msgstr "Left of graph:"
+
+#: matplotlibwx.py:2373
+msgid "下端："
+msgstr "Bottom:"
+
+#: matplotlibwx.py:2383
+msgid "右端："
+msgstr "Right:"
+
+#: matplotlibwx.py:2438
+msgid "矢印．矢の幅を0にすれば直線になります．"
+msgstr "Arrows. Straight lines if arrow widths are 0."
+
+#: matplotlibwx.py:2466
+msgid "楕円"
+msgstr "Ellipes"
+
+#: matplotlibwx.py:2494
+msgid "多角形"
+msgstr "Polygons"
+
+#: matplotlibwx.py:2522
+msgid "NACA 4桁系列翼"
+msgstr "NACA 4-digits airfoil"
+
+#: matplotlibwx.py:2550
+msgid "ファイル読み取り列指定を数式で行う際に使うパラメータ"
+msgstr "Parameters used when specifying file reading columns with formulas"
+
+#: matplotlibwx.py:2601
+msgid "散布図"
+msgstr "Scatter plot"
+
+#: matplotlibwx.py:2615 matplotlibwx.py:2852 matplotlibwx.py:3038
+msgid "ファイル："
+msgstr "File:"
+
+#: matplotlibwx.py:2638 matplotlibwx.py:2879 matplotlibwx.py:3079
+msgid "xの列："
+msgstr "Col. for x:"
+
+#: matplotlibwx.py:2648 matplotlibwx.py:2889 matplotlibwx.py:3089
+msgid "yの列："
+msgstr "Col. for y:"
+
+#: matplotlibwx.py:2658
+msgid "xの-, +側誤差棒の列："
+msgstr "Cols. for -, + ends of x-error bar:"
+
+#: matplotlibwx.py:2668 matplotlibwx.py:2688
+msgid ","
+msgstr ","
+
+#: matplotlibwx.py:2678
+msgid "yの-, +側誤差棒の列："
+msgstr "Cols. for -, + ends of y-error bar:"
+
+#: matplotlibwx.py:2702 matplotlibwx.py:2919 matplotlibwx.py:3109
+msgid "読み込み："
+msgstr "Read every:"
+
+#: matplotlibwx.py:2711 matplotlibwx.py:2928 matplotlibwx.py:3118
+msgid "行ごと"
+msgstr " rows"
+
+#: matplotlibwx.py:2716
+msgid "凡例に書くラベル："
+msgstr "Label in legend:"
+
+#: matplotlibwx.py:2730
+msgid "記号："
+msgstr "Symbol:"
+
+#: matplotlibwx.py:2747
+msgid "空白の場合，指定しません．"
+msgstr "Not designated if empty."
+
+#: matplotlibwx.py:2755
+msgid "記号の塗色："
+msgstr "Symbol filling color:"
+
+#: matplotlibwx.py:2764
+msgid "記号の輪郭色："
+msgstr "Symbol edge color:"
+
+#: matplotlibwx.py:2766
+msgid "チェックを外すと輪郭を付けません．"
+msgstr "No symbol edges if not checked."
+
+#: matplotlibwx.py:2774
+msgid "線種："
+msgstr "Line type:"
+
+#: matplotlibwx.py:2784
+msgid "線色："
+msgstr "Line color:"
+
+#: matplotlibwx.py:2797 matplotlibwx.py:3099
+msgid "zの列："
+msgstr "Col. for z:"
+
+#: matplotlibwx.py:2804
+msgid "空白の場合，普通の散布図になります．\n"
+msgstr "Normal scatter plot if empty.\n"
+
+#: matplotlibwx.py:2807
+msgid "表し方："
+msgstr "Expression:"
+
+#: matplotlibwx.py:2817
+msgid "z最大の記号の大きさ＝"
+msgstr "Size of symol for z-maximum"
+
+#: matplotlibwx.py:2825
+msgid ""
+"空白の場合，指定しません．\n"
+"z最小の記号の大きさは「大きさ」で指定します．"
+msgstr ""
+"Not designated if empty.\n"
+"Size for z-minimum can be designated by \"Size.\""
+
+#: matplotlibwx.py:2829
+msgid "×z最小の記号の大きさ"
+msgstr "x Size for z-minimum "
+
+#: matplotlibwx.py:2838
+msgid "ベクトル線図"
+msgstr "Vector plot"
+
+#: matplotlibwx.py:2863
+msgid ""
+"次の書式を用いた数式のプロットも可能です．\n"
+"分割数の前の'/'を'L/'にすれば，対数軸上で等分割にできます：\n"
+" [uの数式, vの数式], xの変数 = [最小値, 最大値]/分割数, yの変数 = [最小値, 最"
+"大値]/分割数\n"
+"例）"
+msgstr ""
+"Equation plot is available by the following format:\n"
+"Equally division on the logarithmic axis can be done if the symbol '/' in "
+"front of division is replaced by 'L/':\n"
+" [equation for u, equation for v], variable for x = [min., max.]/division, y "
+"= [min., max.]/division\n"
+"Example:"
+
+#: matplotlibwx.py:2899
+msgid "uの列："
+msgstr "Col. for u:"
+
+#: matplotlibwx.py:2909
+msgid "vの列："
+msgstr "Col. for v:"
+
+#: matplotlibwx.py:2937
+msgid "矢印色："
+msgstr "Arrow color:"
+
+#: matplotlibwx.py:2947
+msgid "虹色なし"
+msgstr "No rainbow colors"
+
+#: matplotlibwx.py:2947
+msgid "虹色あり"
+msgstr "Rainbow"
+
+#: matplotlibwx.py:2947
+msgid "虹色+長さ1"
+msgstr "Rainbow+unit length"
+
+#: matplotlibwx.py:2949
+msgid ""
+"「虹色なし」は単色指定．\n"
+"「虹色あり」はベクトルの大きさに応じて矢印の色を虹色で変える．\n"
+"「虹色+長さ1」はベクトルの大きさに応じて矢印の色を虹色で変え，表示する矢印の"
+"長さを全て1にする．"
+msgstr ""
+"\"No rainbow colors\" uses a single arrow color.\n"
+"\"Rainbow\" changes colors of arrows by rainbow colors according to those "
+"sizes.\n"
+"\"Rainbow+unit length\" changes colors of arrows by rainbow colors and sets "
+"those length to unity."
+
+#: matplotlibwx.py:2954
+msgid "倍率："
+msgstr "Magnification:"
+
+#: matplotlibwx.py:2961
+msgid "ベクトルの長さにかける倍率．大きいほど長く表示される．"
+msgstr "Magnification for vector length. The larger, the longer displayed."
+
+#: matplotlibwx.py:2970
+msgid "!!Python 3でのみ有効!!→"
+msgstr "!!Available only on Python 3!!->"
+
+#: matplotlibwx.py:2970
+msgid "凡例の横座標："
+msgstr "Legend horiz. loc.:"
+
+#: matplotlibwx.py:2977
+msgid "凡例矢印先端の横座標，0/1だとグラフ枠の左/右端"
+msgstr ""
+"Horizontal coordinates of the tip of the legend arrow, 0/1 correspond to "
+"left/right edges of the graph frame."
+
+#: matplotlibwx.py:2983
+msgid "縦座標："
+msgstr "Vert. loc.："
+
+#: matplotlibwx.py:2990
+msgid "凡例矢印先端の縦座標，0/1だとグラフ枠の下/上端"
+msgstr ""
+"Vertical coordinates of the tip of the legend arrow, 0/1 correspond to "
+"bottom/top edges of the graph frame."
+
+#: matplotlibwx.py:2996
+msgid "矢印長さ："
+msgstr "Arrow length:"
+
+#: matplotlibwx.py:3008
+msgid "ラベル："
+msgstr "Label:"
+
+#: matplotlibwx.py:3024
+msgid "等高線"
+msgstr "Contour plot"
+
+#: matplotlibwx.py:3049
+msgid ""
+"次の書式を用いた数式のプロットも可能です．\n"
+"分割数の前の'/'を'L/'にすれば，対数軸上で等分割にできます：\n"
+" 数式, xの変数 = [最小値, 最大値]/分割数, yの変数 = [最小値, 最大値]/分割数\n"
+"例）"
+msgstr ""
+"Equation plot is available by the following format:\n"
+"Equally division on the logarithmic axis can be done if the symbol '/' in "
+"front of division is replaced by 'L/':\n"
+" equation, variable for x = [min., max.]/division, y = [min., max.]/"
+"division\n"
+"Example:"
+
+#: matplotlibwx.py:3066
+msgid "碁盤の目状"
+msgstr "Grid pattern"
+
+#: matplotlibwx.py:3068
+msgid ""
+"データが碁盤の目状に並んでいる時にチェックを付けると，描画が高速になります．"
+msgstr ""
+"Draws contours rapidly if checked when data is structured with grid pattern."
+
+#: matplotlibwx.py:3072
+msgid "三角形を表示"
+msgstr "Show triangles"
+
+#: matplotlibwx.py:3074
+msgid ""
+"「碁盤の目状」にチェックがついていない時に行う，デローニー分割した三角形を表"
+"示します．"
+msgstr ""
+"Shows Delaunay-segmented triangles, which is done when \"Grid pattern\" is "
+"unchecked."
+
+#: matplotlibwx.py:3126
+msgid "塗り："
+msgstr "Paint:"
+
+#: matplotlibwx.py:3135
+msgid "滑らかな面塗り"
+msgstr "Smooth paint"
+
+#: matplotlibwx.py:3161 matplotlibwx.py:3273
+msgid "保存"
+msgstr "Save"
+
+#: matplotlibwx.py:3163
+msgid "閉じる"
+msgstr "Close"
+
+#: matplotlibwx.py:3166
+msgid "別名で保存"
+msgstr "Save as an another"
+
+#: matplotlibwx.py:3170 matplotlibwx.py:4113
+msgid "pythonスクリプト形式で保存"
+msgstr "Save as a python script"
+
+#: matplotlibwx.py:3174 matplotlibwx.py:4124
+msgid "テンプレートを作る"
+msgstr "Make a template"
+
+#: matplotlibwx.py:3177
+msgid "設定ファイル"
+msgstr "Setting file"
+
+#: matplotlibwx.py:3180
+msgid "カット"
+msgstr "Cut"
+
+#: matplotlibwx.py:3183
+msgid "コピー"
+msgstr "Copy"
+
+#: matplotlibwx.py:3186
+msgid "ペースト"
+msgstr "Paste"
+
+#: matplotlibwx.py:3189
+msgid "編集"
+msgstr "Edit"
+
+#: matplotlibwx.py:3192
+msgid "グラフをプロット"
+msgstr "Plot a graph"
+
+#: matplotlibwx.py:3195 matplotlibwx.py:4158
+msgid "設定ファイルから直接プロット"
+msgstr "Plot directly from setting file"
+
+#: matplotlibwx.py:3198
+msgid "プロット"
+msgstr "Plot"
+
+#: matplotlibwx.py:3201
+msgid "アップデート"
+msgstr "Update"
+
+#: matplotlibwx.py:3203
+msgid "使い方の動画"
+msgstr "Video on how to use"
+
+#: matplotlibwx.py:3205
+msgid "ヘルプ"
+msgstr "Help"
+
+#: matplotlibwx.py:3271
+msgid "設定を保存しますか？"
+msgstr "Save settings?"
+
+#: matplotlibwx.py:3272
+msgid "設定を "
+msgstr "Save settings to "
+
+#: matplotlibwx.py:3272
+msgid " に保存しますか？"
+msgstr " ?"
+
+#: matplotlibwx.py:4104
+msgid "設定ファイルを保存"
+msgstr "Save in setting file"
+
+#: matplotlibwx.py:4173
+#, fuzzy
+msgid "GitHubに接続できませんでした．後でやり直して下さい．"
+msgstr "Could not connect to GitHub. Please try again later."
+
+#: matplotlibwx.py:4174
+msgid "接続エラー"
+msgstr "Connection error"
+
+#: matplotlibwx.py:4213
+msgid "アップデートされました．再起動します．"
+msgstr "The program has been updated and will restart."
+
+#: matplotlibwx.py:4214
+msgid "アップデート完了"
+msgstr "Update completed."
+
+#: matplotlibwx.py:4218
+msgid "アップデートの必要はありません．"
+msgstr "No updates."
+
+#: matplotlibwx.py:4219
+msgid "プログラムは最新です．"
+msgstr "The program is up to date."
