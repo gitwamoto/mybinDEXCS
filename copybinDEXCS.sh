@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/4/17 3:55:22 PM
+# 2026/4/22 7:00:10 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -675,9 +675,5 @@ if $imsudoer; then
 	fi
 fi
 
-#tips='\n\n[お知らせ] '
-tips=''
-if [ "$dexcs_version" = "2019" ]; then
-	tips='(変更点1) Pythonのバージョンは3です．\n(変更点2) 端末からfreecadを実行するコマンドは，freecad-dailyとfreecadcmd-dailyです．\n(変更点3) Paraviewで取り込むファイルの拡張子が.foamになりました.\n'
-fi
+tips='[お知らせ] Freecadでダウングレードボタンがなくなっている人は，以下のコマンドを端末で実行して下さい：\n\n     sudo aptitude install -y freecad-daily\n\n※パスワード入力を要求された時は，アカウントのパスワードを入力して下さい．\n※端末でのパスワード入力では，「●●●」のような伏せ字は出ません！'
 zenity --title='終了' --info --text="$tips"'\n(DEXCS ver. '"$dexcs_version"')' --width=500
