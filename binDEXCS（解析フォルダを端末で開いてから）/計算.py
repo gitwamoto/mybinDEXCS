@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/4/10 10:15:13 PM
+# 2026/4/22 2:19:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -37,6 +37,7 @@ from utilities.dictParse import DictParser, DictParserList
 from utilities import dictFormat
 from utilities import appendEntries
 from utilities import rmObjects
+from utilities import dictParse
 
 domains = 1
 with_function_objects = False
@@ -81,50 +82,56 @@ def handler(signum, frame):
     sys.exit(1)
 
 def potentialFoam(latest_time):
-    p_potentialflow = os.path.join(latest_time, 'p_potentialflow')
-    p = os.path.join(latest_time, 'p')
-    p_bak = os.path.join(latest_time, 'p_bak')
+    p_potentialflow_path = os.path.join(latest_time, 'p_potentialflow')
+    p_path = os.path.join(latest_time, 'p')
+    p_bak_path = os.path.join(latest_time, 'p_bak')
     if domains == 1:
-        has_p_potentialflow = os.path.isfile(p_potentialflow)
+        has_p_potentialflow = os.path.isfile(p_potentialflow_path)
     else:
         has_p_potentialflow = False
         #                    0123456789
         for d in glob.iglob('processor*' + os.sep):
             try:
                 int(d[9:-len(os.sep)])
-                pp = os.path.join(d, p_potentialflow)
+                pp = os.path.join(d, p_potentialflow_path)
                 if os.path.isfile(pp):
                     has_p_potentialflow = True
-                    os.rename(pp, os.path.join(d, p))
+                    os.rename(pp, os.path.join(d, p_path))
             except:
                 pass
     if has_p_potentialflow:
-        if os.path.isfile(p):
-            os.rename(p, p_bak)
-        if os.path.isfile(p_potentialflow):
-            os.rename(p_potentialflow, p)
-    command = 'potentialFoam' if domains == 1 else 'mpirun -np {} potentialFoam -parallel'.format(domains)
-    command += ' -writep -writePhi -noFunctionObjects | tee potentialFoam.log'
+        if os.path.isfile(p_path):
+            os.rename(p_path, p_bak_path)
+        if os.path.isfile(p_potentialflow_path):
+            os.rename(p_potentialflow_path, p_path)
+    command = (('potentialFoam' if domains == 1 else f'mpirun -np {domains} potentialFoam -parallel') +
+        ' -writep -writePhi -noFunctionObjects | tee potentialFoam.log')
     if subprocess.call(command, shell = True) == 0:
-        if os.path.isfile(p_bak): # has_p_potentialflow
-            changeDictionaryDict = os.path.join('system', 'changeDictionaryDict')
-            changeDictionaryDict_bak = changeDictionaryDict + '_bak'
-            if os.path.isfile(changeDictionaryDict):
-                os.rename(changeDictionaryDict, changeDictionaryDict_bak)
-            with open(os.path.join('system', 'changeDictionaryDict'), 'w') as f:
-                f.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tdictionary;\n')
-                f.write('\tlocation\t"system";\n')
-                f.write('\tobject\tchangeDictionaryDict;\n')
-                f.write('}\n')
-                f.write('p\n')
-                f.write('{\n')
-                dp = DictParser(p_bak)
-                dp.writeContents(dp.getDPLForKey(['boundaryField']), f, indent = '\t', last_char = '\n')
-                f.write('\n}\n')
-            command = 'changeDictionary' if domains == 1 else 'mpirun -np {} changeDictionary -parallel'.format(domains)
-            command += ' -enableFunctionEntries'
+        if os.path.isfile(p_bak_path): # has_p_potentialflow
+            changeDictionaryDict_path = os.path.join('system', 'changeDictionaryDict')
+            changeDictionaryDict_bak_path = changeDictionaryDict_path + '_bak'
+            if os.path.isfile(changeDictionaryDict_path):
+                os.rename(changeDictionaryDict_path, changeDictionaryDict_bak_path)
+            with open(changeDictionaryDict_path, 'w') as f:
+                f.write('FoamFile\n'
+                    '{\n'
+                    '\tversion\t2.0;\n'
+                    '\tformat\tascii;\n'
+                    '\tclass\tdictionary;\n'
+                    '\tlocation\t"system";\n'
+                    '\tobject\tchangeDictionaryDict;\n'
+                    '}\n'
+                    'p\n'
+                    '{\n')
+                f.write(dictparse.file_string(dictParse.DictParser2(
+                    file_name = p_bak_path).find_element([{'type': 'block'}, {'key': 'boundaryField'}])['element'],
+                    indent_level = 1, pretty_print = True))
+                f.write('\n}'
+                    '\n')
+            command = (('changeDictionary' if domains == 1 else f'mpirun -np {domains} changeDictionary -parallel') +
+                ' -enableFunctionEntries')
             if subprocess.call(command, shell = True) == 0:
-                os.remove(changeDictionaryDict)
+                os.remove(changeDictionaryDict_path)
             else:
                 print('エラー: potentialFoamは成功しましたが，pの境界条件を希望するものに修正できませんでした．')
                 if os.path.isdir('0_bak'):
@@ -132,9 +139,9 @@ def potentialFoam(latest_time):
                         shutil.rmtree('0')
                     shutil.move('0_bak', '0')
                 sys.exit(1)
-            if os.path.isfile(changeDictionaryDict_bak):
-                os.rename(changeDictionaryDict_bak, changeDictionaryDict)
-            os.remove(p_bak)
+            if os.path.isfile(changeDictionaryDict_bak_path):
+                os.rename(changeDictionaryDict_bak_path, changeDictionaryDict_path)
+            os.remove(p_bak_path)
         if domains != 1:
             command = "reconstructPar -withZero -time '{}' -noFunctionObjects".format(latest_time)
             if os.path.exists(regionProperties):
