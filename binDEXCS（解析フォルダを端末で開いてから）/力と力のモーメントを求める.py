@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/4/20 8:02:37 PM
+# 2026/4/22 12:46:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
 def appropriate_tick(xmin, xmax, n):

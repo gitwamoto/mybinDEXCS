@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/1/22 12:29:25 PM
+# 2026/4/22 12:47:31 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -13,7 +13,7 @@ import Mesh
 import re
 import sys
 
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 if path_binDEXCS not in [i.encode('UTF-8') if type(i) is unicode else i
     for i in sys.path] if sys.version_info.major <= 2 else sys.path:
     sys.path.append(path_binDEXCS)

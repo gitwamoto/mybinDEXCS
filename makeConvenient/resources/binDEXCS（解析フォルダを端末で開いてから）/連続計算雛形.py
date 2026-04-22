@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/4/11 7:44:51 PM
+# 2026/4/22 12:46:23 PM
 
 import os
 import signal
@@ -10,7 +10,7 @@ import sys
 import shutil
 import subprocess
 import glob
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 if path_binDEXCS not in sys.path:
     sys.path.append(path_binDEXCS)
 from utilities import appendEntries

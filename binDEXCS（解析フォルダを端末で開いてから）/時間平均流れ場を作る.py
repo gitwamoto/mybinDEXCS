@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/4/20 8:08:29 PM
+# 2026/4/22 12:46:08 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -27,7 +27,7 @@ from utilities import misc
 from utilities import dictFormat
 from utilities import rmObjects
 from utilities import dictParse
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
 def handler(signum, frame):

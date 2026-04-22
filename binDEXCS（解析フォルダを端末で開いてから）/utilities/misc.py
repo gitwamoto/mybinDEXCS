@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/4/15 9:08:23 PM
+# 2026/4/22 12:45:52 PM
 
 # DictParser2で書き直し済み
 
@@ -17,7 +17,7 @@ if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
 import dictParse
 
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 
 if os.path.exists('/opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc'):
     dexcs_version = '2019'

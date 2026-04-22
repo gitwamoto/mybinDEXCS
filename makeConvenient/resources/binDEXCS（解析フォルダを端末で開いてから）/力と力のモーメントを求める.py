@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/4/11 7:41:15 PM
-
-# DictParser2で書き直し済み
+# 2026/4/22 12:46:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -14,6 +12,8 @@
 # -e time_end: 力の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
 # -0: 0秒のデータを含める
 # -j: 力の計算を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
+
+# DictParser2で書き直し済み
 
 import math
 import sys
@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS2019（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(path_binDEXCS)
 
 def appropriate_tick(xmin, xmax, n):
@@ -59,14 +59,12 @@ def append_functions_in_controlDict(controlDict_path):
         controlDict.elements[tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
-    block_start_index = dictParse.find_element([{'type': 'block_start'}], parent = functions)['index']
-    block_end = dictParse.find_element([{'except type': 'whitespace|linebreak|block_end'}],
-        parent = functions, end = block_start_index, reverse = True, index_not_found = block_start_index + 1)
+    block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
     patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
         file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
-    functions[block_end['index']:block_end['index']] = dictParse.DictParser2(string =
-        ('\n' if block_end['index'] == block_start_index + 1 else '\n\n') + (
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+        '\n'
         '\t// patchにかかる力を求める．\n'
         '\t// 少なくともpatches(B)は修正する必要がある．\n'
         '\t// 複数の条件に対して求めたい場合，\n'
@@ -87,7 +85,8 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\twriteControl\ttimeStep;\n'
         '\t\twriteInterval\t1;\n'
         '\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n'
-        '\t}'))
+        '\t}').elements
+    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
     os.rename(controlDict_path, controlDict_path + '_bak')
