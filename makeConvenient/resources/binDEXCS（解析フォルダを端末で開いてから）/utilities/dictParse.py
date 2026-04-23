@@ -744,7 +744,7 @@ def set_blank_line(parent, number_of_blank_lines = 1):
             if parent[i - 1]['type'] != 'linebreak':
                 i += 1
             j = i
-            while j < end and parent[j]['type'] in ('whitespace', 'linebreak', ):
+            while j < end and parent[j]['type'] in ('whitespace', 'linebreak'):
                 j += 1
             parent[i:j] = number_of_blank_lines*[linebreak]
             end += i - j + number_of_blank_lines

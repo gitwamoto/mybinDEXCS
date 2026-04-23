@@ -45,7 +45,7 @@ sigFpe_is_found = False
 controlDict_path = os.path.join('system', 'controlDict')
 regionProperties_path = os.path.join('constant', 'regionProperties')
 boundary = os.path.join('constant', 'polyMesh', 'boundary')
-bounds_shakedown = [
+bounds_idle = [
     {'name': 'nAlphaSubCycles', 'type': 'discrete', 'domain': range(1, 21)},
     {'name': 'tolerance', 'type': 'continuous', 'domain': (1.0e-04, 1.0)},
     {'name': 'relTol', 'type': 'continuous', 'domain': (1.0e-04, 1.0)},
@@ -53,16 +53,17 @@ bounds_shakedown = [
     {'name': 'momentumPredictor', 'type': 'discrete', 'domain': (0, 1)},
     {'name': 'nNonOrthogonalCorrectors', 'type': 'discrete', 'domain': range(0, 4)},
     {'name': 'relaxationFactors_fields', 'type': 'continuous', 'domain': (0.01, 1.0)},
-    {'name': 'relaxationFactors_equations', 'type': 'continuous', 'domain': (0.01, 1.0)}
+    {'name': 'relaxationFactors_equations', 'type': 'continuous', 'domain': (0.01, 1.0)},
+    {'name': 'deltaT', 'type': 'discrete', 'domain': (None, None)}
 ]
-shakedown_calc_report_txt = 'shakedown_calc_report.txt'
-best_steps_shakedown = 0
-best_folder_shakedown = None
-best_folder_shakedown_suffix = '_best_shakedown_calc'
+idle_calc_report_txt = 'idle_calc_report.txt'
+best_steps_idle = 0
+best_folder_idle = None
+best_folder_idle_suffix = '_best_idle_calc'
 
 def handler(signum, frame):
     if domains != 1:
-        if best_folder_shakedown is None:
+        if best_folder_idle is None:
             command = 'reconstructPar -newTimes -noFunctionObjects'
             if os.path.exists(regionProperties_path):
                 command += ' -allRegions'
@@ -72,7 +73,7 @@ def handler(signum, frame):
             subprocess.call('foamListTimes -rm -noZero', shell = True)
             if domains != 1:
                 rmObjects.removeProcessorDirs('noZero')
-            shutil.move(best_folder_shakedown, best_folder_shakedown[:-len(best_folder_shakedown_suffix)])
+            shutil.move(best_folder_idle, best_folder_idle[:-len(best_folder_idle_suffix)])
     if os.path.isdir('0_bak'):
         if os.path.isdir('0'):
             shutil.rmtree('0')
@@ -198,16 +199,17 @@ def calculate():
     time_end = float(s[i:s.find('\n', i)])
     return int((time_end - time_begin)/(time_next - time_begin))
 
-def make_dict_shakedown(x):
+def make_dict_idle(x):
     return {
-        bounds_shakedown[0]['name']: int(x[0]),
-        bounds_shakedown[1]['name']: x[1],
-        bounds_shakedown[2]['name']: x[2],
-        bounds_shakedown[3]['name']: int(x[3]),
-        bounds_shakedown[4]['name']: 'yes' if x[4] else 'no',
-        bounds_shakedown[5]['name']: int(x[5]),
-        bounds_shakedown[6]['name']: x[6],
-        bounds_shakedown[7]['name']: x[7],
+        bounds_idle[0]['name']: int(x[0]),
+        bounds_idle[1]['name']: x[1],
+        bounds_idle[2]['name']: x[2],
+        bounds_idle[3]['name']: int(x[3]),
+        bounds_idle[4]['name']: 'yes' if x[4] else 'no',
+        bounds_idle[5]['name']: int(x[5]),
+        bounds_idle[6]['name']: x[6],
+        bounds_idle[7]['name']: x[7],
+        bounds_idle[8]['name']: x[8],
         'stopAt': 'endTime',
         'endTime': 10000.0*x[8],
         'writeControl': 'timeStep',
@@ -215,20 +217,20 @@ def make_dict_shakedown(x):
         'purgeWrite': 2,
     }
 
-def calculate_shakedown(x):
-    dict_shakedown = make_dict_shakedown(x[0])
-    modify_dicts_for_shakedown(dict_shakedown)
+def calculate_idle(x):
+    dict_idle = make_dict_idle(x[0])
+    modify_dicts_for_idle(dict_idle)
     date_time_now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    with open(shakedown_calc_report_txt, 'a') as f:
+    with open(idle_calc_report_txt, 'a') as f:
         f.write(date_time_now)
-        for b in bounds_shakedown:
-            f.write('\t' + str(dict_shakedown[b['name']]))
+        for b in bounds_idle:
+            f.write('\t' + str(dict_idle[b['name']]))
     steps = calculate()
-    with open(shakedown_calc_report_txt, 'a') as f:
+    with open(idle_calc_report_txt, 'a') as f:
         f.write('\t{}\n'.format(steps))
-    global best_steps_shakedown
-    if best_steps_shakedown < steps:
-        best_steps_shakedown = steps
+    global best_steps_idle
+    if best_steps_idle < steps:
+        best_steps_idle = steps
         if domains != 1:
             command = 'reconstructPar -latestTime -noFunctionObjects'
             if os.path.exists(regionProperties_path):
@@ -236,20 +238,20 @@ def calculate_shakedown(x):
             subprocess.call(command, shell = True)
         latest_time = misc.latestTime()
         if float(latest_time) > 0.0:
-            with open(os.path.join(latest_time, shakedown_calc_report_txt), 'w') as f:
+            with open(os.path.join(latest_time, idle_calc_report_txt), 'w') as f:
                 f.write('datetime: ' + date_time_now + '\n')
-                for b in bounds_shakedown:
-                    f.write(b['name'] + ': ' + str(dict_shakedown[b['name']]) + '\n')
+                for b in bounds_idle:
+                    f.write(b['name'] + ': ' + str(dict_idle[b['name']]) + '\n')
                 f.write('steps: {}\n'.format(steps))
-            for d in glob.iglob('*' + best_folder_shakedown_suffix + os.sep):
+            for d in glob.iglob('*' + best_folder_idle_suffix + os.sep):
                 try:
-                    float(d[:-len(best_folder_shakedown_suffix + os.sep)])
+                    float(d[:-len(best_folder_idle_suffix + os.sep)])
                     shutil.rmtree(d)
                 except:
                     pass
-            global best_folder_shakedown
-            best_folder_shakedown = latest_time + best_folder_shakedown_suffix
-            shutil.move(latest_time, best_folder_shakedown)
+            global best_folder_idle
+            best_folder_idle = latest_time + best_folder_idle_suffix
+            shutil.move(latest_time, best_folder_idle)
     subprocess.call('foamListTimes -rm -noZero', shell = True)
     if domains != 1:
         rmObjects.removeProcessorDirs('noZero')
@@ -268,25 +270,41 @@ def remove_entires_in_DPL(contents, comment):
             remove_entires_in_DPL(x.value(), comment)
         i += 1
 
+def remove_unnecessary_entries_in_controlDict():
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'}])['element']
+    if startFrom is None:
+        print(f'エラー: ファイル {controlDict_path}でstartFromが指定されていません．')
+        if os.path.isdir('0_bak'):
+            if os.path.isdir('0'):
+                shutil.rmtree('0')
+            shutil.move('0_bak', '0')
+        sys.exit(1)
+    startFrom_value = dictParse.find_element([{'except type': 'ignorable'}], parent = startFrom)['element']
+    if startFrom_value != 'latestTime':
+        startFrom_value['patent'][startFrom_value['index']] = dictParse.DictParser2(string = 'latestTime').elements[0]
+        print(f'!!! ファイル {controlDict_path} のstartFromをlatestTimeに書き換えました．')
+    deltaT = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}])
+    comment = dictParse.find_element([{'type': 'line_comment|block_comment'}],
+        parent = deltaT['element'], reverse = True)['element']
+    if comment is not None and ('(DECREASED)' in comment['value'] or 'idle calculation' in comment['value']):
+        del deltaT['parent'][deltaT['index']]
+        if (deltaT['index'] < len(deltaT['parent']) and
+            deltaT['parent'][deltaT['index']]['type'] == 'linebreak'):
+            del deltaT['parent'][deltaT['index']]
+    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    if controlDict.string != string:
+#        os.rename(controlDict_path, controlDict_path + '_bak')
+        with open(controlDict_path, 'w') as f:
+            f.write(string)
+
 def remove_unnecessary_entries_in_fvSolution():
     def remove_unnecessary_entries_in(path):
         if os.path.islink(path):
             return
-        fvSolution = dictparse.DictParser2(file_name = path)
-        # solvers/"alpha.water.*"/nAlphaSubCycles
-        nAlphaSubCycles_list = fvSolution.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'},
-            {'type': 'dictionary', 'key': 'nAlphaSubCycles'}])
-        if len(nAlphaSubCycles_list) > 0:
-            block = nAlphaSubCycles_list[0]['parent']
-            for nAlphaSubCycles in reversed(nAlphaSubCycles_list):
-                comment = dictparse.find_element([{'type': 'line_comment|block_comment'}],
-                    parent = nAlphaSubCycles['element'], reverse = True)['element']
-                if comment is not None and 'shakedown calculation' in comment['value']:
-                    del nAlphaSubCycles['parent'][nAlphaSubCycles['index']]
-            dictParse.set_blank_line(block, number_of_blank_lines = 0)
-
-
-        remove_entires_in_DPL(dp.contents, r'^// shakedown calculation \*/$')
+        dp = DictParser(path)
+        s_old = dp.toString()
+        remove_entires_in_DPL(dp.contents, r'^/\* idle calculation \*/$')
         dp = dictFormat.moveLineToBottom(dp)
         s = dp.toString()
         if s != s_old:
@@ -298,28 +316,28 @@ def remove_unnecessary_entries_in_fvSolution():
         if os.path.isfile(fvSolution):
             remove_unnecessary_entries_in(fvSolution)
 
-def modify_dicts_for_shakedown(value_dict):
+def change_dt_in_controlDict(exponent):
+    remove_unnecessary_entries_in_controlDict()
+    dp = DictParser(controlDict_path)
+    i_dt_last = i_dt = dp.getIndexOfItem(['deltaT'])[0]
+    for i in range(i_dt + 1, len(dp.contents)):
+        x = dp.contents[i]
+        if DictParserList.isType(x, DictParserList.DICT) and x.key() == 'deltaT':
+            i_dt_last = i
+    x = dp.contents[i_dt_last]
+    y = DictParserList(DictParserList.DICT, ['deltaT', '',
+        ['#calc "pow(10.0, {})*$deltaT"'.format(exponent)],
+        '/* (DECREASED) time step from ' + datetime.now().strftime("%Y/%m/%d %H:%M:%S") + ' */'])
+    dp.contents[i_dt_last + 1:i_dt_last + 1] = ['\n', y]
+    dp.writeFile(controlDict_path)
+
+def modify_dicts_for_idle(value_dict):
+    remove_unnecessary_entries_in_controlDict()
     remove_unnecessary_entries_in_fvSolution()
-    同時に直して行きまひょ．
-    def modify_dicts_for_shakedown_in(path):
+    def modify_dicts_for_idle_in(path):
         if os.path.islink(path):
             return
-        fvSolution = dictparse.DictParser2(file_name = path)
-        # solvers/"alpha.water.*"/nAlphaSubCycles
-        nAlphaSubCycles_list = fvSolution.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'},
-            {'type': 'dictionary', 'key': 'nAlphaSubCycles'}])
-        if len(nAlphaSubCycles_list) > 0:
-            comment = dictparse.find_element([{'type': 'line_comment|block_comment'}],
-                parent = nAlphaSubCycles_list[-1]['element'], reverse = True)['element']
-            if comment is None or 'shakedown calculation' not in comment['value']:
-                i = dictparse.find_element([{'type': 'linebreak|block_end'}], parent = nAlphaSubCycles_list[-1]['parent'],
-                    start = nAlphaSubCycles_list[-1]['index'] + 1)['index']
-                nAlphaSubCycles_list[-1]['parent'][i:i] = dictParse.DictParser2(string =
-                        '\n'
-                        f'nAlphaSubCycles\t{value_dict["nAlphaSubCycles"]}; // shakedown calculation'
-                        '\n').elements
-                dictParse.set_blank_line(nAlphaSubCycles_list[-1]['parent'], number_of_blank_lines = 0)
-
+        dp = DictParser(path)
         x = dp.getValueForKey(['solvers'])
         for y in x:
             if DictParserList.isType(y, DictParserList.BLOCK):
@@ -331,11 +349,11 @@ def modify_dicts_for_shakedown(value_dict):
                 if has_nAlphaSubCycles and 'nAlphaSubCycles' in value_dict:
                     y.value().extend([DictParserList(DictParserList.DICT,
                         ['nAlphaSubCycles', '', [str(value_dict['nAlphaSubCycles'])],
-                        '/* shakedown calculation */']), '\n'])
+                        '/* idle calculation */']), '\n'])
                 for k in ('tolerance', 'relTol'):
                     if k in value_dict:
                         y.value().extend([DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])],
-                            '/* shakedown calculation */']), '\n'])
+                            '/* idle calculation */']), '\n'])
         for m in ('SIMPLE', 'PISO', 'PIMPLE'):
             x = dp.getValueForKey([m])
             if x is not None:
@@ -343,11 +361,11 @@ def modify_dicts_for_shakedown(value_dict):
                     if 'nCorrectors' in value_dict:
                         x.extend([DictParserList(DictParserList.DICT,
                                 ['nCorrectors', '', [str(value_dict['nCorrectors'])],
-                                '/* shakedown calculation */']), '\n'])
+                                '/* idle calculation */']), '\n'])
                 for k in ('momentumPredictor', 'nNonOrthogonalCorrectors'):
                     if k in value_dict:
                         x.extend([DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])],
-                            '/* shakedown calculation */']), '\n'])
+                            '/* idle calculation */']), '\n'])
         x = dp.getValueForKey(['relaxationFactors'])
         if x is not None:
             for y in x:
@@ -355,17 +373,16 @@ def modify_dicts_for_shakedown(value_dict):
                     k = 'relaxationFactors_' + y.key()
                     if k in value_dict:
                         y.value().extend([DictParserList(DictParserList.DICT, ['".*"', '', [str(value_dict[k])],
-                            '/* shakedown calculation */']), '\n'])
+                            '/* idle calculation */']), '\n'])
         dp.writeFile(path)
-
-    modify_dicts_for_shakedown_in(os.path.join('system', 'fvSolution'))
+    modify_dicts_for_idle_in(os.path.join('system', 'fvSolution'))
     for d in glob.iglob(os.path.join('system', '*' + os.sep)):
         fvSolution = os.path.join(d, 'fvSolution')
         if os.path.isfile(fvSolution):
-            modify_dicts_for_shakedown_in(fvSolution)
+            modify_dicts_for_idle_in(fvSolution)
 
     dp = DictParser(controlDict_path)
-    for k in ('stopAt', 'endTime', 'writeControl', 'writeInterval', 'purgeWrite'):
+    for k in ('stopAt', 'endTime', 'deltaT', 'writeControl', 'writeInterval', 'purgeWrite'):
         if k in value_dict:
             i_last = i = dp.getIndexOfItem([k])[0]
             for j in range(i + 1, len(dp.contents)):
@@ -373,7 +390,7 @@ def modify_dicts_for_shakedown(value_dict):
                 if DictParserList.isType(x, DictParserList.DICT) and x.key() == k:
                     i_last = j
             dp.contents[i_last + 1:i_last + 1] = [
-                '\n', DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])], '/* shakedown calculation */'])]
+                '\n', DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])], '/* idle calculation */'])]
     dp.writeFile(controlDict_path)
 
 if __name__ == '__main__':
@@ -384,7 +401,7 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = delete_folders_except_for_zero = decrease_dt_if_fpe_occured = False
-        exec_potentialFoam = exec_paraFoam = shakedown_calculation = False
+        exec_potentialFoam = exec_paraFoam = idle_calculation = False
         log10_dt_max = log10_dt_min = None
         i = 1
         while i < len(sys.argv):
@@ -440,6 +457,7 @@ if __name__ == '__main__':
             shutil.rmtree('0_bak')
 
     shutil.copytree('0', '0_bak')
+    remove_unnecessary_entries_in_controlDict()
     remove_unnecessary_entries_in_fvSolution()
 
     if os.path.isdir('processor0'):
@@ -505,16 +523,38 @@ if __name__ == '__main__':
             'functionsの内容を計算中に実行しますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
 
     if float(latest_time) == 0.0 and interactive:
-        shakedown_calculation = True if (raw_input if sys.version_info.major <= 2 else input)(
+        idle_calculation = True if (raw_input if sys.version_info.major <= 2 else input)(
             'ならし計算を行いますか？ (y/n, どうしても発散する場合に試す価値あり) > '
             ).strip().lower() == 'y' else False
     else:
-        shakedown_calculation = False
+        idle_calculation = False
 
-    if shakedown_calculation:
-        with open(shakedown_calc_report_txt, 'w') as f:
+    if idle_calculation:
+        if interactive:
+            while True:
+                try:
+                    log10_dt_max = int((raw_input if sys.version_info.major <= 2 else input)(
+                        'log10(時間ステップの最大値)を整数で入力して下さい． > '))
+                    break
+                except ValueError:
+                    pass
+            while True:
+                try:
+                    log10_dt_min = int((raw_input if sys.version_info.major <= 2 else input)(
+                        'log10(時間ステップの最小値)を整数で入力して下さい． > '))
+                    break
+                except ValueError:
+                    pass
+        if log10_dt_max < log10_dt_min:
+            log10_dt_max, log10_dt_min = log10_dt_min, log10_dt_max
+        d = {'name': 'deltaT', 'type': 'discrete', 'domain': 10.0**np.arange(log10_dt_min, log10_dt_max + 1)}
+        if bounds_idle[-1]['name'] == 'deltaT':
+            bounds_idle[-1] = d
+        else:
+            bounds_idle.append(d)
+        with open(idle_calc_report_txt, 'w') as f:
             f.write('#datetime')
-            for b in bounds_shakedown:
+            for b in bounds_idle:
                 f.write('\t{}'.format(b['name']))
             f.write('\tsteps\n')
     elif interactive:
@@ -566,21 +606,21 @@ if __name__ == '__main__':
 #    if exec_potentialFoam:
 #        potentialFoam(latest_time)
 
-    if shakedown_calculation:
+    if idle_calculation:
         subprocess.call('foamListTimes -rm -noZero', shell = True)
         if domains != 1:
             rmObjects.removeProcessorDirs('noZero')
-        myBopt = GPyOpt.methods.BayesianOptimization(f = calculate_shakedown, domain = bounds_shakedown,
+        myBopt = GPyOpt.methods.BayesianOptimization(f = calculate_idle, domain = bounds_idle,
             model_type = 'GP', initial_design_numdata = 5, acquisition_type ='EI', maximize = True)
         myBopt.run_optimization(max_iter = 100)
         print('\nならし計算が終了しました．')
-        if best_folder_shakedown is not None:
-            latest_time = best_folder_shakedown[:-len(best_folder_shakedown_suffix)]
-            shutil.move(best_folder_shakedown, latest_time)
+        if best_folder_idle is not None:
+            latest_time = best_folder_idle[:-len(best_folder_idle_suffix)]
+            shutil.move(best_folder_idle, latest_time)
             print('ベイズ最適化の履歴は{}に保存され，最も発散しにくかった計算条件による結果は{}秒のフォルダに保存されています．'.format(
-                shakedown_calc_report_txt, latest_time))
+                idle_calc_report_txt, latest_time))
         else:
-            print('ベイズ最適化の履歴は{}に保存されています．'.format(shakedown_calc_report_txt) +
+            print('ベイズ最適化の履歴は{}に保存されています．'.format(idle_calc_report_txt) +
                 'system/controlDictのwriteIntervalが大きかったせいか，最も発散しにくかった計算条件による結果は保存されていません．')
     else:
         for trial in range(30):
@@ -593,6 +633,7 @@ if __name__ == '__main__':
                 rmObjects.removeProcessorDirs('noLatest')
             if not decrease_dt_if_fpe_occured or not sigFpe_is_found:
                 break
+            change_dt_in_controlDict(-trial - 1)
         if sigFpe_is_found:
             print('\n計算が発散して終了しました．')
             print('「DEXCS OpenFOAM メモ」 (0_OpenFOAMメモ.pdf) の' +
