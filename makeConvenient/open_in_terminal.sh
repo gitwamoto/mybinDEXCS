@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2026/4/17 3:56:03 PM
+# 2026/4/23 7:40:40 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -107,9 +107,9 @@ if [ "$dexcs_version" = "2019" ]; then
 				sudo pip install "$p"
 			fi
 		done
-		if [ -z "$(find /usr/local/lib/python2.7/dist-packages/GPy-1.9.9*-info)" ]; then
-			sudo pip uninstall -y GPy
-			sudo pip install GPy==1.9.9
+		# -z -> 文字列の長さが 0 かどうか（空かどうか）
+		if [ -z "$(ls -d /usr/local/lib/python2.7/dist-packages/GPy-*-info 2>/dev/null)" ]; then
+			sudo pip install GPy
 		fi
 		if [ ! -e /usr/local/lib/python2.7/dist-packages/wx ]; then
 			sudo pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-18.04 wxPython==4.1.0
@@ -203,9 +203,9 @@ else # 2021
 				sudo pip install "$p"
 			fi
 		done
-		if [ -z "$(find /usr/local/lib/python3.8/dist-packages/GPy-1.9.9*-info)" ]; then
-			sudo pip uninstall -y GPy
-			sudo pip install GPy==1.9.9
+		# -z -> 文字列の長さが 0 かどうか（空かどうか）
+		if [ -z "$(ls -d /usr/local/lib/python3.8/dist-packages/GPy-*-info 2>/dev/null)" ]; then
+			sudo pip install GPy
 		fi
 		if [ ! -e /usr/local/lib/python3.8/dist-packages/wx ]; then
 			sudo pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-20.04 wxPython

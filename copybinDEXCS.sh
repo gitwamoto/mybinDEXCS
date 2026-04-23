@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/4/23 12:41:40 PM
+# 2026/4/23 7:40:37 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -93,7 +93,7 @@ for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
 			--exclude '~*' \
 			--exclude '*.pyc' \
 			"$d/Desktop/$binDEXCS/" "Desktop/$binDEXCS"
-		chmod -R +x "Desktop/$binDEXCS/*.py"
+		chmod -R +x Desktop/"$binDEXCS"/*.py
 
 		rsync -av $RSYNC_OPTION \
 			--include '*.FCMacro' \
@@ -175,7 +175,7 @@ if [ "$trial" -eq 2 ]; then
 		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS/utilities/$f" \
 			"Desktop/$binDEXCS/utilities/$f"
 	done
-	chmod -R +x "Desktop/$binDEXCS/*.py"
+	chmod -R +x Desktop/"$binDEXCS"/*.py
 
 	for f in 'exportStl.FCMacro' 'makeCfMeshSetting.FCMacro' \
 		'makeSnappyHexMeshSetting.FCMacro' 'sHM.png'; do
@@ -445,9 +445,9 @@ if [ "$dexcs_version" = "2019" ]; then
 				sudo pip install "$p"
 			fi
 		done
-		if [ -z "$(find /usr/local/lib/python2.7/dist-packages/GPy-1.9.9*-info)" ]; then
-			sudo pip uninstall -y GPy
-			sudo pip install GPy==1.9.9
+		# -z -> 文字列の長さが 0 かどうか（空かどうか）
+		if [ -z "$(ls -d /usr/local/lib/python2.7/dist-packages/GPy-*-info 2>/dev/null)" ]; then
+			sudo pip install GPy
 		fi
 		if [ ! -e /usr/local/lib/python2.7/dist-packages/wx ]; then
 			sudo pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-18.04 wxPython==4.1.0
@@ -541,9 +541,9 @@ else # 2021
 				sudo pip install "$p"
 			fi
 		done
-		if [ -z "$(find /usr/local/lib/python3.8/dist-packages/GPy-1.9.9*-info)" ]; then
-			sudo pip uninstall -y GPy
-			sudo pip install GPy==1.9.9
+		# -z -> 文字列の長さが 0 かどうか（空かどうか）
+		if [ -z "$(ls -d /usr/local/lib/python3.8/dist-packages/GPy-*-info 2>/dev/null)" ]; then
+			sudo pip install GPy
 		fi
 		if [ ! -e /usr/local/lib/python3.8/dist-packages/wx ]; then
 			sudo pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-20.04 wxPython
@@ -675,5 +675,5 @@ if $imsudoer; then
 	fi
 fi
 
-tips='[お知らせ] Freecadでダウングレードボタンがなくなっている人は，以下のコマンドを端末で実行して下さい：\n\n     sudo apt update && sudo apt upgrade -y && sudo apt full-upgrade -y\n\n※途中で何か選択肢を示されたら，デフォルトであるエンターキーを押して下さい．※パスワード入力を要求された時は，アカウントのパスワードを入力して下さい．\n※端末でのパスワード入力では，「●●●」のような伏せ字は出ません！'
+tips='[お知らせ] Freecadでダウングレードボタンがなくなっている人は，以下のコマンドを端末で実行して下さい：\n\n     sudo apt update &amp;&amp; sudo apt upgrade -y &amp;&amp; sudo apt full-upgrade -y\n\n※途中で何か選択肢を示されたら，デフォルトであるエンターキーを押して下さい．\n※パスワード入力を要求された時は，アカウントのパスワードを入力して下さい．\n※端末でのパスワード入力では，「●●●」のような伏せ字は出ません！'
 zenity --title='終了' --info --text="$tips"'\n(DEXCS ver. '"$dexcs_version"')' --width=500
