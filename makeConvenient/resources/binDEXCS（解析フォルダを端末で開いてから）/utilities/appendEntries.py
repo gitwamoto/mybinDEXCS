@@ -281,6 +281,13 @@ def intoControlDict():
 
     controlDict = dictParse.DictParser2(file_name = controlDict_path)
 
+    startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
+        {'except type': 'ignorable'}])['element']
+    if startFrom != 'latestTime':
+        startFrom['patent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser2(string =
+            'latestTime').elements
+        print(f'!!! ファイル {controlDict_path} のstartFromをlatestTimeに書き換えました．')
+
     deltaT = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}])
     i = controlDict.find_element([{'type': 'block_comment'}], start = deltaT['index'] - 1, reverse = True)
     if i['element'] is None or 'simpleFoam' not in i['element']['value']:
