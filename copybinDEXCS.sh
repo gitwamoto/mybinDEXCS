@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/4/22 7:00:10 PM
+# 2026/4/23 12:41:40 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -675,5 +675,5 @@ if $imsudoer; then
 	fi
 fi
 
-tips='[お知らせ] Freecadでダウングレードボタンがなくなっている人は，以下のコマンドを端末で実行して下さい：\n\n     sudo aptitude install -y freecad-daily\n\n※パスワード入力を要求された時は，アカウントのパスワードを入力して下さい．\n※端末でのパスワード入力では，「●●●」のような伏せ字は出ません！'
+tips='[お知らせ] Freecadでダウングレードボタンがなくなっている人は，以下のコマンドを端末で実行して下さい：\n\n     sudo apt update && sudo apt upgrade -y && sudo apt full-upgrade -y\n\n※途中で何か選択肢を示されたら，デフォルトであるエンターキーを押して下さい．※パスワード入力を要求された時は，アカウントのパスワードを入力して下さい．\n※端末でのパスワード入力では，「●●●」のような伏せ字は出ません！'
 zenity --title='終了' --info --text="$tips"'\n(DEXCS ver. '"$dexcs_version"')' --width=500
