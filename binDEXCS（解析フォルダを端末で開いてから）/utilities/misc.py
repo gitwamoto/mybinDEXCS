@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/4/22 12:45:52 PM
+# 2026/4/26 7:42:33 PM
 
 # DictParser2で書き直し済み
 
@@ -372,22 +372,52 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
     if type_name is None:
         if enabled:
-            string = dictParse.re_sub_except_comments(
-                r'(?<!\S)(#includeFunc)(?=[ \t])', r'// !!DISABLED!! \1', string)
-        else:
             string = dictParse.re_sub_in_comments(
                 r'//[ \t]*!!DISABLED!![ \t]*(#includeFunc)(?=[ \t])', r'\1', string)
+        else:
+            string = dictParse.re_sub_except_comments(
+                r'(?<!\S)(#includeFunc)(?=[ \t])', r'// !!DISABLED!! \1', string)
     else:
         if enabled:
-            string = dictParse.re_sub_except_comments(
-                f'(?<!\\S)(#includeFunc[ \\t]+{type_name})', r'// !!DISABLED!! \1', string)
-        else:
             string = dictParse.re_sub_in_comments(
                 f'//[ \\t]*!!DISABLED!![ \\t]*(#includeFunc[ \\t]+{type_name})', r'\1', string)
+        else:
+            string = dictParse.re_sub_except_comments(
+                f'(?<!\\S)(#includeFunc[ \\t]+{type_name})', r'// !!DISABLED!! \1', string)
     if controlDict.string != string:
 #        os.rename(controlDict_path, controlDict_path + '_bak')
         with open(controlDict_path, 'w') as f:
             f.write(string)
+
+def controlDictFunctionsList(path = os.curdir):
+    controlDict_path = os.path.join(path, 'system', 'controlDict')
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+
+    enable_function_list = []
+    disable_function_list = []
+    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+    if function is None:
+        enable_function_list, disable_function_list
+    for f in dictParse.find_all_elements([{'type': 'block'}], parent = functions):
+        f = f['element']
+        t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = f)['element']
+        if t is None:
+            print(f'エラー: ファイル {controlDict_path} のfunctionsで，typeがない項目があります．')
+            sys.exit(1)
+        type_name = dictParse.find_element([{'type': 'word'}], parent = t)['element']['value']
+        e = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = f)['element']
+        if (e is None or
+            dictParse.find_element([{'type': 'word'}], parent = e)['element']['value'] in ('yes', 'true', 'on')):
+            enable_function_list.append(type_name)
+        else:
+            disable_function_list.append(type_name)
+
+    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    enable_function_list.extend(
+        dictParse.re_findall_except_comments(r'(?<!\S)#includeFunc[ \t]+([^;]+);', string))
+    disable_function_list.extend(
+        dictParse.re_findall_in_comments(r'//[ \t]*!!DISABLED!![ \t]*(#includeFunc[ \t]+([^;]+);', string))
+    return enable_function_list, disable_function_list
 
 if __name__ == '__main__':
     print('firstTime = ' + firstTime())
