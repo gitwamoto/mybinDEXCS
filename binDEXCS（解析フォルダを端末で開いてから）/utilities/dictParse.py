@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/4/10 11:54:49 PM
+# 2026/4/26 7:42:36 PM
 
 import sys
 import os
@@ -648,6 +648,40 @@ def re_sub_in_comments(pattern, repl, string):
         replaced_string += pat_sub.sub(repl, s.group())
         index = s.end()
     return replaced_string
+
+def re_findall_except_comments(pattern, string):
+    pat = re.compile(
+        r'(?P<line_comment>//.*)' '|'
+        r'(?P<block_comment>/\*[\s\S]*?\*/)' # [\s\S]*?の?がないと\*/も[\s\S]*が取り込んでしまう
+    )
+    pat_findall = re.compile(pattern)
+    index = 0
+    result = []
+    while index < len(string):
+        s = pat.search(string, pos = index)
+        if s is None:
+            result.extend(pat_findall.findall(string, pos = index)
+            break
+        if index != s.start():
+            result.extend(pat_findall.findall(string, pos = index, endpos = s.start())
+        index = s.end()
+    return result
+
+def re_findall_in_comments(pattern, string):
+    pat = re.compile(
+        r'(?P<line_comment>//.*)' '|'
+        r'(?P<block_comment>/\*[\s\S]*?\*/)' # [\s\S]*?の?がないと\*/も[\s\S]*が取り込んでしまう
+    )
+    pat_findall = re.compile(pattern)
+    index = 0
+    result = []
+    while index < len(string):
+        s = pat.search(string, pos = index)
+        if s is None:
+            break
+        result.extend(pat_findall.findall(s.group())
+        index = s.end()
+    return result
 
 def find_element(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
     # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
