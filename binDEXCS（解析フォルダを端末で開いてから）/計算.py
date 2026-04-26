@@ -8,11 +8,11 @@
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行
 # -d -> 0秒以外のフォルダがある場合，それらを消す．つまり0秒から計算をやり直す
-# -e -> 計算が発散した場合，時間ステップを小さくして計算を続ける
-# -f -> system/controlDictに書かれているfunctionsの内容を計算中に実行する
+# -e -> 計算が発散した場合，緩和係数を小さくして計算を続ける
+# -f -> system/controlDictに書かれているfunctionsを全て計算中に実行するように，controlDictを書き変える
 # （現在は無効なオプション）-o -> 初期流れ場をpotentialFoamで作成する
 # -p -> paraFoamを実行する
-# -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
+# -r domains -> 計算領域をdomains個に分割して並列計算を行う．1だと普通の計算
 
 # ---- 戻り値 ----
 # 0: 正常終了
@@ -37,11 +37,15 @@ from utilities import rmObjects
 from utilities import dictParse
 
 domains = 1
-with_function_objects = False
+enable_all_function_objects = False
 sigFpe_is_found = False
 controlDict_path = os.path.join('system', 'controlDict')
+fvSolution_path = os.path.join('system', 'fvSolution')
 regionProperties_path = os.path.join('constant', 'regionProperties')
 boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+
+relaxationFactor_equations_min = 0.1
+relaxationFactor_fields_min = 0.1
 
 def handler(signum, frame):
     if domains != 1:
@@ -158,7 +162,7 @@ def calculate():
         command += '--autosense-parallel '
     application = misc.getApplication()
     command += application
-    if not with_function_objects:
+    if not enable_all_function_objects:
         command += ' -noFunctionObjects'
     subprocess.call(command, shell = True)
     with open(f'PyFoamRunner.{application}.logfile', 'r') as f:
@@ -188,7 +192,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = delete_folders_except_for_zero = decrease_dt_if_fpe_occured = False
+        interactive = delete_folders_except_for_zero = decrease_relaxationFactors_after_fpe = False
         exec_potentialFoam = exec_paraFoam = shakedown_calculation = False
         log10_dt_max = log10_dt_min = None
         i = 1
@@ -198,9 +202,9 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-d':
                 delete_folders_except_for_zero = True
             elif sys.argv[i] == '-e':
-                decrease_dt_if_fpe_occured = True
+                decrease_relaxationFactors_after_fpe = True
             elif sys.argv[i] == '-f':
-                with_function_objects = True
+                enable_all_function_objects = True
             elif sys.argv[i] == '-i':
                 i += 1
                 log10_dt_max = int(sys.argv[i])
@@ -215,7 +219,7 @@ if __name__ == '__main__':
                 domains = max(int(sys.argv[i]), 1)
             i += 1
 
-    for i in (controlDict_path, os.path.join('system', 'fvSolution'), boundary_path):
+    for i in (controlDict_path, fvSolution_path, boundary_path):
         if not os.path.isfile(i):
             print(f'エラー: ファイル {i} がありません．')
             sys.exit(1)
@@ -305,11 +309,22 @@ if __name__ == '__main__':
 #            'もしp_potentialflowという名前のファイルがある場合，' +
 #            'そのファイルに書かれている境界条件をpの境界条件に使います． (y/n) > ').strip().lower() == 'y' else False
 
-    if interactive:
-        with_function_objects = True if input(f'ファイル {controlDict_path} に書かれている'
-            'functionsの内容を計算中に実行しますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
-        decrease_dt_if_fpe_occured = True if input('計算が発散した場合，'
-            '時間ステップを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
+    enable_function_list, disable_function_list = misc.controlDictFunctionsList()
+    if len(enable_function_list) + len(disable_function_list) > 0:
+        print(f'{controlDict_path} のfunctionsで')
+        if len(enable_function_list) > 0:
+            print('  実行されるものは' + ', '.join(enable_function_list))
+        if len(disable_function_list) > 0:
+            print('  実行されないものは' + ', '.join(disable_function_list))
+        print('です．')
+        if interactive:
+            enable_all_function_objects = True if input(f'全てを実行するように {controlDict_path} を書き換えますか？'
+                ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+            decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，{fvSolution_path} の'
+                'relaxationFactorsをを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
+
+    if not enable_all_function_objects:
+        misc.setEnabledInControlDictFunctions(enabled = False)
 
     if domains != 1:
         processor_dirs = set()
@@ -364,7 +379,7 @@ if __name__ == '__main__':
                 command += ' -allRegions'
             subprocess.call(command, shell = True)
             rmObjects.removeProcessorDirs('noLatest')
-        if not decrease_dt_if_fpe_occured or not sigFpe_is_found:
+        if not decrease_relaxationFactors_after_fpe or not sigFpe_is_found:
             break
     if sigFpe_is_found:
         print('\n計算が発散して終了しました．')
