@@ -10,8 +10,6 @@
 # -d -> 0秒以外のフォルダがある場合，それらを消す．つまり0秒から計算をやり直す
 # -e -> 計算が発散した場合，時間ステップを小さくして計算を続ける
 # -f -> system/controlDictに書かれているfunctionsの内容を計算中に実行する
-# -i log10_dt_max log10_dt_min -> ならし計算を行う．時間ステップが10^log10_dt_minから10^log10_dt_maxの間を試す
-#                                 ※0秒以外のフォルダがあると，ならし計算はできない
 # （現在は無効なオプション）-o -> 初期流れ場をpotentialFoamで作成する
 # -p -> paraFoamを実行する
 # -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
@@ -30,7 +28,6 @@ import subprocess
 import re
 from datetime import datetime
 import filecmp
-import GPyOpt
 import numpy as np
 from utilities import misc
 from utilities.dictParse import DictParser, DictParserList
@@ -44,21 +41,7 @@ with_function_objects = False
 sigFpe_is_found = False
 controlDict_path = os.path.join('system', 'controlDict')
 regionProperties_path = os.path.join('constant', 'regionProperties')
-boundary = os.path.join('constant', 'polyMesh', 'boundary')
-bounds_shakedown = [
-    {'name': 'nAlphaSubCycles', 'type': 'discrete', 'domain': range(1, 21)},
-    {'name': 'tolerance', 'type': 'continuous', 'domain': (1.0e-04, 1.0)},
-    {'name': 'relTol', 'type': 'continuous', 'domain': (1.0e-04, 1.0)},
-    {'name': 'nCorrectors', 'type': 'discrete', 'domain': range(1, 4)},
-    {'name': 'momentumPredictor', 'type': 'discrete', 'domain': (0, 1)},
-    {'name': 'nNonOrthogonalCorrectors', 'type': 'discrete', 'domain': range(0, 4)},
-    {'name': 'relaxationFactors_fields', 'type': 'continuous', 'domain': (0.01, 1.0)},
-    {'name': 'relaxationFactors_equations', 'type': 'continuous', 'domain': (0.01, 1.0)}
-]
-shakedown_calc_report_txt = 'shakedown_calc_report.txt'
-best_steps_shakedown = 0
-best_folder_shakedown = None
-best_folder_shakedown_suffix = '_best_shakedown_calc'
+boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
 
 def handler(signum, frame):
     if domains != 1:
@@ -198,184 +181,6 @@ def calculate():
     time_end = float(s[i:s.find('\n', i)])
     return int((time_end - time_begin)/(time_next - time_begin))
 
-def make_dict_shakedown(x):
-    return {
-        bounds_shakedown[0]['name']: int(x[0]),
-        bounds_shakedown[1]['name']: x[1],
-        bounds_shakedown[2]['name']: x[2],
-        bounds_shakedown[3]['name']: int(x[3]),
-        bounds_shakedown[4]['name']: 'yes' if x[4] else 'no',
-        bounds_shakedown[5]['name']: int(x[5]),
-        bounds_shakedown[6]['name']: x[6],
-        bounds_shakedown[7]['name']: x[7],
-        'stopAt': 'endTime',
-        'endTime': 10000.0*x[8],
-        'writeControl': 'timeStep',
-        'writeInterval': 10,
-        'purgeWrite': 2,
-    }
-
-def calculate_shakedown(x):
-    dict_shakedown = make_dict_shakedown(x[0])
-    modify_dicts_for_shakedown(dict_shakedown)
-    date_time_now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    with open(shakedown_calc_report_txt, 'a') as f:
-        f.write(date_time_now)
-        for b in bounds_shakedown:
-            f.write('\t' + str(dict_shakedown[b['name']]))
-    steps = calculate()
-    with open(shakedown_calc_report_txt, 'a') as f:
-        f.write('\t{}\n'.format(steps))
-    global best_steps_shakedown
-    if best_steps_shakedown < steps:
-        best_steps_shakedown = steps
-        if domains != 1:
-            command = 'reconstructPar -latestTime -noFunctionObjects'
-            if os.path.exists(regionProperties_path):
-                command += ' -allRegions'
-            subprocess.call(command, shell = True)
-        latest_time = misc.latestTime()
-        if float(latest_time) > 0.0:
-            with open(os.path.join(latest_time, shakedown_calc_report_txt), 'w') as f:
-                f.write('datetime: ' + date_time_now + '\n')
-                for b in bounds_shakedown:
-                    f.write(b['name'] + ': ' + str(dict_shakedown[b['name']]) + '\n')
-                f.write('steps: {}\n'.format(steps))
-            for d in glob.iglob('*' + best_folder_shakedown_suffix + os.sep):
-                try:
-                    float(d[:-len(best_folder_shakedown_suffix + os.sep)])
-                    shutil.rmtree(d)
-                except:
-                    pass
-            global best_folder_shakedown
-            best_folder_shakedown = latest_time + best_folder_shakedown_suffix
-            shutil.move(latest_time, best_folder_shakedown)
-    subprocess.call('foamListTimes -rm -noZero', shell = True)
-    if domains != 1:
-        rmObjects.removeProcessorDirs('noZero')
-    return steps
-
-def remove_entires_in_DPL(contents, comment):
-    i = 0
-    while i < len(contents):
-        x = contents[i]
-        if DictParserList.isType(x, DictParserList.DICT):
-            if re.search(comment, x[-1]) is not None:
-                del contents[i]
-                if i < len(contents) and type(contents[i]) is str and contents[i].startswith('\n'):
-                    contents[i] = contents[i][1:]
-        elif DictParserList.isType(x, DictParserList.BLOCK):
-            remove_entires_in_DPL(x.value(), comment)
-        i += 1
-
-def remove_unnecessary_entries_in_fvSolution():
-    def remove_unnecessary_entries_in(path):
-        if os.path.islink(path):
-            return
-        fvSolution = dictparse.DictParser2(file_name = path)
-        # solvers/"alpha.water.*"/nAlphaSubCycles
-        nAlphaSubCycles_list = fvSolution.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'},
-            {'type': 'dictionary', 'key': 'nAlphaSubCycles'}])
-        if len(nAlphaSubCycles_list) > 0:
-            block = nAlphaSubCycles_list[0]['parent']
-            for nAlphaSubCycles in reversed(nAlphaSubCycles_list):
-                comment = dictparse.find_element([{'type': 'line_comment|block_comment'}],
-                    parent = nAlphaSubCycles['element'], reverse = True)['element']
-                if comment is not None and 'shakedown calculation' in comment['value']:
-                    del nAlphaSubCycles['parent'][nAlphaSubCycles['index']]
-            dictParse.set_blank_line(block, number_of_blank_lines = 0)
-
-
-        remove_entires_in_DPL(dp.contents, r'^// shakedown calculation \*/$')
-        dp = dictFormat.moveLineToBottom(dp)
-        s = dp.toString()
-        if s != s_old:
-            with open(path, 'w') as f:
-                f.write(s)
-    remove_unnecessary_entries_in(os.path.join('system', 'fvSolution'))
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
-        fvSolution = os.path.join(d, 'fvSolution')
-        if os.path.isfile(fvSolution):
-            remove_unnecessary_entries_in(fvSolution)
-
-def modify_dicts_for_shakedown(value_dict):
-    remove_unnecessary_entries_in_fvSolution()
-    同時に直して行きまひょ．
-    def modify_dicts_for_shakedown_in(path):
-        if os.path.islink(path):
-            return
-        fvSolution = dictparse.DictParser2(file_name = path)
-        # solvers/"alpha.water.*"/nAlphaSubCycles
-        nAlphaSubCycles_list = fvSolution.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'},
-            {'type': 'dictionary', 'key': 'nAlphaSubCycles'}])
-        if len(nAlphaSubCycles_list) > 0:
-            comment = dictparse.find_element([{'type': 'line_comment|block_comment'}],
-                parent = nAlphaSubCycles_list[-1]['element'], reverse = True)['element']
-            if comment is None or 'shakedown calculation' not in comment['value']:
-                i = dictparse.find_element([{'type': 'linebreak|block_end'}], parent = nAlphaSubCycles_list[-1]['parent'],
-                    start = nAlphaSubCycles_list[-1]['index'] + 1)['index']
-                nAlphaSubCycles_list[-1]['parent'][i:i] = dictParse.DictParser2(string =
-                        '\n'
-                        f'nAlphaSubCycles\t{value_dict["nAlphaSubCycles"]}; // shakedown calculation'
-                        '\n').elements
-                dictParse.set_blank_line(nAlphaSubCycles_list[-1]['parent'], number_of_blank_lines = 0)
-
-        x = dp.getValueForKey(['solvers'])
-        for y in x:
-            if DictParserList.isType(y, DictParserList.BLOCK):
-                has_nAlphaSubCycles = False
-                for z in y.value():
-                    if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'nAlphaSubCycles':
-                        has_nAlphaSubCycles = True
-                        break
-                if has_nAlphaSubCycles and 'nAlphaSubCycles' in value_dict:
-                    y.value().extend([DictParserList(DictParserList.DICT,
-                        ['nAlphaSubCycles', '', [str(value_dict['nAlphaSubCycles'])],
-                        '/* shakedown calculation */']), '\n'])
-                for k in ('tolerance', 'relTol'):
-                    if k in value_dict:
-                        y.value().extend([DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])],
-                            '/* shakedown calculation */']), '\n'])
-        for m in ('SIMPLE', 'PISO', 'PIMPLE'):
-            x = dp.getValueForKey([m])
-            if x is not None:
-                if m in ('PISO', 'PIMPLE'):
-                    if 'nCorrectors' in value_dict:
-                        x.extend([DictParserList(DictParserList.DICT,
-                                ['nCorrectors', '', [str(value_dict['nCorrectors'])],
-                                '/* shakedown calculation */']), '\n'])
-                for k in ('momentumPredictor', 'nNonOrthogonalCorrectors'):
-                    if k in value_dict:
-                        x.extend([DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])],
-                            '/* shakedown calculation */']), '\n'])
-        x = dp.getValueForKey(['relaxationFactors'])
-        if x is not None:
-            for y in x:
-                if DictParserList.isType(y, DictParserList.BLOCK):
-                    k = 'relaxationFactors_' + y.key()
-                    if k in value_dict:
-                        y.value().extend([DictParserList(DictParserList.DICT, ['".*"', '', [str(value_dict[k])],
-                            '/* shakedown calculation */']), '\n'])
-        dp.writeFile(path)
-
-    modify_dicts_for_shakedown_in(os.path.join('system', 'fvSolution'))
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
-        fvSolution = os.path.join(d, 'fvSolution')
-        if os.path.isfile(fvSolution):
-            modify_dicts_for_shakedown_in(fvSolution)
-
-    dp = DictParser(controlDict_path)
-    for k in ('stopAt', 'endTime', 'writeControl', 'writeInterval', 'purgeWrite'):
-        if k in value_dict:
-            i_last = i = dp.getIndexOfItem([k])[0]
-            for j in range(i + 1, len(dp.contents)):
-                x = dp.contents[j]
-                if DictParserList.isType(x, DictParserList.DICT) and x.key() == k:
-                    i_last = j
-            dp.contents[i_last + 1:i_last + 1] = [
-                '\n', DictParserList(DictParserList.DICT, [k, '', [str(value_dict[k])], '/* shakedown calculation */'])]
-    dp.writeFile(controlDict_path)
-
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
@@ -410,7 +215,7 @@ if __name__ == '__main__':
                 domains = max(int(sys.argv[i]), 1)
             i += 1
 
-    for i in (controlDict_path, os.path.join('system', 'fvSolution'), boundary):
+    for i in (controlDict_path, os.path.join('system', 'fvSolution'), boundary_path):
         if not os.path.isfile(i):
             print(f'エラー: ファイル {i} がありません．')
             sys.exit(1)
@@ -503,21 +308,6 @@ if __name__ == '__main__':
     if interactive:
         with_function_objects = True if input(f'ファイル {controlDict_path} に書かれている'
             'functionsの内容を計算中に実行しますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
-
-    if float(latest_time) == 0.0 and interactive:
-        shakedown_calculation = True if (raw_input if sys.version_info.major <= 2 else input)(
-            'ならし計算を行いますか？ (y/n, どうしても発散する場合に試す価値あり) > '
-            ).strip().lower() == 'y' else False
-    else:
-        shakedown_calculation = False
-
-    if shakedown_calculation:
-        with open(shakedown_calc_report_txt, 'w') as f:
-            f.write('#datetime')
-            for b in bounds_shakedown:
-                f.write('\t{}'.format(b['name']))
-            f.write('\tsteps\n')
-    elif interactive:
         decrease_dt_if_fpe_occured = True if input('計算が発散した場合，'
             '時間ステップを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
 
@@ -566,37 +356,20 @@ if __name__ == '__main__':
 #    if exec_potentialFoam:
 #        potentialFoam(latest_time)
 
-    if shakedown_calculation:
-        subprocess.call('foamListTimes -rm -noZero', shell = True)
+    for trial in range(30):
+        calculate()
         if domains != 1:
-            rmObjects.removeProcessorDirs('noZero')
-        myBopt = GPyOpt.methods.BayesianOptimization(f = calculate_shakedown, domain = bounds_shakedown,
-            model_type = 'GP', initial_design_numdata = 5, acquisition_type ='EI', maximize = True)
-        myBopt.run_optimization(max_iter = 100)
-        print('\nならし計算が終了しました．')
-        if best_folder_shakedown is not None:
-            latest_time = best_folder_shakedown[:-len(best_folder_shakedown_suffix)]
-            shutil.move(best_folder_shakedown, latest_time)
-            print('ベイズ最適化の履歴は{}に保存され，最も発散しにくかった計算条件による結果は{}秒のフォルダに保存されています．'.format(
-                shakedown_calc_report_txt, latest_time))
-        else:
-            print('ベイズ最適化の履歴は{}に保存されています．'.format(shakedown_calc_report_txt) +
-                'system/controlDictのwriteIntervalが大きかったせいか，最も発散しにくかった計算条件による結果は保存されていません．')
-    else:
-        for trial in range(30):
-            calculate()
-            if domains != 1:
-                command = 'reconstructPar -newTimes -noFunctionObjects'
-                if os.path.exists(regionProperties_path):
-                    command += ' -allRegions'
-                subprocess.call(command, shell = True)
-                rmObjects.removeProcessorDirs('noLatest')
-            if not decrease_dt_if_fpe_occured or not sigFpe_is_found:
-                break
-        if sigFpe_is_found:
-            print('\n計算が発散して終了しました．')
-            print('「DEXCS OpenFOAM メモ」 (0_OpenFOAMメモ.pdf) の' +
-                '「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．')
+            command = 'reconstructPar -newTimes -noFunctionObjects'
+            if os.path.exists(regionProperties_path):
+                command += ' -allRegions'
+            subprocess.call(command, shell = True)
+            rmObjects.removeProcessorDirs('noLatest')
+        if not decrease_dt_if_fpe_occured or not sigFpe_is_found:
+            break
+    if sigFpe_is_found:
+        print('\n計算が発散して終了しました．')
+        print('「DEXCS OpenFOAM メモ」 (0_OpenFOAMメモ.pdf) の' +
+            '「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．')
 
     if os.path.isdir('0_bak'):
         if os.path.isdir('0'):
