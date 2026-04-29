@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/4/23 10:56:51 AM
+# 2026/4/29 5:45:11 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -40,12 +40,8 @@ domains = 1
 enable_all_function_objects = False
 sigFpe_is_found = False
 controlDict_path = os.path.join('system', 'controlDict')
-fvSolution_path = os.path.join('system', 'fvSolution')
 regionProperties_path = os.path.join('constant', 'regionProperties')
 boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-
-relaxationFactor_equations_min = 0.1
-relaxationFactor_fields_min = 0.1
 
 def handler(signum, frame):
     if domains != 1:
@@ -147,6 +143,132 @@ def potentialFoam(latest_time):
     else:
         print('初期流れ場をpotentialFoamで作成できませんでした．')
 
+def reset_relaxationFactors_in_fvSolution():
+    def reset_relaxationFactors_in(path):
+        fvSolution_path = os.path.join(path, 'fvSolution')
+        if os.path.islink(fvSolution_path):
+            return
+
+        fvSolution = dictParse.DictParser2(file_name = fvSolution_path)
+
+        relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
+        if relaxationFactors is None:
+            return
+        for k in ('equations', 'fields'):
+            block = dictParse.find_element([{'type': 'block', 'key': k}], parent = relaxationFactors)['element']
+            if block is None:
+                continue
+            for i in reversed(dictParse.find_all_elements([{'type': 'dictionary'}], parent = block)):
+                comment = dictparse.find_element([{'type': 'line_comment|block_comment'}], parent = i['element'],
+                    reverse = True)['element']
+                if comment is not None or 'DECREASED IN RESPONCE TO FLOATING POINT ERROR' not in comment['value']:
+                    continue
+                del comment['parent'][comment['index']]
+                calc = dictparse.find_element([{'type': 'directive', 'key': 'calc'}], parent = i['element'])['element']
+                if calc is None:
+                    continue
+                value = re.match(r'"\(([^)]+)',
+                    dictParse.find_element([{'type': 'string'}], parent = calc)['element']['value'])
+                if value is None:
+                    continue
+                calc['parent'][calc['index']:calc['index'] + 1] = dictParse.DictParser2(string =
+                    value[1]).elements
+            dictparse.set_blank_line(block, number_of_blank_lines = 0)
+
+        string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
+        if fvSolution.string != string:
+#            os.rename(fvSolution_path, fvSolution_path + '_bak')
+            with open(fvSolution_path, 'w') as f:
+                f.write(string)
+
+    if os.path.isdir('system'):
+        remove_unnecessary_entries_in('system')
+    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+        remove_unnecessary_entries_in(d)
+
+def change_relaxationFactors_in_controlDict(exponent):
+    def change_relaxationFactors_in(path):
+        fvSolution_path = os.path.join(path, 'fvSolution')
+        if os.path.islink(fvSolution_path):
+            return
+
+        fvSolution = dictParse.DictParser2(file_name = fvSolution_path)
+
+        tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
+            reverse = True, index_not_found = len(fvSolution.elements) - 1)['index'] + 1
+
+        relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
+        if relaxationFactors is None:
+            linebreak_and_relaxationFactors = dictParse.DictParser2(string =
+                '\n'
+                '\n'
+                'relaxationFactors\n'
+                '{\n'
+                '}').elements
+            fvSolution.elements[tail_index:tail_index] = linebreak_and_relaxationFactors
+            tail_index += len(linebreak_and_relaxationFactors)
+            relaxationFactors = linebreak_and_relaxationFactors[-1]
+        relaxationFactors_start = dictParse.find_element([{'type': 'block_start'}],
+            parent = relaxationFactors)['index'] + 1
+
+        fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
+        if fields is None:
+            linebreak_and_fields = dictParse.DictParser2(string =
+                '\n'
+                'fields // p = p^{old} + \\alpha (p - p^{old})\n'
+                '{\n'
+                '"p|p_rgh"\t1.0;\n'
+                'rho\t1.0;\n'
+                '}').elements
+            relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_fields
+            fields = linebreak_and_fields[-1]
+        else:
+            fields['value'][:dictParse.find_element(
+                [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser2(string =
+                    ' // p = p^{old} + \\alpha (p - p^{old})\n').elements
+
+        equations = dictParse.find_element(
+            [{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)['element']
+        if equations is None:
+            linebreak_and_equations = dictParse.DictParser2(string =
+                '\n'
+                'equations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
+                '{\n'
+                'U\t1.0;\n'
+                '"k|epsilon|omega"\t1.0;\n'
+                '}').elements
+            relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_equations
+            equations = linebreak_and_equations[-1]
+        else:
+            equations['value'][:dictParse.find_element(
+                [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser2(string =
+                ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
+
+        dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
+
+        for block in (equations, fields):
+            for param in dictParse.find_elements([{'type': 'dictionary'}], parent = block):
+                value = dictParse.find_element([{'type': 'word|float|integer'}], parent = param)['element']
+                if value is None:
+                    continue
+                value['parent'][value['index']:] = dictParse.DictParser2(string =
+                    f'#calc "({value["element"]["value"]})*{0.5**exponent}";'
+                    ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR'
+                    '\n').elements
+            dictparse.set_blank_line(block, number_of_blank_lines = 0)
+
+        string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
+        if fvSolution.string != string:
+#            os.rename(fvSolution_path, fvSolution_path + '_bak')
+            with open(fvSolution_path, 'w') as f:
+                f.write(string)
+
+    reset_relaxationFactors_in_fvSolution()
+    if os.path.isdir('system'):
+        change_relaxationFactors_in('system')
+    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+        change_relaxationFactors_in(d)
+
 def calculate():
     for i in ('PyFoam*', '*.logfile', '*.logfile.restart*', 'log.*'):
         for f in glob.iglob(i):
@@ -192,9 +314,11 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = delete_folders_except_for_zero = decrease_relaxationFactors_after_fpe = False
-        exec_potentialFoam = exec_paraFoam = shakedown_calculation = False
-        log10_dt_max = log10_dt_min = None
+        interactive = False
+        delete_folders_except_for_zero = False
+        decrease_relaxationFactors_after_fpe = False
+#        exec_potentialFoam = False
+        exec_paraFoam = False
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -205,13 +329,8 @@ if __name__ == '__main__':
                 decrease_relaxationFactors_after_fpe = True
             elif sys.argv[i] == '-f':
                 enable_all_function_objects = True
-            elif sys.argv[i] == '-i':
-                i += 1
-                log10_dt_max = int(sys.argv[i])
-                i += 1
-                log10_dt_min = int(sys.argv[i])
-            elif sys.argv[i] == '-o':
-                exec_potentialFoam = True
+#            elif sys.argv[i] == '-o':
+#                exec_potentialFoam = True
             elif sys.argv[i] == '-p':
                 exec_paraFoam = True
             elif sys.argv[i] == '-r':
@@ -219,6 +338,7 @@ if __name__ == '__main__':
                 domains = max(int(sys.argv[i]), 1)
             i += 1
 
+    fvSolution_path = os.path.join('system', 'fvSolution')
     for i in (controlDict_path, fvSolution_path, boundary_path):
         if not os.path.isfile(i):
             print(f'エラー: ファイル {i} がありません．')
@@ -236,20 +356,22 @@ if __name__ == '__main__':
         shutil.move(f, f[:-4])
 
     if os.path.isdir('0_bak'):
-        def count_dcmp(dcmp):
-            c = len(dcmp.left_only) + len(dcmp.right_only) + len(dcmp.diff_files)
-            for sub_dcmp in dcmp.subdirs.values():
-                c += count_dcmp(sub_dcmp)
-            return c
-        if count_dcmp(filecmp.dircmp('0', '0_bak')) > 0:
-            print('エラー: あるはずがない0_bakフォルダがあります．'
-                '0フォルダと0_bakフォルダを比較して，正しい方を0フォルダに置き換えてから再実行して下さい．')
+        def has_diff(dcmp):
+            # 左右どちらかにしかないファイル、または内容が異なるファイルがあるか
+            if dcmp.left_only or dcmp.right_only or dcmp.diff_files:
+                return True
+            # サブディレクトリを再帰的にチェック
+            return any(has_diff(sub_dcmp) for sub_dcmp in dcmp.subdirs.values())
+        # 実行部分
+        if has_diff(filecmp.dircmp('0', '0_bak')):
+            print('エラー: あるはずがないフォルダ 0_bak があります．'
+                'フォルダ 0 と 0_bak を比較して，正しい方を 0 に置き換えてから再実行して下さい．')
             sys.exit(1)
         else:
             shutil.rmtree('0_bak')
 
     shutil.copytree('0', '0_bak')
-    remove_unnecessary_entries_in_fvSolution()
+    reset_relaxationFactors_in_fvSolution()
 
     if os.path.isdir('processor0'):
         command = 'reconstructPar -newTimes -noFunctionObjects'
@@ -321,7 +443,7 @@ if __name__ == '__main__':
             enable_all_function_objects = True if input(f'全てを実行するように {controlDict_path} を書き換えますか？'
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
             decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，{fvSolution_path} の'
-                'relaxationFactorsをを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
+                'relaxationFactorsを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if not enable_all_function_objects:
         misc.setEnabledInControlDictFunctions(enabled = False)

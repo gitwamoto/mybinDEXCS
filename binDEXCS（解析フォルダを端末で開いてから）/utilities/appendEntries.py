@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:27:54 PM
+# 2026/4/29 5:45:33 PM
 
 # DictParser2で書き直し済み
 
@@ -72,7 +72,7 @@ def intoFvSolution():
                         '\n'
                         'Phi\n'
                         '{\n'
-                        f'${p.groups()};\n'
+                        f'\t${p.groups()};\n'
                         '}\n').elements
 
             dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
@@ -88,7 +88,7 @@ def intoFvSolution():
                 '\n'
                 'potentialFlow\n'
                 '{\n'
-                'nNonOrthogonalCorrectors\t10;\n'
+                '\tnNonOrthogonalCorrectors\t10;\n'
                 '}').elements
             fvSolution.elements[tail_index:tail_index] = linebreak_and_potentialFlow
             tail_index += len(linebreak_and_potentialFlow)
@@ -124,7 +124,7 @@ def intoFvSolution():
                     block['value'][block_start:block_start] = dictParse.DictParser2(string =
                         'residualControl\n'
                         '{\n'
-                        '".*"\t1.0e-03;\n'
+                        '\t".*"\t1.0e-03;\n'
                         '}\n').elements
                 else:
                     residualControl['parent'][block_start:block_start] = [
@@ -182,19 +182,19 @@ def intoFvSolution():
             fvSolution.elements[tail_index:tail_index] = linebreak_and_relaxationFactors
             tail_index += len(linebreak_and_relaxationFactors)
             relaxationFactors = linebreak_and_relaxationFactors[-1]
-        i = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
-        relaxationFactors_start = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors,
-            start = i, index_not_found = i - 1)['index'] + 1
+        relaxationFactors_start = dictParse.find_element([{'type': 'block_start'}],
+            parent = relaxationFactors)['index'] + 1
 
         fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
         if fields is None:
             relaxationFactors['value'][
                 relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
+                '\n'
                 'fields // p = p^{old} + \\alpha (p - p^{old})\n'
-                '{'
-                '"p|p_rgh"\t1.0;\n'
-                'rho\t1.0;\n'
-                '}\n').elements
+                '{\n'
+                '\t"p|p_rgh"\t1.0;\n'
+                '\trho\t1.0;\n'
+                '}').elements
         else:
             fields['value'][:dictParse.find_element(
                 [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser2(string =
@@ -205,12 +205,12 @@ def intoFvSolution():
         if equations is None:
             relaxationFactors['value'][
                 relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
+                '\n'
                 'equations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
-                '{'
-                'U\t1.0;\n'
-                '"k|epsilon|omega"\t1.0;\n'
-                '}\n'
-                ).elements
+                '{\n'
+                '\tU\t1.0;\n'
+                '\t"k|epsilon|omega"\t1.0;\n'
+                '}').elements
         else:
             equations['value'][:dictParse.find_element(
                 [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser2(string =
@@ -251,7 +251,7 @@ def intoFvSchemes():
                     '\n'
                     f'{b}\n'
                     '{\n'
-                    f'{k}\t{v};\n'
+                    f'\t{k}\t{v};\n'
                     '}').elements
                 tail_index = fvSchemes.find_element([{'except type': 'whitespace|linebreak|separator'}],
                     reverse = True, index_not_found = len(fvSchemes.elements) - 1)['index'] + 1
@@ -334,8 +334,7 @@ def intoControlDict():
         insertion = dictParse.find_element(
             [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
         block['value'][insertion:insertion] = dictParse.DictParser2(string =
-            f'enabled\t{v}; // yesで実行\n'
-            ).elements
+            f'enabled\t{v}; // yesで実行\n').elements
         dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
     functions_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)['index']
@@ -368,41 +367,38 @@ def intoControlDict():
     if not has_limitNut:
         limitNut = dictParse.DictParser2(string =
             '\n'
-            'limitNut // nutの最大値を制限する\n'
-            '{\n'
-            'type\tlimitFields;\n'
-            'libs\t(fieldFunctionObjects);\n'
-            'enabled\tno; // yesで実行\n'
-            'fields\t(nut);\n'
-            'limit\tmax; // 渦粘性の場合は上限(max)だけ抑えることが多い\n'
-            'max\t0.01;\n'
-            '}\n'
-            ).elements
+            '\tlimitNut // nutの最大値を制限する\n'
+            '\t{\n'
+            '\t\ttype\tlimitFields;\n'
+            '\t\tlibs\t(fieldFunctionObjects);\n'
+            '\t\tenabled\tno; // yesで実行\n'
+            '\t\tfields\t(nut);\n'
+            '\t\tlimit\tmax; // 渦粘性の場合は上限(max)だけ抑えることが多い\n'
+            '\t\tmax\t0.01;\n'
+            '\t}\n').elements
         functions['value'][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
 #    if not has_calcCo:
 #        calcCo = dictParse.DictParser2(string =
 #            '\n'
-#            'calcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
-#            '{\n'
-#            'type\tCourantNo;\n'
-#            'libs\t(fieldFunctionObjects);\n'
-#            'enabled\tno; // yesで実行\n'
-#            '}\n'
-#            ).elements
+#            '\tcalcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
+#            '\t{\n'
+#            '\t\ttype\tCourantNo;\n'
+#            '\t\tlibs\t(fieldFunctionObjects);\n'
+#            '\t\tenabled\tno; // yesで実行\n'
+#            '\t}\n').elements
 #        functions['value'][functions_end:functions_end] = calcCo
 #        functions_end += len(calcCo)
 #    if not has_printCoMinMax:
 #        printCoMinMax = dictParse.DictParser2(string =
 #            '\n'
-#            'printCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
-#            '{\n'
-#            'type\tfieldMinMax;\n'
-#            'libs\t(fieldFunctionObjects);\n'
-#            'enabled\tno; // yesで実行\n'
-#            'fields\t(Co);\n'
-#            '}\n'
-#            ).elements
+#            '\tprintCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
+#            '\t{\n'
+#            '\t\ttype\tfieldMinMax;\n'
+#            '\t\tlibs\t(fieldFunctionObjects);\n'
+#            '\t\tenabled\tno; // yesで実行\n'
+#            '\t\tfields\t(Co);\n'
+#            '\t}\n').elements
 #        functions['value'][functions_end:functions_end] = printCoMinMax
 #        functions_end += len(printCoMinMax)
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)

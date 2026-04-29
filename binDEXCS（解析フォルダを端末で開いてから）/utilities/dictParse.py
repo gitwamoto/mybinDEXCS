@@ -660,10 +660,10 @@ def re_findall_except_comments(pattern, string):
     while index < len(string):
         s = pat.search(string, pos = index)
         if s is None:
-            result.extend(pat_findall.findall(string, pos = index)
+            result.extend(pat_findall.findall(string, pos = index))
             break
         if index != s.start():
-            result.extend(pat_findall.findall(string, pos = index, endpos = s.start())
+            result.extend(pat_findall.findall(string, pos = index, endpos = s.start()))
         index = s.end()
     return result
 
@@ -679,7 +679,7 @@ def re_findall_in_comments(pattern, string):
         s = pat.search(string, pos = index)
         if s is None:
             break
-        result.extend(pat_findall.findall(s.group())
+        result.extend(pat_findall.findall(s.group()))
         index = s.end()
     return result
 
