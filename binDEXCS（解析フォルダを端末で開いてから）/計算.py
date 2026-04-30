@@ -89,7 +89,7 @@ def potentialFoam(latest_time):
     command = (('potentialFoam' if domains == 1 else f'mpirun -np {domains} potentialFoam -parallel') +
         ' -writep -writePhi -noFunctionObjects | tee potentialFoam.log')
     if subprocess.call(command, shell = True) == 0:
-        if os.path.isfile(p_bak_path): # has_p_potentialflow
+        if os.path.isfile(p_bak_path):
             changeDictionaryDict_path = os.path.join('system', 'changeDictionaryDict')
             changeDictionaryDict_bak_path = changeDictionaryDict_path + '_bak'
             if os.path.isfile(changeDictionaryDict_path):
@@ -106,11 +106,8 @@ def potentialFoam(latest_time):
                     '\n'
                     'p\n'
                     '{\n')
-                f.write(dictparse.file_string([
-                    dictParse.DictParser2(file_name = p_bak_path).find_element(
-                        [{'type': 'block'}, {'key': 'boundaryField'}])['element']
-                    ],
-                    indent_level = 1, pretty_print = True))
+                f.write(dictparse.file_string([dictParse.DictParser2(file_name = p_bak_path).find_element(
+                    [{'type': 'block'}, {'key': 'boundaryField'}])['element']], indent_level = 1, pretty_print = True))
                 f.write('\n'
                     '}\n')
             command = (('changeDictionary' if domains == 1 else f'mpirun -np {domains} changeDictionary -parallel') +
@@ -341,7 +338,7 @@ if __name__ == '__main__':
     fvSolution_path = os.path.join('system', 'fvSolution')
     for i in (controlDict_path, fvSolution_path, boundary_path):
         if not os.path.isfile(i):
-            print(f'エラー: ファイル {i} がありません．')
+            print(f'エラー: ファイル{i}がありません．')
             sys.exit(1)
 
     for p in ('*.foam', '*.OpenFOAM', '*.blockMesh'):
@@ -442,7 +439,7 @@ if __name__ == '__main__':
         if interactive:
             enable_all_function_objects = True if input(f'全てを実行するように {controlDict_path} を書き換えますか？'
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
-            decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，{fvSolution_path} の'
+            decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，ファイル{fvSolution_path}の'
                 'relaxationFactorsを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if not enable_all_function_objects:

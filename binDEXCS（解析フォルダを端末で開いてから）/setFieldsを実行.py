@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/22 12:45:44 PM
+# 2026/4/30 3:53:40 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -43,9 +43,9 @@ if __name__ == '__main__':
 
     setFieldsDict_path = os.path.join('system', 'setFieldsDict')
     if interactive:
-        setFieldsDict_is_written = (True if (raw_input if sys.version_info.major <= 2 else input)(
-            setFieldsDict_path + 'ファイルの内容を確認して下さい．設定値に関する指示が書き込まれていますか？ (y/n) > '
-            ).strip().lower() == 'y' else False) if os.path.isfile(setFieldsDict_path) else False
+        setFieldsDict_is_written = ((True if input(f'ファイル{setFieldsDict_path}の内容を確認して下さい．'
+            '設定値に関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False)
+            if os.path.isfile(setFieldsDict_path) else False)
 
     if not setFieldsDict_is_written:
         if os.path.isfile(setFieldsDict_path):
@@ -78,10 +78,10 @@ if __name__ == '__main__':
                 '\t\t);\n'
                 '\t}\n'
                 ');\n')
-        print('\n\033[3;4;5m' + setFieldsDict_path + 'ファイルにテンプレートを追加して，texteditwx.pyで開いています．')
+        print(f'\n\033[3;4;5mファイル{setFieldsDict_path}にテンプレートを追加して，texteditwx.pyで開いています．')
         print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
         print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-        subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' ' + setFieldsDict_path, shell = True)
+        subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} setFieldsDict_path', shell = True)
 
     setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
 
@@ -97,10 +97,11 @@ if __name__ == '__main__':
 
     for i in fields_set:
         i = os.path.join('0', i)
-        if os.path.isfile( i + '.orig'):
-            shutil.copy(i + '.orig', i)
+        i_orig = f'{i}.orig'
+        if os.path.isfile(i_orig):
+            shutil.copy(i_orig, i)
         else:
-            shutil.copy(i, i + '.orig')
+            shutil.copy(i, i_orig)
 
     command = 'setFields -noFunctionObjects'
     if subprocess.call(command, shell = True) != 0:

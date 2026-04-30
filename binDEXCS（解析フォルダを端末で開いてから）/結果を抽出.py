@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/4/22 12:46:16 PM
+# 2026/4/30 4:03:06 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -156,7 +156,7 @@ def append_functions_in_controlDict(controlDict_path):
     with open(controlDict_path, 'w') as f:
         f.write(string)
 
-    print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにsetsまたはsurfacesに関するテンプレートを追加して，'
+    print(f'\n\033[3;4;5mファイル{controlDict_path}のfunctionsにsetsまたはsurfacesに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
@@ -211,7 +211,7 @@ if __name__ == '__main__':
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'sets')
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'surfaces')
     if interactive:
-        sampling_is_written = True if input(f'ファイル {controlDict_path} の内容を確認して下さい．'
+        sampling_is_written = True if input(f'ファイル{controlDict_path}の内容を確認して下さい．'
             'functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
     controlDict = (DictParser2(controlDict_path) if sampling_is_written
         else append_functions_in_controlDict(controlDict_path))
@@ -229,7 +229,7 @@ if __name__ == '__main__':
                         surface_dir_list.append(x.key())
                         break
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
-        print(f'エラー: ファイル {controlDict_path} でsetsまたはsurfacesに関する指示がありません．')
+        print(f'エラー: ファイル{controlDict_path}でsetsまたはsurfacesに関する指示がありません．')
         sys.exit(1)
 
     if interactive:

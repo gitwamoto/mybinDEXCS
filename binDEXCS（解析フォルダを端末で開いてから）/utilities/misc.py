@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/4/26 7:42:33 PM
+# 2026/4/30 3:56:16 PM
 
 # DictParser2で書き直し済み
 
@@ -355,7 +355,7 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
         f = f['element']
         t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = f)
         if t['element'] is None:
-            print(f'エラー: ファイル {controlDict_path} のfunctionsで，typeがない項目があります．')
+            print(f'エラー: ファイル{controlDict_path}のfunctionsで，typeがない項目があります．')
             sys.exit(1)
         if type_name is not None and dictParse.find_element([{'type': 'word', 'value': type_name}],
             parent = t['element'])['element'] is None:
@@ -402,7 +402,7 @@ def controlDictFunctionsList(path = os.curdir):
         f = f['element']
         t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = f)['element']
         if t is None:
-            print(f'エラー: ファイル {controlDict_path} のfunctionsで，typeがない項目があります．')
+            print(f'エラー: ファイル{controlDict_path}のfunctionsで，typeがない項目があります．')
             sys.exit(1)
         type_name = dictParse.find_element([{'type': 'word'}], parent = t)['element']['value']
         e = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = f)['element']

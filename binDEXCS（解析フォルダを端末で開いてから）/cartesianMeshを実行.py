@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:54:36 PM
+# 2026/4/30 3:30:46 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -67,7 +67,7 @@ if __name__ == '__main__':
             i += 1
 
     if not os.path.isfile(meshDict_path):
-        print(f'エラー: ファイル {meshDict_path} がありません．')
+        print(f'エラー: ファイル{meshDict_path}がありません．')
         sys.exit(1)
     if os.path.isdir('dynamicCode'):
         shutil.rmtree('dynamicCode')
@@ -120,19 +120,19 @@ if __name__ == '__main__':
     if two_dimensional:
         # surfaceFile "constant/triSurface/FMS_NAME.fms"; // (mandatory)
         surfaceFile = meshDict.find_element(
-            [{'type': 'dictionary', 'key': 'surfaceFile'}, {'except type': 'ignorable'}])['element']
+            [{'type': 'dictionary', 'key': 'surfaceFile'}, {'type': 'string'}])['element']
         stl_file_name_wo_ext = os.path.splitext(surfaceFile['value'].strip('"'))[0] # .fmsを取り除く
-        stl_2D_file_name = stl_file_name_wo_ext + '_2D.stl' # 2次元の場合はfmsファイルでなくても十分であることが多い
+        stl_2D_file_name = f'{stl_file_name_wo_ext}_2D.stl' # 2次元の場合はfmsファイルでなくても十分であることが多い
         should_write = True
         with open(stl_2D_file_name, 'w') as f:
-            for line in open(stl_file_name_wo_ext + '.stl', 'r'):
+            for line in open(f'{stl_file_name_wo_ext}.stl', 'r'):
                 if 'endsolid' in line and line.split()[-1] in empty_list:
                     should_write = True
                 elif 'solid' in line and line.split()[-1] in empty_list:
                     should_write = False
                 elif should_write:
                     f.write(line)
-        surfaceFile['value'] = '"' + stl_2D_file_name + '"'
+        surfaceFile['value'] = f'"{stl_2D_file_name}"'
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
         with open(meshDict_path, 'w') as f:
             f.write(dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0])

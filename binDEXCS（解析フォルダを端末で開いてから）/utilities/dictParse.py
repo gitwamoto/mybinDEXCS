@@ -1054,7 +1054,36 @@ if __name__ == '__main__':
 #        print(i, e)
 #    separators = dp.find_separators()
 #    print([(s['index'], s['element']) for s in separators])
-    print(structure_string(DictParser2(string =
-        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
-        #f'surfaceFile\t"{stl_2D_file_name}";\n'
-        ).elements))
+#    print(structure_string(DictParser2(string =
+#        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
+#        #f'surfaceFile\t"{stl_2D_file_name}";\n'
+#        ).elements))
+    print(
+    structure_string(DictParser2(string = 'FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\tsetFieldsDict;\n'
+                '}\n'
+                '\n'
+                'defaultFieldValues // まず，領域全体で値を設定する．\n'
+                '(\n'
+                '\tvolScalarFieldValue alpha.water 0 // スカラーの場合 -> 変数の名前 値\n'
+                '\tvolVectorFieldValue U (0 0 0) // ベクトルの場合 -> 変数の名前 (x成分 y成分 z成分)\n'
+                ');\n'
+                '\n'
+                'regions\n'
+                '(\n'
+                '\tboxToCell // boxで決められた直方体の範囲の値を設定する．\n'
+                '\t{\n'
+                '\t\tbox\t(-1 -1 -1) (2 2 2); // (x_min y_min z_min) (x_max y_max z_max)\n'
+                '\t\tfieldValues\n'
+                '\t\t(\n'
+                '\t\t\tvolScalarFieldValue alpha.water 1 // スカラーの場合 -> 変数の名前 値\n'
+                '\t\t\tvolVectorFieldValue U (1 1 1) // ベクトルの場合 -> 変数の名前 (x成分 y成分 z成分)\n'
+                '\t\t);\n'
+                '\t}\n'
+                ');\n').elements)
+    )
