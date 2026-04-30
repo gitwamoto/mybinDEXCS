@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/20 11:17:26 AM
+# 2026/4/30 4:22:58 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -188,7 +188,7 @@ if __name__ == '__main__':
             i += 1
 
     if not os.path.isfile(snappyHexMeshDict_path):
-        print(f'エラー: ファイル {snappyHexMeshDict_path}がありません．')
+        print(f'エラー: ファイル{snappyHexMeshDict_path}がありません．')
         sys.exit(1)
     if float(misc.latestTime()) != 0.0:
         print('エラー: 0秒以外のフォルダがあるとうまくいきません．')
@@ -204,8 +204,8 @@ if __name__ == '__main__':
     if interactive:
         while True:
             try:
-                domains = max(int(input('計算領域を何個に分割して並列計算しますか？ '
-                    f'({threads}個まで, 1だと普通の計算) > ').strip()), 1)
+                domains = max(int(input('計算領域を何個に分割して並列計算しますか？'
+                    f' ({threads}個まで, 1だと普通の計算) > ').strip()), 1)
                 break
             except ValueError:
                 pass
@@ -306,7 +306,7 @@ if __name__ == '__main__':
     if domains != 1:
         rmObjects.removeProcessorDirs()
         decomposeParDict_path = os.path.join('system', 'decomposeParDict')
-        decomposeParDict_bak_path = decomposeParDict_path + '_bak'
+        decomposeParDict_bak_path = f'{decomposeParDict_path}_bak'
         if os.path.isfile(decomposeParDict_path):
             os.rename(decomposeParDict_path, decomposeParDict_bak_path)
         with open(decomposeParDict_path, 'w') as f:

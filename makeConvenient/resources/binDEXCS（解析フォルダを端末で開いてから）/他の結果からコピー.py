@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/4/20 12:10:34 PM
+# 2026/4/30 4:00:51 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -27,7 +27,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = False
+        interactive = False
+        exec_paraFoam = False
         source_path = None
         i = 1
         while i < len(sys.argv):
@@ -43,14 +44,14 @@ if __name__ == '__main__':
 
     controlDict_path = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict_path):
-        print(f'エラー: ファイル {controlDict_path} がありません．')
+        print(f'エラー: ファイル{controlDict_path}がありません．')
         sys.exit(1)
 
     controlDict = DictParser2(file_name = controlDict_path)
     startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
         {'except type': 'ignorable'}])['element']
     if startFrom is None:
-        print(f'エラー: ファイル {controlDict_path} にstartFromの指定がありません．')
+        print(f'エラー: ファイル{controlDict_path}にstartFromの指定がありません．')
         sys.exit(1)
     startFrom = startFrom['value']
     if startFrom == 'latestTime':
@@ -69,14 +70,14 @@ if __name__ == '__main__':
         start_from = controlDict.find_element([{'type': 'dictionary', 'key': 'startTime'},
             {'except type': 'ignorable'}])['element']
         if start_from is None:
-            print(f'エラー: ファイル {controlDict_path} にstartTimeの指定がありません．')
+            print(f'エラー: ファイル{controlDict_path}にstartTimeの指定がありません．')
             sys.exit(1)
         start_from = f"startTime = {start_from['value']}"
     else:
-        print(f'エラー: ファイル {controlDict_path} のstartFromの指定が正しくありません．')
+        print(f'エラー: ファイル{controlDict_path}のstartFromの指定が正しくありません．')
         sys.exit(1)
 
-    print(f'現在の解析フォルダにある {controlDict_path} に書いてあるstartFrom = '
+    print(f'現在の解析フォルダにあるファイル{controlDict_path}に書いてあるstartFrom = '
         f'{start_from}の結果を他の解析フォルダのlatestTimeの結果で書き換えます．')
     print('メッシュが違っても良いですが，境界の形や境界条件は同じでないといけません．')
 

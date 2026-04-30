@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:34:27 PM
+# 2026/4/30 4:21:55 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         faces_data = []
         for i in range(faces_ranges.shape[0] - 1):
             faces_data.append(points_indices[faces_ranges[i]:faces_ranges[i + 1]])
-        os.rename(faces_path, faces_path + '_bak')
+        os.rename(faces_path, f'{faces_path}_bak')
         with open(faces_path, 'w') as f:
             f.write(s[:ph].replace('faceCompactList', 'faceList'))
             f.write('{}\n(\n'.format(len(faces_data)))

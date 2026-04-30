@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # インデント.py
 # by Yukiharu Iwamoto
-# 2026/3/17 10:34:10 PM
+# 2026/4/30 4:23:26 PM
 
 # ---- オプションはない ----
 
@@ -23,7 +23,7 @@ def indent(dir_name):
             parser = dictParse.DictParser2(file_name = i)
             string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
             if parser.string != string:
-#               os.rename(i, i + '_bak')
+#               os.rename(i, f'{i}_bak')
                 with open(i, 'w') as f:
                     f.write(string)
 

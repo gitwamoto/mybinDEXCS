@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:30:46 PM
+# 2026/4/30 4:21:38 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     if domains != 1:
         rmObjects.removeProcessorDirs()
         decomposeParDict_path = os.path.join('system', 'decomposeParDict')
-        decomposeParDict_bak_path = decomposeParDict_path + '_bak'
+        decomposeParDict_bak_path = f'{decomposeParDict_path}_bak'
         if os.path.isfile(decomposeParDict_path):
             os.rename(decomposeParDict_path, decomposeParDict_bak_path)
         with open(decomposeParDict_path, 'w') as f:
@@ -199,7 +199,7 @@ if __name__ == '__main__':
                     i['element']['value'] = t
         string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
         if boundary.string != string:
-#            os.rename(boundary_path, boundary_path + '_bak')
+#            os.rename(boundary_path, f'{boundary_path}_bak')
             with open(boundary_path, 'w') as f:
                 f.write(string)
 

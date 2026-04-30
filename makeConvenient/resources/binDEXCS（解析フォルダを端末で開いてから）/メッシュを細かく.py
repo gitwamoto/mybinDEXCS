@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/4/15 9:08:09 PM
+# 2026/4/30 4:23:33 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -30,8 +30,18 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = scaleMesh_0p001 = x_fine = y_fine = z_fine = False
-        x_max = x_min = y_max = y_min = z_max = z_min = None
+        interactive = False
+        exec_paraFoam = False
+        scaleMesh_0p001 = False
+        x_fine = False
+        y_fine = False
+        z_fine = False
+        x_max = None
+        x_min = None
+        y_max = None
+        y_min = None
+        z_max = None
+        z_min = None
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-xr':
@@ -74,7 +84,7 @@ if __name__ == '__main__':
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
     if not os.path.isfile(boundary_path):
-        print(f'エラー: ファイル {boundary_path} がありません．')
+        print(f'エラー: ファイル{boundary_path}がありません．')
         sys.exit(1)
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
@@ -85,26 +95,26 @@ if __name__ == '__main__':
             try:
                 x_min, x_max = sorted([float(i) for i in
                     input('x方向の最大，最小値x_max x_minをスペース区切りで入力して下さい．'
-                        f' ({box[0][0]} <= x_max, x_min <= {box[0][1]}) > ').replace(',', ' ').split()])
+                        f'({box[0][0]} <= x_max, x_min <= {box[0][1]}) > ').replace(',', ' ').split()])
             except ValueError:
                 pass
         while True:
             try:
                 y_min, y_max = sorted([float(i) for i in
                     input('y方向の最大，最小値y_max y_minをスペース区切りで入力して下さい．'
-                        f' ({box[1][0]} <= y_max, y_min <= {box[1][1]}) > ').replace(',', ' ').split()])
+                        f'({box[1][0]} <= y_max, y_min <= {box[1][1]}) > ').replace(',', ' ').split()])
             except ValueError:
                 pass
         while True:
             try:
                 z_min, z_max = sorted([float(i) for i in
                     input('z方向の最大，最小値z_max z_minをスペース区切りで入力して下さい．'
-                        f' ({box[2][0]} <= z_max, z_min <= {box[2][1]}) > ').replace(',', ' ').split()])
+                        f'({box[2][0]} <= z_max, z_min <= {box[2][1]}) > ').replace(',', ' ').split()])
             except ValueError:
                 pass
 
     topoSetDict_path = os.path.join('system', 'topoSetDict')
-    topoSetDict_bak_path = topoSetDict_path + '_bak'
+    topoSetDict_bak_path = f'{topoSetDict_path}_bak'
     if os.path.isfile(topoSetDict_path):
         os.rename(topoSetDict_path, topoSetDict_bak_path)
     with open(topoSetDict_path, 'w') as f:
@@ -144,7 +154,7 @@ if __name__ == '__main__':
         z_fine = True if input('z方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
 
     refineMeshDict_path = os.path.join('system', 'refineMeshDict')
-    refineMeshDict_bak_path = refineMeshDict_path + '_bak'
+    refineMeshDict_bak_path = f'{refineMeshDict_path}_bak'
     if os.path.isfile(refineMeshDict_path):
         os.rename(refineMeshDict_path, refineMeshDict_bak_path)
     with open(refineMeshDict_path, 'w') as f:
@@ -187,8 +197,8 @@ if __name__ == '__main__':
         misc.writeConvertedMillimeterIntoMeter()
     else:
         if interactive:
-            print(f'元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]},'
-                f' {box[1][0]} <= y <= {box[1][1]}, {box[2][0]} <= z <= {box[2][1]}です．')
+            print(f'元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]}, '
+                f'{box[1][0]} <= y <= {box[1][1]}, {box[2][0]} <= z <= {box[2][1]}です．')
             scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？'
                 ' (y/n, yだと1/1000倍してメートルに直します．) > ').strip().lower() == 'y' else False
         if scaleMesh_0p001:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/20 11:17:26 AM
+# 2026/4/30 4:22:58 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -306,7 +306,7 @@ if __name__ == '__main__':
     if domains != 1:
         rmObjects.removeProcessorDirs()
         decomposeParDict_path = os.path.join('system', 'decomposeParDict')
-        decomposeParDict_bak_path = decomposeParDict_path + '_bak'
+        decomposeParDict_bak_path = f'{decomposeParDict_path}_bak'
         if os.path.isfile(decomposeParDict_path):
             os.rename(decomposeParDict_path, decomposeParDict_bak_path)
         with open(decomposeParDict_path, 'w') as f:

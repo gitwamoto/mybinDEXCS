@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:27:54 PM
+# 2026/4/30 4:23:05 PM
 
 # DictParser2で書き直し済み
 
@@ -31,7 +31,7 @@ def intoFvSolution():
             solvers_start = dictParse.find_element([{'type': 'block_start'}], parent = solvers)['index'] + 1
             i = dictParse.find_element([{'type': 'block_comment'}], parent = solvers, start = solvers_start)
             if i['element'] is not None and '数値的に安定だと思われる設定' in i['element']['value']:
-                s = re.search(r'数値的に安定だと思われる設定[ 　]*[(（][ 　]*([0-9/]+)[ 　]*現在[ 　]*[)）]', i['element']['value'])
+                s = re.search(r'数値的に安定だと思われる設定\s*[(（]\s*([0-9/]+)\s*現在\s*[)）]', i['element']['value'])
                 if s is None or s.group(1) != information_date:
                     del i['parent'][i['index']]
                     i['element'] = None
@@ -39,7 +39,7 @@ def intoFvSolution():
                 solvers['value'][solvers_start:solvers_start] = dictParse.DictParser2(string =
                 '\n'
                 '/*\n'
-                f'\t数値的に安定だと思われる設定 ({information_date}現在)\n'
+                f'\t数値的に安定だと思われる設定({information_date}現在)\n'
                 '\t残差は\n'
                 '\t「方程式の右辺 - 方程式の左辺」の絶対値の全格子点に対する総和/「方程式の右辺」の絶対値の全格子点に対する総和\n'
                 '\tのこと\n'
@@ -72,7 +72,7 @@ def intoFvSolution():
                         '\n'
                         'Phi\n'
                         '{\n'
-                        f'${p.groups()};\n'
+                        f'\t${p.groups()};\n'
                         '}\n').elements
 
             dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
@@ -88,7 +88,7 @@ def intoFvSolution():
                 '\n'
                 'potentialFlow\n'
                 '{\n'
-                'nNonOrthogonalCorrectors\t10;\n'
+                '\tnNonOrthogonalCorrectors\t10;\n'
                 '}').elements
             fvSolution.elements[tail_index:tail_index] = linebreak_and_potentialFlow
             tail_index += len(linebreak_and_potentialFlow)
@@ -124,7 +124,7 @@ def intoFvSolution():
                     block['value'][block_start:block_start] = dictParse.DictParser2(string =
                         'residualControl\n'
                         '{\n'
-                        '".*"\t1.0e-03;\n'
+                        '\t".*"\t1.0e-03;\n'
                         '}\n').elements
                 else:
                     residualControl['parent'][block_start:block_start] = [
@@ -182,19 +182,19 @@ def intoFvSolution():
             fvSolution.elements[tail_index:tail_index] = linebreak_and_relaxationFactors
             tail_index += len(linebreak_and_relaxationFactors)
             relaxationFactors = linebreak_and_relaxationFactors[-1]
-        i = dictParse.find_element([{'type': 'block_start'}], parent = relaxationFactors)['index'] + 1
-        relaxationFactors_start = dictParse.find_element([{'type': 'linebreak'}], parent = relaxationFactors,
-            start = i, index_not_found = i - 1)['index'] + 1
+        relaxationFactors_start = dictParse.find_element([{'type': 'block_start'}],
+            parent = relaxationFactors)['index'] + 1
 
         fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
         if fields is None:
             relaxationFactors['value'][
                 relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
-                'fields // p = p^{old} + \\alpha (p - p^{old})\n'
-                '{'
-                '"p|p_rgh"\t1.0;\n'
-                'rho\t1.0;\n'
-                '}\n').elements
+                '\n'
+                '\tfields // p = p^{old} + \\alpha (p - p^{old})\n'
+                '\t{\n'
+                '\t\t"p|p_rgh"\t1.0;\n'
+                '\t\trho\t1.0;\n'
+                '\t}').elements
         else:
             fields['value'][:dictParse.find_element(
                 [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser2(string =
@@ -205,12 +205,12 @@ def intoFvSolution():
         if equations is None:
             relaxationFactors['value'][
                 relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
-                'equations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
-                '{'
-                'U\t1.0;\n'
-                '"k|epsilon|omega"\t1.0;\n'
-                '}\n'
-                ).elements
+                '\n'
+                '\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
+                '\t{\n'
+                '\t\tU\t1.0;\n'
+                '\t\t"k|epsilon|omega"\t1.0;\n'
+                '\t}').elements
         else:
             equations['value'][:dictParse.find_element(
                 [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser2(string =
@@ -220,7 +220,7 @@ def intoFvSolution():
 
         string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
         if fvSolution.string != string:
-#            os.rename(fvSolution_path, fvSolution_path + '_bak')
+#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, 'w') as f:
                 f.write(string)
 
@@ -251,7 +251,7 @@ def intoFvSchemes():
                     '\n'
                     f'{b}\n'
                     '{\n'
-                    f'{k}\t{v};\n'
+                    f'\t{k}\t{v};\n'
                     '}').elements
                 tail_index = fvSchemes.find_element([{'except type': 'whitespace|linebreak|separator'}],
                     reverse = True, index_not_found = len(fvSchemes.elements) - 1)['index'] + 1
@@ -265,7 +265,7 @@ def intoFvSchemes():
 
         string = dictParse.normalize(string = fvSchemes.file_string(pretty_print = True))[0]
         if fvSchemes.string != string:
-#            os.rename(fvSchemes_path, fvSchemes_path + '_bak')
+#            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
             with open(fvSchemes_path, 'w') as f:
                 f.write(string)
 
@@ -286,7 +286,7 @@ def intoControlDict():
     if startFrom != 'latestTime':
         startFrom['patent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser2(string =
             'latestTime').elements
-        print(f'!!! ファイル {controlDict_path} のstartFromをlatestTimeに書き換えました．')
+        print(f'!!! ファイル{controlDict_path}のstartFromをlatestTimeに書き換えました．')
 
     deltaT = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}])
     i = controlDict.find_element([{'type': 'block_comment'}], start = deltaT['index'] - 1, reverse = True)
@@ -334,8 +334,7 @@ def intoControlDict():
         insertion = dictParse.find_element(
             [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
         block['value'][insertion:insertion] = dictParse.DictParser2(string =
-            f'enabled\t{v}; // yesで実行\n'
-            ).elements
+            f'enabled\t{v}; // yesで実行\n').elements
         dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
     functions_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)['index']
@@ -368,41 +367,38 @@ def intoControlDict():
     if not has_limitNut:
         limitNut = dictParse.DictParser2(string =
             '\n'
-            'limitNut // nutの最大値を制限する\n'
-            '{\n'
-            'type\tlimitFields;\n'
-            'libs\t(fieldFunctionObjects);\n'
-            'enabled\tno; // yesで実行\n'
-            'fields\t(nut);\n'
-            'limit\tmax; // 渦粘性の場合は上限(max)だけ抑えることが多い\n'
-            'max\t0.01;\n'
-            '}\n'
-            ).elements
+            '\tlimitNut // nutの最大値を制限する\n'
+            '\t{\n'
+            '\t\ttype\tlimitFields;\n'
+            '\t\tlibs\t(fieldFunctionObjects);\n'
+            '\t\tenabled\tno; // yesで実行\n'
+            '\t\tfields\t(nut);\n'
+            '\t\tlimit\tmax; // 渦粘性の場合は上限(max)だけ抑えることが多い\n'
+            '\t\tmax\t0.01;\n'
+            '\t}\n').elements
         functions['value'][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
 #    if not has_calcCo:
 #        calcCo = dictParse.DictParser2(string =
 #            '\n'
-#            'calcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
-#            '{\n'
-#            'type\tCourantNo;\n'
-#            'libs\t(fieldFunctionObjects);\n'
-#            'enabled\tno; // yesで実行\n'
-#            '}\n'
-#            ).elements
+#            '\tcalcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
+#            '\t{\n'
+#            '\t\ttype\tCourantNo;\n'
+#            '\t\tlibs\t(fieldFunctionObjects);\n'
+#            '\t\tenabled\tno; // yesで実行\n'
+#            '\t}\n').elements
 #        functions['value'][functions_end:functions_end] = calcCo
 #        functions_end += len(calcCo)
 #    if not has_printCoMinMax:
 #        printCoMinMax = dictParse.DictParser2(string =
 #            '\n'
-#            'printCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
-#            '{\n'
-#            'type\tfieldMinMax;\n'
-#            'libs\t(fieldFunctionObjects);\n'
-#            'enabled\tno; // yesで実行\n'
-#            'fields\t(Co);\n'
-#            '}\n'
-#            ).elements
+#            '\tprintCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
+#            '\t{\n'
+#            '\t\ttype\tfieldMinMax;\n'
+#            '\t\tlibs\t(fieldFunctionObjects);\n'
+#            '\t\tenabled\tno; // yesで実行\n'
+#            '\t\tfields\t(Co);\n'
+#            '\t}\n').elements
 #        functions['value'][functions_end:functions_end] = printCoMinMax
 #        functions_end += len(printCoMinMax)
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
@@ -421,7 +417,7 @@ def intoControlDict():
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
     if controlDict.string != string:
-#        os.rename(controlDict_path, controlDict_path + '_bak')
+#        os.rename(controlDict_path, f'{controlDict_path}_bak')
         with open(controlDict_path, 'w') as f:
             f.write(string)
 

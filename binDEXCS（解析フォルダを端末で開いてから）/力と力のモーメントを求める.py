@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:01:20 PM
+# 2026/4/30 5:34:05 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -45,7 +45,7 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
         linebreak_and_functions = dictParse.DictParser2(string =
@@ -60,8 +60,8 @@ def append_functions_in_controlDict(controlDict_path):
         functions = linebreak_and_functions[-1]
 
     block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
-        file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+        os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
         '\n'
@@ -89,7 +89,7 @@ def append_functions_in_controlDict(controlDict_path):
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
-    os.rename(controlDict_path, controlDict_path + '_bak')
+    os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
 

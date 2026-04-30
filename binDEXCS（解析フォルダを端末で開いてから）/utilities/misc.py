@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:56:16 PM
+# 2026/4/30 5:33:51 PM
 
 # DictParser2で書き直し済み
 
@@ -144,7 +144,7 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
 
 def writeCommentInBoundary(comment):
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    boundary = dictParse.DictParser2(boundary_path)
+    boundary = dictParse.DictParser2(file_name = boundary_path)
     i = boundary.find_element([{'except type': 'whitespace|linebreak'}],
         start = boundary.find_element([{'type': 'list'}])['index'] - 1,
         reverse = True, index_not_found = 0)['index']
@@ -156,7 +156,7 @@ def writeCommentInBoundary(comment):
 def removePatchesHavingNoFaces():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
     createPatchDict = os.path.join('system', 'createPatchDict')
-    createPatchDict_bak = createPatchDict + '_bak'
+    createPatchDict_bak = f'{createPatchDict}_bak'
     if os.path.isfile(createPatchDict):
         os.rename(createPatchDict, createPatchDict_bak)
     with open(createPatchDict, 'w') as f:
@@ -278,7 +278,7 @@ def correctLocation():
                 '"' + os.path.dirname(file_name) + '"').elements
         string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
         if parser.string != string:
-#            os.rename(file_name, file_name + '_bak')
+#            os.rename(file_name, f'{file_name}_bak')
             with open(file_name, 'w') as f:
                 f.write(string)
 
@@ -385,7 +385,7 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
             string = dictParse.re_sub_except_comments(
                 f'(?<!\\S)(#includeFunc[ \\t]+{type_name})', r'// !!DISABLED!! \1', string)
     if controlDict.string != string:
-#        os.rename(controlDict_path, controlDict_path + '_bak')
+#        os.rename(controlDict_path, f'{controlDict_path}_bak')
         with open(controlDict_path, 'w') as f:
             f.write(string)
 

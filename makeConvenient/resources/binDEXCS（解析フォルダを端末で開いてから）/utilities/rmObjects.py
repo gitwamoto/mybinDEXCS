@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/3/18 9:53:57 AM
+# 2026/4/30 3:57:11 PM
 
 import os
 import glob
@@ -18,7 +18,7 @@ def removeInessentials():
             for name in files:
                 # .DS_Store: フォルダの表示設定（Finder用）
                 # ._filename: filename というファイルに付随する追加情報（メタデータ）
-                if re.match(r'\._.+|[._]+DS_Store', name):
+                if re.match(r'\._.+|[._]+DS_Store', name) is not None:
                     os.remove(os.path.join(curDir, name))
     try:
         if os.path.isdir('dynamicCode'):

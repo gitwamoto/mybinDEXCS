@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/3/17 10:30:34 PM
+# 2026/4/30 4:21:21 PM
 
 # ---- オプションはない ----
 
@@ -142,7 +142,7 @@ def append_patches(src, dst):
 
         string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
         if parameter.string != string:
-#            os.rename(f_path, f_path + '_bak')
+#            os.rename(f_path, f'{f_path}_bak')
             with open(f_path, 'w') as f:
                 f.write(string)
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:59:50 PM
+# 2026/4/30 4:23:33 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                 pass
 
     topoSetDict_path = os.path.join('system', 'topoSetDict')
-    topoSetDict_bak_path = topoSetDict_path + '_bak'
+    topoSetDict_bak_path = f'{topoSetDict_path}_bak'
     if os.path.isfile(topoSetDict_path):
         os.rename(topoSetDict_path, topoSetDict_bak_path)
     with open(topoSetDict_path, 'w') as f:
@@ -154,7 +154,7 @@ if __name__ == '__main__':
         z_fine = True if input('z方向に細かくしますか ？ (y/n) > ').strip().lower() == 'y' else False
 
     refineMeshDict_path = os.path.join('system', 'refineMeshDict')
-    refineMeshDict_bak_path = refineMeshDict_path + '_bak'
+    refineMeshDict_bak_path = f'{refineMeshDict_path}_bak'
     if os.path.isfile(refineMeshDict_path):
         os.rename(refineMeshDict_path, refineMeshDict_bak_path)
     with open(refineMeshDict_path, 'w') as f:

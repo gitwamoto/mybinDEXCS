@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/4/4 9:23:21 PM
+# 2026/4/30 5:33:40 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -91,13 +91,13 @@ if __name__ == '__main__':
     points_path = os.path.join('constant', 'polyMesh', 'points')
     for i in (boundary_path, faces_path, points_path):
         if not os.path.isfile(i):
-            print(f'エラー: ファイル {i} がありません．')
+            print(f'エラー: ファイル{i}がありません．')
             sys.exit(1)
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
     print('x, y, z座標をある値に固定することでpatchを平面にします．')
 
-    boundary = dictParse.DictParser2(boundary_path)
+    boundary = dictParse.DictParser2(file_name = boundary_path)
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     if interactive:
         while True:
@@ -137,7 +137,7 @@ if __name__ == '__main__':
         parent = patch)['element']['value'])
     string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
     if boundary.string != string:
-#        os.rename(boundary_path, boundary_path + '_bak')
+#        os.rename(boundary_path, f'{boundary_path}_bak')
         with open(boundary_path, 'w') as f:
             f.write(string)
 
@@ -185,7 +185,7 @@ if __name__ == '__main__':
         points_data = np.fromstring(s[ph:ph + 8*3*n], dtype = '<d').reshape(-1, 3)
         points_data[faces_data, coordinate] = value
 #        points_data[faces_data] = flatten(points_data[faces_data])
-#        os.rename(points_path, points_path + '_bak')
+#        os.rename(points_path, f'{points_path}_bak')
         with open(points_path, 'wb') as f: # can overwrite
             f.write(s[:ph])
             points_data.astype('<d').tofile(f)
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         points_data = np.fromstring(s[ph:pf].replace('(', '').replace(')', ''), dtype = 'd', sep = ' ').reshape(-1, 3)
         points_data[faces_data, coordinate] = value
 #        points_data[faces_data] = flatten(points_data[faces_data])
-#        os.rename(points_path, points_path + '_bak')
+#        os.rename(points_path, f'{points_path}_bak')
         with open(points_path, 'w') as f: # can overwrite
             f.write(s[:ph])
             for i in points_data:

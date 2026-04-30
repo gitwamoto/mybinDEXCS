@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:02:22 PM
+# 2026/4/30 4:23:46 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -36,7 +36,7 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = DictParser(controlDict_path)
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
         linebreak_and_functions = dictParse.DictParser2(string =
@@ -84,7 +84,7 @@ def append_functions_in_controlDict(controlDict_path):
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
-    os.rename(controlDict_path, controlDict_path + '_bak')
+    os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
 

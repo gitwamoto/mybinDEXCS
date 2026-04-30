@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/4/22 12:46:16 PM
+# 2026/4/30 8:19:18 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -33,7 +33,7 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = DictParser(controlDict_path)
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
         linebreak_and_functions = dictParse.DictParser2(string =
@@ -48,8 +48,8 @@ def append_functions_in_controlDict(controlDict_path):
         functions = linebreak_and_functions[-1]
 
     fields = ' '.join(misc.volFieldList(misc.latestTime()))
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
-        file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+        os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
 
     block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
@@ -152,12 +152,12 @@ def append_functions_in_controlDict(controlDict_path):
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
-    os.rename(controlDict_path, controlDict_path + '_bak')
+    os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
 
-    print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにsetsまたはsurfacesに関するテンプレートを追加して，'
-        'texteditwx.pyで開いています．')
+    print(f'\n\033[3;4;5mファイル{controlDict_path}のfunctionsにsetsまたはsurfacesに関する'
+        'テンプレートを追加して，texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
     subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {controlDict_path}', shell = True)
@@ -211,25 +211,24 @@ if __name__ == '__main__':
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'sets')
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'surfaces')
     if interactive:
-        sampling_is_written = True if input(f'ファイル {controlDict_path} の内容を確認して下さい．'
-            'functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
-    controlDict = (DictParser2(controlDict_path) if sampling_is_written
+        sampling_is_written = True if input(f'ファイル{controlDict_path}の内容を確認して下さい．'
+            'functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > '
+            ).strip().lower() == 'y' else False
+    controlDict = (DictParser2(file_name = controlDict_path) if sampling_is_written
         else append_functions_in_controlDict(controlDict_path))
 
     sets_dir_list = []
     surface_dir_list = []
-    for x in controlDict.getValueForKey(['functions']):
-        if DictParserList.isType(x, DictParserList.BLOCK):
-            for y in x.value():
-                if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'type':
-                    if 'sets' in y.value():
-                        sets_dir_list.append(x.key())
-                        break
-                    elif 'surfaces' in y.value():
-                        surface_dir_list.append(x.key())
-                        break
+    for block in controlDict.find_all_elements(
+        [{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
+        block = block['element']
+        function_type = dictparse.find_element([{'type': 'dictionary', 'key':'type'}], parent = block)
+        if dictparse.find_element([{'type': 'word', 'value': 'sets'], parent = function_type):
+            sets_dir_list.append(block['key'])
+        elif dictparse.find_element([{'type': 'word', 'value': 'surfaces'], parent = function_type):
+            surface_dir_list.append(block['key'])
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
-        print(f'エラー: ファイル {controlDict_path} でsetsまたはsurfacesに関する指示がありません．')
+        print(f'エラー: ファイル{controlDict_path}でsetsまたはsurfacesに関する指示がありません．')
         sys.exit(1)
 
     if interactive:

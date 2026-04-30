@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2026/4/4 8:40:19 PM
+# 2026/4/30 5:33:13 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -70,7 +70,7 @@ if __name__ == '__main__':
         sys.exit(0) # 正常終了
 
     if interactive:
-        patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
+        patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
             os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                 [{'type': 'list'}, {'type': 'block'}])])
         fields = ' '.join(misc.volFieldList(misc.latestTime()))

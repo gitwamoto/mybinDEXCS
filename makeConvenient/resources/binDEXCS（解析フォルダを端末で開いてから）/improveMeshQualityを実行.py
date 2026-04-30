@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:55:01 PM
+# 2026/4/30 4:21:55 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -27,7 +27,9 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = scaleMesh_0p001 = False
+        interactive = False
+        exec_paraFoam = False
+        scaleMesh_0p001 = False
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive
@@ -41,17 +43,16 @@ if __name__ == '__main__':
                 scaleMesh_0p001 = True
             i += 1
 
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    faces = os.path.join('constant', 'polyMesh', 'faces')
-    for i in (boundary, faces):
+    faces_path = os.path.join('constant', 'polyMesh', 'faces')
+    for i in (os.path.join('constant', 'polyMesh', 'boundary'), faces_path):
         if not os.path.isfile(i):
-            print(f'エラー: ファイル {i} がありません．')
+            print(f'エラー: ファイル{i}がありません．')
             sys.exit(1)
     if os.path.isdir('dynamicCode'):
         shutil.rmtree('dynamicCode')
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
-    with open(faces, 'r') as f:
+    with open(faces_path, 'r') as f:
         s = f.read()
     if 'faceCompactList' in s:
         pl = s.find('(') + 1
@@ -69,8 +70,8 @@ if __name__ == '__main__':
         faces_data = []
         for i in range(faces_ranges.shape[0] - 1):
             faces_data.append(points_indices[faces_ranges[i]:faces_ranges[i + 1]])
-        os.rename(faces, faces + '_bak')
-        with open(faces, 'w') as f:
+        os.rename(faces_path, f'{faces_path}_bak')
+        with open(faces_path, 'w') as f:
             f.write(s[:ph].replace('faceCompactList', 'faceList'))
             f.write('{}\n(\n'.format(len(faces_data)))
             for i in faces_data:

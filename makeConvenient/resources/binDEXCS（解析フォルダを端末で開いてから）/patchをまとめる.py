@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchをまとめる.py
 # by Yukiharu Iwamoto
-# 2026/4/22 12:45:35 PM
+# 2026/4/30 5:33:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -35,17 +35,15 @@ if __name__ == '__main__':
                 pass
             i += 1
 
-    createPatchDict = os.path.join('system', 'createPatchDict')
+    createPatchDict_path = os.path.join('system', 'createPatchDict')
     if interactive:
-        createPatchDict_is_written = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '{}ファイルにpatchをまとめる指示を書き込んでいますか？ (y/n) > '.format(createPatchDict)
-            ).strip().lower() == 'y' else False
+        createPatchDict_is_written = True if input(f'ファイル{createPatchDict_path}に'
+            'patchをまとめる指示を書き込んでいますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if not createPatchDict_is_written:
-        createPatchDict_bak = createPatchDict + '_bak'
-        if os.path.isfile(createPatchDict):
-            os.rename(createPatchDict, createPatchDict_bak)
-        with open(createPatchDict, 'w') as f:
+        if os.path.isfile(createPatchDict_path):
+            os.rename(createPatchDict_path, f'{createPatchDict_path}_bak')
+        with open(createPatchDict_path, 'w') as f:
             f.write('FoamFile\n'
                 '{\n'
                 '\tversion\t2.0;\n'
@@ -71,16 +69,16 @@ if __name__ == '__main__':
                 '\t\t}\n'
                 '\t\tconstructFrom\tpatches;\n'
                 '\t\tpatches\t(')
-            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(
-                    os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-                        [{'type': 'list'}, {'type': 'block'}])]))
+            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+                os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+                    [{'type': 'list'}, {'type': 'block'}])]))
             f.write(') /* <- (C) まとめたいパッチの名前だけを残す */;\n'
                 '\t}\n'
                 ');\n')
-        print(f'\n\033[3;4;5m{createPatchDict}ファイルをtexteditwx.pyで開いています．')
+        print(f'\n\033[3;4;5mファイル{createPatchDict_path}をtexteditwx.pyで開いています．')
         print('- 指示を読んで，必要に応じて書き換えて下さい．')
         print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-        subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {createPatchDict}', shell = True)
+        subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {createPatchDict_path}', shell = True)
 
     command = 'createPatch -overwrite'
     if subprocess.call(command, shell = True) != 0:

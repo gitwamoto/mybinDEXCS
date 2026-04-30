@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchをまとめる.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:37:14 PM
+# 2026/4/30 5:33:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     if not createPatchDict_is_written:
         if os.path.isfile(createPatchDict_path):
-            os.rename(createPatchDict_path, createPatchDict_path + '_bak')
+            os.rename(createPatchDict_path, f'{createPatchDict_path}_bak')
         with open(createPatchDict_path, 'w') as f:
             f.write('FoamFile\n'
                 '{\n'
@@ -69,9 +69,9 @@ if __name__ == '__main__':
                 '\t\t}\n'
                 '\t\tconstructFrom\tpatches;\n'
                 '\t\tpatches\t(')
-            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(
-                    os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-                        [{'type': 'list'}, {'type': 'block'}])]))
+            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+                os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+                    [{'type': 'list'}, {'type': 'block'}])]))
             f.write(') /* <- (C) まとめたいパッチの名前だけを残す */;\n'
                 '\t}\n'
                 ');\n')

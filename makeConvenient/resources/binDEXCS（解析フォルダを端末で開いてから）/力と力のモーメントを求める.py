@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/4/22 12:46:01 PM
+# 2026/4/30 5:34:05 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -45,7 +45,7 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser2(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
         linebreak_and_functions = dictParse.DictParser2(string =
@@ -60,8 +60,8 @@ def append_functions_in_controlDict(controlDict_path):
         functions = linebreak_and_functions[-1]
 
     block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(
-        file_name = os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+        os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
         '\n'
@@ -89,11 +89,11 @@ def append_functions_in_controlDict(controlDict_path):
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
-    os.rename(controlDict_path, controlDict_path + '_bak')
+    os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
 
-    print(f'\n\033[3;4;5mファイル {controlDict_path} のfunctionsにforcesに関するテンプレートを追加して，'
+    print(f'\n\033[3;4;5mファイル{controlDict_path}のfunctionsにforcesに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     controlDict_path = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict_path):
-        print(f'エラー: ファイル {controlDict_path} がありません．')
+        print(f'エラー: ファイル{controlDict_path}がありません．')
         sys.exit(1)
 
     forces_related_folders_txt = os.path.join('postProcessing', '_forces_related_folders.txt')
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     misc.setEnabledInControlDictFunctions(enabled = False)
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'forces')
     if interactive:
-        forces_is_written = True if input(f'ファイル {controlDict_path} の内容を確認して下さい．'
+        forces_is_written = True if input(f'ファイル{controlDict_path}の内容を確認して下さい．'
             'functionsにforcesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
     controlDict = (DictParser2(file_name = controlDict_path) if forces_is_written
         else append_functions_in_controlDict(controlDict_path))
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     forces_dir_list = [i['parent']['key'] for i in types if dictParse.find_element([{'type': 'word'}],
         parent = i['element'])['element'] == 'forces']
     if len(forces_dir_list) == 0:
-        print(f'エラー: ファイル {controlDict_path} でforcesに関する指示がありません．')
+        print(f'エラー: ファイル{controlDict_path}でforcesに関する指示がありません．')
         sys.exit(1)
 
     if interactive:

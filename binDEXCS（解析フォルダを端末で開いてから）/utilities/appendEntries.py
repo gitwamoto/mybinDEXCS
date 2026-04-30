@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/4/29 5:45:33 PM
+# 2026/4/30 4:23:05 PM
 
 # DictParser2で書き直し済み
 
@@ -31,7 +31,7 @@ def intoFvSolution():
             solvers_start = dictParse.find_element([{'type': 'block_start'}], parent = solvers)['index'] + 1
             i = dictParse.find_element([{'type': 'block_comment'}], parent = solvers, start = solvers_start)
             if i['element'] is not None and '数値的に安定だと思われる設定' in i['element']['value']:
-                s = re.search(r'数値的に安定だと思われる設定[ 　]*[(（][ 　]*([0-9/]+)[ 　]*現在[ 　]*[)）]', i['element']['value'])
+                s = re.search(r'数値的に安定だと思われる設定\s*[(（]\s*([0-9/]+)\s*現在\s*[)）]', i['element']['value'])
                 if s is None or s.group(1) != information_date:
                     del i['parent'][i['index']]
                     i['element'] = None
@@ -39,7 +39,7 @@ def intoFvSolution():
                 solvers['value'][solvers_start:solvers_start] = dictParse.DictParser2(string =
                 '\n'
                 '/*\n'
-                f'\t数値的に安定だと思われる設定 ({information_date}現在)\n'
+                f'\t数値的に安定だと思われる設定({information_date}現在)\n'
                 '\t残差は\n'
                 '\t「方程式の右辺 - 方程式の左辺」の絶対値の全格子点に対する総和/「方程式の右辺」の絶対値の全格子点に対する総和\n'
                 '\tのこと\n'
@@ -190,11 +190,11 @@ def intoFvSolution():
             relaxationFactors['value'][
                 relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
                 '\n'
-                'fields // p = p^{old} + \\alpha (p - p^{old})\n'
-                '{\n'
-                '\t"p|p_rgh"\t1.0;\n'
-                '\trho\t1.0;\n'
-                '}').elements
+                '\tfields // p = p^{old} + \\alpha (p - p^{old})\n'
+                '\t{\n'
+                '\t\t"p|p_rgh"\t1.0;\n'
+                '\t\trho\t1.0;\n'
+                '\t}').elements
         else:
             fields['value'][:dictParse.find_element(
                 [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser2(string =
@@ -206,11 +206,11 @@ def intoFvSolution():
             relaxationFactors['value'][
                 relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
                 '\n'
-                'equations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
-                '{\n'
-                '\tU\t1.0;\n'
-                '\t"k|epsilon|omega"\t1.0;\n'
-                '}').elements
+                '\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
+                '\t{\n'
+                '\t\tU\t1.0;\n'
+                '\t\t"k|epsilon|omega"\t1.0;\n'
+                '\t}').elements
         else:
             equations['value'][:dictParse.find_element(
                 [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser2(string =
@@ -220,7 +220,7 @@ def intoFvSolution():
 
         string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
         if fvSolution.string != string:
-#            os.rename(fvSolution_path, fvSolution_path + '_bak')
+#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, 'w') as f:
                 f.write(string)
 
@@ -265,7 +265,7 @@ def intoFvSchemes():
 
         string = dictParse.normalize(string = fvSchemes.file_string(pretty_print = True))[0]
         if fvSchemes.string != string:
-#            os.rename(fvSchemes_path, fvSchemes_path + '_bak')
+#            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
             with open(fvSchemes_path, 'w') as f:
                 f.write(string)
 
@@ -417,7 +417,7 @@ def intoControlDict():
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
     if controlDict.string != string:
-#        os.rename(controlDict_path, controlDict_path + '_bak')
+#        os.rename(controlDict_path, f'{controlDict_path}_bak')
         with open(controlDict_path, 'w') as f:
             f.write(string)
 

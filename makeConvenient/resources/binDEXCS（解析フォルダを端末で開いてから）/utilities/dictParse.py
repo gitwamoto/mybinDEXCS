@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/4/10 11:54:49 PM
+# 2026/4/30 8:13:19 PM
 
 import sys
 import os
@@ -649,6 +649,40 @@ def re_sub_in_comments(pattern, repl, string):
         index = s.end()
     return replaced_string
 
+def re_findall_except_comments(pattern, string):
+    pat = re.compile(
+        r'(?P<line_comment>//.*)' '|'
+        r'(?P<block_comment>/\*[\s\S]*?\*/)' # [\s\S]*?の?がないと\*/も[\s\S]*が取り込んでしまう
+    )
+    pat_findall = re.compile(pattern)
+    index = 0
+    result = []
+    while index < len(string):
+        s = pat.search(string, pos = index)
+        if s is None:
+            result.extend(pat_findall.findall(string, pos = index))
+            break
+        if index != s.start():
+            result.extend(pat_findall.findall(string, pos = index, endpos = s.start()))
+        index = s.end()
+    return result
+
+def re_findall_in_comments(pattern, string):
+    pat = re.compile(
+        r'(?P<line_comment>//.*)' '|'
+        r'(?P<block_comment>/\*[\s\S]*?\*/)' # [\s\S]*?の?がないと\*/も[\s\S]*が取り込んでしまう
+    )
+    pat_findall = re.compile(pattern)
+    index = 0
+    result = []
+    while index < len(string):
+        s = pat.search(string, pos = index)
+        if s is None:
+            break
+        result.extend(pat_findall.findall(s.group()))
+        index = s.end()
+    return result
+
 def find_element(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
     # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
     #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
@@ -659,16 +693,15 @@ def find_element(path_list, parent, start = None, end = None, reverse = False, i
         path_list = [path_list]
     elif len(path_list) == 0:
         return None
-    if start is None:
-        start = len(parent) - 1 if reverse else 0
-    if end is None:
-        end = -1 if reverse else len(parent)
     p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
         for k, v in path_list[0].items()}
     # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
     # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
     # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
-    c = next(({'index': i, 'element': parent[i]} for i in range(start, end, -1 if reverse else 1)
+    c = next(({'index': i, 'element': parent[i]} for i in range(
+        (len(parent) - 1 if reverse else 0) if start is None else start,
+        (-1 if reverse else len(parent)) if end is None else end,
+        -1 if reverse else 1)
         if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
             for k, v in p.items())), None)
     if c is None:
@@ -1020,7 +1053,40 @@ if __name__ == '__main__':
 #        print(i, e)
 #    separators = dp.find_separators()
 #    print([(s['index'], s['element']) for s in separators])
-    print(structure_string(DictParser2(string =
-        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
-        #f'surfaceFile\t"{stl_2D_file_name}";\n'
-        ).elements))
+#    print(structure_string(DictParser2(string =
+#        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
+#        #f'surfaceFile\t"{stl_2D_file_name}";\n'
+#        ).elements))
+    dp2 = DictParser2(string =
+         '\tsetSampling // postProcessingフォルダ内に作られるフォルダの名前\n'
+        '\t{\n'
+        '\t\ttype\tsets; // 直線や点からデータを抽出\n'
+        '\t\tlibs\t("libsampling.so");\n'
+        '\t\tenabled\tyes; // yesで実行\n'
+        '\t\tsetFormat\traw;\n'
+        '\t\tinterpolationScheme\tcellPoint;\n'
+        f'\t\tfields\t(a P u); // 抽出したいパラメータ\n'
+        '\t\tsets\n'
+        '\t\t(\n'
+        '\t\t\t// 直線上に等間隔に配置された点からデータを抽出する．\n'
+        '\t\t\t// 直線がいちど計算領域外に飛び出すと，そこで抽出をやめてしまうので，計算領域外をまたぐ直線の場合は2直線に分ける．\n'
+        '\t\t\t// 少なくとも直線の始点(B)，終点(C)，直線上に配置する点の数(D)は修正する必要がある．\n'
+        '\t\t\t// 複数の条件に対して抽出したい場合，\n'
+        '\t\t\t// line\n'
+        '\t\t\t// {\n'
+        '\t\t\t//     ...\n'
+        '\t\t\t// }\n'
+        '\t\t\t// の部分をコピーして使えば良い．\n'
+        '\t\t\tline // <- (A) ファイル名につく文字列，他と重複してはいけない！\n'
+        '\t\t\t{\n'
+        '\t\t\t\ttype\tuniform;\n'
+        '\t\t\t\taxis\txyz;\n'
+        '\t\t\t\tstart\t(0.1 0.2 0.3); // <- (B) 始点の(x y z)座標\n'
+        '\t\t\t\tend\t(0.4 0.5 0.6); // <- (C) 終点の(x y z)座標\n'
+        '\t\t\t\tnPoints\t10; // <- (D) 直線上に配置する点の数\n'
+        '\t\t\t}\n'
+        '\t\t)\n'
+        '\t}\n'
+        '\n')
+    print(dp2.structure_string())
+    print(dp2.find_element([{'type': 'block'}, {'type': 'dictionary', 'key': 'type'}, {'type': 'word', 'value': 'sets'}]))

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/4/23 9:04:13 PM
+# 2026/4/30 4:24:05 PM
 
 import os
 import signal
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         fvSolution = os.path.join('system', 'fvSolution')
         with open(fvSolution, 'r') as f:
             lines = f.readlines()
-        os.rename(fvSolution, fvSolution + '_bak')
+        os.rename(fvSolution, f'{fvSolution}_bak')
         for i in xrange(len(lines)):
             lines[i] = setComment.uncomment(setComment.comment(lines[i], '// accurate'), '// shakedown')
             # 行の末尾に// accurateと書かれている行をコメントアウトし，末尾に// shakedownと書かれている行をアンコメントする
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         fvSolution = os.path.join('system', 'fvSolution')
         with open(fvSolution, 'r') as f:
             lines = f.readlines()
-        os.rename(fvSolution, fvSolution + '_bak')
+        os.rename(fvSolution, f'{fvSolution}_bak')
         for i in xrange(len(lines)):
             lines[i] = setComment.comment(setComment.uncomment(lines[i], '// accurate'), '// shakedown')
             # 行の末尾に// accurateと書かれている行をアンコメントし，末尾に// shakedownと書かれている行をコメントアウトする

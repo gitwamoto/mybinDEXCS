@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:32:05 PM
+# 2026/4/30 5:32:50 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     z_back, z_front = bouding_box[2]
 
     if interactive:
-        patches = [i['element']['key'] for i in dictParse.DictParser2(
+        patches = [i['element']['key'] for i in dictParse.DictParser2(file_name =
             os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                 [{'type': 'list'}, {'type': 'block'}])]
         space_delimited_patches = ' '.join(patches)

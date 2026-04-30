@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:53:40 PM
+# 2026/4/30 4:22:50 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     if not setFieldsDict_is_written:
         if os.path.isfile(setFieldsDict_path):
-            os.rename(setFieldsDict_path, setFieldsDict_path + '_bak')
+            os.rename(setFieldsDict_path, f'{setFieldsDict_path}_bak')
         with open(setFieldsDict_path, 'w') as f:
             f.write('FoamFile\n'
                 '{\n'

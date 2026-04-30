@@ -30,14 +30,12 @@ from datetime import datetime
 import filecmp
 import numpy as np
 from utilities import misc
-from utilities.dictParse import DictParser, DictParserList
 from utilities import dictFormat
 from utilities import appendEntries
 from utilities import rmObjects
 from utilities import dictParse
 
 domains = 1
-enable_all_function_objects = False
 sigFpe_is_found = False
 controlDict_path = os.path.join('system', 'controlDict')
 regionProperties_path = os.path.join('constant', 'regionProperties')
@@ -91,7 +89,7 @@ def potentialFoam(latest_time):
     if subprocess.call(command, shell = True) == 0:
         if os.path.isfile(p_bak_path):
             changeDictionaryDict_path = os.path.join('system', 'changeDictionaryDict')
-            changeDictionaryDict_bak_path = changeDictionaryDict_path + '_bak'
+            changeDictionaryDict_bak_path = f'{changeDictionaryDict_path}_bak'
             if os.path.isfile(changeDictionaryDict_path):
                 os.rename(changeDictionaryDict_path, changeDictionaryDict_bak_path)
             with open(changeDictionaryDict_path, 'w') as f:
@@ -155,13 +153,14 @@ def reset_relaxationFactors_in_fvSolution():
             block = dictParse.find_element([{'type': 'block', 'key': k}], parent = relaxationFactors)['element']
             if block is None:
                 continue
-            for i in reversed(dictParse.find_all_elements([{'type': 'dictionary'}], parent = block)):
+            for i in dictParse.find_all_elements([{'type': 'dictionary'}], parent = block):
                 comment = dictparse.find_element([{'type': 'line_comment|block_comment'}], parent = i['element'],
                     reverse = True)['element']
-                if comment is not None or 'DECREASED IN RESPONCE TO FLOATING POINT ERROR' not in comment['value']:
+                if (comment is not None or re.search(r'DECREASED\s+IN\s+RESPONCE\s+TO\s+FLOATING\s+POINT\s+ERROR',
+                    comment['value'].upper()) is not None):
                     continue
                 del comment['parent'][comment['index']]
-                calc = dictparse.find_element([{'type': 'directive', 'key': 'calc'}], parent = i['element'])['element']
+                calc = dictparse.find_element([{'type': 'directive', 'key': '#calc'}], parent = i['element'])['element']
                 if calc is None:
                     continue
                 value = re.match(r'"\(([^)]+)',
@@ -174,14 +173,14 @@ def reset_relaxationFactors_in_fvSolution():
 
         string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
         if fvSolution.string != string:
-#            os.rename(fvSolution_path, fvSolution_path + '_bak')
+#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, 'w') as f:
                 f.write(string)
 
     if os.path.isdir('system'):
-        remove_unnecessary_entries_in('system')
+        reset_relaxationFactors_in('system')
     for d in glob.iglob(os.path.join('system', '*' + os.sep)):
-        remove_unnecessary_entries_in(d)
+        reset_relaxationFactors_in(d)
 
 def change_relaxationFactors_in_controlDict(exponent):
     def change_relaxationFactors_in(path):
@@ -212,11 +211,11 @@ def change_relaxationFactors_in_controlDict(exponent):
         if fields is None:
             linebreak_and_fields = dictParse.DictParser2(string =
                 '\n'
-                'fields // p = p^{old} + \\alpha (p - p^{old})\n'
-                '{\n'
-                '"p|p_rgh"\t1.0;\n'
-                'rho\t1.0;\n'
-                '}').elements
+                '\tfields // p = p^{old} + \\alpha (p - p^{old})\n'
+                '\t{\n'
+                '\t\t"p|p_rgh"\t1.0;\n'
+                '\t\trho\t1.0;\n'
+                '\t}').elements
             relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_fields
             fields = linebreak_and_fields[-1]
         else:
@@ -229,11 +228,11 @@ def change_relaxationFactors_in_controlDict(exponent):
         if equations is None:
             linebreak_and_equations = dictParse.DictParser2(string =
                 '\n'
-                'equations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
-                '{\n'
-                'U\t1.0;\n'
-                '"k|epsilon|omega"\t1.0;\n'
-                '}').elements
+                '\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
+                '\t{\n'
+                '\t\tU\t1.0;\n'
+                '\t\t"k|epsilon|omega"\t1.0;\n'
+                '\t}').elements
             relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_equations
             equations = linebreak_and_equations[-1]
         else:
@@ -243,20 +242,20 @@ def change_relaxationFactors_in_controlDict(exponent):
 
         dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
 
+        c = 0.5**exponent
         for block in (equations, fields):
             for param in dictParse.find_elements([{'type': 'dictionary'}], parent = block):
                 value = dictParse.find_element([{'type': 'word|float|integer'}], parent = param)['element']
                 if value is None:
                     continue
                 value['parent'][value['index']:] = dictParse.DictParser2(string =
-                    f'#calc "({value["element"]["value"]})*{0.5**exponent}";'
-                    ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR'
-                    '\n').elements
+                    f'#calc "({value["element"]["value"]})*{c}";'
+                    ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR\n').elements
             dictparse.set_blank_line(block, number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
         if fvSolution.string != string:
-#            os.rename(fvSolution_path, fvSolution_path + '_bak')
+#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, 'w') as f:
                 f.write(string)
 
@@ -281,8 +280,6 @@ def calculate():
         command += '--autosense-parallel '
     application = misc.getApplication()
     command += application
-    if not enable_all_function_objects:
-        command += ' -noFunctionObjects'
     subprocess.call(command, shell = True)
     with open(f'PyFoamRunner.{application}.logfile', 'r') as f:
         s = f.read()
@@ -314,6 +311,7 @@ if __name__ == '__main__':
         interactive = False
         delete_folders_except_for_zero = False
         decrease_relaxationFactors_after_fpe = False
+        enable_all_function_objects = False
 #        exec_potentialFoam = False
         exec_paraFoam = False
         i = 1
@@ -430,14 +428,14 @@ if __name__ == '__main__':
 
     enable_function_list, disable_function_list = misc.controlDictFunctionsList()
     if len(enable_function_list) + len(disable_function_list) > 0:
-        print(f'{controlDict_path} のfunctionsで')
+        print(f'ファイル{controlDict_path}のfunctionsで')
         if len(enable_function_list) > 0:
             print('  実行されるものは' + ', '.join(enable_function_list))
         if len(disable_function_list) > 0:
             print('  実行されないものは' + ', '.join(disable_function_list))
         print('です．')
         if interactive:
-            enable_all_function_objects = True if input(f'全てを実行するように {controlDict_path} を書き換えますか？'
+            enable_all_function_objects = True if input(f'全てを実行するように{controlDict_path}を書き換えますか？'
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
             decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，ファイル{fvSolution_path}の'
                 'relaxationFactorsを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
@@ -500,10 +498,10 @@ if __name__ == '__main__':
             rmObjects.removeProcessorDirs('noLatest')
         if not decrease_relaxationFactors_after_fpe or not sigFpe_is_found:
             break
+        change_relaxationFactors_in_controlDict(trial + 1)
     if sigFpe_is_found:
-        print('\n計算が発散して終了しました．')
-        print('「DEXCS OpenFOAM メモ」 (0_OpenFOAMメモ.pdf) の' +
-            '「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．')
+        print('\n計算が発散して終了しました．\n'
+            '「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．')
 
     if os.path.isdir('0_bak'):
         if os.path.isdir('0'):
