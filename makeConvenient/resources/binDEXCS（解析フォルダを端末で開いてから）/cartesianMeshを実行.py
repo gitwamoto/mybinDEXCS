@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:21:38 PM
+# 2026/5/1 2:17:03 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -43,7 +43,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = False
+        interactive = False
+        exec_paraFoam = False
         front_name = 'front'
         back_name = 'back'
         domains = 1

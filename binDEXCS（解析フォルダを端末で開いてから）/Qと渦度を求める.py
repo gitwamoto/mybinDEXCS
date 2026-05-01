@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Qと渦度を求める.py
 # by Yukiharu Iwamoto
-# 2026/3/10 9:25:25 AM
+# 2026/5/1 2:16:30 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -35,7 +35,9 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = exec_paraFoam = False
-        time_begin, time_end, noZero = '-inf', 'inf', True
+        time_begin = '-inf'
+        time_end =  'inf'
+        noZero = True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive

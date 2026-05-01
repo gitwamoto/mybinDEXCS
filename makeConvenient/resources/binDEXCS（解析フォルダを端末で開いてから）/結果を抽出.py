@@ -219,13 +219,14 @@ if __name__ == '__main__':
     controlDict = DictParser2(file_name = controlDict_path)
     sets_dir_list = []
     surface_dir_list = []
-    for block in controlDict.find_all_elements(
-        [{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
+    for block in controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
         block = block['element']
         function_type = dictparse.find_element([{'type': 'dictionary', 'key':'type'}], parent = block)
-        if dictparse.find_element([{'type': 'word', 'value': 'sets'], parent = function_type):
+        if dictparse.find_element([{'type': 'word', 'value': 'sets'],
+            parent = function_type)['element'] is not None:
             sets_dir_list.append(block['key'])
-        elif dictparse.find_element([{'type': 'word', 'value': 'surfaces'], parent = function_type):
+        elif dictparse.find_element([{'type': 'word', 'value': 'surfaces'],
+            parent = function_type)['element'] is not None:
             surface_dir_list.append(block['key'])
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
         print(f'エラー: ファイル{controlDict_path}でsetsまたはsurfacesに関する指示がありません．')

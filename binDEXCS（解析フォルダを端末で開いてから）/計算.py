@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/4/29 5:45:11 PM
+# 2026/5/1 3:39:58 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -269,6 +269,7 @@ def calculate():
     for i in ('PyFoam*', '*.logfile', '*.logfile.restart*', 'log.*'):
         for f in glob.iglob(i):
             os.remove(f)
+
     command = ('pyFoamPlotRunner.py '
         '--hardcopy '
         '--non-persist '
@@ -281,6 +282,7 @@ def calculate():
     application = misc.getApplication()
     command += application
     subprocess.call(command, shell = True)
+
     with open(f'PyFoamRunner.{application}.logfile', 'r') as f:
         s = f.read()
     global sigFpe_is_found
@@ -288,16 +290,16 @@ def calculate():
     i = s.find('\nCreate mesh for time = ')
     if i == -1:
         return -10
-    i += 24
+    i += len('\nCreate mesh for time = ')
     time_begin = float(s[i:s.find('\n', i)])
     i = s.find('\nTime = ', i)
     if i == -1:
         return 0
-    i += 8
+    i += len('\nTime = ')
     time_next = float(s[i:s.find('\n', i)])
     if time_next == time_begin:
         return -1
-    i = s.rfind('\nTime = ') + 8 # not find but rfind!
+    i = s.rfind('\nTime = ') + len('\nTime = ') # not find but rfind!
     time_end = float(s[i:s.find('\n', i)])
     return int((time_end - time_begin)/(time_next - time_begin))
 
@@ -383,14 +385,14 @@ if __name__ == '__main__':
         sys.exit(1)
     if float(latest_time) != 0.0:
         if interactive:
-            delete_folders_except_for_zero = True if (raw_input if sys.version_info.major <= 2 else input)(
-                '0秒以外のフォルダがあります．消して0秒からやり直しますか？ (y/n) > ').strip().lower() == 'y' else False
+            delete_folders_except_for_zero = True if input('0秒以外のフォルダがあります．'
+                '消して0秒からやり直しますか？ (y/n) > ').strip().lower() == 'y' else False
         if delete_folders_except_for_zero:
             subprocess.call('foamListTimes -rm -noZero', shell = True)
             rmObjects.removeProcessorDirs()
             latest_time = '0'
         else:
-            rmObjects.removeProcessorDirs('' if not os.path.isdir(os.path.join('processor0', latest_time))
+            rmObjects.removeProcessorDirs(option = '' if not os.path.isdir(os.path.join('processor0', latest_time))
                 else 'noLatest')
 
     renumberMesh_was_done = misc.isRenumberMeshDone()
@@ -407,8 +409,8 @@ if __name__ == '__main__':
     if interactive:
         while True:
             try:
-                domains = max(int((raw_input if sys.version_info.major <= 2 else input)(
-                    '計算領域を何個に分割して並列計算しますか？ ({}個まで, 1だと普通の計算) > '.format(threads)).strip()), 1)
+                domains = max(int(input('計算領域を何個に分割して並列計算しますか？ '
+                    f'({threads}個まで, 1だと普通の計算) > ').strip()), 1)
                 break
             except ValueError:
                 pass
@@ -422,8 +424,7 @@ if __name__ == '__main__':
             os.remove(f)
 #    if interactive:
 #        print('初期流れ場をpotentialFoamで作成しますか？')
-#        exec_potentialFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-#            'もしp_potentialflowという名前のファイルがある場合，' +
+#        exec_potentialFoam = True if input('もしp_potentialflowという名前のファイルがある場合，'
 #            'そのファイルに書かれている境界条件をpの境界条件に使います． (y/n) > ').strip().lower() == 'y' else False
 
     enable_function_list, disable_function_list = misc.controlDictFunctionsList()
@@ -445,15 +446,14 @@ if __name__ == '__main__':
 
     if domains != 1:
         processor_dirs = set()
-        #                    0123456789
         for d in glob.iglob('processor*' + os.sep):
             try:
-                processor_dirs.add(int(d[9:-len(os.sep)]))
+                processor_dirs.add(int(d[len('processor'):-len(os.sep)]))
             except:
                 pass
         if len(processor_dirs) != domains or processor_dirs != set(range(domains)):
             for d in processor_dirs:
-                shutil.rmtree('processor{}'.format(d))
+                shutil.rmtree(f'processor{d}')
         if not os.path.isdir('processor0'):
             decomposeParDict_path = os.path.join('system', 'decomposeParDict')
             with open(decomposeParDict_path, 'w') as f:
@@ -488,7 +488,7 @@ if __name__ == '__main__':
 #    if exec_potentialFoam:
 #        potentialFoam(latest_time)
 
-    for trial in range(30):
+    for trial in range(5):
         calculate()
         if domains != 1:
             command = 'reconstructPar -newTimes -noFunctionObjects'

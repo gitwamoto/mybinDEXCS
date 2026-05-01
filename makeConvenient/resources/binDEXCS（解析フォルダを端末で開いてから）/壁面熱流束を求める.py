@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 壁面熱流束を求める.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:36:45 PM
+# 2026/5/1 2:20:15 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -35,8 +35,11 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = False
-        time_begin, time_end, noZero = '-inf', 'inf', True
+        interactive = False
+        exec_paraFoam = False
+        time_begin = '-inf'
+        time_end =  'inf'
+        noZero = True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive

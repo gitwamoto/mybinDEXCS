@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:32:17 PM
+# 2026/5/1 2:38:16 PM
 
 # DictParser2で書き直し済み
 
@@ -149,7 +149,7 @@ def writeCommentInBoundary(comment):
         start = boundary.find_element([{'type': 'list'}])['index'] - 1,
         reverse = True, index_not_found = 0)['index']
     boundary.elements[i:i] = dictParse.DictParser2(string =
-        f'\n// {comment}' if i > 0 else '// {comment}\n').elements
+        f'\n// {comment}' if i > 0 else f'// {comment}\n').elements
     with open(boundary_path, 'w') as f:
         f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
 
@@ -181,21 +181,11 @@ def removePatchesHavingNoFaces():
     if converted_millimeter_into_meter:
         writeCommentInBoundary('converted millimeter into meter')
 
-
 def isConvertedMillimeterIntoMeter():
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    with open(boundary, 'r') as f:
+    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+    with open(boundary_path, 'r') as f:
         s = f.read()
-    #           01234567890123456789012345678901234
-    i = s.find('// converted millimeter into meter')
-    if i != -1:
-        if i == 0:
-            with open(boundary, 'w') as f:
-                f.write(s[34:].lstrip())
-            writeCommentInBoundary('converted millimeter into meter')
-        return True
-    else:
-        return False
+    return s.find('// converted millimeter into meter') != -1
 
 def writeConvertedMillimeterIntoMeter():
     writeCommentInBoundary('converted millimeter into meter')
@@ -205,24 +195,14 @@ def convertMillimeterIntoMeter():
     if subprocess.call(command, shell = True) != 0:
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
     writeConvertedMillimeterIntoMeter()
     print('長さの単位をミリメートルからメートルに変換しました．')
 
 def isRenumberMeshDone():
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
-    with open(boundary, 'r') as f:
+    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+    with open(boundary_path, 'r') as f:
         s = f.read()
-    #           0123456789012345678901234
-    i = s.find('// renumberMesh was done')
-    if i != -1:
-        if i == 0:
-            with open(boundary, 'w') as f:
-                f.write(s[24:].lstrip())
-            writeRenumberMeshWasDone()
-        return True
-    else:
-        return False
+    return s.find('// renumberMesh was done') != -1
 
 def writeRenumberMeshWasDone():
     writeCommentInBoundary('renumberMesh was done')
@@ -233,7 +213,6 @@ def renumberMesh():
     if subprocess.call(command, shell = True) != 0:
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
     writeRenumberMeshWasDone()
     if converted_millimeter_into_meter:
         writeConvertedMillimeterIntoMeter()
@@ -397,7 +376,7 @@ def controlDictFunctionsList(path = os.curdir):
     disable_function_list = []
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if function is None:
-        enable_function_list, disable_function_list
+        return enable_function_list, disable_function_list
     for f in dictParse.find_all_elements([{'type': 'block'}], parent = functions):
         f = f['element']
         t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = f)['element']
@@ -414,9 +393,9 @@ def controlDictFunctionsList(path = os.curdir):
 
     string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
     enable_function_list.extend(
-        dictParse.re_findall_except_comments(r'(?<!\S)#includeFunc[ \t]+([^;]+);', string))
+        dictParse.re_findall_except_comments(r'(?<!\S)#includeFunc\s+([^;]+);', string))
     disable_function_list.extend(
-        dictParse.re_findall_in_comments(r'//[ \t]*!!DISABLED!![ \t]*(#includeFunc[ \t]+([^;]+);', string))
+        dictParse.re_findall_in_comments(r'//\s*!!DISABLED!!\s*(#includeFunc\s+([^;]+);', string))
     return enable_function_list, disable_function_list
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:22:58 PM
+# 2026/5/1 2:17:48 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -162,7 +162,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam  = False
+        interactive = False
+		exec_paraFoam = False
         domains = 1
         fluid_regions = []
         i = 1

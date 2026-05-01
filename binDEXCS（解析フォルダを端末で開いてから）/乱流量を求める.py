@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 乱流量を求める.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:36:27 PM
+# 2026/5/1 2:19:05 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -32,7 +32,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = False
+        interactive = False
+        exec_paraFoam = False
         time_begin, time_end, noZero = '-inf', 'inf', True
         func = None
         i = 1

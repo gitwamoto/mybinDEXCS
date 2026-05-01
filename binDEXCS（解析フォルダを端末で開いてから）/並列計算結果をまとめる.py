@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 並列計算結果をまとめる.py
 # by Yukiharu Iwamoto
-# 2021/7/18 8:26:42 PM
+# 2026/5/1 2:20:32 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -25,7 +25,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = False
+        interactive = False
+        exec_paraFoam = False
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-N': # Non-interactive

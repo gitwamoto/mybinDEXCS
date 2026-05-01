@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:57:11 PM
+# 2026/5/1 2:41:01 PM
 
 import os
 import glob
@@ -29,13 +29,17 @@ def removeInessentials():
         shutil.rmtree(d)
 
 def removeLogPlotPngs():
-    for i in ('residualsInitial.png', 'residualsFinal.png', 'continuityErrors.png',
-        'residuals0.png', 'residuals.png', 'continuity_errors.png'):
+    for i in ('residualsInitial.png',
+        'residualsFinal.png',
+        'continuityErrors.png',
+        'residuals0.png',
+        'residuals.png',
+        'continuity_errors.png'):
         if os.path.isfile(i):
             os.remove(i)
 
 def removePyFoamPlots():
-    pat = re.compile(r'(linear|cont|bound|courant|deltaT|custom[0-9][0-9][0-9][0-9])\.png$')
+    pat = re.compile(r'(?:linear|cont|bound|courant|deltaT|custom[0-9][0-9][0-9][0-9])\.png$')
     for i in glob.glob('*.png'):
         if os.path.isfile(i) and pat.match(i):
             os.remove(i)

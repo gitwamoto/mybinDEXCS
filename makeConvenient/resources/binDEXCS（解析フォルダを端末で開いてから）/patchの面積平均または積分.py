@@ -35,7 +35,8 @@ if __name__ == '__main__':
     misc.showDirForPresentAnalysis(__file__)
 
     just_delete_previous_files = False
-    average = integrate = [[], None]
+    average = [[], None]
+    integrate = [[], None]
     if len(sys.argv) == 1:
         interactive = True
     else:

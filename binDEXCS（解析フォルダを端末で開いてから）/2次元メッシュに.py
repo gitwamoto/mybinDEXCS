@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/4/30 5:32:50 PM
+# 2026/5/1 2:16:00 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -68,7 +68,10 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = scaleMesh_0p001 = wedge = False
+        interactive = False
+        exec_paraFoam = False
+        scaleMesh_0p001 = False
+        wedge = False
         front_name = 'front'
         back_name = 'back'
         i = 1
