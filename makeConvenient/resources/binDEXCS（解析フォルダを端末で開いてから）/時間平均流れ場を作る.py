@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:23:46 PM
+# 2026/5/1 1:32:29 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -27,8 +27,8 @@ from utilities import misc
 from utilities import dictFormat
 from utilities import rmObjects
 from utilities import dictParse
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
-sys.path.append(path_binDEXCS)
+binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+sys.path.append(binDEXCS_path)
 
 def handler(signum, frame):
     misc.setEnabledInControlDictFunctions(enabled = False)
@@ -91,9 +91,8 @@ def append_functions_in_controlDict(controlDict_path):
     print(f'\n\033[3;4;5mファイル{controlDict_path}のfunctionsにfieldAverageに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
-    print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} {controlDict_path}', shell = True)
-    return controlDict
+    print('書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n')
+    subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} {controlDict_path}', shell = True)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -154,9 +153,10 @@ if __name__ == '__main__':
     if interactive:
         fieldAverage_is_written = True if input(f'ファイル{controlDict_path}の内容を確認して下さい．'
             'functionsにfieldAverageに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
-    controlDict = (DictParser2(file_name = controlDict_path) if fieldAverage_is_written
-        else append_functions_in_controlDict(controlDict_path))
+        if not fieldAverage_is_written:
+            append_functions_in_controlDict(controlDict_path)
 
+    controlDict = DictParser2(file_name = controlDict_path)
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     properties_list = [f'{i["parent"]["key"]}Properties' for i in types

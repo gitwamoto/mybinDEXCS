@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:22:50 PM
+# 2026/5/1 1:32:10 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -18,8 +18,8 @@ import shutil
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
-sys.path.append(path_binDEXCS)
+binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+sys.path.append(binDEXCS_path)
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         print(f'\n\033[3;4;5mファイル{setFieldsDict_path}にテンプレートを追加して，texteditwx.pyで開いています．')
         print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
         print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-        subprocess.call(f'{os.path.join(path_binDEXCS, "texteditwx.py")} setFieldsDict_path', shell = True)
+        subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} setFieldsDict_path', shell = True)
 
     setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
 

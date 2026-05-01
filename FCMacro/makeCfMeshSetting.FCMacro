@@ -13,10 +13,10 @@ import Mesh
 import re
 import sys
 
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
-if path_binDEXCS not in [i.encode('UTF-8') if type(i) is unicode else i
+binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+if binDEXCS_path not in [i.encode('UTF-8') if type(i) is unicode else i
     for i in sys.path] if sys.version_info.major <= 2 else sys.path:
-    sys.path.append(path_binDEXCS)
+    sys.path.append(binDEXCS_path)
 from utilities.dictParse import DictParser
 from utilities.dictParse import DictParserList
 
@@ -482,7 +482,7 @@ class MyController:
             cwd = os.getcwd()
             os.chdir(case_dir_path)
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-                os.path.join(path_binDEXCS, 'cartesianMeshを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
+                os.path.join(binDEXCS_path, 'cartesianMeshを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnImproveMeshQualityButton(self):
@@ -493,7 +493,7 @@ class MyController:
             cwd = os.getcwd()
             os.chdir(case_dir_path)
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-                os.path.join(path_binDEXCS, 'improveMeshQualityを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
+                os.path.join(binDEXCS_path, 'improveMeshQualityを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnFlattenPatchButton(self):
@@ -504,7 +504,7 @@ class MyController:
             cwd = os.getcwd()
             os.chdir(case_dir_path)
             os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-                os.path.join(path_binDEXCS, 'patchを平面に.py') + '; exec bash"') # exec bashで画面が消えなくなる
+                os.path.join(binDEXCS_path, 'patchを平面に.py') + '; exec bash"') # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnLoadButton(self):

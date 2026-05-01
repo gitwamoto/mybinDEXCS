@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/4/30 5:33:51 PM
+# 2026/5/1 1:32:17 PM
 
 # DictParser2で書き直し済み
 
@@ -17,7 +17,7 @@ if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
 import dictParse
 
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 
 if os.path.exists('/opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc'):
     dexcs_version = '2019'
@@ -255,7 +255,7 @@ def bounding_box_of_calculation_range(points_path):
     return n, tuple((p_min[i], p_max[i]) for i in range(3))
 
 def texteditwx_works_well():
-    if subprocess.call(os.path.join(path_binDEXCS, 'texteditwx.py') + ' -h',
+    if subprocess.call(os.path.join(binDEXCS_path, 'texteditwx.py') + ' -h',
         stdout = open('/dev/null', 'w'), shell = True) != 0:
         print('texteditwx.pyでエラーが発生しました．おそらく必要なモジュールがないためです．端末で')
         print('sudo apt install -y python-pexpect python-pyperclip')

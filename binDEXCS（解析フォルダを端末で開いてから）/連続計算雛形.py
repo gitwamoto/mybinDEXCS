@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:24:05 PM
+# 2026/5/1 1:32:45 PM
 
 import os
 import signal
@@ -10,9 +10,9 @@ import sys
 import shutil
 import subprocess
 import glob
-path_binDEXCS = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
-if path_binDEXCS not in sys.path:
-    sys.path.append(path_binDEXCS)
+binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+if binDEXCS_path not in sys.path:
+    sys.path.append(binDEXCS_path)
 from utilities import appendEntries
 from utilities import dakuten
 from utilities import dictParse
@@ -77,11 +77,11 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r {}'.format(regions) + ' -e -d', shell = True)
+        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r {}'.format(regions) + ' -e -d', shell = True)
         # ' -e -d'などのオプションの意味は，計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
 
 #        # ----- ベイズ最適化を使ったならし計算を使う場合 -----
-#        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r {}'.format(regions) + ' -e -d -i -1 -6', shell = True)
+#        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r {}'.format(regions) + ' -e -d -i -1 -6', shell = True)
 
     # 正確な計算
     for d in ('elbow_vane01_10', 'elbow_vane02_10', 'elbow_vane03_10', 'elbow_wovane'):
@@ -109,9 +109,9 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r %{}'.format(regions) + ' -e', shell = True)
+        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r %{}'.format(regions) + ' -e', shell = True)
         # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
 
 #        # ----- ベイズ最適化を使ったならし計算を使う場合 -----
-#        subprocess.call(os.path.join(path_binDEXCS, '計算.py') + ' -r {}'.format(regions) + ' -e', shell = True)
+#        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r {}'.format(regions) + ' -e', shell = True)
 #        # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
