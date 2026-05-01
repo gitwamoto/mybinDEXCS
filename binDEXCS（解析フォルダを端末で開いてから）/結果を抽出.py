@@ -222,10 +222,10 @@ if __name__ == '__main__':
     for block in controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
         block = block['element']
         function_type = dictparse.find_element([{'type': 'dictionary', 'key':'type'}], parent = block)
-        if dictparse.find_element([{'type': 'word', 'value': 'sets'],
+        if dictparse.find_element([{'type': 'word', 'value': 'sets'}],
             parent = function_type)['element'] is not None:
             sets_dir_list.append(block['key'])
-        elif dictparse.find_element([{'type': 'word', 'value': 'surfaces'],
+        elif dictparse.find_element([{'type': 'word', 'value': 'surfaces'}],
             parent = function_type)['element'] is not None:
             surface_dir_list.append(block['key'])
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:

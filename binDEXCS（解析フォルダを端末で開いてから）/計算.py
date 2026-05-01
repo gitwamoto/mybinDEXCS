@@ -69,10 +69,9 @@ def potentialFoam(latest_time):
         has_p_potentialflow = os.path.isfile(p_potentialflow_path)
     else:
         has_p_potentialflow = False
-        #                    0123456789
         for d in glob.iglob('processor*' + os.sep):
             try:
-                int(d[9:-len(os.sep)])
+                int(d[len('processor'):-len(os.sep)])
                 pp = os.path.join(d, p_potentialflow_path)
                 if os.path.isfile(pp):
                     has_p_potentialflow = True
