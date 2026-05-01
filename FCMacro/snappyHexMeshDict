@@ -1,0 +1,406 @@
+FoamFile
+{
+	version	2.0;
+	format	ascii;
+	class	dictionary;
+	location	"system";
+	object	snappyHexMeshDict;
+}
+
+#include "../probe_keisan.txt"
+
+// A manual is available on
+// https://www.openfoam.com/documentation/guides/latest/doc/guide-meshing-snappyhexmesh.html
+
+// Which of the steps to run
+castellatedMesh	true; // true or false
+snap	true; // true or false
+addLayers	true; // true or false
+
+CUSTOM_OPTIONS
+{
+	maxCellSize	3; // used to generate blockMeshDict
+	boundingBox	((-59.0 -78.0 -47.0) (41.0 22.0 53.0)); // used to generate blockMeshDict
+}
+
+// Geometry. Definition of all surfaces. All surfaces are of class
+// searchableSurface.
+// Surfaces are used
+// - to specify refinement for any mesh cell intersecting it
+// - to specify refinement for any mesh cell inside/outside/near
+// - to 'snap' the mesh boundary to the surface
+geometry
+{
+	probe.stl // in constant/triSurface
+	{
+		type	triSurfaceMesh;
+		name	probe;
+	}
+
+	refinebox
+	{
+		type	searchableBox;
+		min	(-42.0 -51.0 -10.0);
+		max	(18.0 9.0 10.0);
+	}
+
+//	boxExample
+//	{
+//		type	searchableBox;
+//		min	(1.5 1 -0.5);
+//		max	(3.5 2 0.5);
+//	}
+
+//	coneExample
+//	{
+//		type	searchableCone;
+//		point1	(0 0 0);
+//		radius1	1.5;
+//		innerRadius1	0.25;
+//		point2	(10 0 0);
+//		radius2	3.0;
+//		innerRadius2	1.0;
+//	}
+
+//	cylinderExample
+//	{
+//		type	searchableCylinder;
+//		point1	(1.5 1 -0.5);
+//		point2	(3.5 2 0.5);
+//		radius	0.05;
+//	}
+
+//	diskExample
+//	{
+//		type	searchableDisk;
+//		origin	(0 0 0);
+//		normal	(0 1 0);
+//		radius	0.314;
+//	}
+
+//	sphereExample
+//	{
+//		type	searchableSphere;
+//		centre	(0 0 0);
+//		radius	3;
+//	}
+}
+
+// Settings for the castellatedMesh generation.
+castellatedMeshControls
+{
+// ----- Refinement parameters -----
+
+// Maximum number of cells per processor during refinement
+	maxLocalCells	100000;
+
+// Overall cell limit during refinement (i.e. before removal)
+	maxGlobalCells	2000000;
+
+// The refinement along the surfaces may spend many iterations on refinement
+// of only few cells. Whenever the number of cells to be refined is less than
+// or equal to the minRefinementCells parameter, the refinement will stop.
+// be performed.
+	minRefinementCells	2;
+
+// Number of buffer layers of cells between different levels of refinement
+	nCellsBetweenLevels	3;
+
+// ----- Explicit feature edge refinement -----
+
+// Specifies a level for any cell intersected by its edges.
+	features
+	(
+		{
+			file	"probe.extendedFeatureEdgeMesh";
+			level	1;
+		}
+	);
+
+// ----- Surface based refinement -----
+
+	refinementSurfaces
+	{
+		probe
+		{
+			level	(0 1); // (min max)
+			regions
+			{
+				left
+				{
+					level	(0 1); // (min max)
+					patchInfo {type	patch;}
+				}
+				front
+				{
+					level	(0 1); // (min max)
+					patchInfo {type	patch;}
+				}
+				top
+				{
+					level	(0 1); // (min max)
+					patchInfo {type	patch;}
+				}
+				rear
+				{
+					level	(0 1); // (min max)
+					patchInfo {type	patch;}
+				}
+				bottom
+				{
+					level	(0 1); // (min max)
+					patchInfo {type	patch;}
+				}
+				right
+				{
+					level	(0 1); // (min max)
+					patchInfo {type	patch;}
+				}
+				up_side1
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				up_side
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				up_side2
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				side1
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				side2
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				side_up
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				side_under
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				bottom_side2
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				bottom_side1
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+				bottom_side
+				{
+					level	(1 2); // (min max)
+					patchInfo {type	wall;}
+				}
+			}
+		}
+	}
+
+	resolveFeatureAngle	30;
+
+// ----- Region-wise refinement -----
+
+	refinementRegions
+	{
+		refinebox
+		{
+			mode	inside; // distance | inside | outside
+			levels	((1.0 2)); // (distance level)
+		}
+	}
+
+// ----- Mesh selection -----
+
+	locationInMesh	(0.0 0.0 9.0);
+
+//	locationsInMesh
+//	(
+//		((0.0 0.0 0.0) zone1)
+//		((0.1 0.1 0.1) zone2)
+//	);
+
+// allowFreeStandingZoneFaces allowing zone faces that share the same
+// owner and neighbour cell zone. Not used if there are no faceZones.
+	allowFreeStandingZoneFaces	true;
+}
+
+// Settings for the snapping.
+snapControls
+{
+// Number of smoothing iterations along the surface
+	nSmoothPatch	3;
+
+// Number of iterations for internal smoothing to reduce non-orthogonality
+// at the face of refinement (effectively making the faces non-planar).
+// Default value is 0.
+	nSmoothInternal	1;
+
+// Multiplied by local cell-edge length specifies region along the surface
+// within which the points are attracted by the surface
+	tolerance	1.0;
+
+// Number of mesh displacement iterations
+	nSolveIter	30;
+
+// Number of relaxation iterations during the snapping. If the mesh does not
+// conform the geometry and all the iterations are spend, user may try to
+// increase the number of iterations.
+	nRelaxIter	5;
+
+// Number of relaxation iterations used for snapping onto the features.
+// If not specified, feature snapping will be disabled.
+	nFeatureSnapIter	10;
+}
+
+// Settings for the layer addition.
+addLayersControls
+{
+// Layer thickness is set in a relative (true) or absolute (false) scale.
+	relativeSizes	true;
+
+// Layer information per final patch (so not geometry!)
+	layers
+	{
+		probe_up_side1
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_up_side
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_up_side2
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_side1
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_side2
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_side_up
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_side_under
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_bottom_side2
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_bottom_side1
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+		probe_bottom_side
+		{
+			nSurfaceLayers	2;
+			expansionRatio	1.2;
+		}
+	}
+	expansionRatio	1; // mandatory
+
+// Thickness of the layer furthest away from the wall
+	finalLayerThickness	1;
+
+// Minimum thickness of cell layer
+	minThickness	0.1;
+
+// Number of layers of cells where point extrusion is cancelled
+	nGrow	0;
+
+// ----- Advanced settings -----
+
+// When not to extrude surface. 0 is flat surface, 90 is when two faces
+// are perpendicular
+	featureAngle	30;
+
+// Number of relaxation steps (where relaxed mesh quality parameters are used)
+	nRelaxIter	3;
+
+// Number of smoothing iterations of surface normals
+	nSmoothSurfaceNormals	1;
+
+// Number of smoothing iterations of interior mesh movement direction
+	nSmoothNormals	3;
+
+// Smooth layer thickness over surface patches
+	nSmoothThickness	10;
+
+// Stop layer growth on highly warped cells
+	maxFaceThicknessRatio	0.5;
+
+// Reduce layer growth where ratio thickness to medial distance is large
+	maxThicknessToMedialRatio	1;
+
+// Angle used to select medial axis points
+	minMedialAxisAngle	90;
+
+// Create buffer region for new layer terminations
+	nBufferCellsNoExtrude	0;
+
+// Overall max number of layer addition iterations
+	nLayerIter	50;
+
+// Max number of iterations after which relaxed meshQuality controls
+// get used. Up to nRelaxIter it uses the settings in meshQualityControls,
+// after nRelaxIter it uses the values in meshQualityControls::relaxed.
+	nRelaxedIter	50;
+}
+
+// Generic mesh quality settings. At any undoable phase these determine
+// where to undo.
+meshQualityControls
+{
+	#includeEtc "caseDicts/meshQualityDict"
+
+// Optional: some meshing phases allow usage of relaxed rules.
+// See e.g. addLayersControls.nRelaxedIter.
+	relaxed
+	{
+// Maximum non-orthogonality allowed. Set to 180 to disable.
+		maxNonOrtho	75;
+	}
+
+// ----- Advanced -----
+
+// Smoothing iterations. Used in combination with errorReduction.
+	nSmoothScale	4;
+
+// Error reduction. Used in combination with nSmoothScale.
+	errorReduction	0.75;
+}
+
+// ----- Advanced -----
+
+// Merge tolerance. Is fraction of overall bounding box of initial mesh.
+// Note: the write tolerance needs to be higher than this.
+mergeTolerance	1.0e-6;

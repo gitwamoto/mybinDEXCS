@@ -17,7 +17,8 @@ binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを�
 if binDEXCS_path not in [i.encode('UTF-8') if type(i) is unicode else i
     for i in sys.path] if sys.version_info.major <= 2 else sys.path:
     sys.path.append(binDEXCS_path)
-from utilities import dictParse
+from utilities.dictParse import DictParser
+from utilities.dictParse import DictParserList
 
 class FreeCadFileGrid(QtGui.QTableWidget):
     OBJECT_NAME = 0
@@ -218,50 +219,44 @@ class MeshFrame(QtGui.QDialog):
 
     def setParamsFromDictFiles(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
         try:
-            meshDict = dictParse.DictParser2(file_name = meshDict_path)
-            assert (meshDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                {'type': 'dictionary', 'key': 'object'},
-                {'type': 'word', 'value': 'snappyHexMeshDict'}])['element'] is not None)
+            meshDict = DictParser(file_name = meshDict_path)
+            assert (meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                meshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                meshDict.getValueForKey(['FoamFile', 'object'])[0] == 'snappyHexMeshDict')
         except:
-            raise Exception(f'{eshDict_path} is not a snappyHexMeshDict file.')
+            raise Exception(meshDict_path + ' is not a snappyHexMeshDict file.')
         if os.path.isfile(setFieldsDict_path):
             try:
-                setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
-                assert (setFieldsDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                    {'type': 'dictionary', 'key': 'object'},
-                    {'type': 'word', 'value': 'setFieldsDict'}])['element'] is not None)
+                setFieldsDict = DictParser(file_name = setFieldsDict_path)
+                assert (setFieldsDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                    setFieldsDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                    setFieldsDict.getValueForKey(['FoamFile', 'object'])[0] == 'setFieldsDict')
             except:
-                raise Exception(f'{setFieldsDict_path} is not a setFieldsDict file.')
+                raise Exception(setFieldsDict_path + ' is not a setFieldsDict file.')
         else:
             setFieldsDict = None
         if os.path.isfile(topoSetDict_path):
             try:
-                topoSetDict = dictParse.DictParser2(file_name = topoSetDict_path)
-                assert (topoSetDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                    {'type': 'dictionary', 'key': 'object'},
-                    {'type': 'word', 'value': 'topoSetDict'}])['element'] is not None)
+                topoSetDict = DictParser(file_name = topoSetDict_path)
+                assert (topoSetDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
+                    topoSetDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
+                    topoSetDict.getValueForKey(['FoamFile', 'object'])[0] == 'topoSetDict')
             except:
-                raise Exception(f'{topoSetDict_path} is not a topoSetDict file.')
+                raise Exception(topoSetDict_path + ' is not a topoSetDict file.')
         else:
             topoSetDict = None
         try:
-            self.maxCellSizeCRL.setText(meshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'},
-                {'type': 'dictionary', 'key': 'maxCellSize'}, {'type': 'float|integer'}])['element']['value'])
-        except:
-            pass
-        castellatedMeshControls = meshDict.find_element(
-            [{'type': 'block', 'key': 'castellatedMeshControls'}])['element']
-        try:
-            self.featuresLevelCRL.setText(dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
-                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}],
-                parent = castellatedMeshControls)['element']['value'])
+            self.maxCellSizeCRL.setText(meshDict.getValueForKey(['CUSTOM_OPTIONS', 'maxCellSize'])[0])
         except:
             pass
         try:
-           self.featureAngleCRL.setText(dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'resolveFeatureAngle'}, {'type': 'float|integer'}],
-                parent = castellatedMeshControls)['element']['value'])
+            self.featuresLevelCRL.setText(
+                meshDict.getValueForKey(['castellatedMeshControls', 'features', '', 'level'])[0])
+        except:
+            pass
+        try:
+            self.featureAngleCRL.setText(
+                meshDict.getValueForKey(['castellatedMeshControls', 'resolveFeatureAngle'])[0])
         except:
             pass
         objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
