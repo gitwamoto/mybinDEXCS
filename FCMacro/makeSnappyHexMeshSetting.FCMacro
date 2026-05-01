@@ -266,34 +266,33 @@ class MeshFrame(QtGui.QDialog):
             pass
         objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
         remainder = objects[:]
-        name = None
-        box = []
-        cylinder = []
-        sphere = []
-        surface = []
-        for x in meshDict.getValueForKey(['geometry']):
-            if DictParserList.isType(x, DictParserList.BLOCK):
-                if x.key().endswith('.stl'):
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'name':
-                            if meshDict.getValueForKey(
-                                ['castellatedMeshControls', 'refinementSurfaces', y.value()[0]]) is not None:
-                                name = y.value()[0]
-                            else:
-                                surface.append(y.value()[0])
+        shape_name = None
+        searchableBox_list = []
+        searchableCylinder_list = []
+        searchableSphere_list = []
+        triSurface_list = []
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block'}]):
+            block = block['element']
+            if block['key'].endswith('.stl'):
+                name = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}],
+                    parent = block)['element']['value']
+                if dictParse.find_element([{'type': 'block', 'key': 'refinementSurfaces'},
+                    {'type': 'block', 'key': name}], parent = castellatedMeshControls)['element'] is not None:
+                    shape_name = name
                 else:
-                    for y in x.value():
-                        if not DictParserList.isType(y, DictParserList.DICT):
-                            continue
-                        if y.key() == 'type':
-                            if y.value()[0] in ('searchableBox', 'searchableRotatedBox'):
-                                box.append(x.key())
-                            elif y.value()[0] == 'searchableCylinder':
-                                cylinder.append(x.key())
-                            elif y.value()[0] == 'searchableSphere':
-                                sphere.append(x.key())
+                    triSurface_list.append(name)
+            else:
+                geometry_type = dictParse.find_element({'type': 'dictionary', 'key': 'type'}, {'type': 'word'}],
+                    parent = block)['element']['value']
+                if geometry_type in ('searchableBox', 'searchableRotatedBox'):
+                    searchableBox_list.append(block['key'])
+                elif geometry_type == 'searchableCylinder':
+                    searchableCylinder_list.append(block['key'])
+                elif geometry_type == 'searchableSphere':
+                    searchableSphere_list.append(block['key'])
+ここまで！！！
         try:
-            for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementSurfaces', name, 'regions']):
+            for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementSurfaces', shape_name, 'regions']):
                 if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
                     i = objects.index(x.key())
                     remainder.remove(x.key())
@@ -309,21 +308,21 @@ class MeshFrame(QtGui.QDialog):
         try:
             for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
                 if (DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects and
-                    (x.key() in box or x.key() in cylinder or x.key() in sphere or x.key() in surface)):
+                    (x.key() in searchableBox_list or x.key() in searchableCylinder_list or x.key() in searchableSphere_list or x.key() in triSurface_list)):
                     i = objects.index(x.key())
                     remainder.remove(x.key())
-                    if x.key() in box:
+                    if x.key() in searchableBox_list:
                         self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
-                    elif x.key() in cylinder:
+                    elif x.key() in searchableCylinder_list:
                         self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
-                    elif x.key() in sphere:
+                    elif x.key() in searchableSphere_list:
                         self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
                     else:
                         self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
                     for y in x.value():
                         if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'levels':
                             self.grid.setCellValue(i, self.grid.LEVEL, y.value()[0].value()[0].value()[2])
-                            if x.key() in surface:
+                            if x.key() in triSurface_list:
                                 self.grid.setCellValue(i, self.grid.RATIO, y.value()[0].value()[0].value()[0])
         except:
             pass
@@ -372,12 +371,12 @@ class MeshFrame(QtGui.QDialog):
             pass
         for i in remainder:
             self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'LocationInMesh')
-        name += '_'
+        shape_prefix = f'{shape_name}_'
         try:
             for x in meshDict.getValueForKey(['addLayersControls', 'layers']):
-                if (DictParserList.isType(x, DictParserList.BLOCK) and x.key().startswith(name) and
-                    x.key()[len(name):] in objects):
-                    i = objects.index(x.key()[len(name):])
+                if (DictParserList.isType(x, DictParserList.BLOCK) and x.key().startswith(shape_prefix) and
+                    x.key()[len(shape_prefix):] in objects):
+                    i = objects.index(x.key()[len(shape_prefix):])
                     for y in x.value():
                         if DictParserList.isType(y, DictParserList.DICT):
                             if y.key() == 'nSurfaceLayers':
