@@ -368,15 +368,15 @@ class DictParser2:
         #                |           // *** ... *** //
         # -------------------------------------------------------
         if debug:
-            print('elements_list from {}, terminator = {}, essentials_required = {}'.format(
-                index, terminator, essentials_required))
+            print(f'elements_list from {index}, terminator = {terminator}, '
+                f'essentials_required = {essentials_required}')
         l = []
         terminator_reached = True if terminator == 'reached' else False
         essentials = 0
         while index < len(self.string):
             s = self.PATTERN.search(self.string, pos = index)
             if debug:
-                print('  [{}, {}) '.format(s.start(), s.end()) + s.lastgroup + ' "' +
+                print(f'  [{s.start()}, {s.end()}) {s.lastgroup} "' +
                     s.group().replace('\r', r'\r').replace('\n', r'\n').replace('\t', r'\t') + '"')
             if terminator_reached and s.lastgroup not in ('whitespace', 'line_comment', 'block_comment'):
                 if debug:
@@ -389,7 +389,7 @@ class DictParser2:
                     v, index = self.elements_list(index = s.end(), essentials_required = 1)
                 l.append({'type': s.lastgroup, 'key': s.group(), 'value': v})
                 if debug:
-                    print('    -> {}'.format(l[-1]))
+                    print(f'    -> {l[-1]}')
             elif s.lastgroup == 'semicolon':
                 dictionary = False
                 for i in range(len(l)):
@@ -403,23 +403,25 @@ class DictParser2:
                     l.append({'type': s.lastgroup, 'value': s.group()})
                     index = s.end()
                 if debug:
-                    print('    -> {}'.format(l[-1]))
+                    print(f'    -> {l[-1]}')
             elif s.lastgroup in ('block_start', 'list_start'):
                 type_string = s.lastgroup[:-6]
                 v, index = self.elements_list(index = s.end(), terminator = type_string + '_end')
-                if len(l) > 0:
-                    for i in range(len(l) - 1, -1, -1):
-                        if l[i]['type'] not in ('whitespace', 'linebreak', 'line_comment', 'block_comment'):
-                            if type_string == 'block' and l[i]['type'] in ('word', 'string'):
-                                l[i:] = [{'type': type_string, 'key': l[i]['value'],
-                                    'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
-                            elif type_string == 'list' and l[i]['type'] == 'integer':
-                                l[i:] = [{'type': type_string, 'length': int(l[i]['value']),
-                                    'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
-                            else:
-                                l.append({'type': type_string, 'value': [{'type': s.lastgroup, 'value': s.group()}] + v})
-                            break
-                else:
+                has_header = False
+                for i in range(len(l) - 1, -1, -1):
+                    if l[i]['type'] in ('whitespace', 'linebreak', 'line_comment', 'block_comment'):
+                        continue
+                    if type_string == 'block' and l[i]['type'] in ('word', 'string'):
+                        l[i:] = [{'type': type_string, 'key': l[i]['value'],
+                            'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
+                        has_header = True
+                        break
+                    if type_string == 'list' and l[i]['type'] == 'integer':
+                        l[i:] = [{'type': type_string, 'length': int(l[i]['value']),
+                            'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
+                        has_header = True
+                        break
+                if not has_header:
                     l.append({'type': type_string, 'value': [{'type': s.lastgroup, 'value': s.group()}] + v})
             elif s.lastgroup == 'dimension_start':
                 v, index = self.elements_list(index = s.end(), terminator = 'dimension_end')
@@ -446,7 +448,7 @@ class DictParser2:
         if not terminator_reached and terminator is not None:
             raise_error('Missing "' + self.CLOSING_SYMBOL[terminator] + '".', len(self.string))
         if debug:
-            print('    return {}'.format(l))
+            print(f'    return {l}')
         return l, index
 
     def find_separators(self, header_index_not_found = None, footer_index_not_found = None):
@@ -502,35 +504,18 @@ if __name__ == '__main__':
 #        #f'surfaceFile\t"{stl_2D_file_name}";\n'
 #        ).elements))
     dp2 = DictParser2(string =
-         '\tsetSampling // postProcessingフォルダ内に作られるフォルダの名前\n'
-        '\t{\n'
-        '\t\ttype\tsets; // 直線や点からデータを抽出\n'
-        '\t\tlibs\t("libsampling.so");\n'
-        '\t\tenabled\tyes; // yesで実行\n'
-        '\t\tsetFormat\traw;\n'
-        '\t\tinterpolationScheme\tcellPoint;\n'
-        f'\t\tfields\t(a P u); // 抽出したいパラメータ\n'
-        '\t\tsets\n'
-        '\t\t(\n'
-        '\t\t\t// 直線上に等間隔に配置された点からデータを抽出する．\n'
-        '\t\t\t// 直線がいちど計算領域外に飛び出すと，そこで抽出をやめてしまうので，計算領域外をまたぐ直線の場合は2直線に分ける．\n'
-        '\t\t\t// 少なくとも直線の始点(B)，終点(C)，直線上に配置する点の数(D)は修正する必要がある．\n'
-        '\t\t\t// 複数の条件に対して抽出したい場合，\n'
-        '\t\t\t// line\n'
-        '\t\t\t// {\n'
-        '\t\t\t//     ...\n'
-        '\t\t\t// }\n'
-        '\t\t\t// の部分をコピーして使えば良い．\n'
-        '\t\t\tline // <- (A) ファイル名につく文字列，他と重複してはいけない！\n'
-        '\t\t\t{\n'
-        '\t\t\t\ttype\tuniform;\n'
-        '\t\t\t\taxis\txyz;\n'
-        '\t\t\t\tstart\t(0.1 0.2 0.3); // <- (B) 始点の(x y z)座標\n'
-        '\t\t\t\tend\t(0.4 0.5 0.6); // <- (C) 終点の(x y z)座標\n'
-        '\t\t\t\tnPoints\t10; // <- (D) 直線上に配置する点の数\n'
-        '\t\t\t}\n'
-        '\t\t)\n'
-        '\t}\n'
-        '\n')
+'''castellatedMeshControls
+{
+	features
+	(
+		{
+			file	"probe.extendedFeatureEdgeMesh";
+			level	1;
+		}
+	);
+}''')
     print(dp2.structure_string())
-    print(dp2.find_element([{'type': 'block'}, {'type': 'dictionary', 'key': 'type'}, {'type': 'word', 'value': 'sets'}]))
+    print(dp2.find_element(
+                [{'type': 'block', 'key': 'castellatedMeshControls'},
+                {'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
+                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}])['element']['value'])
