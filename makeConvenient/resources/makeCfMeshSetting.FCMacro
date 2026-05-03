@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/4/22 12:47:24 PM
+# 2026/5/3 11:44:22 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -17,8 +17,7 @@ binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを�
 if binDEXCS_path not in [i.encode('UTF-8') if type(i) is unicode else i
     for i in sys.path] if sys.version_info.major <= 2 else sys.path:
     sys.path.append(binDEXCS_path)
-from utilities.dictParse import DictParser
-from utilities.dictParse import DictParserList
+from utilities import dictParse
 
 class FreeCadFileGrid(QtGui.QTableWidget):
     OBJECT_NAME = 0
@@ -218,53 +217,58 @@ class MeshFrame(QtGui.QDialog):
 
     def setParamsFromDictFiles(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
         try:
-            meshDict = DictParser(file_name = meshDict_path)
-            assert (meshDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
-                meshDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
-                meshDict.getValueForKey(['FoamFile', 'object'])[0] == 'meshDict')
+            meshDict = dictParse.DictParser2(file_name = meshDict_path)
+            assert (meshDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+                {'type': 'dictionary', 'key': 'object'},
+                {'type': 'word', 'value': 'meshDict'}])['element'] is not None)
         except:
-            raise Exception(meshDict_path + ' is not a meshDict file.')
+            raise Exception(f'{meshDict_path} is not a meshDict file.')
         if os.path.isfile(setFieldsDict_path):
             try:
-                setFieldsDict = DictParser(file_name = setFieldsDict_path)
-                assert (setFieldsDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
-                    setFieldsDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
-                    setFieldsDict.getValueForKey(['FoamFile', 'object'])[0] == 'setFieldsDict')
+                setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
+                assert (setFieldsDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+                    {'type': 'dictionary', 'key': 'object'},
+                    {'type': 'word', 'value': 'setFieldsDict'}])['element'] is not None)
             except:
-                raise Exception(setFieldsDict_path + ' is not a setFieldsDict file.')
+                raise Exception(f'{setFieldsDict_path} is not a setFieldsDict file.')
         else:
             setFieldsDict = None
         if os.path.isfile(topoSetDict_path):
             try:
-                topoSetDict = DictParser(file_name = topoSetDict_path)
-                assert (topoSetDict.getValueForKey(['FoamFile', 'class'])[0] == 'dictionary' and
-                    topoSetDict.getValueForKey(['FoamFile', 'location'])[0] == '"system"' and
-                    topoSetDict.getValueForKey(['FoamFile', 'object'])[0] == 'topoSetDict')
+                topoSetDict = dictParse.DictParser2(file_name = topoSetDict_path)
+                assert (topoSetDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+                    {'type': 'dictionary', 'key': 'object'},
+                    {'type': 'word', 'value': 'topoSetDict'}])['element'] is not None)
             except:
-                raise Exception(topoSetDict_path + ' is not a topoSetDict file.')
+                raise Exception(f'{topoSetDict_path} is not a topoSetDict file.')
         else:
             topoSetDict = None
         try:
-            self.maxCellSizeCRL.setText(meshDict.getValueForKey(['maxCellSize'])[0])
+            self.maxCellSizeCRL.setText(meshDict.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
+                {'type': 'float|integer'}])['element']['value'])
         except:
             pass
         try:
-            self.minCellSizeCRL.setText(meshDict.getValueForKey(['minCellSize'])[0])
+            self.minCellSizeCRL.setText(meshDict.find_element([{'type': 'dictionary', 'key': 'minCellSize'},
+                {'type': 'float|integer'}])['element']['value'])
         except:
             pass
         try:
-            self.featureAngleCRL.setText(meshDict.getValueForKey(['CUSTOM_OPTIONS', 'featureAngle'])[0])
+            self.featureAngleCRL.setText(meshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'},
+                {'type': 'dictionary', 'key': 'featureAngle'}, {'type': 'float|integer'}])['element']['value'])
         except:
             pass
         objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
         remainder = objects[:]
         try:
-            for x in meshDict.getValueForKey(['renameBoundary', 'newPatchNames']):
-                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
-                    remainder.remove(x.key())
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'type':
-                            self.grid.setCellValue(objects.index(x.key()), self.grid.TYPE, y.value()[0])
+            for block in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
+                {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
+                block = block['element']
+                if block['key'] in objects:
+                    remainder.remove(block['key'])
+                    self.grid.setCellValue(objects.index(block['key']), self.grid.TYPE,
+                        dictParser.find_element([{'type': 'dictionary', 'key': 'type'},
+                            {'type': 'word'}], parent = block)['element']['value'])
         except:
             pass
         try:
