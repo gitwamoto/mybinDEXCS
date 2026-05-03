@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/4/22 12:47:24 PM
+# 2026/5/3 11:44:22 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -261,12 +261,14 @@ class MeshFrame(QtGui.QDialog):
         objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
         remainder = objects[:]
         try:
-            for x in meshDict.getValueForKey(['renameBoundary', 'newPatchNames']):
-                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
-                    remainder.remove(x.key())
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'type':
-                            self.grid.setCellValue(objects.index(x.key()), self.grid.TYPE, y.value()[0])
+            for block in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
+                {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
+                block = block['element']
+                if block['key'] in objects:
+                    remainder.remove(block['key'])
+                    self.grid.setCellValue(objects.index(block['key']), self.grid.TYPE,
+                        dictParser.find_element([{'type': 'dictionary', 'key': 'type'},
+                            {'type': 'word'}], parent = block)['element']['value'])
         except:
             pass
         try:
