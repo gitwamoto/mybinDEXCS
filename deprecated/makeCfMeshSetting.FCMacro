@@ -362,7 +362,7 @@ class MeshFrame(QtGui.QDialog):
                                     elif z.value[0] == 'sphereToCell':
                                         source = 'SphereTopo'
                                 if grid_index != -1 and source is not None:
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxTopo')
+                                    self.grid.setCellValue(grid_index, self.grid.TYPE, 'BoxTopo')
                                     break
         except:
             pass
