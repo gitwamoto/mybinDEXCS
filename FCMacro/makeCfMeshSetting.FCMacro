@@ -216,160 +216,149 @@ class MeshFrame(QtGui.QDialog):
         box_H.addWidget(self.exitButton)
 
     def setParamsFromDictFiles(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
-        try:
-            meshDict = dictParse.DictParser2(file_name = meshDict_path)
-            assert (meshDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                {'type': 'dictionary', 'key': 'object'},
-                {'type': 'word', 'value': 'meshDict'}])['element'] is not None)
-        except:
+        meshDict = dictParse.DictParser2(file_name = meshDict_path)
+        if meshDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+            {'type': 'dictionary', 'key': 'object'},
+            {'type': 'word', 'value': 'meshDict'}])['element'] is None:
             raise Exception(f'{meshDict_path} is not a meshDict file.')
+
+        maxCellSize = meshDict.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
+            {'type': 'float|integer'}])['element']
+        if maxCellSize is not None:
+            self.maxCellSizeCRL.setText(maxCellSize['value'])
+        minCellSize = meshDict.find_element([{'type': 'dictionary', 'key': 'minCellSize'},
+            {'type': 'float|integer'}])['element']
+        if minCellSize is not None:
+            self.minCellSizeCRL.setText(minCellSize['value'])
+        featureAngle = meshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'},
+            {'type': 'dictionary', 'key': 'featureAngle'}, {'type': 'float|integer'}])['element']
+        if featureAngle is not None:
+            self.featureAngleCRL.setText(featureAngle['value'])
+
+        objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
+        remainder = objects[:]
+
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
+            {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
+            block = block['element']
+            if block['key'] not in objects:
+                continue
+            remainder.remove(block['key'])
+            patchType = dictParser.find_element([{'type': 'dictionary', 'key': 'type'},
+                {'type': 'word'}], parent = block)['element']
+            if patch_type is not None:
+                self.grid.setCellValue(objects.index(block['key']), self.grid.TYPE, patchType['value'])
+
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'localRefinement'},
+            {'type': 'block'}]):
+            block = block['element']
+            if block['key'] not in objects:
+                continue
+            cellSize = dictParser.find_element([{'type': 'dictionary', 'key': 'cellSize'},
+                {'type': 'float|integer'}], parent = block)['element']
+            if cellSize is not None:
+                self.grid.setCellValue(objects.index(block['key']), self.grid.CELL_SIZE, cellSize['value'])
+
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'boundaryLayers'},
+            {'type': 'block'}]):
+            block = block['element']
+            if block['key'] not in objects:
+                continue
+            i = objects.index(block['key'])
+            nLayers = dictParser.find_element([{'type': 'dictionary', 'key': 'nLayers'},
+                {'type': 'float|integer'}], parent = block)['element']
+            if nLayers is not None:
+                self.grid.setCellValue(i, self.grid.N_LAYERS, nLayers['value'])
+                self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
+            thicknessRatio = dictParser.find_element([{'type': 'dictionary', 'key': 'thicknessRatio'},
+                {'type': 'float|integer'}], parent = block)['element']
+            if thicknessRatio is not None:
+                self.grid.setCellValue(i, self.grid.RATIO, thicknessRatio['value'])
+
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'objectRefinements'},
+            {'type': 'block'}]):
+            block = block['element']
+            remainder.remove(block['key'])
+            i = objects.index(block['key'])
+            cellSize = dictParser.find_element([{'type': 'dictionary', 'key': 'cellSize'},
+                {'type': 'float|integer'}], parent = block)['element']
+            if cellSize is not None:
+                self.grid.setCellValue(i, self.grid.CELL_SIZE, cellSize['value'])
+            refinementType = dictParser.find_element([{'type': 'dictionary', 'key': 'type'},
+                {'type': 'word'}], parent = block)['element']
+            if refinementType is not None:
+                if refinementType['value'] == 'box':
+                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
+                elif refinementType['value'] == 'cone':
+                    self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
+                elif refinementType['value'] == 'sphere':
+                    self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
+
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'surfaceMeshRefinement'},
+            {'type': 'block'}]):
+            block = block['element']
+            if block['key'] not in objects:
+                continue
+            remainder.remove(block['key'])
+            i = objects.index(block['key'])
+            cellSize = dictParser.find_element([{'type': 'dictionary', 'key': 'cellSize'},
+                {'type': 'float|integer'}], parent = block)['element']
+            if cellSize is not None:
+                self.grid.setCellValue(i, self.grid.CELL_SIZE, cellSize['value'])
+                self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
+            refinementThickness = dictParser.find_element([{'type': 'dictionary', 'key': 'refinementThickness'},
+                {'type': 'float|integer'}], parent = block)['element']
+            if refinementThickness is not None:
+                self.grid.setCellValue(i, self.grid.RATIO, refinementThickness['value'])
+
         if os.path.isfile(setFieldsDict_path):
-            try:
-                setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
-                assert (setFieldsDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                    {'type': 'dictionary', 'key': 'object'},
-                    {'type': 'word', 'value': 'setFieldsDict'}])['element'] is not None)
-            except:
+            setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
+            if setFieldsDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+                {'type': 'dictionary', 'key': 'object'},
+                {'type': 'word', 'value': 'setFieldsDict'}])['element'] is None:
                 raise Exception(f'{setFieldsDict_path} is not a setFieldsDict file.')
         else:
             setFieldsDict = None
+
+        for block in setFieldsDict.find_all_elements([{'type': 'dictionary', 'key': 'regions'},
+            {'type': 'list'}, {'type': 'block'}]):
+            block = block['element']
+            comment = dictParse.find_element([{'type': 'line_comment|block_comment'}],
+                parent = block)['value']
+            if 'freecad' in comment.lower()
+                for i, object in enumerate(objects):
+                    if object not in comment:
+                        continue
+                    remainder.remove(object)
+                    if block['key'] == 'boxToCell':
+                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
+                    elif block['key'] == 'cylinderToCell':
+                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
+                    else:
+                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
+
         if os.path.isfile(topoSetDict_path):
-            try:
-                topoSetDict = dictParse.DictParser2(file_name = topoSetDict_path)
-                assert (topoSetDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                    {'type': 'dictionary', 'key': 'object'},
-                    {'type': 'word', 'value': 'topoSetDict'}])['element'] is not None)
-            except:
+            topoSetDict = dictParse.DictParser2(file_name = topoSetDict_path)
+            if topoSetDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+                {'type': 'dictionary', 'key': 'object'},
+                {'type': 'word', 'value': 'topoSetDict'}])['element'] is None:
                 raise Exception(f'{topoSetDict_path} is not a topoSetDict file.')
         else:
             topoSetDict = None
-        try:
-            self.maxCellSizeCRL.setText(meshDict.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
-                {'type': 'float|integer'}])['element']['value'])
-        except:
-            pass
-        try:
-            self.minCellSizeCRL.setText(meshDict.find_element([{'type': 'dictionary', 'key': 'minCellSize'},
-                {'type': 'float|integer'}])['element']['value'])
-        except:
-            pass
-        try:
-            self.featureAngleCRL.setText(meshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'},
-                {'type': 'dictionary', 'key': 'featureAngle'}, {'type': 'float|integer'}])['element']['value'])
-        except:
-            pass
-        objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
-        remainder = objects[:]
-        try:
-            for block in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
-                {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
-                block = block['element']
-                if block['key'] in objects:
-                    remainder.remove(block['key'])
-                    self.grid.setCellValue(objects.index(block['key']), self.grid.TYPE,
-                        dictParser.find_element([{'type': 'dictionary', 'key': 'type'},
-                            {'type': 'word'}], parent = block)['element']['value'])
-        except:
-            pass
-        try:
-            for x in meshDict.getValueForKey(['localRefinement']):
-                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'cellSize':
-                            self.grid.setCellValue(objects.index(x.key()), self.grid.CELL_SIZE, y.value()[0])
-        except:
-            pass
-        try:
-            for x in meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers']):
-                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
-                    i = objects.index(x.key())
-                    for y in x.value():
-                        if not DictParserList.isType(y, DictParserList.DICT):
-                            continue
-                        if y.key() == 'nLayers':
-                            self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-                            self.grid.setCellValue(i, self.grid.N_LAYERS, y.value()[0])
-                        elif y.key() == 'thicknessRatio':
-                            self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
-        except:
-            pass
-        try:
-            for x in meshDict.getValueForKey(['objectRefinements']):
-                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
-                    i = objects.index(x.key())
-                    remainder.remove(x.key())
-                    for y in x.value():
-                        if not DictParserList.isType(y, DictParserList.DICT):
-                            continue
-                        if y.key() == 'cellSize':
-                            self.grid.setCellValue(i, self.grid.CELL_SIZE, y.value()[0])
-                        elif y.key() == 'type':
-                            if y.value()[0] == 'box':
-                                self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
-                            elif y.value()[0] == 'cone':
-                                self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
-                            elif y.value()[0] == 'sphere':
-                                self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
-        except:
-            pass
-        try:
-            for x in meshDict.getValueForKey(['surfaceMeshRefinement']):
-                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
-                    i = objects.index(x.key())
-                    remainder.remove(x.key())
-                    for y in x.value():
-                        if not DictParserList.isType(y, DictParserList.DICT):
-                            continue
-                        if y.key() == 'cellSize':
-                            self.grid.setCellValue(i, self.grid.CELL_SIZE, y.value()[0])
-                            self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
-                        elif y.key() == 'refinementThickness':
-                            self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
-        except:
-            pass
-        try:
-            x = setFieldsDict.getValueForKey(['regions'])[0]
-            if DictParserList.isType(x, DictParserList.LISTP):
-                for y in x.value():
-                    if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' in y[1].lower():
-                        for i, j in enumerate(objects):
-                            if j in y[1]:
-                                remainder.remove(j)
-                                if y.key() == 'boxToCell':
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
-                                elif y.key() == 'cylinderToCell':
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
-                                else:
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
-                                break
-        except:
-            pass
-        try:
-            x = topoSetDict.getValueForKey(['actions'])[0]
-            if DictParserList.isType(x, DictParserList.LISTP):
-                for y in x.value():
-                    grid_index = -1
-                    source = None
-                    if DictParserList.isType(y, DictParserList.BLOCK):
-                        for z in y.value():
-                            if DictParserList.isType(z, DictParserList.DICT):
-                                if z.key() == 'name':
-                                    name = z.value()[0].replace('CellSet', '')
-                                    if name in objects:
-                                        grid_index = objects.index(name)
-                                        remainder.remove(name)
-                                elif z.key() == 'source':
-                                    if z.value[0] == 'rotatedBoxToCell':
-                                        source = 'BoxTopo'
-                                    elif z.value[0] == 'cylinderToCell':
-                                        source = 'CylinderTopo'
-                                    elif z.value[0] == 'sphereToCell':
-                                        source = 'SphereTopo'
-                                if grid_index != -1 and source is not None:
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxTopo')
-                                    break
-        except:
-            pass
+
+        for block in topoSetDict.find_all_elements([{'type': 'dictionary', 'key': 'actions'},
+            {'type': 'list'}, {'type': 'block'}]):
+            block = block['element']
+            setName = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}],
+                parent = block)['element']['value'].replace('CellSet', '').replace()
+            if setName not in objects:
+                continue
+            if dictParse.find_element([{'type': 'dictionary', 'key': 'source'}, {'type': 'word'}],
+                parent = block)['element']['value'] != 'rotatedBoxToCell':
+            continue
+            remainder.remove(setName)
+            self.grid.setCellValue(objects.index(setName), self.grid.TYPE, 'BoxTopo')
+
         for i in remainder:
             self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'N/A')
         return meshDict, setFieldsDict, topoSetDict
@@ -1036,13 +1025,13 @@ class MyModel:
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
         with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{')
-            f.write('\n\tversion\t2.0;\n')
-            f.write('\tformat\tascii;\n')
-            f.write('\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\ttopoSetDict;\n')
-            f.write('}\n') # FoamFile
+            f.write('FoamFile\n{'
+                '\n\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\ttopoSetDict;\n'
+                '}\n') # FoamFile
             f.write('\nactions\n(\n')
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
