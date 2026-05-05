@@ -503,19 +503,23 @@ if __name__ == '__main__':
 #        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
 #        #f'surfaceFile\t"{stl_2D_file_name}";\n'
 #        ).elements))
-    dp2 = DictParser2(string =
-'''castellatedMeshControls
-{
-	features
-	(
-		{
-			file	"probe.extendedFeatureEdgeMesh";
-			level	1;
-		}
-	);
-}''')
+#    dp2 = DictParser2(string =
+#'''castellatedMeshControls
+#{
+#	features
+#	(
+#		{
+#			file	"probe.extendedFeatureEdgeMesh";
+#			level	1;
+#		}
+#	);
+#}''')
+#    print(dp2.structure_string())
+#    print(dp2.find_element(
+#                [{'type': 'block', 'key': 'castellatedMeshControls'},
+#                {'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
+#                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}])['element']['value'])
+    dp2 = DictParser2(string = 'boundaryCellSize	0.5; // (optional)\n'
+        'boundaryCellSizeRefinementThickness	5.0; // (optional)\n')
     print(dp2.structure_string())
-    print(dp2.find_element(
-                [{'type': 'block', 'key': 'castellatedMeshControls'},
-                {'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
-                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}])['element']['value'])
+    print(file_string(dp2.elements, indent_level = 1))
