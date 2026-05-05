@@ -244,7 +244,7 @@ class MeshFrame(QtGui.QDialog):
             if block['key'] not in objects:
                 continue
             remainder.remove(block['key'])
-            patchType = dictParser.find_element([{'type': 'dictionary', 'key': 'type'},
+            patchType = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
                 {'type': 'word'}], parent = block)['element']
             if patch_type is not None:
                 self.grid.setCellValue(objects.index(block['key']), self.grid.TYPE, patchType['value'])
@@ -254,7 +254,7 @@ class MeshFrame(QtGui.QDialog):
             block = block['element']
             if block['key'] not in objects:
                 continue
-            cellSize = dictParser.find_element([{'type': 'dictionary', 'key': 'cellSize'},
+            cellSize = dictParse.find_element([{'type': 'dictionary', 'key': 'cellSize'},
                 {'type': 'float|integer'}], parent = block)['element']
             if cellSize is not None:
                 self.grid.setCellValue(objects.index(block['key']), self.grid.CELL_SIZE, cellSize['value'])
@@ -265,12 +265,12 @@ class MeshFrame(QtGui.QDialog):
             if block['key'] not in objects:
                 continue
             i = objects.index(block['key'])
-            nLayers = dictParser.find_element([{'type': 'dictionary', 'key': 'nLayers'},
+            nLayers = dictParse.find_element([{'type': 'dictionary', 'key': 'nLayers'},
                 {'type': 'float|integer'}], parent = block)['element']
             if nLayers is not None:
                 self.grid.setCellValue(i, self.grid.N_LAYERS, nLayers['value'])
                 self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-            thicknessRatio = dictParser.find_element([{'type': 'dictionary', 'key': 'thicknessRatio'},
+            thicknessRatio = dictParse.find_element([{'type': 'dictionary', 'key': 'thicknessRatio'},
                 {'type': 'float|integer'}], parent = block)['element']
             if thicknessRatio is not None:
                 self.grid.setCellValue(i, self.grid.RATIO, thicknessRatio['value'])
@@ -280,11 +280,11 @@ class MeshFrame(QtGui.QDialog):
             block = block['element']
             remainder.remove(block['key'])
             i = objects.index(block['key'])
-            cellSize = dictParser.find_element([{'type': 'dictionary', 'key': 'cellSize'},
+            cellSize = dictParse.find_element([{'type': 'dictionary', 'key': 'cellSize'},
                 {'type': 'float|integer'}], parent = block)['element']
             if cellSize is not None:
                 self.grid.setCellValue(i, self.grid.CELL_SIZE, cellSize['value'])
-            refinementType = dictParser.find_element([{'type': 'dictionary', 'key': 'type'},
+            refinementType = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
                 {'type': 'word'}], parent = block)['element']
             if refinementType is not None:
                 if refinementType['value'] == 'box':
@@ -301,12 +301,12 @@ class MeshFrame(QtGui.QDialog):
                 continue
             remainder.remove(block['key'])
             i = objects.index(block['key'])
-            cellSize = dictParser.find_element([{'type': 'dictionary', 'key': 'cellSize'},
+            cellSize = dictParse.find_element([{'type': 'dictionary', 'key': 'cellSize'},
                 {'type': 'float|integer'}], parent = block)['element']
             if cellSize is not None:
                 self.grid.setCellValue(i, self.grid.CELL_SIZE, cellSize['value'])
                 self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
-            refinementThickness = dictParser.find_element([{'type': 'dictionary', 'key': 'refinementThickness'},
+            refinementThickness = dictParse.find_element([{'type': 'dictionary', 'key': 'refinementThickness'},
                 {'type': 'float|integer'}], parent = block)['element']
             if refinementThickness is not None:
                 self.grid.setCellValue(i, self.grid.RATIO, refinementThickness['value'])
@@ -611,122 +611,138 @@ class MyModel:
                 'CUSTOM_OPTIONS\n'
                 '{\n'
                 f'\tfeatureAngle\t{feature_angle}; // used in surfaceFeatureEdges utility\n'
-                '}\n'
-                '\n'
-                '// Keep all the cells intersecting the surface template.\n'
-                '// Useful in capturing small gaps in a geometry. (default: 0)\n')
+                '}\n')
+
             keepCellsIntersectingBoundary = meshDict.find_element(
                 [{'type': 'dictionary', 'key': 'keepCellsIntersectingBoundary'},
                 {'type': 'integer'}])['element']
-            f.write('keepCellsIntersectingBoundary\t'
-                f'{keepCellsIntersectingBoundary["value"] if keepCellsIntersectingBoundary is not None else 1}; '
-                '// 1 active or 0 inactive\n'
-                '\n'
-                '// Remove cells where distinct parts of the mesh are joined together.\n'
-                '// Valid only when keepCellsIntersectingBoundary is active. (default: 0)\n')
+            f.write('\n'
+                '// Keep all the cells intersecting the surface template.\n'
+                '// Useful in capturing small gaps in a geometry. (default: 0)\n'
+                'keepCellsIntersectingBoundary\t'
+                f'{1 if keepCellsIntersectingBoundary is None else keepCellsIntersectingBoundary["value"]}; '
+                '// 1 active or 0 inactive\n')
+
             checkForGluedMesh = meshDict.find_element([{'type': 'dictionary', 'key': 'checkForGluedMesh'},
                 {'type': 'integer'}])['element']
-            f.write('checkForGluedMesh\t'
-                f'{checkForGluedMesh["value"] if checkForGluedMesh is not None else 0}; '
+            f.write('\n'
+                '// Remove cells where distinct parts of the mesh are joined together.\n'
+                '// Valid only when keepCellsIntersectingBoundary is active. (default: 0)\n'
+                f'checkForGluedMesh\t{0 if checkForGluedMesh is None else checkForGluedMesh["value"]}; '
                 '// 1 active or 0 inactive\n'
-                f'\nmaxCellSize\t{max_cell_size}; // (mandatory)\n'
-                '\n')
+                '\n'
+                f'maxCellSize\t{max_cell_size}; // (mandatory)\n')
+
             boundaryCellSize = meshDict.find_element([{'type': 'dictionary', 'key': 'boundaryCellSize'},
                 {'type': 'float|integer'}])['element']
-            f.write('boundaryCellSize\t'
-                f'{boundaryCellSize["value"] if boundaryCellSize is not None else 0.5}; // (optional)\n')
+            f.write('\n'
+                f'boundaryCellSize\t{0.5 if boundaryCellSize is None else boundaryCellSize["value"]}; '
+                '// (optional)\n')
             refinementThickness = meshDict.find_element(
                 [{'type': 'dictionary', 'key': 'boundaryCellSizeRefinementThickness'},
                 {'type': 'float|integer'}])['element']
             f.write('boundaryCellSizeRefinementThickness\t'
-                    f'{refinementThickness["value"] if refinementThickness is not None else 5.0}; '
-                    '// (optional)\n')
+                f'{5.0 if refinementThickness is None else refinementThickness["value"]}; // (optional)\n')
+
             if min_cell_size != '':
-                f.write('\nminCellSize\t' + min_cell_size + '; // (optional)\n')
-            else:
-                try:
-                    min_cell_size = meshDict.getValueForKey(['minCellSize'])[0]
-                except:
-                    min_cell_size = '1'
-                f.write('\n// minCellSize\t' + min_cell_size + '; // (optional)\n')
-            f.write('\nsurfaceFile\t"constant/triSurface/' + os.path.basename(surface_file_name) + '"; // (mandatory)\n')
-            f.write('\nboundaryLayers\n{')
-            f.write('\n\t// Smoothing of boundary layers (default: 0)\n')
-            try:
-                x = meshDict.getValueForKey(['boundaryLayers', 'optimiseLayer'])
-                f.write('\toptimiseLayer\t' + x[0] + '; // 1 active or 0 inactive\n')
-            except:
-                f.write('\toptimiseLayer\t1; // 1 active or 0 inactive\n')
-            try:
-                for x in meshDict.getValueForKey(['boundaryLayers']):
-                    if DictParserList.isType(x, DictParserList.DICT) and x.key() != 'optimiseLayer':
-                        f.write('\n')
-                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
-            f.write('\n\toptimisationParameters\n\t{')
-            f.write('\n\t\t// Ratio between the maximum boundary layer thickness and the patch size\n')
-            f.write('\t\t// Ued to limit layer thickness in the regions dominated by curvature. (default: 0.3)\n')
-            try:
-                x = meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters', 'featureSizeFactor'])
-                f.write('\t\tfeatureSizeFactor\t' + x[0] + ';\n')
-            except:
-                f.write('\t\tfeatureSizeFactor\t0.3;\n')
-            f.write('\n\t\t// Maximum difference of the layer thickness between two neighboring points\n')
-            f.write('\t\t// divided by the distance between the points (optional)\n')
-            try:
-                x = meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters', 'relThicknessTol'])
-                f.write('\t\trelThicknessTol\t' + x[0] + ';\n')
-            except:
-                f.write('\t\trelThicknessTol\t0.2;\n')
-            try:
-                for x in meshDict.getValueForKey(['boundaryLayers', 'optimisationParameters']):
-                    if (DictParserList.isType(x, DictParserList.DICT) and
-                        x.key() not in ['featureSizeFactor', 'relThicknessTol']):
-                        f.write('\n')
-                        meshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
+                min_cell_size = meshDict.find_element([{'type': 'dictionary', 'key': 'minCellSize'},
+                    {'type': 'float|integer'}])['element']
+                min_cell_size = '1' if min_cell_size is None else min_cell_size['value']
+            f.write('\n'
+                f'// minCellSize\t{min_cell_size}; // (optional)\n'
+                '\n'
+                f'surfaceFile\t"constant/triSurface/{os.path.basename(surface_file_name)}"; // (mandatory)\n')
+
+            boundaryLayers = meshDict.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element']
+            f.write('\n'
+                'boundaryLayers\n'
+                '{\n')
+            optimiseLayer = dictParse.find_element([{'type': 'dictionary', 'key': 'optimiseLayer'},
+                {'type': 'integer'}], parent = boundaryLayers)['element']
+            f.write('\t// Smoothing of boundary layers (default: 0)\n'
+                '\toptimiseLayer\t{1 if optimiseLayer is None else optimiseLayer["element"]}; '
+                '// 1 active or 0 inactive\n')
+            for d in dictParse.find_all_elements([{'type': 'dictionary', 'except key': 'optimiseLayer'}],
+                parent = boundaryLayers):
+                f.write('\n'
+                    f'\t{dictParse.file_string([d], pretty_print = True)}\n'
+            f.write('\n'
+                '\toptimisationParameters\n'
+                '\t{\n')
+            optimisationParameters = dictParse.find_element(
+                [{'type': 'block', 'key': 'optimisationParameters'}], parent = boundaryLayers)['element']
+            featureSizeFactor = dictParse.find_element([{'type': 'dictionary', 'key': 'featureSizeFactor'},
+                {'type': 'float|integer'}], parent = optimisationParameters)['element']
+            f.write('\t\t// Ratio between the maximum boundary layer thickness and the patch size\n'
+                '\t\t// Ued to limit layer thickness in the regions dominated by curvature. (default: 0.3)\n'
+                f'\t\tfeatureSizeFactor\t{0.3 if featureSizeFactor is None else featureSizeFactor["value"]};\n')
+            relThicknessTol = dictParse.find_element([{'type': 'dictionary', 'key': 'relThicknessTol'},
+                {'type': 'float|integer'}], parent = optimisationParameters)['element']
+            f.write('\n'
+                '\t\t// Maximum difference of the layer thickness between two neighboring points\n'
+                '\t\t// divided by the distance between the points (optional)\n'
+                f'\t\trelThicknessTol\t{0.2 if relThicknessTol is None else relThicknessTol["value"]};\n')
+            for d in dictParse.find_all_elements(
+                [{'type': 'dictionary', 'except key': 'featureSizeFactor|relThicknessTol'}],
+                parent = optimisationParameters):
+                f.write('\n'
+                    f'\t\t{dictParse.file_string([d], pretty_print = True)}\n'
             f.write('\t}\n') # optimisationParameters
-            f.write('\n\tpatchBoundaryLayers\n\t{')
+            patchBoundaryLayers = dictParse.find_element(
+                [{'type': 'block', 'key': 'patchBoundaryLayers'}], parent = boundaryLayers)['element']
+            f.write('\n'
+                '\tpatchBoundaryLayers\n'
+                '\t{\n')
             for i in grid.table:
                 if not i[grid.BOUNDARY_LAYER] or i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
                     'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo', 'N/A'):
                     continue
-                f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{')
-                f.write('\n\t\t\tnLayers\t{}; // (optional)\n'.format(i[grid.N_LAYERS]))
-                f.write('\t\t\tthicknessRatio\t{};\n'.format(i[grid.RATIO]))
-                try:
-                    x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
-                        i[grid.OBJECT_NAME], 'maxFirstLayerThickness'])
-                    f.write('\t\t\tmaxFirstLayerThickness\t' + x[0] + '; // (optional)\n')
-                except:
-                    f.write('//\t\t\tmaxFirstLayerThickness\t0.5; // (optional)\n')
-                try:
-                    x = meshDict.getValueForKey(['boundaryLayers', 'patchBoundaryLayers',
-                        i[grid.OBJECT_NAME], 'allowDiscontinuity'])
-                    f.write('\t\t\tallowDiscontinuity\t' + x[0] + '; // 1 active or 0 inactive\n')
-                except:
-                    f.write('\t\t\tallowDiscontinuity\t0; // 1 active or 0 inactive\n')
+                f.write(f'\t\t{i[grid.OBJECT_NAME]}\n'
+                    '\t\t{\n'
+                    f'\t\t\tnLayers\t{i[grid.N_LAYERS]}; // (optional)\n'
+                    f'\t\t\tthicknessRatio\t{i[grid.RATIO]};\n')
+                b = dictParse.find_element([{'type': 'block', 'key': i[grid.OBJECT_NAME]}],
+                    parent = patchBoundaryLayers)
+                maxFirstLayerThickness = dictParse.find_element(
+                    [{'type': 'dictionary', 'key': 'maxFirstLayerThickness'}, {'type': 'float|integer'}],
+                    parent = b)
+                f.write('\t\t\tmaxFirstLayerThickness\t'
+                    f'{0.5 if maxFirstLayerThickness is None else maxFirstLayerThickness["value"]}; '
+                    '// (optional)\n')
+                allowDiscontinuity = dictParse.find_element(
+                    [{'type': 'dictionary', 'key': 'allowDiscontinuity'}, {'type': 'integer'}],
+                    parent = b)
+                f.write('\t\t\tallowDiscontinuity\t'
+                    f'{0 if allowDiscontinuity is None else allowDiscontinuity["value"]}; '
+                    '// 1 active or 0 inactive\n')
                 f.write('\t\t}\n')
             f.write('\t}\n') # patchBoundaryLayers
             f.write('}\n') # boundaryLayers
-            f.write('\n// Valid only when keepCellsIntersectingBoundary is not active. (optional)\n')
-            f.write('keepCellsIntersectingPatches\n{')
-            f.write('\n//\t"patch.*" // accepts regex\n//\t{')
-            f.write('\n//\t\tkeepCells\t1; // 1 active or 0 inactive\n')
-            f.write('//\t}\n') # "patch.*"
-            f.write('}\n') #keepCellsIntersectingPatches
-            f.write('\n// Valid only when keepCellsIntersectingBoundary is active. (optional)\n')
-            f.write('removeCellsIntersectingPatches\n{')
-            f.write('\n//\t"patch.*" // accepts regex\n//\t{')
-            f.write('\n//\t\tkeepCells\t0; // 0 remove or 1 keep\n')
-            f.write('//\t}\n') # "patch.*"
-            f.write('}\n') # removeCellsIntersectingPatches
-            f.write('\nlocalRefinement\n{')
+
+            f.write('\n'
+                '// Valid only when keepCellsIntersectingBoundary is not active. (optional)\n'
+                'keepCellsIntersectingPatches\n'
+                '{\n'
+                '//\t"patch.*" // accepts regex\n'
+                '//\t{\n'
+                '//\t\tkeepCells\t1; // 1 active or 0 inactive\n'
+                '//\t}\n'
+                '}\n')
+
+            f.write('\n'
+                '// Valid only when keepCellsIntersectingBoundary is active. (optional)\n'
+                'removeCellsIntersectingPatches\n'
+                '{\n'
+                '//\t"patch.*" // accepts regex\n'
+                '//\t{\n'
+                '//\t\tkeepCells\t0; // 0 remove or 1 keep\n'
+                '//\t}\n'
+                '}\n')
+
+            f.write('\n'
+                'localRefinement\n'
+                '{\n')
             for i in grid.table:
                 if i[grid.CELL_SIZE] == '' or i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
@@ -738,8 +754,9 @@ class MyModel:
                 while ref_value > 1.0:
                     ref_level += 1
                     ref_value /= 2.0
-                f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{')
-                f.write('\n\t\tcellSize\t{};\n'.format(ref_thickness))
+                f.write(f'\t{i[grid.OBJECT_NAME]}\n'
+                    '\t{\n'
+                    f'\t\tcellSize\t{ref_thickness};\n')
                 f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
                     ' // Relative to the maximum cell size\n')
                 f.write('//\t\trefinementThickness\t{};\n'.format(5*ref_thickness))
