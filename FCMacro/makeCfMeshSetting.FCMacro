@@ -753,22 +753,25 @@ class MyModel:
                 ref_value = float(max_cell_size)/ref_thickness
                 while ref_value > 1.0:
                     ref_level += 1
-                    ref_value /= 2.0
+                    ref_value *= 0.5
                 f.write(f'\t{i[grid.OBJECT_NAME]}\n'
                     '\t{\n'
-                    f'\t\tcellSize\t{ref_thickness};\n')
-                f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
-                    ' // Relative to the maximum cell size\n')
-                f.write('//\t\trefinementThickness\t{};\n'.format(5*ref_thickness))
-                f.write('\t}\n')
-            f.write('\n//\t"patch.*" // accepts regex\n//\t{')
-            f.write('\n//\t\tcellSize 1;\n')
-            f.write('//\t\tadditionalRefinementLevels\t1;\n')
-            f.write('//\t\trefinementThickness\t1.2;\n')
-            f.write('//\t}\n') # "patch.*"
-            f.write('}\n') # localRefinement
+                    f'\t\tcellSize\t{ref_thickness};\n'
+                    f'//\t\tadditionalRefinementLevels\t{ref_level}; // Relative to the maximum cell size\n'
+                    f'//\t\trefinementThickness\t{5*ref_thickness};\n'
+                    '\t}\n'
+                    '\n')
+            f.write('//\t"patch.*" // accepts regex\n'
+                '//\t{\n'
+                '//\t\tcellSize 1;\n'
+                '//\t\tadditionalRefinementLevels\t1;\n'
+                '//\t\trefinementThickness\t1.2;\n'
+                '//\t}\n'
+                '}\n') # localRefinement
+
             objects = [i[grid.OBJECT_NAME] for i in grid.table]
-            f.write('\nobjectRefinements\n{')
+            f.write('\n'
+                'objectRefinements\n{')
             for i in grid.table:
                 if i[grid.CELL_SIZE] == '' or i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     continue
@@ -777,23 +780,25 @@ class MyModel:
                 ref_value = float(max_cell_size)/ref_thickness
                 while ref_value > 1.0:
                     ref_level += 1
-                    ref_value /= 2.0
+                    ref_value *= 0.5
                 for obj in freecad_objects:
-                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
-                        f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
+                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2
+                        else obj.Label):
+                        f.write(f'\n\t{i[grid.OBJECT_NAME]}\n'
+                            '\t{\n')
                         if i[grid.TYPE] == 'BoxRefine':
-                            f.write('\t\ttype\tbox;\n')
-                            f.write('\t\tcellSize\t{};\n'.format(ref_thickness))
-                            f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
-                                ' // Relative to the maximum cell size\n')
-                            f.write('\t\tcentre\t({} {} {});\n'.format(obj.Shape.CenterOfMass.x,
-                                obj.Shape.CenterOfMass.y, obj.Shape.CenterOfMass.z))
-                            f.write('\t\tlengthX\t{};\n'.format(obj.Length.Value))
-                            f.write('\t\tlengthY\t{};\n'.format(obj.Width.Value))
-                            f.write('\t\tlengthZ\t{};\n'.format(obj.Height.Value))
+                            f.write('\t\ttype\tbox;\n'
+                                f'\t\tcellSize\t{ref_thickness};\n'
+                                f'//\t\tadditionalRefinementLevels\t{ref_level}; '
+                                '// Relative to the maximum cell size\n'
+                                f'\t\tcentre\t({obj.Shape.CenterOfMass.x} '
+                                f'{obj.Shape.CenterOfMass.y} {obj.Shape.CenterOfMass.z});\n'
+                                f'\t\tlengthX\t{obj.Length.Value};\n'
+                                f'\t\tlengthY\t{obj.Width.Value};\n'
+                                f'\t\tlengthZ\t{obj.Height.Value};\n')
                         elif i[grid.TYPE] == 'CylinderRefine':
-                            f.write('\t\ttype\tcone;\n')
-                            f.write('\t\tcellSize\t{};\n'.format(ref_thickness))
+                            f.write('\t\ttype\tcone;\n'
+                                f'\t\tcellSize\t{ref_thickness};\n')
                             f.write('//\t\tadditionalRefinementLevels\t{};'.format(ref_level) +
                                 ' // Relative to the maximum cell size\n')
                             f.write('\t\tp0\t({} {} {});\n'.format(
