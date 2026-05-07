@@ -519,7 +519,8 @@ if __name__ == '__main__':
 #                [{'type': 'block', 'key': 'castellatedMeshControls'},
 #                {'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
 #                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}])['element']['value'])
-    dp2 = DictParser2(string = 'boundaryCellSize	0.5; // (optional)\n'
-        'boundaryCellSizeRefinementThickness	5.0; // (optional)\n')
-    print(dp2.structure_string())
-    print(file_string(dp2.elements, indent_level = 1))
+    dp2 = DictParser2(string = 'refine_left\n'
+        '{\n'
+		'\ttype	box;\n'
+        '}; // (optional)\n')
+    print(f'\t{file_string(dp2.elements, indent_level = 1)}')
