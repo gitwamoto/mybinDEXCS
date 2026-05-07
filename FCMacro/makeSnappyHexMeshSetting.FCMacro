@@ -222,23 +222,6 @@ class MeshFrame(QtGui.QDialog):
             {'type': 'word', 'value': 'snappyHexMeshDict'}])['element'] is None:
             raise Exception(f'{eshDict_path} is not a snappyHexMeshDict file.')
 
-        if os.path.isfile(setFieldsDict_path):
-            setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
-            if setFieldsDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                {'type': 'dictionary', 'key': 'object'},
-                {'type': 'word', 'value': 'setFieldsDict'}])['element'] is None:
-                raise Exception(f'{setFieldsDict_path} is not a setFieldsDict file.')
-        else:
-            setFieldsDict = None
-        if os.path.isfile(topoSetDict_path):
-            topoSetDict = dictParse.DictParser2(file_name = topoSetDict_path)
-            if topoSetDict.find_element([{'type': 'block', 'key': 'FoamFile'},
-                {'type': 'dictionary', 'key': 'object'},
-                {'type': 'word', 'value': 'topoSetDict'}])['element'] is None:
-                raise Exception(f'{topoSetDict_path} is not a topoSetDict file.')
-        else:
-            topoSetDict = None
-
         maxCellSize = meshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'},
                 {'type': 'dictionary', 'key': 'maxCellSize'}, {'type': 'float|integer'}])['element']
         if maxCellSize is not None:
@@ -250,7 +233,7 @@ class MeshFrame(QtGui.QDialog):
             [{'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
             {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}],
             parent = castellatedMeshControls)['element']
-        if featureLevel is None:
+        if featureLevel is not None:
             self.featuresLevelCRL.setText(featureLevel['value'])
         featureAngle = dictParse.find_element(
             [{'type': 'dictionary', 'key': 'resolveFeatureAngle'}, {'type': 'float|integer'}],
@@ -266,13 +249,15 @@ class MeshFrame(QtGui.QDialog):
         searchableSphere_list = []
         triSurface_list = []
 
+        refinementSurfaces = dictParse.find_element([{'type': 'block', 'key': 'refinementSurfaces'}],
+            parent = castellatedMeshControls)['element']
         for block in meshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block'}]):
             block = block['element']
             if block['key'].endswith('.stl'):
                 name = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}],
                     parent = block)['element']['value']
-                if dictParse.find_element([{'type': 'block', 'key': 'refinementSurfaces'},
-                    {'type': 'block', 'key': name}], parent = castellatedMeshControls)['element'] is not None:
+                if dictParse.find_element([{'type': 'block', 'key': name}],
+                    parent = refinementSurfaces)['element'] is not None:
                     shape_name = name
                 else:
                     triSurface_list.append(name)
@@ -285,105 +270,120 @@ class MeshFrame(QtGui.QDialog):
                     searchableCylinder_list.append(block['key'])
                 elif geometry_type == 'searchableSphere':
                     searchableSphere_list.append(block['key'])
-ここまで！！！
-        try:
-            for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementSurfaces', shape_name, 'regions']):
-                if DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects:
-                    i = objects.index(x.key())
-                    remainder.remove(x.key())
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'level':
-                            self.grid.setCellValue(i, self.grid.LEVEL, y.value()[0].value()[0])
-                        elif DictParserList.isType(y, DictParserList.BLOCK) and y.key() == 'patchInfo':
-                            for a in y.value():
-                                if DictParserList.isType(a, DictParserList.DICT) and a.key() == 'type':
-                                    self.grid.setCellValue(i, self.grid.TYPE, a.value()[0])
-        except:
-            pass
-        try:
-            for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
-                if (DictParserList.isType(x, DictParserList.BLOCK) and x.key() in objects and
-                    (x.key() in searchableBox_list or x.key() in searchableCylinder_list or x.key() in searchableSphere_list or x.key() in triSurface_list)):
-                    i = objects.index(x.key())
-                    remainder.remove(x.key())
-                    if x.key() in searchableBox_list:
-                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
-                    elif x.key() in searchableCylinder_list:
-                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
-                    elif x.key() in searchableSphere_list:
-                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
-                    else:
-                        self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.DICT) and y.key() == 'levels':
-                            self.grid.setCellValue(i, self.grid.LEVEL, y.value()[0].value()[0].value()[2])
-                            if x.key() in triSurface_list:
-                                self.grid.setCellValue(i, self.grid.RATIO, y.value()[0].value()[0].value()[0])
-        except:
-            pass
-        try:
-            x = setFieldsDict.getValueForKey(['regions'])[0]
-            if DictParserList.isType(x, DictParserList.LISTP):
-                for y in x.value():
-                    if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' in y[1].lower():
-                        for i, j in enumerate(objects):
-                            if j in y[1]:
-                                remainder.remove(j)
-                                if y.key() == 'boxToCell':
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
-                                elif y.key() == 'cylinderToCell':
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
-                                else:
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
-                                break
-        except:
-            pass
-        try:
-            x = topoSetDict.getValueForKey(['actions'])[0]
-            if DictParserList.isType(x, DictParserList.LISTP):
-                for y in x.value():
-                    grid_index = -1
-                    source = None
-                    if DictParserList.isType(y, DictParserList.BLOCK):
-                        for z in y.value():
-                            if DictParserList.isType(z, DictParserList.DICT):
-                                if z.key() == 'name':
-                                    name = z.value()[0].replace('CellSet', '')
-                                    if name in objects:
-                                        grid_index = objects.index(name)
-                                        remainder.remove(name)
-                                elif z.key() == 'source':
-                                    if z.value[0] == 'rotatedBoxToCell':
-                                        source = 'BoxTopo'
-                                    elif z.value[0] == 'cylinderToCell':
-                                        source = 'CylinderTopo'
-                                    elif z.value[0] == 'sphereToCell':
-                                        source = 'SphereTopo'
-                                if grid_index != -1 and source is not None:
-                                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxTopo')
-                                    break
-        except:
-            pass
-        for i in remainder:
-            self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'LocationInMesh')
+
+        for block in dictParse.find_all_elements([{'type': 'block', 'key': shape_name}, 
+            {'type': 'block', 'key': 'regions'}, {'type': 'block'}], parent = refinementSurfaces):
+            block = block['element']
+            if block['key'] in objects:
+                i = objects.index(block['key'])
+                remainder.remove(block['key'])
+                level = dictParse.find_element([{'type': 'dictionary', 'key': 'level'}, {'type': 'list'},
+                    {'type': 'integer'}], parent = block)['element']
+                if level is not None:
+                    self.grid.setCellValue(i, self.grid.LEVEL, level['value'])
+                patchInfo = dictParse.find_element([{'type': 'dictionary', 'key': 'patchInfo'}, {'type': 'block'},
+                    {'type': 'dictionary', 'key': 'type'}, {'type': 'word'}], parent = block)['element']
+                if patchInfo is not None:
+                    self.grid.setCellValue(i, self.grid.TYPE, patchInfo['value'])
+
+        refinements_list = searchableBox_list + searchableCylinder_list + searchableSphere_list + triSurface_list
+        for block in dictParse.find_all_elements([{'type': 'block', 'key': 'refinementRegions'},
+            {'type': 'block'}], parent = castellatedMeshControls):
+            block = block['element']
+            if block['key'] in objects and block['key'] in refinements_list:
+                i = objects.index(block['key'])
+                remainder.remove(block['key'])
+                if block['key'] in searchableBox_list:
+                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
+                elif block['key'] in searchableCylinder_list:
+                    self.grid.setCellValue(i, self.grid.TYPE, 'CylinderRefine')
+                elif block['key'] in searchableSphere_list:
+                    self.grid.setCellValue(i, self.grid.TYPE, 'SphereRefine')
+                else:
+                    self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
+                levels = dictParse.find_element([{'type': 'dictionary', 'key': 'levels'},
+                    {'type', 'list'}, {'type', 'list'}], parent = block)['element']
+                if levels is None:
+                    continue
+                level = dictParse.find_element([{'type': 'integer'}], parent = levels, reverse = True)['element']
+                if level is not None:
+                    self.grid.setCellValue(i, self.grid.LEVEL, level['value'])
+                if block['key'] in triSurface_list:
+                    distance = dictParse.find_element([{'type': 'float|integer'}],
+                        parent = levels, reverse = True)['element']
+                    if distance is not None:
+                        self.grid.setCellValue(i, self.grid.RATIO, distance['value'])
+
         shape_prefix = f'{shape_name}_'
-        try:
-            for x in meshDict.getValueForKey(['addLayersControls', 'layers']):
-                if (DictParserList.isType(x, DictParserList.BLOCK) and x.key().startswith(shape_prefix) and
-                    x.key()[len(shape_prefix):] in objects):
-                    i = objects.index(x.key()[len(shape_prefix):])
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.DICT):
-                            if y.key() == 'nSurfaceLayers':
-                                self.grid.setCellValue(i, self.grid.N_LAYERS, y.value()[0])
-                                self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-                            elif y.key() == 'expansionRatio':
-                                self.grid.setCellValue(i, self.grid.RATIO, y.value()[0])
-        except:
-            pass
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'addLayersControls'},
+            {'type': 'block', 'key': 'layers'}, {'type': 'block'}]):
+            block = block['element']
+            if block['key'].startswith(shape_prefix) and block['key'][len(shape_prefix):] in objects:
+                i = objects.index(block['key'][len(shape_prefix):])
+                nSurfaceLayers = dictParse.find_element([{'type': 'dictionary', 'key': 'nSurfaceLayers'},
+                    {'type': 'integer'}], parent = block)['element']
+                if nSurfaceLayers is not None:
+                    self.grid.setCellValue(i, self.grid.N_LAYERS, nSurfaceLayers['value'])
+                    self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
+                expansionRatio = dictParse.find_element([{'type': 'dictionary', 'key': 'expansionRatio'},
+                    {'type': 'float|integer'}], parent = block)['element']
+                if expansionRatio is not None:
+                    self.grid.setCellValue(i, self.grid.RATIO, expansionRatio['value'])
 
         QtGui.QMessageBox.warning(None, 'LocationInMesh',
             'Confirm that LocationInMesh is selected correctly!', QtGui.QMessageBox.Close)
+
+        if os.path.isfile(setFieldsDict_path):
+            setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
+            if setFieldsDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+                {'type': 'dictionary', 'key': 'object'},
+                {'type': 'word', 'value': 'setFieldsDict'}])['element'] is None:
+                raise Exception(f'{setFieldsDict_path} is not a setFieldsDict file.')
+        else:
+            setFieldsDict = None
+
+        for block in setFieldsDict.find_all_elements([{'type': 'dictionary', 'key': 'regions'},
+            {'type': 'list'}, {'type': 'block'}]):
+            block = block['element']
+            comment = dictParse.find_element([{'type': 'line_comment|block_comment'}],
+                parent = block)['element']['value']
+            if 'freecad' in comment.lower():
+                for i, object in enumerate(objects):
+                    if object not in comment:
+                        continue
+                    remainder.remove(object)
+                    if block['key'] == 'boxToCell':
+                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
+                    elif block['key'] == 'cylinderToCell':
+                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
+                    else:
+                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
+
+        if os.path.isfile(topoSetDict_path):
+            topoSetDict = dictParse.DictParser2(file_name = topoSetDict_path)
+            if topoSetDict.find_element([{'type': 'block', 'key': 'FoamFile'},
+                {'type': 'dictionary', 'key': 'object'},
+                {'type': 'word', 'value': 'topoSetDict'}])['element'] is None:
+                raise Exception(f'{topoSetDict_path} is not a topoSetDict file.')
+        else:
+            topoSetDict = None
+
+        for block in topoSetDict.find_all_elements([{'type': 'dictionary', 'key': 'actions'},
+            {'type': 'list'}, {'type': 'block'}]):
+            block = block['element']
+            setName = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}],
+                parent = block)['element']['value'].replace('CellSet', '').replace()
+            if setName not in objects:
+                continue
+            if dictParse.find_element([{'type': 'dictionary', 'key': 'source'}, {'type': 'word'}],
+                parent = block)['element']['value'] != 'rotatedBoxToCell':
+                continue
+            remainder.remove(setName)
+            self.grid.setCellValue(objects.index(setName), self.grid.TYPE, 'BoxTopo')
+
+        for i in remainder:
+            self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'LocationInMesh')
+
         return meshDict, setFieldsDict, topoSetDict
 
     def actionOnExitButton(self):
@@ -612,8 +612,8 @@ class MyModel:
                     if i[grid.OBJECT_NAME] == obj.Label:
                         if i[grid.TYPE] == 'SurfaceRefine':
                             name = os.path.join(os.path.dirname(file_name), i[grid.OBJECT_NAME])
-                            Mesh.export([obj], name + '.ast') # ascii format
-                            os.rename(name + '.ast', name + '.stl') # can overwrite
+                            Mesh.export([obj], f'{name}.ast') # ascii format
+                            os.rename(f'{name}.ast', f'{name}.stl') # can overwrite
                         else:
                             Mesh.export([obj], tmp_stl)
                             # ascii stlフォーマット
@@ -630,9 +630,9 @@ class MyModel:
                             # endsolid 任意の文字列
                             for line in open(tmp_stl, 'r'):
                                 if 'endsolid' in line:
-                                    f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
+                                    f.write(f'endsolid {i[grid.OBJECT_NAME]}\n')
                                 elif 'solid' in line:
-                                    f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
+                                    f.write(f'solid {i[grid.OBJECT_NAME]}\n')
                                 else:
                                     f.write(line)
                                     if line.lstrip().startswith('vertex'):
@@ -647,24 +647,30 @@ class MyModel:
     def makeSurfaceFeatureExtractDict(case_dir_path, surface_file_name, feature_angle):
         dict_name = os.path.join(case_dir_path, 'system', 'surfaceFeatureExtractDict')
         with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{')
-            f.write('\n\tversion\t2.0;\n')
-            f.write('\tformat\tascii;\n')
-            f.write('\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\tsurfaceFeatureExtractDict;\n')
-            f.write('}\n') # FoamFile
-            f.write('\n' + os.path.basename(surface_file_name) + '\n{\n')
-            f.write('\textractionMethod\textractFromSurface;\n\n')
-            f.write('\t// Mark edges whose adjacent surface normals are at an angle less\n')
-            f.write('\t// than includedAngle as features\n')
-            f.write('\t// - 0  : selects no edges\n')
-            f.write('\t// - 180: selects all edges\n')
-            f.write('\tincludedAngle\t{};\n\n'.format(180.0 - float(feature_angle)))
-            f.write('\t// Write options\n')
-            f.write('\twriteFeatureEdgeMesh\tyes;\n\n')
-            f.write('\t// Write features to obj format for postprocessing\n')
-            f.write('\twriteObj\tyes;\n}\n')
+            f.write('FoamFile\n{\n'
+                '\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\tsurfaceFeatureExtractDict;\n'
+                '}\n'
+                '\n'
+                f'{os.path.basename(surface_file_name)}\n'
+                '{\n'
+                '\textractionMethod\textractFromSurface;\n'
+                '\n'
+                '\t// Mark edges whose adjacent surface normals are at an angle less\n'
+                '\t// than includedAngle as features\n'
+                '\t// - 0  : selects no edges\n'
+                '\t// - 180: selects all edges\n'
+                f'\tincludedAngle\t{180.0 - float(feature_angle)};\n'
+                '\n'
+                '\t// Write options\n'
+                '\twriteFeatureEdgeMesh\tyes;\n'
+                '\n'
+                '\t// Write features to obj format for postprocessing\n'
+                '\twriteObj\tyes;\n
+                }\n')
         os.chmod(dict_name, 0o0666)
 
     @staticmethod
@@ -674,38 +680,50 @@ class MyModel:
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
         with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{')
-            f.write('\n\tversion\t2.0;\n')
-            f.write('\tformat\tascii;\n')
-            f.write('\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\tsnappyHexMeshDict;\n')
-            f.write('}\n') # FoamFile
-            f.write('\n// A manual is available on\n')
-            f.write('// https://www.openfoam.com/documentation/guides/latest/doc/guide-meshing-snappyhexmesh.html\n')
-            f.write('\n// Which of the steps to run\n')
+            f.write('FoamFile\n{'
+                '\n\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\tsnappyHexMeshDict;\n'
+                '}\n'
+                '\n'
+                '// A manual is available on\n'
+                '// https://www.openfoam.com/documentation/guides/latest/doc/guide-meshing-snappyhexmesh.html\n'
+                '\n'
+                '// Which of the steps to run\n')
             for i in ('castellatedMesh', 'snap', 'addLayers'):
-                try:
-                    x = meshDict.getValueForKey([i])
-                    f.write(i + '\t' + x[0] + '; // true or false\n')
-                except:
-                    f.write(i + '\ttrue; // true | false\n')
+                run = meshDict.find_element([{'type': 'dictionary', 'key': i}, {'type': 'word'}])['element']
+                if run is None:
+                    f.write(f'{i}\ttrue; // true or false\n')
+                else:
+                    f.write(f'{i}\t{run["value"]}; // true or false\n')
+
             objects = [i[grid.OBJECT_NAME] for i in grid.table]
             surface_file_name = os.path.basename(surface_file_name)
             surface_file_name_wo_ext = os.path.splitext(surface_file_name)[0]
-            f.write('\nCUSTOM_OPTIONS\n{\n')
-            f.write('\tmaxCellSize\t' + max_cell_size +'; // used to generate blockMeshDict\n')
-            f.write('\tboundingBox\t(({} {} {}) ({} {} {})); // used to generate blockMeshDict\n'.format(*bounding_box))
-            f.write('}\n') # CUSTOM_OPTIONS
-            f.write('\n// Geometry. Definition of all surfaces.\n')
-            f.write('// All surfaces are of class searchableSurface.\n')
-            f.write('// Surfaces are used\n')
-            f.write('// - to specify refinement for any mesh cell intersecting it\n')
-            f.write('// - to specify refinement for any mesh cell inside/outside/near\n')
-            f.write("// - to 'snap' the mesh boundary to the surface\n")
-            f.write('geometry\n{\n')
-            f.write('\t' + surface_file_name + ' // in constant/triSurface\n')
-            f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t\tname\t' + surface_file_name_wo_ext + ';\n\t}\n')
+            f.write('\n'
+                'CUSTOM_OPTIONS\n'
+                '{\n'
+                f'\tmaxCellSize\t{max_cell_size}; // used to generate blockMeshDict\n'
+                f'\tboundingBox\t(({bounding_box[0]} {bounding_box[1]} {bounding_box[2]}) '
+                f'({bounding_box[3]} {bounding_box[4]} {bounding_box[5]})); '
+                '// used to generate blockMeshDict\n')
+                '}\n'
+                '\n'
+                '// Geometry. Definition of all surfaces.\n'
+                '// All surfaces are of class searchableSurface.\n'
+                '// Surfaces are used\n'
+                '// - to specify refinement for any mesh cell intersecting it\n'
+                '// - to specify refinement for any mesh cell inside/outside/near\n'
+                "// - to 'snap' the mesh boundary to the surface\n"
+                'geometry\n{\n'
+                f'\t{surface_file_name} // in constant/triSurface\n'
+                '\t{\n'
+                '\t\ttype\ttriSurfaceMesh;\n'
+                f'\t\tname\t{surface_file_name_wo_ext};\n'
+                '\t}\n')
+
             for i in grid.table:
                 if i[grid.LEVEL] == 0:
                     continue
@@ -1182,89 +1200,93 @@ class MyModel:
         dict_name = os.path.join(case_dir_path, 'system', 'setFieldsDict')
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
+
         with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{')
-            f.write('\n\tversion\t2.0;\n')
-            f.write('\tformat\tascii;\n')
-            f.write('\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\tsetFieldsDict;\n')
-            f.write('}\n\n') # FoamFile
-            try:
-                setFieldsDict.writeContents(setFieldsDict.getDPLForKey(['defaultFieldValues']),
-                    f, indent = '', last_char = '\n')
-            except:
-                f.write('defaultFieldValues // regionsで指定しない領域における値\n(\n')
-                f.write('\tvolScalarFieldValue\talpha.water 0 // ←自分の目的に合わせて書き換える\n')
-                f.write('\tvolVectorFieldValue\tU ( 0 0 0 ) // ←自分の目的に合わせて書き換える\n);')
-            f.write('\n\nregions\n(\n')
+            f.write('FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\tsetFieldsDict;\n'
+                '}\n'
+                '\n')
+
+            defaultFieldValues = setFieldsDict.find_element(
+                [{'type': 'dictionary', 'key': 'defaultFieldValues'}])['element']
+            if defaultFieldValues is not None:
+                f.write(f'{dictParse.file_string([defaultFieldValues], pretty_print = True)}\n')
+            else:
+                f.write('defaultFieldValues // regionsで指定しない領域における値\n'
+                    '(\n'
+                    '\tvolScalarFieldValue\talpha.water 0 // ←自分の目的に合わせて書き換える\n'
+                    '\tvolVectorFieldValue\tU ( 0 0 0 ) // ←自分の目的に合わせて書き換える\n'
+                    ');\n')
+
+            regions = setFieldsDict.find_element([{'type': 'dictionary', 'key': 'regions'},
+                {'type': 'list'}])['element']
+            f.write('\n'
+                'regions\n(\n')
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxSet', 'CylinderSet', 'SphereSet'):
                     continue
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == obj.Label:
                         if i[grid.TYPE] == 'BoxSet':
-                            f.write('\tboxToCell // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                            f.write('\t{\n')
-                            f.write('\t\tbox\t({} {} {}) ({} {} {});\n'.format(
-                                0.001*obj.Shape.BoundBox.XMin, 0.001*obj.Shape.BoundBox.YMin, 0.001*obj.Shape.BoundBox.ZMin,
-                                0.001*obj.Shape.BoundBox.XMax, 0.001*obj.Shape.BoundBox.YMax, 0.001*obj.Shape.BoundBox.ZMax))
+                            f.write(f'\tboxToCell // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
+                                '\t{\n'
+                                f'\t\tbox\t({0.001*obj.Shape.BoundBox.XMin} '
+                                f'{0.001*obj.Shape.BoundBox.YMin} {0.001*obj.Shape.BoundBox.ZMin}) '
+                                f'({0.001*obj.Shape.BoundBox.XMax} {0.001*obj.Shape.BoundBox.YMax} '
+                                f'{0.001*obj.Shape.BoundBox.ZMax});\n')
                         elif i[grid.TYPE] == 'CylinderSet':
-                            f.write('\tcylinderToCell // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                            f.write('\t{\n')
-                            f.write('\t\tp1\t({} {} {});\n'.format(
-                                    0.001*obj.Placement.Base.x, 0.001*obj.Placement.Base.y, 0.001*obj.Placement.Base.z))
-                            f.write('\t\tp2\t({} {} {});\n'.format(
-                                    0.001*(obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value),
-                                    0.001*(obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value),
-                                    0.001*(obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value)))
-                            f.write('\t\tradius\t{};\n'.format(0.001*obj.Radius.Value))
+                            f.write(f'\tcylinderToCell // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
+                                '\t{\n'
+                                '\t\tp1\t'
+                                f'({0.001*obj.Placement.Base.x} {0.001*obj.Placement.Base.y} '
+                                f'{0.001*obj.Placement.Base.z});\n')
+                            f.write('\t\tp2\t'
+                                f'({0.001*(obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value)} '
+                                f'{0.001*(obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value)} '
+                                f'{0.001*(obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value)});\n')
+                            f.write(f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                         else: # SphereSet
-                            f.write('\tsphereToCell // Object {} in FreeCAD'.format(i[grid.OBJECT_NAME]))
-                            f.write('\n\t{\n')
-                            f.write('\t\tcentre\t({} {} {});\n'.format(
-                                    0.001*obj.Placement.Base.x, 0.001*obj.Placement.Base.y, 0.001*obj.Placement.Base.z))
-                            f.write('\t\tradius\t{};\n'.format(0.001*obj.Radius.Value))
+                            f.write(f'\tsphereToCell // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
+                                '\t{\n'
+                                f'\t\tcentre\t({0.001*obj.Placement.Base.x} '
+                                f'{0.001*obj.Placement.Base.y} {0.001*obj.Placement.Base.z});\n'
+                                f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                         break
-                fieldValues_is_written = False
-                try:
-                    x = setFieldsDict.getValueForKey(['regions'])[0]
-                    if DictParserList.isType(x, DictParserList.LISTP):
-                        for y in x.value():
-                            if DictParserList.isType(y, DictParserList.BLOCK) and i[grid.OBJECT_NAME] in y[1]:
-                                for z in y.value():
-                                    if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'fieldValues':
-                                        setFieldsDict.writeContents(z, f, indent = '\t\t', last_char = '\n')
-                                        f.write('\n')
-                                        fieldValues_is_written = True
-                                        break
-                                break
-                except:
-                    pass
-                if not fieldValues_is_written:
-                    f.write('\t\tfieldValues\n\t\t(\n')
-                    f.write('\t\t\tvolScalarFieldValue alpha.water 1 // ←自分の目的に合わせて書き換える\n')
-                    f.write('\t\t);\n') # fieldValues
+                for comment in dictParse.find_all_elements(
+                    [{'type': 'block'}, {'type': 'line_comment|block_comment'}], parent = regions):
+                    block = block['element']
+                    if i[grid.OBJECT_NAME] not in comment['element']['value']:
+                        continue
+                    fieldValues = dictParse.find_element([{'type': 'dictionary', 'key': 'fieldValues'}],
+                        parent = comment['parent'])['element']
+                    if fieldValues is None:
+                        f.write('\t\tfieldValues\n'
+                        '\t\t(\n'
+                        '\t\t\tvolScalarFieldValue alpha.water 1 // ←自分の目的に合わせて書き換える\n'
+                        '\t\t);\n')
+                    else:
+                        f'\t\t{dictParse.file_string([dictionary["element"]], indent_level = 2, pretty_print = True)}\n'
                 f.write('\t}\n') # boxToCell, cylinderToCell, sphereToCell
-            try:
-                x = setFieldsDict.getValueForKey(['regions'])[0]
-                if DictParserList.isType(x, DictParserList.LISTP):
-                    for y in x.value():
-                        if DictParserList.isType(y, DictParserList.BLOCK) and 'freecad' not in y[1].lower():
-                            setFieldsDict.writeContents(y, f, indent = '\t', last_char = '\n')
-                            f.write('\n')
+            for block in dictParse.find_all_elements([{'type': 'block'}], parent = regions):
+                block = block['element']
+                comment = dictParse.find_element([{'type': 'line_comment|block_comment'}],
+                    parent = block)['element']['value']
+                if 'freecad' not in comment.lower():
+                    f.write('\n'
+                        f'\t{dictParse.file_string([block], indent_level = 1, pretty_print = True)}\n')
                 f.write(');\n') # regions
-            except:
-                pass
-            try:
-                for x in setFieldsDict.contents:
-                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        x.key() not in ('FoamFile', 'defaultFieldValues', 'regions')):
-                        f.write('\n')
-                        setFieldsDict.writeContents(x, f, indent = '', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
+
+            for element in setFieldsDict.find_all_elements([{'type': 'block|dictionary'}]):
+                element = element['element']
+                if element['key'] not in ('FoamFile', 'defaultFieldValues', 'regions'):
+                    f.write('\n'
+                        f'{dictParse.file_string([element], pretty_print = True)}\n')
+
         os.chmod(dict_name, 0o0666)
 
     @staticmethod
@@ -1279,113 +1301,96 @@ class MyModel:
         dict_name = os.path.join(case_dir_path, 'system', 'topoSetDict')
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
+
         with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{')
-            f.write('\n\tversion\t2.0;\n')
-            f.write('\tformat\tascii;\n')
-            f.write('\tclass\tdictionary;\n')
-            f.write('\tlocation\t"system";\n')
-            f.write('\tobject\ttopoSetDict;\n')
-            f.write('}\n') # FoamFile
-            f.write('\nactions\n(\n')
+            f.write('FoamFile\n{'
+                '\n\tversion\t2.0;\n'
+                '\tformat\tascii;\n'
+                '\tclass\tdictionary;\n'
+                '\tlocation\t"system";\n'
+                '\tobject\ttopoSetDict;\n'
+                '}\n') # FoamFile
+
+            actions = topoSetDict.find_all_element([{'type': 'dictionary', 'key': 'actions'},
+                {'type': 'list'}, {'type': 'block'}])
+            f.write('\n'
+                'actions\n'
+                '(\n')
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
                     continue
-                f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                f.write('\t\tname\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
-                f.write('\t\ttype\tcellSet;\n')
-                try:
-                    x = topoSetDict.getValueForKey(['actions'])[0]
-                    if DictParserList.isType(x, DictParserList.LISTP):
-                        for y in x.value():
-                            obj_in_dict = False
-                            action = None
-                            if DictParserList.isType(y, DictParserList.BLOCK):
-                                for z in y.value():
-                                    if DictParserList.isType(z, DictParserList.DICT):
-                                        if z.key() == 'name' and z.value()[0] == i[grid.OBJECT_NAME] + 'CellSet':
-                                            obj_in_dict = True
-                                        elif z.key() == 'action':
-                                            action = z.value()[0]
-                                    if obj_in_dict and action is not None:
-                                        break
-                                break
-                except:
-                    pass
-                if action is None:
+                block = next((i['element'] for i in actions if dictParse.find_element(
+                    [{'type': 'dictionary', 'key': 'name'},
+                    {'type': 'word', 'value': f'{i[grid.OBJECT_NAME]}CellSet'}],
+                    parent = i['element'])['element'] is not None), None)
+                if block is None:
                     action = 'new'
-                f.write('\t\taction\t{};\t// new | add | subtract\n'.format(action))
+                else:
+                    action = dictParse.find_element([{'type': 'dictionary', 'key': 'action'},
+                        {'type': 'word'}], parent = block)['element']
+                    if action is None:
+                        action = 'new'
+                f.write('\t{' f' // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
+                    f'\t\tname\t{i[grid.OBJECT_NAME]}CellSet;\n'
+                    '\t\ttype\tcellSet;\n'
+                    f'\t\taction\t{action};\t// new | add | subtract\n')
                 for obj in freecad_objects:
                     if i[grid.OBJECT_NAME] == obj.Label:
                         if i[grid.TYPE] == 'BoxTopo':
-                            f.write('\t\tsource\trotatedBoxToCell;\n')
-                            f.write('\t\torigin\t({} {} {});\n'.format(
-                                    0.001*obj.Placement.Base.x, 0.001*obj.Placement.Base.y, 0.001*obj.Placement.Base.z))
-                            f.write('\t\ti\t({} {} {});\n'.format(
-                                    0.001*obj.Length.Value*obj.Placement.Matrix.A11,
-                                    0.001*obj.Length.Value*obj.Placement.Matrix.A21,
-                                    0.001*obj.Length.Value*obj.Placement.Matrix.A31))
-                            f.write('\t\tj\t({} {} {});\n'.format(
-                                    0.001*obj.Width.Value*obj.Placement.Matrix.A12,
-                                    0.001*obj.Width.Value*obj.Placement.Matrix.A22,
-                                    0.001*obj.Width.Value*obj.Placement.Matrix.A32))
-                            f.write('\t\tk\t({} {} {});\n'.format(
-                                    0.001*obj.Height.Value*obj.Placement.Matrix.A13,
-                                    0.001*obj.Height.Value*obj.Placement.Matrix.A23,
-                                    0.001*obj.Height.Value*obj.Placement.Matrix.A33))
+                            f.write('\t\tsource\trotatedBoxToCell;\n'
+                                f'\t\torigin\t({0.001*obj.Placement.Base.x} '
+                                f'{0.001*obj.Placement.Base.y} {0.001*obj.Placement.Base.z});\n'
+                                f'\t\ti\t({0.001*obj.Length.Value*obj.Placement.Matrix.A11} '
+                                f'{0.001*obj.Length.Value*obj.Placement.Matrix.A21} '
+                                f'{0.001*obj.Length.Value*obj.Placement.Matrix.A31});\n'
+                                f'\t\tj\t({0.001*obj.Width.Value*obj.Placement.Matrix.A12} '
+                                f'{0.001*obj.Width.Value*obj.Placement.Matrix.A22} '
+                                f'{0.001*obj.Width.Value*obj.Placement.Matrix.A32});\n'
+                                f'\t\tk\t({0.001*obj.Height.Value*obj.Placement.Matrix.A13} '
+                                f'{0.001*obj.Height.Value*obj.Placement.Matrix.A23} '
+                                f'{0.001*obj.Height.Value*obj.Placement.Matrix.A33});\n')
                         elif i[grid.TYPE] == 'CylinderTopo':
-                            f.write('\t\tsource\tcylinderToCell;\n')
-                            f.write('\t\tp1\t({} {} {});\n'.format(
-                                    0.001*obj.Placement.Base.x, 0.001*obj.Placement.Base.y, 0.001*obj.Placement.Base.z))
-                            f.write('\t\tp2\t({} {} {});\n'.format(
-                                    0.001*(obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value),
-                                    0.001*(obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value),
-                                    0.001*(obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value)))
-                            f.write('\t\tradius\t{};\n'.format(0.001*obj.Radius.Value))
+                            f.write('\t\tsource\tcylinderToCell;\n'
+                                f'\t\tp1\t({0.001*obj.Placement.Base.x} '
+                                f'{0.001*obj.Placement.Base.y} {0.001*obj.Placement.Base.z});\n'
+                                '\t\tp2\t'
+                                f'({0.001*(obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value)} '
+                                f'{0.001*(obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value)} '
+                                f'{0.001*(obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value)});\n'
+                                f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                         else: # SphereTopo
-                            f.write('\t\tsource\tsphereToCell;\n')
-                            f.write('\t\torigin\t({} {} {});\n'.format(
-                                    0.001*obj.Placement.Base.x, 0.001*obj.Placement.Base.y, 0.001*obj.Placement.Base.z))
-                            f.write('\t\tradius\t{};\n'.format(0.001*obj.Radius.Value))
+                            f.write('\t\tsource\tsphereToCell;\n'
+                                f'\t\torigin\t({0.001*obj.Placement.Base.x} '
+                                f'{0.001*obj.Placement.Base.y} {0.001*obj.Placement.Base.z});\n'
+                                '\t\tradius\t{0.001*obj.Radius.Value};\n')
                         f.write('\t}\n')
                         break
             for i in grid.table:
                 if i[grid.TYPE] in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
-                    f.write('\t{' + ' // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
-                    f.write('\t\tname\t{};\n'.format(i[grid.OBJECT_NAME]))
-                    f.write('\t\ttype\tcellZoneSet;\n')
-                    f.write('\t\taction\tnew;\n')
-                    f.write('\t\tsource\tsetToCellZone;\n')
-                    f.write('\t\tset\t{}CellSet;\n'.format(i[grid.OBJECT_NAME]))
-                    f.write('\t}\n')
-            try:
-                x = topoSetDict.getValueForKey(['actions'])[0]
-                if DictParserList.isType(x, DictParserList.LISTP):
-                    for y in x.value():
-                        obj_in_table = False
-                        if DictParserList.isType(y, DictParserList.BLOCK):
-                            for z in y.value():
-                                if DictParserList.isType(z, DictParserList.DICT) and z.key() == 'name':
-                                    for i in grid.table:
-                                        if z.value()[0] in (i[grid.OBJECT_NAME], i[grid.OBJECT_NAME] + 'CellSet'):
-                                            obj_in_table = True
-                                            break
-                                    break
-                        if not obj_in_table:
-                            topoSetDict.writeContents(y, f, indent = '\t', last_char = '\n')
-                            f.write('\n')
-            except:
-                pass
+                    f.write('\t{' f' // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
+                        f'\t\tname\t{i[grid.OBJECT_NAME]};\n'
+                        '\t\ttype\tcellZoneSet;\n'
+                        '\t\taction\tnew;\n'
+                        '\t\tsource\tsetToCellZone;\n'
+                        f'\t\tset\t{i[grid.OBJECT_NAME]}CellSet;\n'
+                        '\t}\n')
+            written_action_names = '|'.join(
+                [f'{i[grid.OBJECT_NAME]}|{i[grid.OBJECT_NAME]}CellSet' for i in grid.table])
+            for block in actions:
+                block = ['element']
+                if dictParse.find_element( [{'type': 'dictionary', 'key': 'name'},
+                    {'type': 'word', 'except value': written_action_names}],
+                    parent = block)['element'] is not None:
+                    f.write('\n'
+                        f'\t{dictParse.file_string([block], indent_level = 1, pretty_print = True)}\n')
             f.write(');\n') # actions
-            try:
-                for x in topoSetDict.contents:
-                    if (DictParserList.isType(x, (DictParserList.BLOCK, DictParserList.DICT)) and
-                        x.key() not in ('FoamFile', 'actions')):
-                        f.write('\n')
-                        topoSetDict.writeContents(x, f, indent = '', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
+
+            for element in topoSetDict.find_all_elements([{'type': 'block|dictionary'}]):
+                element = element['element']
+                if element['key'] not in ('FoamFile', 'actions'):
+                    f.write('\n'
+                        f'{dictParse.file_string([element], pretty_print = True)}\n')
+
         os.chmod(dict_name, 0o0666)
 
 if __name__ == '__main__':
