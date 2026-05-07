@@ -360,6 +360,7 @@ class MeshFrame(QtGui.QDialog):
 
         for i in remainder:
             self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'N/A')
+
         return meshDict, setFieldsDict, topoSetDict
 
     def actionOnExitButton(self):
@@ -559,8 +560,8 @@ class MyModel:
                     if i[grid.OBJECT_NAME] == obj.Label:
                         if i[grid.TYPE] == 'SurfaceRefine':
                             name = os.path.join(os.path.dirname(file_name), i[grid.OBJECT_NAME])
-                            Mesh.export([obj], name + '.ast') # ascii format
-                            os.rename(name + '.ast', name + '.stl') # can overwrite
+                            Mesh.export([obj], f'{name}.ast') # ascii format
+                            os.rename(f'{name}.ast', f'{name}.stl') # can overwrite
                         else:
                             # ascii stlフォーマット
                             # solid 任意の文字列
@@ -577,9 +578,9 @@ class MyModel:
                             Mesh.export([obj], tmp_stl)
                             for line in open(tmp_stl, 'r'):
                                 if 'endsolid' in line:
-                                    f.write('endsolid ' + i[grid.OBJECT_NAME] + '\n')
+                                    f.write(f'endsolid {i[grid.OBJECT_NAME]}\n')
                                 elif 'solid' in line:
-                                    f.write('solid ' + i[grid.OBJECT_NAME] + '\n')
+                                    f.write(f'solid {i[grid.OBJECT_NAME]}\n')
                                 else:
                                     f.write(line)
                                     if line.lstrip().startswith('vertex'):
