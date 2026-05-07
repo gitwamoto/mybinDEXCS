@@ -37,4 +37,3 @@ if __name__ == '__main__':
     if file_name != '.stl':
         exportStl(doc.Objects, file_name)
         QtGui.QMessageBox.information(None, 'Exported', f'{file_name} is exported.')
-
