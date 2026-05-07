@@ -14,8 +14,7 @@ import re
 import sys
 
 binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
-if binDEXCS_path not in [i.encode('UTF-8') if type(i) is unicode else i
-    for i in sys.path] if sys.version_info.major <= 2 else sys.path:
+if binDEXCS_path not in sys.path:
     sys.path.append(binDEXCS_path)
 from utilities import dictParse
 
@@ -43,7 +42,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
             try:
                 if obj.ViewObject.Visibility and hasattr(obj, 'Shape'):
                     self.table.append([
-                        obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label,
+                        obj.Label,
                         None,
                         0,
                         False,
@@ -402,7 +401,9 @@ class MyController:
         import Part
         self.doc = App.ActiveDocument
         self.model = MyModel()
-        self.meshDict = self.setFieldsDict = self.topoSetDict = None
+        self.meshDict = None
+        self.setFieldsDict = None
+        self.topoSetDict = None
         starts_with_number = False
         if self.doc.FileName == '':
             QtGui.QMessageBox.critical(None, 'Error',
@@ -414,10 +415,8 @@ class MyController:
                 l = obj.Label
                 obj.Label = re.sub('^([0-9])', r'_\1', l.replace(' ', '_'))
                 if obj.Label != l:
-                    QtGui.QMessageBox.warning(None, 'Prohibited object label', 'Label fixed: ' +
-                        (l.encode('UTF-8') if sys.version_info.major <= 2 else l) + ' -> ' +
-                        (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label),
-                        QtGui.QMessageBox.Close)
+                    QtGui.QMessageBox.warning(None, 'Prohibited object label',
+                        f'Label fixed: {l} -> {obj.Label}', QtGui.QMessageBox.Close)
         self.MeshFrame = MeshFrame(controller = self,
             freecad_objects = self.doc.Objects,
             case_dir_path = os.path.dirname(self.doc.FileName),
@@ -562,7 +561,9 @@ class MyController:
                 os.path.join(case_dir_path, 'system', 'setFieldsDict'),
                 os.path.join(case_dir_path, 'system', 'topoSetDict'))
         except Exception as e:
-            self.meshDict = self.setFieldsDict = self.topoSetDict = None
+            self.meshDict = None
+            self.setFieldsDict = None
+            self.topoSetDict = None
             QtGui.QMessageBox.critical(None, 'Error', str(e), QtGui.QMessageBox.Close)
 
     def actionOnEditButton(self):
@@ -608,7 +609,7 @@ class MyModel:
                     'LocationInMesh', 'N/A'):
                     continue
                 for obj in freecad_objects:
-                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                    if i[grid.OBJECT_NAME] == obj.Label:
                         if i[grid.TYPE] == 'SurfaceRefine':
                             name = os.path.join(os.path.dirname(file_name), i[grid.OBJECT_NAME])
                             Mesh.export([obj], name + '.ast') # ascii format
@@ -710,7 +711,7 @@ class MyModel:
                     continue
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     for obj in freecad_objects:
-                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                        if i[grid.OBJECT_NAME] == obj.Label:
                             f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
                             if i[grid.TYPE] == 'BoxRefine':
                                 f.write('\t\ttype\tsearchableRotatedBox;\n')
@@ -884,7 +885,7 @@ class MyModel:
             for i in grid.table:
                 if i[grid.TYPE] == 'LocationInMesh':
                     for obj in freecad_objects:
-                        if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                        if i[grid.OBJECT_NAME] == obj.Label:
                             cellZone.append((obj.Shape.CenterOfMass.x, obj.Shape.CenterOfMass.y,
                                              obj.Shape.CenterOfMass.z, i[grid.OBJECT_NAME]))
                             break
@@ -1201,7 +1202,7 @@ class MyModel:
                 if i[grid.TYPE] not in ('BoxSet', 'CylinderSet', 'SphereSet'):
                     continue
                 for obj in freecad_objects:
-                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                    if i[grid.OBJECT_NAME] == obj.Label:
                         if i[grid.TYPE] == 'BoxSet':
                             f.write('\tboxToCell // Object {} in FreeCAD\n'.format(i[grid.OBJECT_NAME]))
                             f.write('\t{\n')
@@ -1315,7 +1316,7 @@ class MyModel:
                     action = 'new'
                 f.write('\t\taction\t{};\t// new | add | subtract\n'.format(action))
                 for obj in freecad_objects:
-                    if i[grid.OBJECT_NAME] == (obj.Label.encode('UTF-8') if sys.version_info.major <= 2 else obj.Label):
+                    if i[grid.OBJECT_NAME] == obj.Label:
                         if i[grid.TYPE] == 'BoxTopo':
                             f.write('\t\tsource\trotatedBoxToCell;\n')
                             f.write('\t\torigin\t({} {} {});\n'.format(
