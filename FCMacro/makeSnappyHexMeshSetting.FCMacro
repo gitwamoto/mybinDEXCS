@@ -699,18 +699,19 @@ class MyModel:
                 else:
                     f.write(f'{i}\t{run["value"]}; // true or false\n')
 
-            objects = [i[grid.OBJECT_NAME] for i in grid.table]
-            surface_file_name = os.path.basename(surface_file_name)
-            surface_file_name_wo_ext = os.path.splitext(surface_file_name)[0]
             f.write('\n'
                 'CUSTOM_OPTIONS\n'
                 '{\n'
                 f'\tmaxCellSize\t{max_cell_size}; // used to generate blockMeshDict\n'
                 f'\tboundingBox\t(({bounding_box[0]} {bounding_box[1]} {bounding_box[2]}) '
                 f'({bounding_box[3]} {bounding_box[4]} {bounding_box[5]})); '
-                '// used to generate blockMeshDict\n')
-                '}\n'
-                '\n'
+                '// used to generate blockMeshDict\n'
+                '}\n')
+
+            objects = [i[grid.OBJECT_NAME] for i in grid.table]
+            surface_file_name = os.path.basename(surface_file_name)
+            surface_file_name_wo_ext = os.path.splitext(surface_file_name)[0]
+            f.write('\n'
                 '// Geometry. Definition of all surfaces.\n'
                 '// All surfaces are of class searchableSurface.\n'
                 '// Surfaces are used\n'
@@ -723,157 +724,193 @@ class MyModel:
                 '\t\ttype\ttriSurfaceMesh;\n'
                 f'\t\tname\t{surface_file_name_wo_ext};\n'
                 '\t}\n')
-
             for i in grid.table:
                 if i[grid.LEVEL] == 0:
                     continue
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     for obj in freecad_objects:
                         if i[grid.OBJECT_NAME] == obj.Label:
-                            f.write('\n\t' + i[grid.OBJECT_NAME] + '\n\t{\n')
+                            f.write('\n'
+                                f'\t{i[grid.OBJECT_NAME]}\n'
+                                '\t{\n')
                             if i[grid.TYPE] == 'BoxRefine':
-                                f.write('\t\ttype\tsearchableRotatedBox;\n')
-                                f.write('\t\tspan\t({} {} {});\n'.format(obj.Length.Value, obj.Width.Value, obj.Height.Value))
-                                f.write('\t\torigin\t({} {} {});\n'.format(
-                                        obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                                f.write('\t\te1\t({} {} {});\n'.format(
-                                        obj.Placement.Matrix.A11, obj.Placement.Matrix.A21, obj.Placement.Matrix.A31))
-                                f.write('\t\te3\t({} {} {});\n'.format(
-                                        obj.Placement.Matrix.A13, obj.Placement.Matrix.A23, obj.Placement.Matrix.A33))
+                                f.write('\t\ttype\tsearchableRotatedBox;\n'
+                                    f'\t\tspan\t({obj.Length.Value} {obj.Width.Value} {obj.Height.Value)});\n'
+                                    f'\t\torigin\t({obj.Placement.Base.x} {obj.Placement.Base.y} '
+                                    f'{obj.Placement.Base.z)});\n'
+                                    f'\t\te1\t({obj.Placement.Matrix.A11} {obj.Placement.Matrix.A21} '
+                                    f'{obj.Placement.Matrix.A31});\n'
+                                    f'\t\te3\t({obj.Placement.Matrix.A13} {obj.Placement.Matrix.A23} '
+                                    f'{obj.Placement.Matrix.A33});\n')
                             elif i[grid.TYPE] == 'CylinderRefine':
-                                f.write('\t\ttype\tsearchableCylinder;\n')
-                                f.write('\t\tpoint1\t({} {} {});\n'.format(
-                                        obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                                f.write('\t\tpoint2\t({} {} {});\n'.format(
-                                        obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value,
-                                        obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value,
-                                        obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value))
-                                f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                                f.write('\t\ttype\tsearchableCylinder;\n'
+                                    f'\t\tpoint1\t({obj.Placement.Base.x} {obj.Placement.Base.y} '
+                                    f'{obj.Placement.Base.z)});\n'
+                                    '\t\tpoint2\t'
+                                    f'({obj.Placement.Base.x + obj.Placement.Matrix.A13*obj.Height.Value} '
+                                    f'{obj.Placement.Base.y + obj.Placement.Matrix.A23*obj.Height.Value} '
+                                    f'{obj.Placement.Base.z + obj.Placement.Matrix.A33*obj.Height.Value});\n'
+                                    f'\t\tradius\t{obj.Radius.Value};\n')
                             elif i[grid.TYPE] == 'SphereRefine':
-                                f.write('\t\ttype\tsearchableSphere;\n')
-                                f.write('\t\tcentre\t({} {} {});\n'.format(
-                                        obj.Placement.Base.x, obj.Placement.Base.y, obj.Placement.Base.z))
-                                f.write('\t\tradius\t{};\n'.format(obj.Radius.Value))
+                                f.write('\t\ttype\tsearchableSphere;\n'
+                                    f'\t\tcentre\t({obj.Placement.Base.x} {obj.Placement.Base.y} '
+                                    f'{obj.Placement.Base.z});\n'
+                                    f'\t\tradius\t{obj.Radius.Value};\n')
                             f.write('\t}\n')
                             break
                 elif i[grid.TYPE] == 'SurfaceRefine':
-                    f.write('\n\t' + i[grid.OBJECT_NAME] + '.stl // in constant/triSurface\n')
-                    f.write('\t{\n\t\ttype\ttriSurfaceMesh;\n\t\tname\t' + i[grid.OBJECT_NAME] + ';\n\t}\n')
-            try:
-                for x in meshDict.getValueForKey(['geometry']):
-                    if (DictParserList.isType(x, DictParserList.BLOCK) and
-                        x.key() != surface_file_name and re.sub(r'.stl$', '', x.key()) not in objects):
-                        f.write('\n')
-                        meshDict.writeContents(x, f, indent = '\t', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
-            f.write('\n//\tboxExample\n//\t{\n')
-            f.write('//\t\ttype\tsearchableBox;\n')
-            f.write('//\t\tmin\t(1.5 1 -0.5);\n')
-            f.write('//\t\tmax\t(3.5 2 0.5);\n')
-            f.write('//\t}\n')
-            f.write('\n//\trotatedBoxExample\n//\t{\n')
-            f.write('//\t\ttype\tsearchableRotatedBox;\n')
-            f.write('//\t\tspan\t(5 4 3); // in (e1 e2 e3) directions\n')
-            f.write('//\t\torigin\t(0 0 0);\n')
-            f.write('//\t\te1\t(1 0.5 0);\n')
-            f.write('//\t\te3\t(0 0.5 1);\n')
-            f.write('//\t}\n')
-            f.write('\n//\tconeExample\n//\t{\n')
-            f.write('//\t\ttype\tsearchableCone;\n')
-            f.write('//\t\tpoint1\t(0 0 0);\n')
-            f.write('//\t\tradius1\t1.5;\n')
-            f.write('//\t\tinnerRadius1\t0.25;\n')
-            f.write('//\t\tpoint2\t(10 0 0);\n')
-            f.write('//\t\tradius2\t3.0;\n')
-            f.write('//\t\tinnerRadius2\t1.0;\n')
-            f.write('//\t}\n')
-            f.write('\n//\tcylinderExample\n//\t{\n')
-            f.write('//\t\ttype\tsearchableCylinder;\n')
-            f.write('//\t\tpoint1\t(1.5 1 -0.5);\n')
-            f.write('//\t\tpoint2\t(3.5 2 0.5);\n')
-            f.write('//\t\tradius\t0.05;\n')
-            f.write('//\t}\n')
-            f.write('\n//\tdiskExample\n//\t{\n')
-            f.write('//\t\ttype\tsearchableDisk;\n')
-            f.write('//\t\torigin\t(0 0 0);\n')
-            f.write('//\t\tnormal\t(0 1 0);\n')
-            f.write('//\t\tradius\t0.314;\n')
-            f.write('//\t}\n')
-            f.write('\n//\tsphereExample\n//\t{\n')
-            f.write('//\t\ttype\tsearchableSphere;\n')
-            f.write('//\t\tcentre\t(0 0 0);\n')
-            f.write('//\t\tradius\t3;\n')
-            f.write('//\t}\n')
-            f.write('}\n') # geometry
-            f.write('\n// Settings for the castellatedMesh generation.\n')
-            f.write('castellatedMeshControls\n{\n')
-            f.write('\t// ----- Refinement parameters -----\n')
-            f.write('\n\t// Maximum number of cells per processor during refinement\n')
-            try:
-                x = meshDict.getValueForKey(['castellatedMeshControls', 'maxLocalCells'])
-                f.write('\tmaxLocalCells\t' + x[0] + ';\n')
-            except:
+                    f.write(f'\n'
+                        '\t{i[grid.OBJECT_NAME]}.stl // in constant/triSurface\n'
+                        f'\t{\n\t\ttype\ttriSurfaceMesh;\n\t\tname\t{i[grid.OBJECT_NAME]};\n'
+                        '\t}\n')
+            for block in meshDict.find_all_elements([{'type': 'block', 'key': 'geometry'},
+                {'type': 'block'}]):
+                block = block['element']
+                if block['key'] != surface_file_name and block['key'] not in objects:
+                    f.write('\n'
+                        f'\n\t{dictParse.file_string([block], indent_level = 1, pretty_print = True)}\n')
+            f.write('\n'
+                '//\tboxExample\n//\t{\n'
+                '//\t\ttype\tsearchableBox;\n'
+                '//\t\tmin\t(1.5 1 -0.5);\n'
+                '//\t\tmax\t(3.5 2 0.5);\n'
+                '//\t}\n'
+                '\n'
+                '//\trotatedBoxExample\n//\t{\n'
+                '//\t\ttype\tsearchableRotatedBox;\n'
+                '//\t\tspan\t(5 4 3); // in (e1 e2 e3) directions\n'
+                '//\t\torigin\t(0 0 0);\n'
+                '//\t\te1\t(1 0.5 0);\n'
+                '//\t\te3\t(0 0.5 1);\n'
+                '//\t}\n'
+                '\n'
+                '//\tconeExample\n//\t{\n'
+                '//\t\ttype\tsearchableCone;\n'
+                '//\t\tpoint1\t(0 0 0);\n'
+                '//\t\tradius1\t1.5;\n'
+                '//\t\tinnerRadius1\t0.25;\n'
+                '//\t\tpoint2\t(10 0 0);\n'
+                '//\t\tradius2\t3.0;\n'
+                '//\t\tinnerRadius2\t1.0;\n'
+                '//\t}\n'
+                '\n'
+                '//\tcylinderExample\n//\t{\n'
+                '//\t\ttype\tsearchableCylinder;\n'
+                '//\t\tpoint1\t(1.5 1 -0.5);\n'
+                '//\t\tpoint2\t(3.5 2 0.5);\n'
+                '//\t\tradius\t0.05;\n'
+                '//\t}\n'
+                '\n//\tdiskExample\n//\t{\n'
+                '//\t\ttype\tsearchableDisk;\n'
+                '//\t\torigin\t(0 0 0);\n'
+                '//\t\tnormal\t(0 1 0);\n'
+                '//\t\tradius\t0.314;\n'
+                '//\t}\n'
+                '\n'
+                '//\tsphereExample\n//\t{\n'
+                '//\t\ttype\tsearchableSphere;\n'
+                '//\t\tcentre\t(0 0 0);\n'
+                '//\t\tradius\t3;\n'
+                '//\t}\n'
+                '}\n') # geometry
+
+            castellatedMeshControls = meshDict.find_element(
+                [{'type': 'block', 'key': 'castellatedMeshControls'}])['element']
+            f.write('\n'
+                '// Settings for the castellatedMesh generation.\n'
+                'castellatedMeshControls\n'
+                '{\n'
+                '\t// ----- Refinement parameters -----\n'
+                '\n'
+                '\t// Maximum number of cells per processor during refinement\n')
+            maxLocalCells = featureLevel = dictParse.find_element(
+                [{'type': 'dictionary', 'key': 'maxLocalCells'}, {'type': 'integer'}],
+                parent = castellatedMeshControls)['element']
+            if maxLocalCells is None:
                 f.write('\tmaxLocalCells\t100000;\n')
-            f.write('\n\t// Overall cell limit during refinement (i.e. before removal)\n')
-            try:
-                x = meshDict.getValueForKey(['castellatedMeshControls', 'maxGlobalCells'])
-                f.write('\tmaxGlobalCells\t' + x[0] + ';\n')
-            except:
+            else:
+                f.write(f'\tmaxLocalCells\t{maxLocalCells["value"]};\n')
+            f.write('\n'
+                '\t// Overall cell limit during refinement (i.e. before removal)\n')
+            maxGlobalCells = featureLevel = dictParse.find_element(
+                [{'type': 'dictionary', 'key': 'maxGlobalCells'}, {'type': 'integer'}],
+                parent = castellatedMeshControls)['element']
+            if maxGlobalCells is None:
                 f.write('\tmaxGlobalCells\t2000000;\n')
-            f.write('\n\t// The refinement along the surfaces may spend many iterations on refinement\n')
-            f.write('\t// of only few cells. Whenever the number of cells to be refined is less than\n')
-            f.write('\t// or equal to the minRefinementCells parameter, the refinement will stop.\n')
-            f.write('\t// be performed.\n')
-            try:
-                x = meshDict.getValueForKey(['castellatedMeshControls', 'minRefinementCells'])
-                f.write('\tminRefinementCells\t' + x[0] + ';\n')
-            except:
+            else:
+                f.write(f'\tmaxGlobalCells\t{maxLocalCells["value"]};\n'
+                '\n'
+                '\t// The refinement along the surfaces may spend many iterations on refinement\n'
+                '\t// of only few cells. Whenever the number of cells to be refined is less than\n'
+                '\t// or equal to the minRefinementCells parameter, the refinement will stop.\n'
+                '\t// be performed.\n')
+            minRefinementCells = featureLevel = dictParse.find_element(
+                [{'type': 'dictionary', 'key': 'minRefinementCells'}, {'type': 'integer'}],
+                parent = castellatedMeshControls)['element']
+            if minRefinementCells is None:
                 f.write('\tminRefinementCells\t2;\n')
-            f.write('\n\t// Number of buffer layers of cells between different levels of refinement\n')
-            try:
-                x = meshDict.getValueForKey(['castellatedMeshControls', 'nCellsBetweenLevels'])
-                f.write('\tnCellsBetweenLevels\t' + x[0] + ';\n')
-            except:
+            else:
+                f.write(f'\tminRefinementCells\t{minRefinementCells["value"]};\n'
+            f.write('\n'
+                '\t// Number of buffer layers of cells between different levels of refinement\n')
+            nCellsBetweenLevels = featureLevel = dictParse.find_element(
+                [{'type': 'dictionary', 'key': 'nCellsBetweenLevels'}, {'type': 'integer'}],
+                parent = castellatedMeshControls)['element']
+            if nCellsBetweenLevels is None:
                 f.write('\tnCellsBetweenLevels\t3;\n')
-            f.write('\n\t// ----- Explicit feature edge refinement -----\n')
-            f.write('\n\t// Specifies a level for any cell intersected by its edges.\n')
-            f.write('\tfeatures\n\t(\n\t\t{\n')
-            f.write('\t\t\tfile\t"' + surface_file_name_wo_ext + '.extendedFeatureEdgeMesh";\n')
-            f.write('\t\t\tlevel\t' + features_level + ';\n')
-            f.write('\t\t}\n\t);\n')
-            f.write('\n\t// ----- Surface based refinement -----\n')
-            f.write('\n\trefinementSurfaces\n\t{\n')
-            f.write('\t\t' + surface_file_name_wo_ext + '\n\t\t{\n');
-            f.write('\t\t\tlevel\t(0 1); // (min max)\n');
-            f.write('\t\t\tregions\n\t\t\t{\n');
+            else:
+                f.write(f'\tnCellsBetweenLevels\t{nCellsBetweenLevels["value"]};\n'
+            f.write('\n'
+                '\t// ----- Explicit feature edge refinement -----\n'
+                '\n'
+                '\t// Specifies a level for any cell intersected by its edges.\n'
+                '\tfeatures\n\t(\n\t\t{\n'
+                '\t\t\tfile\t"' + surface_file_name_wo_ext + '.extendedFeatureEdgeMesh";\n'
+                '\t\t\tlevel\t' + features_level + ';\n'
+                '\t\t}\n'
+                '\t);\n'
+                '\n'
+                '\t// ----- Surface based refinement -----\n'
+                '\n'
+                '\trefinementSurfaces\n'
+                '\t{\n'
+                f'\t\t{surface_file_name_wo_ext}\n'
+                '\t\t{\n');
+            f.write('\t\t\tlevel\t(0 1); // (min max)\n'
+                '\t\t\tregions\n'
+                '\t\t\t{\n');
             for i in grid.table:
                 if i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
                     'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo',
                     'LocationInMesh', 'N/A'):
                     continue
-                f.write('\t\t\t\t' + i[grid.OBJECT_NAME] + '\n\t\t\t\t{\n')
-                f.write('\t\t\t\t\tlevel\t({} {}); // (min max)\n'.format(i[grid.LEVEL], i[grid.LEVEL] + 1))
-                f.write('\t\t\t\t\tpatchInfo\t{type\t' + i[grid.TYPE] + ';}\n\t\t\t\t}\n')
-            f.write('\t\t\t}\n')
-            f.write('\t\t}\n')
-            f.write('\t}\n') # refinementSurfaces
-            f.write('\n\tresolveFeatureAngle\t' + feature_angle + ';\n')
-            f.write('\n\t// ----- Region-wise refinement -----\n')
-            f.write('\n\trefinementRegions\n\t{\n')
-            f.write('\t\t//                    ********************\n')
-            f.write('\t\t//                    ********************   ******************\n')
-            f.write('\t\t// +--------------+   **+--------------+**   *+--------------+*\n')
-            f.write('\t\t// |**************|   **|              |**   *|**************|*\n')
-            f.write('\t\t// |**************|   **|              |**   *|*            *|*\n')
-            f.write('\t\t// |*** inside ***|   **|   outside    |**   *|*  distance ->|*<-\n')
-            f.write('\t\t// |**************|   **|              |**   *|*          ->*|<-\n')
-            f.write('\t\t// |**************|   **|              |**   *|**************|*\n')
-            f.write('\t\t// +--------------+   **+--------------+**   *+--------------+*\n')
-            f.write('\t\t//                    ********************   ******************\n')
-            f.write('\t\t//                    ********************\n')
+                f.write(f'\t\t\t\t{i[grid.OBJECT_NAME]}\n'
+                    '\t\t\t\t{\n'
+                    f'\t\t\t\t\tlevel\t({i[grid.LEVEL]} {i[grid.LEVEL] + 1}); // (min max)\n'
+                    '\t\t\t\t\tpatchInfo\t{' f'type\t{i[grid.TYPE]};' '}\n'
+                    '\t\t\t\t}\n'
+                    '\t\t\t}\n'
+                    '\t\t}\n'
+                    '\t}\n' # refinementSurfaces
+                    '\n'
+                    f'\tresolveFeatureAngle\t{feature_angle};\n'
+                    '\n'
+                    '\t// ----- Region-wise refinement -----\n'
+                    '\n'
+                    '\trefinementRegions\n'
+                    '\t{\n'
+                    '\t\t//                    ********************\n'
+                    '\t\t//                    ********************   ******************\n'
+                    '\t\t// +--------------+   **+--------------+**   *+--------------+*\n'
+                    '\t\t// |**************|   **|              |**   *|**************|*\n'
+                    '\t\t// |**************|   **|              |**   *|*            *|*\n'
+                    '\t\t// |*** inside ***|   **|   outside    |**   *|*  distance ->|*<-\n'
+                    '\t\t// |**************|   **|              |**   *|*          ->*|<-\n'
+                    '\t\t// |**************|   **|              |**   *|**************|*\n'
+                    '\t\t// +--------------+   **+--------------+**   *+--------------+*\n'
+                    '\t\t//                    ********************   ******************\n'
+                    '\t\t//                    ********************\n')
             for i in grid.table:
                 if i[grid.LEVEL] == 0 or i[grid.TYPE] not in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine'):
