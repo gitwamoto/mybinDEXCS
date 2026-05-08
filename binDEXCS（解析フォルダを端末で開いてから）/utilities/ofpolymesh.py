@@ -176,60 +176,88 @@ class structure2D(object):
 
         if self.ascii:
             with open(os.path.join(self.parent_dir_path, 'points'), 'w') as fp:
-                fp.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tvectorField;\n' +
-                    '\tlocation\t"constant/polyMesh";\n\tobject\tpoints;\n}\n')
-                fp.write('{}\n(\n'.format(self.nPoints))
+                fp.write('FoamFile\n'
+                    '{\n'
+                    '\tversion\t2.0;\n'
+                    '\tformat\tascii;\n'
+                    '\tclass\tvectorField;\n'
+                    '\tlocation\t"constant/polyMesh";\n'
+                    '\tobject\tpoints;\n'
+                    '}\n'
+                    f'{self.nPoints}\n'
+                    '(\n')
                 n = 0
                 for j in range(self.jmax):
                     for i in range(self.imax):
                         if self.pidx[i, j] == n:
-                            fp.write('(%#.*e %#.*e 0)\n' %
-                                (sys.float_info.dig, self.x[i, j], sys.float_info.dig, self.y[i, j]))
+                            fp.write(f'({self.x[i, j]:#.{sys.float_info.dig}e} '
+                                f'{self.y[i, j]:#.{sys.float_info.dig}e} 0)'
                             n += 1
                 n = 0
                 for j in range(self.jmax):
                     for i in range(self.imax):
                         if self.pidx[i, j] == n:
-                            fp.write('(%#.*e %#.*e %#.*e)\n', (sys.float_info.dig, self.x[i, j],
-                                sys.float_info.dig, self.y[i, j], sys.float_info.dig, self.depth))
+                            fp.write(f'({self.x[i, j]:#.{sys.float_info.dig}e} '
+                                f'{self.y[i, j]:#.{sys.float_info.dig}e} {self.depth:#.{sys.float_info.dig}e})'
                             n += 1
                 fp.write(')\n')
 
             with open(os.path.join(self.parent_dir_path, 'faces'), 'w') as ff:
-                ff.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tfaceList;\n' +
-                    '\tlocation\t"constant/polyMesh";\n\tobject\tfaces;\n}\n')
-                ff.write('{}\n(\n'.format(self.nFaces))
+                ff.write('FoamFile\n'
+                    '{\n'
+                    '\tversion\t2.0;\n'
+                    '\tformat\tascii;\n'
+                    '\tclass\tfaceList;\n'
+                    '\tlocation\t"constant/polyMesh";\n'
+                    '\tobject\tfaces;\n'
+                    '}\n'
+                    f'{self.nFaces}\n'
+                    '(\n')
                 with open(os.path.join(self.parent_dir_path, 'owner'), 'w') as fo:
-                    fo.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tlabelList;\n' +
-                        '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
-                        '\tlocation\t"constant/polyMesh";\n\tobject\towner;\n}\n' %
-                        (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                    fo.write('{}\n(\n'.format(self.nFaces))
+                    fo.write('FoamFile\n'
+                        '{\n'
+                        '\tversion\t2.0;\n'
+                        '\tformat\tascii;\n'
+                        '\tclass\tlabelList;\n'
+                        f'\tnote"nPoints: {self.nPoints} nCells: {self.nCells} '
+                        f'nFaces: {self.nFaces} nInternalFaces: {self.nInternalFaces}"\n'
+                        '\tlocation\t"constant/polyMesh";\n'
+                        '\tobject\towner;\n'
+                        '}\n')
+                    fo.write(f'{self.nFaces}\n'
+                        '(\n')
                     with open(os.path.join(self.parent_dir_path, 'neighbour'), 'w') as fn:
-                        fn.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tlabelList;\n' +
-                            '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
-                            '\tlocation\t"constant/polyMesh";\n\tobject\tneighbour;\n}\n' %
-                            (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                        fn.write('{}\n(\n'.format(self.nInternalFaces))
+                        fn.write('FoamFile\n'
+                            '{\n'
+                            '\tversion\t2.0;\n'
+                            '\tformat\tascii;\n'
+                            '\tclass\tlabelList;\n'
+                            f'\tnote"nPoints: {self.nPoints} nCells: {self.nCells}'
+                            f'nFaces: {self.nFaces}, nInternalFaces: {self.nInternalFaces}"\n'
+                            '\tlocation\t"constant/polyMesh";\n'
+                            '\tobject\tneighbour;\n'
+                            '}\n')
+                        fn.write(f'{self.nInternalFaces}\n'
+                            '(\n')
                         # internal faces
                         for i in range(1, self.imax - 1):
                             for j in range(self.jmax - 1):
                                 if self.fiidx[i, j, 0] > 0:
                                     ff.write('{}({}'.format(self.fiidx[i, j, 0], self.fiidx[i, j, 1]))
                                     for n in range(2, self.fiidx[i, j, 0] + 1):
-                                        ff.write(' {}'.format(self.fiidx[i, j, n]))
+                                        ff.write(f' {self.fiidx[i, j, n])}'
                                     ff.write(')\n')
-                                    fo.write('{}\n'.format(self.cindex(i - 1, j)))
-                                    fn.write('{}\n'.format(self.cindex(i, j)))
+                                    fo.write(f'{self.cindex(i - 1, j))}\n'
+                                    fn.write(f'{self.cindex(i, j))}\n'
                         for j in range(1, self.jmax - 1):
                             for i in range(self.imax - 1):
                                 if self.fjidx[i, j, 0] > 0:
                                     ff.write('{}({}'.format(self.fjidx[i, j, 0], self.fjidx[i, j, 1]))
                                     for n in range(2, self.fjidx[i, j, 0] + 1):
-                                        ff.write(' {}'.format(self.fjidx[i, j, n]))
+                                        ff.write(f' {self.fjidx[i, j, n])}'
                                     ff.write(')\n')
-                                    fo.write('{}\n'.format(self.cindex(i, j - 1)))
-                                    fn.write('{}\n'.format(self.cindex(i, j)))
+                                    fo.write(f'{self.cindex(i, j - 1))}\n'
+                                    fn.write(f'{self.cindex(i, j))}\n'
                         fn.write(')\n')
                     # boundary faces
                     for b in self.boundary:
@@ -238,42 +266,42 @@ class structure2D(object):
                                 if self.fiidx[b.i0, j, 0]:
                                     ff.write('{}({}'.format(self.fiidx[b.i0, j, 0], self.fiidx[b.i0, j, 1]))
                                     for n in range(2, self.fiidx[b.i0, j, 0] + 1):
-                                        ff.write(' {}'.format(self.fiidx[b.i0, j, n]))
+                                        ff.write(f' {self.fiidx[b.i0, j, n])}'
                                     ff.write(')\n')
-                                    fo.write('{}\n'.format(self.cindex(b.i0 - 1 if b.i0 > 0 else 0, j)))
+                                    fo.write(f'{self.cindex(b.i0 - 1 if b.i0 > 0 else 0, j))}\n'
                         else: # b.j0 == b.j1
                             for i in range(b.i0, b.i1 - 1):
                                 if self.fjidx[i, b.j0, 0] > 0:
                                     ff.write('{}({}'.format(self.fjidx[i, b.j0, 0], self.fjidx[i, b.j0, 1]))
                                     for n in range(2, self.fjidx[i, b.j0, 0] + 1):
-                                        ff.write(' {}'.format(self.fjidx[i, b.j0, n]))
+                                        ff.write(f' {self.fjidx[i, b.j0, n])}'
                                     ff.write(')\n')
-                                    fo.write('{}\n'.format(self.cindex(i, b.j0 - 1 if b.j0 > 0 else 0)))
+                                    fo.write(f'{self.cindex(i, b.j0 - 1 if b.j0 > 0 else 0))}\n'
                     # front
                     for j in range(self.jmax - 1):
                         for i in range(self.imax - 1):
                             if self.fkidx[i, j, 0] > 0:
                                 ff.write('{}({}'.format(self.fkidx[i, j, 0], self.fkidx[i, j, 1] + self.nPoints/2))
                                 for n in range(self.fkidx[i, j, 0], 1, -1):
-                                    ff.write(' {}'.format(self.fkidx[i, j, n] + self.nPoints/2))
+                                    ff.write(f' {self.fkidx[i, j, n] + self.nPoints/2)}'
                                 ff.write(')\n')
-                                fo.write('{}\n'.format(self.cindex(i, j)))
+                                fo.write(f'{self.cindex(i, j))}\n'
                     # back
                     for j in range(self.jmax - 1):
                         for i in range(self.imax - 1):
                             if self.fkidx[i, j, 0] > 0:
                                 ff.write('{}({}'.format(self.fkidx[i, j, 0], self.fkidx[i, j, 1]))
                                 for n in range(2, self.fkidx[i, j, 0] + 1):
-                                    ff.write(' {}'.format(self.fkidx[i, j, n]))
+                                    ff.write(f' {self.fkidx[i, j, n])}'
                                 ff.write(')\n')
-                                fo.write('{}\n'.format(self.cindex(i, j)))
+                                fo.write(f'{self.cindex(i, j))}\n'
                     fo.write(')\n')
                 ff.write(')\n')
         else: # not self.ascii
             with open(os.path.join(self.parent_dir_path, 'points'), 'wb') as fp:
                 fp.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tvectorField;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tpoints;\n}\n')
-                fp.write('{}\n('.format(self.nPoints))
+                fp.write(f'{self.nPoints)}\n('
                 n = 0
                 for j in range(self.jmax):
                     for i in range(self.imax):
@@ -291,7 +319,7 @@ class structure2D(object):
             with open(os.path.join(self.parent_dir_path, 'faces'), 'wb') as ff:
                 ff.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tfaceCompactList;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tfaces;\n}\n')
-                ff.write('{}\n('.format(self.nFaces + 1))
+                ff.write(f'{self.nFaces + 1)}\n('
                 n = 0
                 ff.write(pack('<I', n))
                 # internal faces
@@ -329,20 +357,21 @@ class structure2D(object):
                         if self.fkidx[i, j, 0] > 0:
                             n += self.fkidx[i, j, 0]
                             ff.write(pack('<I', n))
-                ff.write(')\n{}\n('.format(self.nFacePoints))
+                ff.write(')\n'
+                    f'{self.nFacePoints)}\n('
 
                 with open(os.path.join(self.parent_dir_path, 'owner'), 'wb') as fo:
                     fo.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                         '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                         '\tlocation\t"constant/polyMesh";\n\tobject\towner;\n}\n' %
                         (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                    fo.write('{}\n('.format(self.nFaces))
+                    fo.write(f'{self.nFaces)}\n('
                     with open(os.path.join(self.parent_dir_path, 'neighbour'), 'wb') as fn:
                         fn.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                             '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                             '\tlocation\t"constant/polyMesh";\n\tobject\tneighbour;\n}\n' %
                             (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                        fn.write('{}\n('.format(self.nInternalFaces))
+                        fn.write(f'{self.nInternalFaces)}\n('
                         # internal faces
                         for i in range(1, self.imax - 1):
                             for j in range(self.jmax - 1):
@@ -390,8 +419,9 @@ class structure2D(object):
                 '\tlocation\t"constant/polyMesh";\n\tobject\tboundary;\n}\n' %
                 ('ascii' if self.ascii else 'binary'))
             if self.comment != '':
-                fb.write('// {}\n\n'.format(self.comment))
-            fb.write('{}\n(\n'.format(len(self.boundary) + 2))
+                fb.write(f'// {self.comment)}\n\n'
+            fb.write(f'{len(self.boundary) + 2}\n'
+                '(\n')
             for b in self.boundary:
                 fb.write('\t%s\n\t{\n\t\ttype\t%s;\n\t\tnFaces\t%d;\n\t\tstartFace\t%d;\n\t}\n' %
                     (b.name, b.type, b.nFaces, b.startFace))
@@ -642,7 +672,8 @@ class structured3D(object):
             with open(os.path.join(self.parent_dir_path, 'points'), 'w') as fp:
                 fp.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tvectorField;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tpoints;\n}\n')
-                fp.write('{}\n(\n'.format(self.nPoints))
+                fp.write(f'{self.nPoints)}\n'
+                    '(\n'
                 n = 0
                 for k in range(self.kmax):
                     for j in range(self.jmax):
@@ -656,19 +687,22 @@ class structured3D(object):
             with open(os.path.join(self.parent_dir_path, 'faces'), 'w') as ff:
                 ff.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tfaceList;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tfaces;\n}\n')
-                ff.write('{}\n(\n'.format(self.nFaces))
+                ff.write(f'{self.nFaces)}\n'
+                    '(\n'
                 with open(os.path.join(self.parent_dir_path, 'owner'), 'w') as fo:
                     fo.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tlabelList;\n' +
                         '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                         '\tlocation\t"constant/polyMesh";\n\tobject\towner;\n}\n' %
                         (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                    fo.write('{}\n(\n'.format(self.nFaces))
+                    fo.write(f'{self.nFaces)}\n'
+                        '(\n'
                     with open(os.path.join(self.parent_dir_path, 'neighbour'), 'w') as fn:
                         fn.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tascii;\n\tclass\tlabelList;\n' +
                             '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                             '\tlocation\t"constant/polyMesh";\n\tobject\tneighbour;\n}\n' %
                             (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                        fn.write('{}\n(\n'.format(self.nInternalFaces))
+                        fn.write(f'{self.nInternalFaces)}\n'
+                            '(\n'
                         # internal faces
                         for i in range(1, imax - 1):
                             for k in range(self.kmax - 1):
@@ -676,30 +710,30 @@ class structured3D(object):
                                     if self.fiidx[i, j, k, 0] > 0:
                                         ff.write('{}({}'.format(self.fiidx[i, j, k, 0], self.fiidx[i, j, k, 1]))
                                         for n in range(2, self.fiidx[i, j, k, 0] + 1):
-                                            ff.write(' {}'.format(self.fiidx[i, j, k, n]))
+                                            ff.write(f' {self.fiidx[i, j, k, n])}'
                                         ff.write(')\n')
-                                        fo.write('{}\n'.format(self.cindex(i - 1, j, k)))
-                                        fn.write('{}\n'.format(self.cindex(i, j, k)))
+                                        fo.write(f'{self.cindex(i - 1, j, k))}\n'
+                                        fn.write(f'{self.cindex(i, j, k))}\n'
                         for j in range(1, jmax - 1):
                             for i in range(imax - 1):
                                 for k in range(kmax - 1):
                                     if self.fjidx[i, j, k, 0] > 0:
                                         ff.write('{}({}'.format(self.fjidx[i, j, k, 0], self.fjidx[i, j, k, 1]))
                                         for n in range(2, self.fjidx[i, j, k, 0] + 1):
-                                            ff.write(' {}'.format(self.fjidx[i, j, k, n]))
+                                            ff.write(f' {self.fjidx[i, j, k, n])}'
                                         ff.write(')\n')
-                                        fo.write('{}\n'.format(self.cindex(i, j - 1, k)))
-                                        fn.write('{}\n'.format(self.cindex(i, j, k)))
+                                        fo.write(f'{self.cindex(i, j - 1, k))}\n'
+                                        fn.write(f'{self.cindex(i, j, k))}\n'
                         for k in range(1, kmax - 1):
                             for j in range(jmax - 1):
                                 for i in range(imax - 1):
                                     if self.fkidx[i, j, k, 0] > 0:
                                         ff.write('{}({}'.format(self.fkidx[i, j, k, 0], self.fkidx[i, j, k, 1]))
                                         for n in range(2, self.fkidx[i, j, k, 0] + 1):
-                                            ff.write(' {}'.format(self.fkidx[i, j, k, n]))
+                                            ff.write(f' {self.fkidx[i, j, k, n])}'
                                         ff.write(')\n')
-                                        fo.write('{}\n'.format(self.cindex(i, j, k - 1)))
-                                        fn.write('{}\n'.format(self.cindex(i, j, k)))
+                                        fo.write(f'{self.cindex(i, j, k - 1))}\n'
+                                        fn.write(f'{self.cindex(i, j, k))}\n'
                         fn.write(')\n')
                     # boundary faces
                     for b in self.boundary:
@@ -709,34 +743,35 @@ class structured3D(object):
                                     if self.fiidx[b.i0, j, k, 0] > 0:
                                         ff.write('{}({}'.format(self.fiidx[b.i0, j, k, 0], self.fiidx[b.i0, j, k, 1]))
                                         for n in range(2, self.fiidx[b.i0, j, k, 0] + 1):
-                                            ff.write(' {}'.format(self.fiidx[b.i0, j, k, n]))
+                                            ff.write(f' {self.fiidx[b.i0, j, k, n])}'
                                         ff.write(')\n')
-                                        fo.write('{}\n'.format(self.cindex(b.i0 - 1 if b.i0 > 0 else 0, j, k)))
+                                        fo.write(f'{self.cindex(b.i0 - 1 if b.i0 > 0 else 0, j, k))}\n'
                         elif b.j0 == b.j1:
                             for i in range(b.i0, b.i1 - 1):
                                 for k in range(b.k0, b.k1 - 1):
                                     if self.fjidx[i, b.j0, k, 0] > 0:
                                         ff.write('{}({}'.format(self.fjidx[i, b.j0, k, 0], self.fjidx[i, b.j0, k, 1]))
                                         for n in range(2, self.fjidx[i, b.j0, k, 0] + 1):
-                                            ff.write(' {}'.format(self.fjidx[i, b.j0, k, n]))
+                                            ff.write(f' {self.fjidx[i, b.j0, k, n])}'
                                         ff.write(')\n')
-                                        fo.write('{}\n'.format(self.cindex(i, b.j0 - 1 if b.j0 > 0 else 0, k)))
+                                        fo.write(f'{self.cindex(i, b.j0 - 1 if b.j0 > 0 else 0, k))}\n'
                         else: # b.k0 == b.k1
                             for j in range(b.j0, b.j1 - 1):
                                 for i in range(b.i0, b.i1 - 1):
                                     if self.fkidx[i, j, b.k0, 0] > 0:
                                         ff.write('{}({}'.format(self.fkidx[i, j, b.k0, 0], self.fkidx[i, j, b.k0, 1]))
                                         for n in range(2, self.fkidx[i, j, b.k0, 0] + 1):
-                                            ff.write(' {}'.format(self.fkidx[i, j, b.k0, n]))
+                                            ff.write(f' {self.fkidx[i, j, b.k0, n])}'
                                         ff.write(')\n')
-                                        fo.write('{}\n'.format(self.cindex(i, j, b.k0 - 1 if b.k0 > 0 else 0)))
+                                        fo.write(f'{self.cindex(i, j, b.k0 - 1 if b.k0 > 0 else 0))}\n'
                     fo.write(')\n')
                 ff.write(')\n')
         else: # not self.ascii
             with open(os.path.join(self.parent_dir_path, 'points'), 'wb') as fp:
                 fp.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tvectorField;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tpoints;\n}\n')
-                fp.write('{}\n('.format(self.nPoints))
+                fp.write(f'{self.nPoints)}\n'
+                    '('
                 n = 0
                 for k in range(kmax):
                     for j in range(jmax):
@@ -749,7 +784,8 @@ class structured3D(object):
             with open(os.path.join(self.parent_dir_path, 'faces'), 'wb') as ff:
                 ff.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tfaceCompactList;\n' +
                     '\tlocation\t"constant/polyMesh";\n\tobject\tfaces;\n}\n')
-                ff.write('{}\n('.format(self.nFaces + 1))
+                ff.write(f'{self.nFaces + 1)}\n'
+                    '('
                 n = 0
                 ff.write(pack('<I', n))
                 # internal faces
@@ -791,20 +827,23 @@ class structured3D(object):
                                 if self.fkidx[i, j, b.k0, 0] > 0:
                                     n += self.fkidx[i, j, b.k0, 0]
                                     ff.write(pack('<I', n))
-                ff.write(')\n{}\n('.format(self.nFacePoints))
+                ff.write(f')\n{self.nFacePoints)}'
+                    '\n('
 
                 with open(os.path.join(self.parent_dir_path, 'owner'), 'wb') as fo:
                     fo.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                         '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                         '\tlocation\t"constant/polyMesh";\n\tobject\towner;\n}\n' %
                         (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                    fo.write('{}\n('.format(self.nFaces))
+                    fo.write(f'{self.nFaces)}\n'
+                        '('
                     with open(os.path.join(self.parent_dir_path, 'neighbour'), 'wb') as fn:
                         fn.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\tbinary;\n\tclass\tlabelList;\n' +
                             '\tnote"nPoints: %d nCells: %d nFaces: %d nInternalFaces: %d"\n' +
                             '\tlocation\t"constant/polyMesh";\n\tobject\tneighbour;\n}\n' %
                             (self.nPoints, self.nCells, self.nFaces, self.nInternalFaces))
-                        fn.write('{}\n('.format(self.nInternalFaces))
+                        fn.write(f'{self.nInternalFaces)}\n'
+                            '('
                         # internal faces
                         for i in range(1, imax - 1):
                             for k in range(kmax - 1):
@@ -852,15 +891,26 @@ class structured3D(object):
                 ff.write(')\n')
 
         with open(os.path.join(self.parent_dir_path, 'boundary'), 'w') as fb:
-            fb.write('FoamFile\n{\n\tversion\t2.0;\n\tformat\t%s;\n\tclass\tpolyBoundaryMesh;\n' +
-                '\tlocation\t"constant/polyMesh";\n\tobject\tboundary;\n}\n' +
-                ('ascii' if self.ascii else 'binary'))
+            fb.write('FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
+                f'\tformat\t{("ascii" if self.ascii else "binary");\n'
+                '\tclass\tpolyBoundaryMesh;\n'
+                '\tlocation\t"constant/polyMesh";\n'
+                '\tobject\tboundary;\n'
+                '}\n')
             if self.comment != '':
-                fb.write('// {}\n\n'.format(self.comment))
-            fb.write('{}\n(\n'.format(len(self.boundary)))
+                fb.write('// {self.comment)}\n'
+                    '\n')
+            fb.write(f'{len(self.boundary)}\n'
+                    '(\n')
             for b in self.boundary:
-                fb.write('\t{}\n\t{\n\t\ttype\t{};\n\t\tnFaces\t{};\n\t\tstartFace\t{};\n\t}\n'.format(
-                    b.name, b.type, b.nFaces, b.startFace))
+                fb.write(f'\t{b.name}\n'
+                    '\t{\n'
+                    f'\t\ttype\t{b.type};\n'
+                    f'\t\tnFaces\t{b.nFaces};\n'
+                    f'\t\tstartFace\t{b.startFace};\n'
+                    '\t}\n')
             fb.write(')\n')
 
         return self
