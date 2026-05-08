@@ -719,8 +719,8 @@ class MyModel:
                     f'{0 if allowDiscontinuity is None else allowDiscontinuity["value"]}; '
                     '// 1 active or 0 inactive\n')
                 f.write('\t\t}\n')
-            f.write('\t}\n') # patchBoundaryLayers
-            f.write('}\n') # boundaryLayers
+            f.write('\t}\n' # patchBoundaryLayers
+                '}\n') # boundaryLayers
 
             f.write('\n'
                 '// Valid only when keepCellsIntersectingBoundary is not active. (optional)\n'
@@ -730,9 +730,8 @@ class MyModel:
                 '//\t{\n'
                 '//\t\tkeepCells\t1; // 1 active or 0 inactive\n'
                 '//\t}\n'
-                '}\n')
-
-            f.write('\n'
+                '}\n'
+                '\n'
                 '// Valid only when keepCellsIntersectingBoundary is active. (optional)\n'
                 'removeCellsIntersectingPatches\n'
                 '{\n'
@@ -932,8 +931,8 @@ class MyModel:
                     f.write('\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
                     f.write('\t\t\ttype\t'+ i[grid.TYPE] + ';\n')
                     f.write('\t\t}\n') # i[grid.OBJECT_NAME]
-            f.write('\t}\n') # newPatchNames
-            f.write('}\n') # renameBoundary
+            f.write('\t}\n' # newPatchNames
+                '}\n') # renameBoundary
 
             for element in meshDict.find_all_elements([{'type': 'block|dictionary'}]):
                 element = element['element']
