@@ -882,7 +882,8 @@ class MyModel:
                     while ref_value > 1.0:
                         ref_level += 1
                         ref_value *= 0.5
-                    f.write(f'\n\t{i[grid.OBJECT_NAME]}\n'
+                    f.write('\n'
+                        f'\t{i[grid.OBJECT_NAME]}\n'
                         '\t{\n'
                         f'\t\tsurfaceFile\t"constant/triSurface/{i[grid.OBJECT_NAME]}.stl";\n'
                         f'\t\tcellSize\t{ref_thickness};\n'
@@ -927,10 +928,11 @@ class MyModel:
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
                     'BoxSet', 'CylinderSet', 'SphereSet', 'BoxTopo', 'CylinderTopo', 'SphereTopo', 'N/A'):
-                    f.write('\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
-                    f.write('\t\t\tnewName\t'+ i[grid.OBJECT_NAME] + ';\n')
-                    f.write('\t\t\ttype\t'+ i[grid.TYPE] + ';\n')
-                    f.write('\t\t}\n') # i[grid.OBJECT_NAME]
+                    f.write(f'\t\t{i[grid.OBJECT_NAME]}\n'
+                        '\t\t{\n'
+                        f'\t\t\tnewName\t{i[grid.OBJECT_NAME]};\n'
+                        '\t\t\ttype\t{ i[grid.TYPE]};\n'
+                        '\t\t}\n')
             f.write('\t}\n' # newPatchNames
                 '}\n') # renameBoundary
 
@@ -1063,7 +1065,8 @@ class MyModel:
 
         with open(dict_name, 'w') as f:
             f.write('FoamFile\n{'
-                '\n\tversion\t2.0;\n'
+                '\n'
+                '\tversion\t2.0;\n'
                 '\tformat\tascii;\n'
                 '\tclass\tdictionary;\n'
                 '\tlocation\t"system";\n'
