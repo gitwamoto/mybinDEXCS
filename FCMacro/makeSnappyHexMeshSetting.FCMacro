@@ -680,8 +680,9 @@ class MyModel:
         if os.path.isfile(dict_name):
             shutil.copy(dict_name, dict_name + '_bak')
         with open(dict_name, 'w') as f:
-            f.write('FoamFile\n{'
-                '\n\tversion\t2.0;\n'
+            f.write('FoamFile\n'
+                '{\n'
+                '\tversion\t2.0;\n'
                 '\tformat\tascii;\n'
                 '\tclass\tdictionary;\n'
                 '\tlocation\t"system";\n'
@@ -761,14 +762,16 @@ class MyModel:
                 elif i[grid.TYPE] == 'SurfaceRefine':
                     f.write(f'\n'
                         '\t{i[grid.OBJECT_NAME]}.stl // in constant/triSurface\n'
-                        f'\t{\n\t\ttype\ttriSurfaceMesh;\n\t\tname\t{i[grid.OBJECT_NAME]};\n'
+                        f'\t{\n'
+                        '\t\ttype\ttriSurfaceMesh;\n'
+                        '\t\tname\t{i[grid.OBJECT_NAME]};\n'
                         '\t}\n')
             for block in meshDict.find_all_elements([{'type': 'block', 'key': 'geometry'},
                 {'type': 'block'}]):
                 block = block['element']
                 if block['key'] != surface_file_name and block['key'] not in objects:
                     f.write('\n'
-                        f'\n\t{dictParse.file_string([block], indent_level = 1, pretty_print = True)}\n')
+                        f'\t{dictParse.file_string([block], indent_level = 1, pretty_print = True)}\n')
             f.write('\n'
                 '//\tboxExample\n//\t{\n'
                 '//\t\ttype\tsearchableBox;\n'
@@ -823,7 +826,7 @@ class MyModel:
                 '\t// ----- Refinement parameters -----\n'
                 '\n'
                 '\t// Maximum number of cells per processor during refinement\n')
-            maxLocalCells = featureLevel = dictParse.find_element(
+            maxLocalCells = dictParse.find_element(
                 [{'type': 'dictionary', 'key': 'maxLocalCells'}, {'type': 'integer'}],
                 parent = castellatedMeshControls)['element']
             if maxLocalCells is None:
@@ -832,7 +835,7 @@ class MyModel:
                 f.write(f'\tmaxLocalCells\t{maxLocalCells["value"]};\n')
             f.write('\n'
                 '\t// Overall cell limit during refinement (i.e. before removal)\n')
-            maxGlobalCells = featureLevel = dictParse.find_element(
+            maxGlobalCells = dictParse.find_element(
                 [{'type': 'dictionary', 'key': 'maxGlobalCells'}, {'type': 'integer'}],
                 parent = castellatedMeshControls)['element']
             if maxGlobalCells is None:
@@ -844,7 +847,7 @@ class MyModel:
                 '\t// of only few cells. Whenever the number of cells to be refined is less than\n'
                 '\t// or equal to the minRefinementCells parameter, the refinement will stop.\n'
                 '\t// be performed.\n')
-            minRefinementCells = featureLevel = dictParse.find_element(
+            minRefinementCells = dictParse.find_element(
                 [{'type': 'dictionary', 'key': 'minRefinementCells'}, {'type': 'integer'}],
                 parent = castellatedMeshControls)['element']
             if minRefinementCells is None:
@@ -853,7 +856,7 @@ class MyModel:
                 f.write(f'\tminRefinementCells\t{minRefinementCells["value"]};\n'
             f.write('\n'
                 '\t// Number of buffer layers of cells between different levels of refinement\n')
-            nCellsBetweenLevels = featureLevel = dictParse.find_element(
+            nCellsBetweenLevels = dictParse.find_element(
                 [{'type': 'dictionary', 'key': 'nCellsBetweenLevels'}, {'type': 'integer'}],
                 parent = castellatedMeshControls)['element']
             if nCellsBetweenLevels is None:
@@ -864,7 +867,9 @@ class MyModel:
                 '\t// ----- Explicit feature edge refinement -----\n'
                 '\n'
                 '\t// Specifies a level for any cell intersected by its edges.\n'
-                '\tfeatures\n\t(\n\t\t{\n'
+                '\tfeatures\n'
+                '\t(\n'
+                '\t\t{\n'
                 '\t\t\tfile\t"' + surface_file_name_wo_ext + '.extendedFeatureEdgeMesh";\n'
                 '\t\t\tlevel\t' + features_level + ';\n'
                 '\t\t}\n'
@@ -915,27 +920,27 @@ class MyModel:
                 if i[grid.LEVEL] == 0 or i[grid.TYPE] not in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine'):
                     continue
-                f.write('\n\t\t' + i[grid.OBJECT_NAME] + '\n\t\t{\n')
+                f.write(f'\n\t\t{i[grid.OBJECT_NAME]}\n'
+                    '\t\t{\n')
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
-                    f.write('\t\t\tmode\tinside; // distance | inside | outside\n')
-                    f.write('\t\t\tlevels\t((1.0 {}));'.format(i[grid.LEVEL]) +
-                            ' // ((distance level)), distance is used only in a distance mode.\n')
+                    f.write('\t\t\tmode\tinside; // distance | inside | outside\n'
+                        f'\t\t\tlevels\t((1.0 {i[grid.LEVEL]}));'
+                        ' // ((distance level)), distance is used only in a distance mode.\n')
                 else: # SurfaceRefine
-                    f.write('\t\t\tmode\tdistance;\n')
-                    f.write('\t\t\tlevels\t(({} {}));'.format(i[grid.RATIO], i[grid.LEVEL]) +
-                            ' // ((distance1 level1) (distance2 level2) ...), distance1 < distance2, level1 > level2\n')
+                    f.write('\t\t\tmode\tdistance;\n'
+                        '\t\t\tlevels\t(({i[grid.RATIO]} {i[grid.LEVEL]}));'
+                        ' // ((distance1 level1) (distance2 level2) ...), distance1 < distance2, level1 > level2\n')
                 f.write('\t\t}\n')
-            try:
-                for x in meshDict.getValueForKey(['castellatedMeshControls', 'refinementRegions']):
-                    if (DictParserList.isType(x, DictParserList.BLOCK) and
-                        x.key() != surface_file_name and x.key() not in objects):
-                        f.write('\n')
-                        meshDict.writeContents(x, f, indent = '\t\t', last_char = '\n')
-                        f.write('\n')
-            except:
-                pass
+            for block in dictParse.find_all_elements([{'type': 'block', 'key': 'refinementRegions'},
+                {'type': 'block'}], parent = castellatedMeshControls)):
+                block = block['element']
+                if block['key'] != surface_file_name and block['key'] not in objects:
+                    f.write('\n'
+                        f'\t\t{dictParse.file_string([block], indent_level = 2, pretty_print = True)}\n')
             f.write('\t}\n') # refinementRegions
-            f.write('\n\t// ----- Mesh selection -----\n')
+
+            f.write('\n'
+                '\t// ----- Mesh selection -----\n')
             cellZone = []
             for i in grid.table:
                 if i[grid.TYPE] == 'LocationInMesh':
@@ -1030,6 +1035,7 @@ class MyModel:
             except:
                 pass
             f.write('}\n') # snapControls
+
             f.write('\n// Settings for the layer addition.\n')
             f.write('addLayersControls\n{\n')
             f.write('\t// Layer thickness is set in a relative (true) or absolute (false) scale.\n')
@@ -1159,14 +1165,16 @@ class MyModel:
             except:
                 pass
             f.write('}\n') # addLayersControls
-            f.write('\n// Generic mesh quality settings. At any undoable phase these determine\n')
-            f.write('// where to undo.\n')
-            f.write('meshQualityControls\n{\n')
-            f.write('\t#includeEtc "caseDicts/meshQualityDict"\n')
-            f.write('\n\t// Optional: some meshing phases allow usage of relaxed rules.\n')
-            f.write('\t// See e.g. addLayersControls.nRelaxedIter.\n')
-            f.write('\trelaxed\n\t{\n')
-            f.write('\t\t// Maximum non-orthogonality allowed. Set to 180 to disable.\n')
+
+            f.write('\n'
+                '// Generic mesh quality settings. At any undoable phase these determine\n'
+                '// where to undo.\n'
+                'meshQualityControls\n{\n'
+                '\t#includeEtc "caseDicts/meshQualityDict"\n'
+                '\n\t// Optional: some meshing phases allow usage of relaxed rules.\n'
+                '\t// See e.g. addLayersControls.nRelaxedIter.\n'
+                '\trelaxed\n\t{\n'
+                '\t\t// Maximum non-orthogonality allowed. Set to 180 to disable.\n')
             try:
                 x = meshDict.getValueForKey(['meshQualityControls', 'relaxed', 'maxNonOrtho'])
                 f.write('\t\tmaxNonOrtho\t' + x[0] + ';\n')
@@ -1180,9 +1188,10 @@ class MyModel:
                             f.write('\n')
                 except:
                     pass
-            f.write('\t}\n') # relaxed
-            f.write('\n\t// ----- Advanced -----\n')
-            f.write('\n\t// Smoothing iterations. Used in combination with errorReduction.\n')
+            f.write('\t}\n' # relaxed
+                '\n'
+                '\t// ----- Advanced -----\n'
+                '\n\t// Smoothing iterations. Used in combination with errorReduction.\n')
             try:
                 x = meshDict.getValueForKey(['meshQualityControls', 'nSmoothScale'])
                 f.write('\tnSmoothScale\t' + x[0] + ';\n')
