@@ -519,8 +519,10 @@ if __name__ == '__main__':
 #                [{'type': 'block', 'key': 'castellatedMeshControls'},
 #                {'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
 #                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}])['element']['value'])
-    dp2 = DictParser2(string = 'refine_left\n'
-        '{\n'
-		'\ttype	box;\n'
-        '}; // (optional)\n')
-    print(f'\t{file_string(dp2.elements, indent_level = 1)}')
+    dp2 = DictParser2(string = '''CUSTOM_OPTIONS
+{
+	maxCellSize	3; // used to generate blockMeshDict
+	boundingBox	((-59.0 -78.0 -47.0) (41.0 22.0 53.0)); // used to generate blockMeshDict
+}
+''')
+    print(f'\t{structure_string(dp2.elements, indent_level = 1)}')
