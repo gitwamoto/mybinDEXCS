@@ -214,8 +214,8 @@ class MeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParamsFromDictFiles(self, meshDict_path, setFieldsDict_path, topoSetDict_path):
-        meshDict = dictParse.DictParser2(file_name = meshDict_path)
+    def setParamsFromDictFiles(self, meshDict_path, setFieldsDict_path, topoSetDict_path): ここを見よう！
+        meshDict = dictParse.DictParser(file_name = meshDict_path)
         if meshDict.find_element([{'type': 'block', 'key': 'FoamFile'},
             {'type': 'dictionary', 'key': 'object'},
             {'type': 'word', 'value': 'meshDict'}])['element'] is None:
@@ -234,57 +234,56 @@ class MeshFrame(QtGui.QDialog):
         if featureAngle is not None:
             self.featureAngleCRL.setText(featureAngle['value'])
 
-        objects = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
-        remainder = objects[:]
+        object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
+        remainder_names = object_names[:]
 
         for block in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
             {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
             block = block['element']
-            if block['key'] not in objects:
+            if block['key'] not in object_names:
                 continue
-            remainder.remove(block['key'])
+            remainder_names.remove(block['key'])
             patchType = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
                 {'type': 'word'}], parent = block)['element']
             if patch_type is not None:
-                self.grid.setCellValue(objects.index(block['key']), self.grid.TYPE, patchType['value'])
+                self.grid.setCellValue(object_names.index(block['key']), self.grid.TYPE, patchType['value'])
 
         for block in meshDict.find_all_elements([{'type': 'block', 'key': 'localRefinement'},
             {'type': 'block'}]):
             block = block['element']
-            if block['key'] not in objects:
+            if block['key'] not in object_names:
                 continue
             cellSize = dictParse.find_element([{'type': 'dictionary', 'key': 'cellSize'},
                 {'type': 'float|integer'}], parent = block)['element']
             if cellSize is not None:
-                self.grid.setCellValue(objects.index(block['key']), self.grid.CELL_SIZE, cellSize['value'])
+                self.grid.setCellValue(object_names.index(block['key']), self.grid.CELL_SIZE, cellSize['value'])
 
-        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'boundaryLayers'},
-            {'type': 'block'}]):
+        for block in meshDict.find_all_elements([{'type': 'block', 'key': 'boundaryLayers'}, {'type': 'block'}]):
             block = block['element']
-            if block['key'] not in objects:
+            if block['key'] not in object_names:
                 continue
-            i = objects.index(block['key'])
-            nLayers = dictParse.find_element([{'type': 'dictionary', 'key': 'nLayers'},
-                {'type': 'float|integer'}], parent = block)['element']
+            i = object_names.index(block['key'])
+            nLayers = block.find_element(
+                [{'type': 'dictionary', 'key': 'nLayers'}, {'type': 'float|integer'}])['element']
             if nLayers is not None:
                 self.grid.setCellValue(i, self.grid.N_LAYERS, nLayers['value'])
                 self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-            thicknessRatio = dictParse.find_element([{'type': 'dictionary', 'key': 'thicknessRatio'},
-                {'type': 'float|integer'}], parent = block)['element']
+            thicknessRatio = block.find_element(
+                [{'type': 'dictionary', 'key': 'thicknessRatio'}, {'type': 'float|integer'}])['element']
             if thicknessRatio is not None:
                 self.grid.setCellValue(i, self.grid.RATIO, thicknessRatio['value'])
 
         for block in meshDict.find_all_elements([{'type': 'block', 'key': 'objectRefinements'},
             {'type': 'block'}]):
             block = block['element']
-            remainder.remove(block['key'])
-            i = objects.index(block['key'])
-            cellSize = dictParse.find_element([{'type': 'dictionary', 'key': 'cellSize'},
-                {'type': 'float|integer'}], parent = block)['element']
+            remainder_names.remove(block['key'])
+            i = object_names.index(block['key'])
+            cellSize = block.find_element(
+                [{'type': 'dictionary', 'key': 'cellSize'}, {'type': 'float|integer'}])['element']
             if cellSize is not None:
                 self.grid.setCellValue(i, self.grid.CELL_SIZE, cellSize['value'])
-            refinementType = dictParse.find_element([{'type': 'dictionary', 'key': 'type'},
-                {'type': 'word'}], parent = block)['element']
+            refinementType = block.find_element(
+                [{'type': 'dictionary', 'key': 'type'}, {'type': 'word'}])['element']
             if refinementType is not None:
                 if refinementType['value'] == 'box':
                     self.grid.setCellValue(i, self.grid.TYPE, 'BoxRefine')
@@ -296,22 +295,22 @@ class MeshFrame(QtGui.QDialog):
         for block in meshDict.find_all_elements([{'type': 'block', 'key': 'surfaceMeshRefinement'},
             {'type': 'block'}]):
             block = block['element']
-            if block['key'] not in objects:
+            if block['key'] not in object_names:
                 continue
-            remainder.remove(block['key'])
-            i = objects.index(block['key'])
-            cellSize = dictParse.find_element([{'type': 'dictionary', 'key': 'cellSize'},
-                {'type': 'float|integer'}], parent = block)['element']
+            remainder_names.remove(block['key'])
+            i = object_names.index(block['key'])
+            cellSize = block.find_element(
+                [{'type': 'dictionary', 'key': 'cellSize'}, {'type': 'float|integer'}])['element']
             if cellSize is not None:
                 self.grid.setCellValue(i, self.grid.CELL_SIZE, cellSize['value'])
                 self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
-            refinementThickness = dictParse.find_element([{'type': 'dictionary', 'key': 'refinementThickness'},
-                {'type': 'float|integer'}], parent = block)['element']
+            refinementThickness = block.find_element([{'type': 'dictionary', 'key': 'refinementThickness'},
+                {'type': 'float|integer'}])['element']
             if refinementThickness is not None:
                 self.grid.setCellValue(i, self.grid.RATIO, refinementThickness['value'])
 
         if os.path.isfile(setFieldsDict_path):
-            setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
+            setFieldsDict = dictParse.DictParser(file_name = setFieldsDict_path)
             if setFieldsDict.find_element([{'type': 'block', 'key': 'FoamFile'},
                 {'type': 'dictionary', 'key': 'object'},
                 {'type': 'word', 'value': 'setFieldsDict'}])['element'] is None:
@@ -319,25 +318,28 @@ class MeshFrame(QtGui.QDialog):
         else:
             setFieldsDict = None
 
-        for block in setFieldsDict.find_all_elements([{'type': 'dictionary', 'key': 'regions'},
-            {'type': 'list'}, {'type': 'block'}]):
+        for block in setFieldsDict.find_all_elements(
+            [{'type': 'dictionary', 'key': 'regions'}, {'type': 'list'}, {'type': 'block'}]):
             block = block['element']
-            comment = dictParse.find_element([{'type': 'line_comment|block_comment'}],
-                parent = block)['element']['value']
-            if 'freecad' in comment.lower():
-                for i, object in enumerate(objects):
-                    if object not in comment:
-                        continue
-                    remainder.remove(object)
-                    if block['key'] == 'boxToCell':
-                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
-                    elif block['key'] == 'cylinderToCell':
-                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
-                    else:
-                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
+            comment = block.find_element([{'type': 'line_comment|block_comment'}])['element']
+            if comment is None:
+                continue
+            comment = comment['value']
+            if 'freecad' not in comment.lower():
+                continue
+            for i, obj in enumerate(object_names):
+                if obj not in comment:
+                    continue
+                remainder_names.remove(obj)
+                if block['key'] == 'boxToCell':
+                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
+                elif block['key'] == 'cylinderToCell':
+                    self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
+                else:
+                    self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
 
         if os.path.isfile(topoSetDict_path):
-            topoSetDict = dictParse.DictParser2(file_name = topoSetDict_path)
+            topoSetDict = dictParse.DictParser(file_name = topoSetDict_path)
             if topoSetDict.find_element([{'type': 'block', 'key': 'FoamFile'},
                 {'type': 'dictionary', 'key': 'object'},
                 {'type': 'word', 'value': 'topoSetDict'}])['element'] is None:
@@ -345,21 +347,21 @@ class MeshFrame(QtGui.QDialog):
         else:
             topoSetDict = None
 
-        for block in topoSetDict.find_all_elements([{'type': 'dictionary', 'key': 'actions'},
-            {'type': 'list'}, {'type': 'block'}]):
+        for block in topoSetDict.find_all_elements(
+            [{'type': 'dictionary', 'key': 'actions'}, {'type': 'list'}, {'type': 'block'}]):
             block = block['element']
-            setName = dictParse.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}],
-                parent = block)['element']['value'].replace('CellSet', '').replace()
-            if setName not in objects:
+            setName = block.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}]
+                )['element']['value'].replace('CellSet', '').replace()
+            if setName not in object_names:
                 continue
-            if dictParse.find_element([{'type': 'dictionary', 'key': 'source'}, {'type': 'word'}],
-                parent = block)['element']['value'] != 'rotatedBoxToCell':
+            if block.find_element([{'type': 'dictionary', 'key': 'source'}, {'type': 'word'}]
+                )['element']['value'] != 'rotatedBoxToCell':
                 continue
-            remainder.remove(setName)
-            self.grid.setCellValue(objects.index(setName), self.grid.TYPE, 'BoxTopo')
+            remainder_names.remove(setName)
+            self.grid.setCellValue(object_names.index(setName), self.grid.TYPE, 'BoxTopo')
 
-        for i in remainder:
-            self.grid.setCellValue(objects.index(i), self.grid.TYPE, 'N/A')
+        for i in remainder_names:
+            self.grid.setCellValue(object_names.index(i), self.grid.TYPE, 'N/A')
 
         return meshDict, setFieldsDict, topoSetDict
 
@@ -770,7 +772,7 @@ class MyModel:
                 '//\t}\n'
                 '}\n') # localRefinement
 
-            objects = [i[grid.OBJECT_NAME] for i in grid.table]
+            object_names = [i[grid.OBJECT_NAME] for i in grid.table]
             f.write('\n'
                 'objectRefinements\n'
                 '{\n')
@@ -824,7 +826,7 @@ class MyModel:
             for block in meshDict.find_all_elements([{'type': 'block', 'key': 'objectRefinements'},
                 {'type': 'block'}]):
                 block = block['element']
-                if block['key'] not in objects:
+                if block['key'] not in object_names:
                     f.write('\n'
                         f'\t{dictParse.file_string([block], indent_level = 1, pretty_print = True)}\n')
             f.write('\n'
@@ -902,7 +904,7 @@ class MyModel:
             for block in meshDict.find_all_elements([{'type': 'block', 'key': 'surfaceMeshRefinement'},
                 {'type': 'block'}]):
                 block = block['element']
-                if block['key'] not in objects:
+                if block['key'] not in object_names:
                     f.write('\n'
                         f'\t{dictParse.file_string([block], indent_level = 1, pretty_print = True)}\n')
             f.write('}\n')

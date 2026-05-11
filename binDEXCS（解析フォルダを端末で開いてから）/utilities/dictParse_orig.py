@@ -7,7 +7,6 @@
 import sys
 import os
 import re
-from collections import UserDict
 
 def normalize(file_name = None, string = None, overwrite_file = True):
     if file_name is not None:
@@ -178,7 +177,6 @@ def find_all_elements(path_list, parent):
         return elements
 
 def set_blank_line(parent, number_of_blank_lines = 1):
-    number_of_blank_lines = max(0, number_of_blank_lines)
     if isinstance(parent, list):
         if find_element([{'type': 'linebreak'}], parent)['element'] is None:
             return
@@ -251,7 +249,6 @@ def structure_string(parent, parent_header = '', indent_level = 0):
     return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '') + ']'
 
 def file_string(parent, indent_level = 0, pretty_print = True, commentless = False):
-    # 【注意】indent_levelがいくらであれ，1行目はインデントしない！
     if not isinstance(parent, list):
         parent = parent['value']
     s = ''
@@ -288,7 +285,7 @@ def file_string(parent, indent_level = 0, pretty_print = True, commentless = Fal
         linebreak = (i['type'] == 'linebreak')
     return s
 
-class DictParser(UserDict):
+class DictParser2:
     PATTERN = re.compile(
         # .      -> 改行（\n）以外の任意の1文字
         # [\s\S] -> 全ての文字
@@ -316,22 +313,22 @@ class DictParser(UserDict):
     )
     CLOSING_SYMBOL = {'block_end': '}', 'list_end': ')', 'dimension_end': ']'}
 
-    def __init__(self, file_name = None, string = None, element = None):
+    def __init__(self, file_name = None, string = None):
         self.file_name = file_name
         if file_name is not None:
             with open(file_name, 'r') as f:
                 self.string = f.read()
         else:
             self.string = string
-        super().__init__({'type': 'root', 'value': self.elements_list()[0]} if element is None else element)
+        self.elements = self.elements_list()[0]
 
     def elements_list(self, index = 0, terminator = None, essentials_required = 0):
         # terminator = 'block_end' | 'list_end' | 'dimension_end' | 'reached'
         debug = False
         def raise_error(message, last_index):
             raise Exception('Error in parser' +
-                ('' if self.file_name is None else f' (File: {os.path.basename(self.file_name)})') +
-                f': {message} | {self.string[max(last_index - 20, 0): last_index]}')
+                ('' if self.file_name is None else ' (File: ' + os.path.basename(self.file_name) + ')') +
+                ': ' + message + ' | ' + self.string[max(last_index - 20, 0): last_index])
         # ssss -> Python string.
         # @@@@ -> Essential words, such as word, string.
         # _scn -> Nonessential words, such as whitespace, comments, linebreak, which doesn't always exist.
@@ -390,7 +387,7 @@ class DictParser(UserDict):
                     v, index = self.elements_list(index = s.end(), terminator = 'reached')
                 else:
                     v, index = self.elements_list(index = s.end(), essentials_required = 1)
-                l.append(DictParser(element = {'type': s.lastgroup, 'key': s.group(), 'value': v}))
+                l.append({'type': s.lastgroup, 'key': s.group(), 'value': v})
                 if debug:
                     print(f'    -> {l[-1]}')
             elif s.lastgroup == 'semicolon':
@@ -398,12 +395,12 @@ class DictParser(UserDict):
                 for i in range(len(l)):
                     if l[i]['type'] in ('word', 'string'):
                         v, index = self.elements_list(index = s.end(), terminator = 'reached')
-                        l[i:] = [DictParser(element = {'type': 'dictionary', 'key': l[i]['value'],
-                            'value': l[i + 1:] + [DictParser(element = {'type': s.lastgroup, 'value': s.group()})] + v})]
+                        l[i:] = [{'type': 'dictionary', 'key': l[i]['value'],
+                            'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
                         dictionary = True
                         break
                 if not dictionary: # meaningless semicolon
-                    l.append(DictParser(element = {'type': s.lastgroup, 'value': s.group()}))
+                    l.append({'type': s.lastgroup, 'value': s.group()})
                     index = s.end()
                 if debug:
                     print(f'    -> {l[-1]}')
@@ -415,34 +412,32 @@ class DictParser(UserDict):
                     if l[i]['type'] in ('whitespace', 'linebreak', 'line_comment', 'block_comment'):
                         continue
                     if type_string == 'block' and l[i]['type'] in ('word', 'string'):
-                        l[i:] = [DictParser(element = {'type': type_string, 'key': l[i]['value'],
-                            'value': l[i + 1:] + [DictParser(element = {'type': s.lastgroup, 'value': s.group()})] + v})]
+                        l[i:] = [{'type': type_string, 'key': l[i]['value'],
+                            'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
                         has_header = True
                         break
                     if type_string == 'list' and l[i]['type'] == 'integer':
-                        l[i:] = [DictParser(element = {'type': type_string, 'length': int(l[i]['value']),
-                            'value': l[i + 1:] + [DictParser(element = {'type': s.lastgroup, 'value': s.group()})] + v})]
+                        l[i:] = [{'type': type_string, 'length': int(l[i]['value']),
+                            'value': l[i + 1:] + [{'type': s.lastgroup, 'value': s.group()}] + v}]
                         has_header = True
                         break
                 if not has_header:
-                    l.append(DictParser(element = {'type': type_string,
-                        'value': [DictParser(element = {'type': s.lastgroup, 'value': s.group()})] + v}))
+                    l.append({'type': type_string, 'value': [{'type': s.lastgroup, 'value': s.group()}] + v})
             elif s.lastgroup == 'dimension_start':
                 v, index = self.elements_list(index = s.end(), terminator = 'dimension_end')
-                l.append(DictParser(element = {'type': 'dimension',
-                    'value': [DictParser(element = {'type': s.lastgroup, 'value': s.group()})] + v}))
+                l.append({'type': 'dimension', 'value': [{'type': s.lastgroup, 'value': s.group()}] + v})
             elif s.lastgroup in ('block_end', 'list_end', 'dimension_end'):
                 if s.lastgroup != terminator:
-                    raise_error(f'Inappropriate closing bracket, "{self.CLOSING_SYMBOL[terminator]}" is required.', s.end())
-                l.append(DictParser(element = {'type': s.lastgroup, 'value': s.group()}))
+                    raise_error('Inappropriate closing bracket, "' + self.CLOSING_SYMBOL[terminator] + '" is required.', s.end())
+                l.append({'type': s.lastgroup, 'value': s.group()})
                 index = s.end()
             elif s.lastgroup == 'unknown':
-                raise_error(f'Unknown token "{s.group()}".', s.end())
+                raise_error('Unknown token "' + s.group() + '".', s.end())
             else:
                 if s.lastgroup == 'line_comment' and re.match(r'// (?:\* ?)+//$', s.group()):
-                    l.append(DictParser(element = {'type': 'separator', 'value': s.group()}))
+                    l.append({'type': 'separator', 'value': s.group()})
                 else:
-                    l.append(DictParser(element = {'type': s.lastgroup, 'value': s.group()}))
+                    l.append({'type': s.lastgroup, 'value': s.group()})
                 index = s.end()
             if s.lastgroup not in ('whitespace', 'linebreak', 'line_comment', 'block_comment'):
                 essentials += 1
@@ -451,7 +446,7 @@ class DictParser(UserDict):
             if s.lastgroup == terminator:
                 terminator_reached = True
         if not terminator_reached and terminator is not None:
-            raise_error(f'Missing "{self.CLOSING_SYMBOL[terminator]}".', len(self.string))
+            raise_error('Missing "' + self.CLOSING_SYMBOL[terminator] + '".', len(self.string))
         if debug:
             print(f'    return {l}')
         return l, index
@@ -469,32 +464,32 @@ class DictParser(UserDict):
             if len(separators) == 1 else separators[0], separators[-1]] # header, footer
 
     def find_element(self, path_list, start = None, end = None, reverse = False, index_not_found = None):
-        return find_element(path_list, parent = self, start = start, end = end, reverse = reverse,
+        return find_element(path_list, parent = self.elements, start = start, end = end, reverse = reverse,
             index_not_found = index_not_found)
 
     def find_all_elements(self, path_list):
-        return find_all_elements(path_list, self)
+        return find_all_elements(path_list, self.elements)
 
     def set_blank_line(self, number_of_blank_lines = 1):
-        set_blank_line(self, number_of_blank_lines)
+        set_blank_line(self.elements, number_of_blank_lines)
 
     def structure_string(self, indent_level = 0):
-        return structure_string(self, indent_level)
+        return structure_string(self.elements, indent_level)
 
     def file_string(self, indent_level = 0, pretty_print = True, commentless = False):
-        return file_string(self, indent_level, pretty_print, commentless)
+        return file_string(self.elements, indent_level, pretty_print, commentless)
 
 if __name__ == '__main__':
 #    normalize(file_name = sys.argv[1])
-    try:
-        dp = DictParser(file_name = sys.argv[1])
-    except:
-        print(sys.exc_info())
-    print(dp.structure_string())
-    print(dp.file_string(pretty_print = True, commentless = False))
-    set_blank_line(dp.find_element([{'type': 'block', 'key': 'functions'}])['element'], 1)
-    print(dp.structure_string())
-    print(dp.file_string(pretty_print = True, commentless = False))
+#    try:
+#        dp = DictParser2(file_name = sys.argv[1])
+#    except:
+#        print(sys.exc_info())
+#    print(dp.structure_string())
+#    print(dp.file_string(pretty_print = True, commentless = False))
+#    print(dp.structure_string())
+#    set_blank_line(dp.find_element([{'type': 'block', 'key': 'functions'}])['element'], 3)
+#    print(dp.file_string(pretty_print = True, commentless = False))
 #    print([i['index']
 #        for i in dp.find_all_elements([{'type': 'block', 'key': 'gradSchemes'}, {'type': 'dictionary'},
 #            {'type': 'whitespace|linebreak|semicolon'}])])
@@ -504,11 +499,11 @@ if __name__ == '__main__':
 #        print(i, e)
 #    separators = dp.find_separators()
 #    print([(s['index'], s['element']) for s in separators])
-#    print(structure_string(DictParser(string =
+#    print(structure_string(DictParser2(string =
 #        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
 #        #f'surfaceFile\t"{stl_2D_file_name}";\n'
-#        )))
-#    dp = DictParser(string =
+#        ).elements))
+#    dp2 = DictParser2(string =
 #'''castellatedMeshControls
 #{
 #	features
@@ -519,15 +514,15 @@ if __name__ == '__main__':
 #		}
 #	);
 #}''')
-#    print(dp.structure_string())
-#    print(dp.find_element(
+#    print(dp2.structure_string())
+#    print(dp2.find_element(
 #                [{'type': 'block', 'key': 'castellatedMeshControls'},
 #                {'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
 #                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}])['element']['value'])
-#    dp = DictParser(string = '''CUSTOM_OPTIONS
-#{
-#	maxCellSize	3; // used to generate blockMeshDict
-#	boundingBox	((-59.0 -78.0 -47.0) (41.0 22.0 53.0)); // used to generate blockMeshDict
-#}
-#''')
-#    print(f'{structure_string(dp, indent_level = 1)}')
+    dp2 = DictParser2(string = '''CUSTOM_OPTIONS
+{
+	maxCellSize	3; // used to generate blockMeshDict
+	boundingBox	((-59.0 -78.0 -47.0) (41.0 22.0 53.0)); // used to generate blockMeshDict
+}
+''')
+    print(f'\t{structure_string(dp2.elements, indent_level = 1)}')
