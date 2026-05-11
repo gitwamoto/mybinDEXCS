@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/10 6:13:50 PM
+# 2026/5/11 11:17:21 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -390,8 +390,6 @@ class MeshFrame(QtGui.QDialog):
 
     def actionOnExitButton(self):
         self.close()
-
-ここまでは見た！
 
 class MyController:
     FEATURE_ANGLE = 30
@@ -1071,7 +1069,7 @@ class MyModel:
                     'nSolveIter' '|' 'nRelaxIter' '|' 'nFeatureSnapIter')}],
                     parent = snapControls):
                 string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 1)
-                 f.write('\n'
+                f.write('\n'
                     f'\t{string}\n')
             f.write('}\n') # snapControls
 
@@ -1264,7 +1262,7 @@ class MyModel:
                 f.write(f'\tmaxNonOrtho\t{maxNonOrtho["value"]};\n')
             for element in dictParse.find_all_elements(
                 [{'type': 'block|dictionary', 'except key': 'maxNonOrtho'}], parent = relaxed):
-                string = dictParse.DictParser(element = [element["element"]).file_string(indent_level = 2)
+                string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 2)
                 f.write('\n'
                     f'\t\t{string}\n')
             f.write('\t}\n' # relaxed
@@ -1521,7 +1519,7 @@ class MyModel:
 
             for element in topoSetDict.find_all_elements([{'type': 'block|dictionary',
                 'except key': 'FoamFile|actions'}]):
-                string = dictParse.DictParser(element = [element["element"]).file_string()
+                string = dictParse.DictParser(element = element["element"]).file_string()
                 f.write('\n'
                     f'{string}\n')
 
