@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:21:55 PM
+# 2026/5/12 9:48:00 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -73,10 +73,9 @@ if __name__ == '__main__':
         os.rename(faces_path, f'{faces_path}_bak')
         with open(faces_path, 'w') as f:
             f.write(s[:ph].replace('faceCompactList', 'faceList'))
-            f.write('{}\n(\n'.format(len(faces_data)))
+            f.write(f'{len(faces_data)}\n(\n')
             for i in faces_data:
-#                f.write('\n{}\n('.format(i.shape[0]))
-                f.write('{}('.format(i.shape[0]))
+                f.write(f'{i.shape[0]}(')
                 for j in i:
                     f.write(pack('<d', j))
                 f.write(')\n')
@@ -92,10 +91,10 @@ if __name__ == '__main__':
     else:
         if interactive:
             box = misc.bounding_box_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
-            print('元のメッシュの範囲は{} <= x <= {}, {} <= y <= {}, {} <= z <= {}です．'.format(
-                box[0][0], box[0][1], box[1][0], box[1][1], box[2][0], box[2][1]))
-            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？ (y/n, yだと0.001倍してメートルに直します．) > '
-                ).strip().lower() == 'y' else False
+            print(f'元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]}, {box[1][0]} <= y <= {box[1][1]}, '
+                f'{box[2][0]} <= z <= {box[2][1]}です．')
+            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？ '
+                '(y/n, yだと0.001倍してメートルに直します．) > ').strip().lower() == 'y' else False
         if scaleMesh_0p001:
             misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:15:07 PM
+# 2026/5/12 10:05:40 PM
 
 import os
 import sys
@@ -205,8 +205,8 @@ def intoFvSolution():
                 '\t\t"k|epsilon|omega"\t1.0;\n'
                 '\t}')['value']
         else:
-            equations['value'][:equations.find_element([{'type': 'block_start'}])['index']
-                ] = dictParse.DictParser(string =
+            equations['value'][:equations.find_element(
+                [{'type': 'block_start'}])['index']] = dictParse.DictParser(string =
                     ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n')['value']
 
         relaxationFactors.set_blank_line(number_of_blank_lines = 0)

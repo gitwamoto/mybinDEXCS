@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:05:02 PM
+# 2026/5/12 9:50:49 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -198,7 +198,7 @@ if __name__ == '__main__':
         with open(points_path, 'w') as f: # can overwrite
             f.write(s[:ph])
             for i in points_data:
-                f.write('({} {} {})\n'.format(i[0], i[1], i[2]))
+                f.write(f'({i[0]} {i[1]} {i[2]})\n')
             f.write(s[pf:])
 
     if not converted_millimeter_into_meter:

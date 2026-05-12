@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # findMaxMin.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:59:36 PM
+# 2026/5/12 10:07:43 PM
 
 import os
 import sys
@@ -136,7 +136,7 @@ def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter 
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        print('\nUsage: {} file_name column_number [-d \'delimiter\'] [-t number_of_top_skip]\n'.format(sys.argv[0]))
+        print(f"\nUsage: {sys.argv[0]} file_name column_number [-d 'delimiter'] [-t number_of_top_skip]\n")
         sys.exit(0)
     file_name = sys.argv[1]
     column = int(sys.argv[2])
@@ -153,11 +153,11 @@ if __name__ == '__main__':
         i += 1
 
     l = find_max_min(file_name, column, top_skip, delimiter)
-    print('row showing max value: {}'.format(l[0]))
-    print('row showing min value: {}'.format(l[1]))
+    print(f'row showing max value: {l[0]}')
+    print(f'row showing min value: {l[1]}')
 
     l = find_local_max_min(file_name, column, top_skip, delimiter)
     for i in l[0]:
-        print('row showing local max value: {}'.format(i))
+        print(f'row showing local max value: {i}')
     for i in l[1]:
-        print('row showing local min value: {}'.format(i))
+        print(f'row showing local min value: {i}')

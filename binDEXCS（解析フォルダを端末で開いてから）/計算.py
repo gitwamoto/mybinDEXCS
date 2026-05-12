@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:23:32 PM
+# 2026/5/12 10:05:37 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -232,8 +232,8 @@ def change_relaxationFactors_in_controlDict(exponent):
             relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_equations
             equations = linebreak_and_equations[-1]
         else:
-            equations['value'][:equations.find_element([{'type': 'block_start'}])['index']
-                ] = dictParse.DictParser(string =
+            equations['value'][:equations.find_element(
+                [{'type': 'block_start'}])['index']] = dictParse.DictParser(string =
                     ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n')['value']
 
         relaxationFactors.set_blank_line(number_of_blank_lines = 0)

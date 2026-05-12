@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dakuten.py
 # by Yukiharu Iwamoto
-# 2022/6/21 7:58:31 PM
+# 2026/5/12 9:53:09 PM
 
 import os
 import glob
@@ -96,8 +96,8 @@ def join_dakuten_in(path):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        print('Usage: {} '.format(os.path.basename(sys.argv[0])) +
-            '{-j[oin] | -d[ivide]} {<folder_path> | <file_path> | -s[tring] <string>} ')
+        print(f'Usage: {os.path.basename(sys.argv[0])} '
+            '{-j[oin] | -d[ivide]} {<folder_path> | <file_path> | -s[tring] <string>}')
         quit()
 
 # For test

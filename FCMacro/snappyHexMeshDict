@@ -89,18 +89,18 @@ geometry
 // Settings for the castellatedMesh generation.
 castellatedMeshControls
 {
-// ----- Refinement parameters -----
+	// ----- Refinement parameters -----
 
-// Maximum number of cells per processor during refinement
+	// Maximum number of cells per processor during refinement
 	maxLocalCells	100000;
 
-// Overall cell limit during refinement (i.e. before removal)
+	// Overall cell limit during refinement (i.e. before removal)
 	maxGlobalCells	2000000;
 
-// The refinement along the surfaces may spend many iterations on refinement
-// of only few cells. Whenever the number of cells to be refined is less than
-// or equal to the minRefinementCells parameter, the refinement will stop.
-// be performed.
+	// The refinement along the surfaces may spend many iterations on refinement
+	// of only few cells. Whenever the number of cells to be refined is less than
+	// or equal to the minRefinementCells parameter, the refinement will stop.
+	// be performed.
 	minRefinementCells	2;
 
 // Number of buffer layers of cells between different levels of refinement

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:17:15 PM
+# 2026/5/12 9:55:53 PM
 
 import glob
 import os
@@ -60,7 +60,7 @@ def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0):
     with open(paraview_json_home, 'r') as f:
         s = f.read()
     t = re.sub(r'"Ambient"\s*:\s*[0-9.]+', f'"Ambient" : {ambient}',
-            re.sub(r'"Diffuse"\s*:\s*[0-9.]+', '"Diffuse" : {diffuse}', s))
+            re.sub(r'"Diffuse"\s*:\s*[0-9.]+', f'"Diffuse" : {diffuse}', s))
     if s != t:
         with open(paraview_json_home, 'w') as f:
             f.write(t)

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:19:04 PM
+# 2026/5/12 9:59:45 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -221,8 +221,8 @@ if __name__ == '__main__':
                             Fx_list.append(Fx)
                             Fy_list.append(Fy)
                             Fz_list.append(Fz)
-                            fw.write('{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\n'.format(
-                                t, Fx, Fy, Fz, float(linem[1]), float(linem[2]), float(linem[3])))
+                            fw.write(f'{t:g}\t{Fx:g}\t{Fy:g}\t{Fz:g}\t'
+                                f'{float(linem[1]):g}\t{float(linem[2]):g}\t{float(linem[3]):g}\n')
         plt.plot(t_list, Fx_list, label = 'Fx')
         plt.plot(t_list, Fy_list, label = 'Fy')
         plt.plot(t_list, Fz_list, label = 'Fz')
@@ -245,7 +245,7 @@ if __name__ == '__main__':
         forces_png = os.path.join(pdir, forces_dir + '.png')
         plt.savefig(forces_png)
         plt.clf()
-        subprocess.call('xdg-open ' + forces_png, shell = True)
-        print('\nグラフは{}, 結果は{}に保存しました．'.format(forces_png, forces_tab_txt))
+        subprocess.call(f'xdg-open {forces_png}', shell = True)
+        print(f'\nグラフは{forces_png}, 結果は{forces_tab_txt}に保存しました．')
 
     rmObjects.removeInessentials()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:08:49 PM
+# 2026/5/12 3:33:57 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -243,7 +243,7 @@ if __name__ == '__main__':
     #   ...
     geometry_stl_name = None
     for b in snappyHexMeshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block'}]):
-		b = b['element']
+        b = b['element']
         if b['key'].endswith('.stl'): # STLファイルは1つにまとめられていると仮定
             geometry_stl_block = b
             stl_file_name = b['key']
@@ -350,7 +350,7 @@ if __name__ == '__main__':
         boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
         boundary = dictParse.DictParser(file_name = boundary_path)
         for p in boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}]):
-			p = p['element']
+            p = p['element']
             if p['key'].startswith(prefix):
                 p['key'] = p['key'][len_prefix:]
         with open(boundary_path, 'w') as f:

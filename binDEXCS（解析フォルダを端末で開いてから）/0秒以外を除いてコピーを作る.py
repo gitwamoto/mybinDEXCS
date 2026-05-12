@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒以外を除いてコピーを作る.py
 # by Yukiharu Iwamoto
-# 2021/6/30 12:05:11 PM
+# 2026/5/12 9:45:12 PM
 
 import signal
 import subprocess
@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     i = 1
     while True:
-        cname = os.getcwd() + '_{}'.format(i)
+        cname = f'{os.getcwd()}_{i}'
         if not os.path.exists(cname):
             os.mkdir(cname)
             break

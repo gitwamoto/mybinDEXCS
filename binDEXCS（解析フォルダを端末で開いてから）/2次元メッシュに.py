@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:53:26 PM
+# 2026/5/12 9:45:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -56,7 +56,7 @@ def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
                 'expansionRatio\t1.0;\n'
                 'linearNormalCoeffs\n'
                 '{\n'
-                '\tthickness\t{z_thickness};\n'
+                f'\tthickness\t{z_thickness};\n'
                 '}\n'
                 'mergeFaces\tfalse;\n'
                 'mergeTol\t0;\n')

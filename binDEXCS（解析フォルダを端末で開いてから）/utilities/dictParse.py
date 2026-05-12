@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:20:35 AM
+# 2026/5/12 3:31:02 PM
 
 import sys
 import os
@@ -121,69 +121,6 @@ def re_findall_in_comments(pattern, string):
             result.extend(pat_findall.findall(s.group()))
         index = s.end()
     return result
-
-def structure_string(parent, parent_header = '', indent_level = 0):
-    if isinstance(parent, DictParser) and parent['type'] != 'root':
-        parent = [parent]
-    elif not isinstance(parent, list):
-        parent = parent['value']
-    l = len(str(len(parent) - 1))
-    h = ' '*l
-    s = ''
-    indent = '  '*indent_level
-    for n, i in enumerate(parent):
-        s += f'{str(n).zfill(l)}: {indent}'
-        if i['type'] in ('dictionary', 'block'):
-            s += (f"{{'type': '{i['type']}', "  +
-                (f"'key': '{i['key']}', " if 'key' in i else "") + 
-                f"'value': {structure_string(i['value'], h, indent_level + 1)}}}\n")
-        elif i['type'] == 'list':
-            s += ("{'type': 'list', " +
-                (f"'length': {i['length']}, " if 'length' in i else "") +
-                f"'value': {structure_string(i['value'], h, indent_level + 1)}}}\n")
-        else:
-            s += f'{i}\n'
-    return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '')
-
-def file_string(parent, indent_level = 0, pretty_print = True, commentless = False):
-    # 【注意】indent_levelがいくらであれ，1行目はインデントしない！
-    if isinstance(parent, DictParser) and parent['type'] != 'root':
-        parent = [parent]
-    elif not isinstance(parent, list):
-        parent = parent['value']
-    s = ''
-    indent = '\t'*indent_level
-    linebreak = False
-    for i in parent:
-        if pretty_print and linebreak: # 改行直後
-            if (i['type'] == 'whitespace' or
-                commentless and i['type'] in ('line_comment', 'block_comment')):
-                continue
-            elif i['type'] != 'linebreak':
-                s += indent
-        if i['type'] in ('block', 'list', 'dimension'):
-            start = DictParser.find_element_static([{'type': i['type'] + '_start'}], parent = i['value'])['index'] + 1
-            end = DictParser.find_element_static([{'type': i['type'] + '_end'}], parent = i['value'], reverse = True)['index']
-            j = DictParser.find_element_static([{'except type': 'whitespace'}], parent = i['value'], start = end - 1, end = start - 1,
-                reverse = True)
-            if j['element'] is not None:
-                end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
-                s += (i.get('key', '') + i.get('length', '') +
-                    file_string(i['value'][:start], indent_level, pretty_print, commentless) +
-                    file_string(i['value'][start:end], indent_level + 1, pretty_print, commentless) +
-                    file_string(i['value'][end:], indent_level, pretty_print, commentless))
-        else:
-            if commentless and i['type'] == 'block_comment':
-                if not s.endswith(' '):
-                    s += ' '
-            elif not commentless or i['type'] != 'line_comment':
-                if isinstance(i['value'], list):
-                    s += (i.get('key', '') + i.get('length', '') +
-                        file_string(i['value'], indent_level, pretty_print, commentless))
-                else:
-                    s += i['value']
-        linebreak = (i['type'] == 'linebreak')
-    return s
 
 class DictParser(UserDict):
     PATTERN = re.compile(
@@ -415,7 +352,7 @@ class DictParser(UserDict):
             reverse = reverse, index_not_found = index_not_found)
 
     def find_all_elements(self, path_list):
-        return find_all_elements(path_list, self)
+        return DictParser.find_all_elements_static(path_list, self)
 
     def find_separators(self, header_index_not_found = None, footer_index_not_found = None):
         separators = self.find_all_elements([{'type': 'separator'}])
@@ -477,11 +414,82 @@ class DictParser(UserDict):
             else:
                 i += 1
 
+    @staticmethod
+    def structure_string_static(parent, parent_header = '', indent_level = 0):
+        if isinstance(parent, DictParser) and parent['type'] != 'root':
+            parent = [parent]
+        elif not isinstance(parent, list):
+            parent = parent['value']
+        l = len(str(len(parent) - 1))
+        h = ' '*l
+        s = ''
+        indent = '  '*indent_level
+        for n, i in enumerate(parent):
+            s += f'{str(n).zfill(l)}: {indent}'
+            if i['type'] in ('dictionary', 'block'):
+                s += (f"{{'type': '{i['type']}', "  +
+                    (f"'key': '{i['key']}', " if 'key' in i else "") + 
+                    f"'value': {DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
+            elif i['type'] == 'list':
+                s += ("{'type': 'list', " +
+                    (f"'length': {i['length']}, " if 'length' in i else "") +
+                    f"'value': {DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
+            else:
+                s += f'{i}\n'
+        return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '')
+
     def structure_string(self, indent_level = 0):
-        return structure_string(self, indent_level)
+        return DictParser.structure_string_static(self, indent_level)
+
+    @staticmethod
+    def file_string_static(parent, indent_level = 0, pretty_print = True, commentless = False):
+        # 【注意】indent_levelがいくらであれ，1行目はインデントしない！
+        if isinstance(parent, DictParser) and parent['type'] != 'root':
+            parent = [parent]
+        elif not isinstance(parent, list):
+            parent = parent['value']
+        s = ''
+        indent = '\t'*indent_level
+        linebreak = False
+        for i in parent:
+            if pretty_print and linebreak: # 改行直後
+                if (i['type'] == 'whitespace' or
+                    commentless and i['type'] in ('line_comment', 'block_comment')):
+                    continue
+                elif i['type'] != 'linebreak':
+                    s += indent
+            if i['type'] in ('block', 'list', 'dimension'):
+                start = DictParser.find_element_static(
+                    [{'type': i['type'] + '_start'}], parent = i['value'])['index'] + 1
+                end = DictParser.find_element_static(
+                    [{'type': i['type'] + '_end'}], parent = i['value'], reverse = True)['index']
+                j = DictParser.find_element_static(
+                    [{'except type': 'whitespace'}], parent = i['value'], start = end - 1, end = start - 1,
+                    reverse = True)
+                if j['element'] is not None:
+                    end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
+                    s += (i.get('key', '') + i.get('length', '') +
+                        DictParser.file_string_static(
+                            i['value'][:start], indent_level, pretty_print, commentless) +
+                        DictParser.file_string_static(
+                            i['value'][start:end], indent_level + 1, pretty_print, commentless) +
+                        DictParser.file_string_static(
+                            i['value'][end:], indent_level, pretty_print, commentless))
+            else:
+                if commentless and i['type'] == 'block_comment':
+                    if not s.endswith(' '):
+                        s += ' '
+                elif not commentless or i['type'] != 'line_comment':
+                    if isinstance(i['value'], list):
+                        s += (i.get('key', '') + i.get('length', '') +
+                            DictParser.file_string_static(i['value'], indent_level, pretty_print, commentless))
+                    else:
+                        s += i['value']
+            linebreak = (i['type'] == 'linebreak')
+        return s
 
     def file_string(self, indent_level = 0, pretty_print = True, commentless = False):
-        return file_string(self, indent_level, pretty_print, commentless)
+        return DictParser.file_string_static(self, indent_level, pretty_print, commentless)
 
 if __name__ == '__main__':
 #    normalize(file_name = sys.argv[1])

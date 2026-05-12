@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # logファイルをプロット.py
 # by Yukiharu Iwamoto
-# 2026/4/20 11:15:39 AM
+# 2026/5/12 9:49:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     if os.path.isdir('logs'):
         shutil.rmtree('logs')
-    command = 'foamLog {}'.format(log_file)
+    command = f'foamLog {log_file}'
     if subprocess.call(command, shell = True) != 0:
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
@@ -124,8 +124,8 @@ if __name__ == '__main__':
         png_name = 'residualsInitial.png'
         plt.savefig(png_name)
         plt.clf()
-        subprocess.call('xdg-open {}'.format(png_name), shell = True)
-        print('最初のサブイタレーションにおける残差のグラフを{}に保存しました．'.format(png_name))
+        subprocess.call(f'xdg-open {png_name}', shell = True)
+        print(f'最初のサブイタレーションにおける残差のグラフを{png_name}に保存しました．')
 
         x_min = float('inf')
         x_max = -x_min
@@ -160,8 +160,8 @@ if __name__ == '__main__':
         png_name = 'residualsFinal.png'
         plt.savefig(png_name)
         plt.clf()
-        subprocess.call('xdg-open {}'.format(png_name), shell = True)
-        print('最終残差のグラフを{}に保存しました．'.format(png_name))
+        subprocess.call(f'xdg-open {png_name}', shell = True)
+        print(f'最終残差のグラフを{png_name}に保存しました．')
 
     vars = [os.path.basename(i) for i in glob.iglob(os.path.join('logs', 'cont*_0'))]
     if len(vars) == 0:
@@ -203,7 +203,7 @@ if __name__ == '__main__':
         png_name = 'continuityErrors.png'
         plt.savefig(png_name)
         plt.clf()
-        subprocess.call('xdg-open {}'.format(png_name), shell = True)
-        print('連続の式の誤差のグラフを{}に保存しました．'.format(png_name))
+        subprocess.call(f'xdg-open {png_name}', shell = True)
+        print(f'連続の式の誤差のグラフを{png_name}に保存しました．')
 
     rmObjects.removeInessentials()
