@@ -122,31 +122,6 @@ def re_findall_in_comments(pattern, string):
         index = s.end()
     return result
 
-def find_all_elements(path_list, parent):
-    # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
-    #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
-    #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
-    if not isinstance(parent, list):
-        parent = parent['value']
-    if isinstance(path_list, dict):
-        path_list = [path_list]
-    elif len(path_list) == 0:
-        return []
-    p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
-        for k, v in path_list[0].items()}
-    # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
-    # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
-    c = [{'index': i, 'element': parent[i]} for i in range(len(parent))
-        if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
-            for k, v in path_list[0].items())]
-    if len(c) == 0 or len(path_list) == 1:
-        return [{'parent': parent, 'index': i['index'], 'element': i['element']} for i in c]
-    else:
-        elements = []
-        for i in c:
-            elements += find_all_elements(path_list[1:], i['element'])
-        return elements
-
 def structure_string(parent, parent_header = '', indent_level = 0):
     if isinstance(parent, DictParser) and parent['type'] != 'root':
         parent = [parent]
@@ -378,18 +353,6 @@ class DictParser(UserDict):
             print(f'    return {l}')
         return l, index
 
-    def find_separators(self, header_index_not_found = None, footer_index_not_found = None):
-        separators = self.find_all_elements([{'type': 'separator'}])
-        if len(separators) == 0:
-            return [{'parent': None, 'index': header_index_not_found, 'element': None},
-                {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
-        if self.find_element(
-            [{'except type': 'ignorable'}], start = separators[-1]['index'] + 1)['element'] is not None:
-            return [separators[0],
-                {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
-        return [{'parent': None, 'index': header_index_not_found, 'element': None}
-            if len(separators) == 1 else separators[0], separators[-1]] # header, footer
-
     @staticmethod
     def find_element_static(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
         # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
@@ -421,12 +384,50 @@ class DictParser(UserDict):
             return DictParser.find_element_static(path_list[1:], parent = c['element'],
                 start = start, end = end, reverse = reverse, index_not_found = index_not_found)
 
+    @staticmethod
+    def find_all_elements_static(path_list, parent):
+        # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
+        #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
+        #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
+        if not isinstance(parent, list):
+            parent = parent['value']
+        if isinstance(path_list, dict):
+            path_list = [path_list]
+        elif len(path_list) == 0:
+            return []
+        p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
+            for k, v in path_list[0].items()}
+        # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
+        # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
+        c = [{'index': i, 'element': parent[i]} for i in range(len(parent))
+            if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
+                for k, v in path_list[0].items())]
+        if len(c) == 0 or len(path_list) == 1:
+            return [{'parent': parent, 'index': i['index'], 'element': i['element']} for i in c]
+        else:
+            elements = []
+            for i in c:
+                elements += DictParser.find_all_elements_static(path_list[1:], i['element'])
+            return elements
+
     def find_element(self, path_list, start = None, end = None, reverse = False, index_not_found = None):
         return DictParser.find_element_static(path_list, parent = self, start = start, end = end,
             reverse = reverse, index_not_found = index_not_found)
 
     def find_all_elements(self, path_list):
         return find_all_elements(path_list, self)
+
+    def find_separators(self, header_index_not_found = None, footer_index_not_found = None):
+        separators = self.find_all_elements([{'type': 'separator'}])
+        if len(separators) == 0:
+            return [{'parent': None, 'index': header_index_not_found, 'element': None},
+                {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
+        if self.find_element(
+            [{'except type': 'ignorable'}], start = separators[-1]['index'] + 1)['element'] is not None:
+            return [separators[0],
+                {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
+        return [{'parent': None, 'index': header_index_not_found, 'element': None}
+            if len(separators) == 1 else separators[0], separators[-1]] # header, footer
 
     def set_blank_line(self, number_of_blank_lines = 1):
         number_of_blank_lines = max(0, number_of_blank_lines)

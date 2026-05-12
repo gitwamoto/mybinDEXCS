@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:09:37 PM
+# 2026/5/12 2:53:06 PM
 
 # ---- オプションはない ----
 
@@ -23,7 +23,7 @@ def append_patches(src, dst):
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     patches.sort(key = lambda p: p['element']['key'])
 
-    linebreak = dictParse.DictParser(string = '\n').elements[0]
+    linebreak = dictParse.DictParser(string = '\n')['value'][0]
     for f_path in glob.iglob(os.path.join(dst, '*')):
         if not os.path.isfile(f_path):
             continue
@@ -37,7 +37,8 @@ def append_patches(src, dst):
 
         if f_base in ('k', 'epsilon', 'omega'):
             internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
-            i = parameter.find_element([{'type': 'block_comment'}], start = internalField['index'] - 1, reverse = True)
+            i = parameter.find_element(
+                [{'type': 'block_comment'}], start = internalField['index'] - 1, reverse = True)
             if i['element'] is None or '初期値の例' not in i['element']['value']:
                 if f_base == 'k':
                     c = ('/*\n'
@@ -63,8 +64,8 @@ def append_patches(src, dst):
                     else: # omega
                         c += '_omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
                     c += '*/\n'
-                parameter.elements[
-                    internalField['index']:internalField['index']] = dictParse.DictParser(string = c).elements
+                parameter['value'][
+                    internalField['index']:internalField['index']] = dictParse.DictParser(string = c)['value']
 
         boundaryField = parameter.find_element([{'type': 'block', 'key': 'boundaryField'}])['element']
         if boundaryField is None:
@@ -72,23 +73,24 @@ def append_patches(src, dst):
                 '\n'
                 'boundaryField\n'
                 '{\n'
-                '}\n').elements
+                '}\n')['value']
             tail_index = parameter.find_element([{'except type': 'whitespace|linebreak|separator'}],
-                reverse = True, index_not_found = len(parameter.elements) - 1)['index'] + 1
-            parameter.elements[tail_index:tail_index] = linebreak_and_boundaryField
+                reverse = True, index_not_found = len(parameter['value']) - 1)['index'] + 1
+            parameter['value'][tail_index:tail_index] = linebreak_and_boundaryField
             boundaryField = linebreak_and_boundaryField[1]
-        i = dictParse.find_element([{'type': 'block_end'}], parent = boundaryField, reverse = True)['index']
-        boundaryField_end = dictParse.find_element([{'type': 'linebreak'}], parent = boundaryField, start = i - 1,
-            reverse = True, index_not_found = i)['index']
+        i = boundaryField.find_element([{'type': 'block_end'}], reverse = True)['index']
+        boundaryField_end = boundaryField.find_element(
+            [{'type': 'linebreak'}], start = i - 1, reverse = True, index_not_found = i)['index']
 
         for p in patches:
-            i = dictParse.find_element([{'type': 'block', 'key': p['element']['key']}], parent = boundaryField)
+            p = p['element']
+            i = boundaryField.find_element([{'type': 'block', 'key': p['key']}])
             if i['element'] is None:
-                v = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}],
-                    parent = p['element'])['element']['value']
-                s = ('\n' +
-                    p['element']['key'] + '\n' +
-                    '{\n' +
+                v = p.find_element(
+                    [{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}])['element']['value']
+                s = ('\n'
+                    f'{p["key"]}\n'
+                    '{\n'
                     'type\t')
                 if v == 'wall':
                     if f_base == 'U':
@@ -129,7 +131,7 @@ def append_patches(src, dst):
                         'value\t$internalField; // 実際には使わないけど必要\n')
                 else:
                     s += (v if v in ('empty', 'symmetryPlane', 'symmetry', 'wedge') else 'zeroGradient') + ';\n'
-                b = dictParse.DictParser(string = s + '}\n').elements
+                b = dictParse.DictParser(string = f'{s}' '}\n')['value']
                 boundaryField['value'][boundaryField_end:boundaryField_end] = b
                 boundaryField_end += len(b)
             else:

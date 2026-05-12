@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:11:44 PM
+# 2026/5/12 3:23:32 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -149,25 +149,25 @@ def reset_relaxationFactors_in_fvSolution():
         if relaxationFactors is None:
             return
         for k in ('equations', 'fields'):
-            block = dictParse.find_element([{'type': 'block', 'key': k}], parent = relaxationFactors)['element']
+            block = relaxationFactors.find_element([{'type': 'block', 'key': k}])['element']
             if block is None:
                 continue
-            for i in dictParse.find_all_elements([{'type': 'dictionary'}], parent = block):
-                comment = dictparse.find_element([{'type': 'line_comment|block_comment'}], parent = i['element'],
-                    reverse = True)['element']
-                if (comment is not None or re.search(r'DECREASED\s+IN\s+RESPONCE\s+TO\s+FLOATING\s+POINT\s+ERROR',
-                    comment['value'].upper()) is not None):
+            for i in block.find_all_elements([{'type': 'dictionary'}]):
+                i = i['element']
+                comment = i.find_element([{'type': 'line_comment|block_comment'}], reverse = True)
+                if (comment['element'] is not None or
+                    re.search(r'DECREASED\s+IN\s+RESPONCE\s+TO\s+FLOATING\s+POINT\s+ERROR',
+                        comment['element']['value'].upper()) is not None):
                     continue
                 del comment['parent'][comment['index']]
-                calc = dictparse.find_element([{'type': 'directive', 'key': '#calc'}], parent = i['element'])['element']
+                calc = i.find_element([{'type': 'directive', 'key': '#calc'}])['element']
                 if calc is None:
                     continue
-                value = re.match(r'"\(([^)]+)',
-                    dictParse.find_element([{'type': 'string'}], parent = calc)['element']['value'])
+                value = re.match(r'"\(([^)]+)', calc.find_element([{'type': 'string'}])['element']['value'])
                 if value is None:
                     continue
                 calc['parent'][calc['index']:calc['index'] + 1] = dictParse.DictParser(string =
-                    value[1]).elements
+                    value[1])['value']
             block.set_blank_line(number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string())[0]
@@ -190,7 +190,7 @@ def change_relaxationFactors_in_controlDict(exponent):
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
 
         tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(fvSolution.elements) - 1)['index'] + 1
+            reverse = True, index_not_found = len(fvSolution['value']) - 1)['index'] + 1
 
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
@@ -199,14 +199,13 @@ def change_relaxationFactors_in_controlDict(exponent):
                 '\n'
                 'relaxationFactors\n'
                 '{\n'
-                '}').elements
-            fvSolution.elements[tail_index:tail_index] = linebreak_and_relaxationFactors
+                '}')['value']
+            fvSolution['value'][tail_index:tail_index] = linebreak_and_relaxationFactors
             tail_index += len(linebreak_and_relaxationFactors)
             relaxationFactors = linebreak_and_relaxationFactors[-1]
-        relaxationFactors_start = dictParse.find_element([{'type': 'block_start'}],
-            parent = relaxationFactors)['index'] + 1
+        relaxationFactors_start = relaxationFactors.find_element([{'type': 'block_start'}])['index'] + 1
 
-        fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
+        fields = relaxationFactors.find_element([{'type': 'block', 'key': 'fields'}])['element']
         if fields is None:
             linebreak_and_fields = dictParse.DictParser(string =
                 '\n'
@@ -214,16 +213,14 @@ def change_relaxationFactors_in_controlDict(exponent):
                 '\t{\n'
                 '\t\t"p|p_rgh"\t1.0;\n'
                 '\t\trho\t1.0;\n'
-                '\t}').elements
+                '\t}')['value']
             relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_fields
             fields = linebreak_and_fields[-1]
         else:
-            fields['value'][:dictParse.find_element(
-                [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser(string =
-                    ' // p = p^{old} + \\alpha (p - p^{old})\n').elements
+            fields['value'][:fields.find_element([{'type': 'block_start'}])['index']
+                ] = dictParse.DictParser(string = ' // p = p^{old} + \\alpha (p - p^{old})\n')['value']
 
-        equations = dictParse.find_element(
-            [{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)['element']
+        equations = relaxationFactors.find_element([{'type': 'block', 'key': 'equations'}])['element']
         if equations is None:
             linebreak_and_equations = dictParse.DictParser(string =
                 '\n'
@@ -231,25 +228,25 @@ def change_relaxationFactors_in_controlDict(exponent):
                 '\t{\n'
                 '\t\tU\t1.0;\n'
                 '\t\t"k|epsilon|omega"\t1.0;\n'
-                '\t}').elements
+                '\t}')['value']
             relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_equations
             equations = linebreak_and_equations[-1]
         else:
-            equations['value'][:dictParse.find_element(
-                [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser(string =
-                ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
+            equations['value'][:equations.find_element([{'type': 'block_start'}])['index']
+                ] = dictParse.DictParser(string =
+                    ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n')['value']
 
         relaxationFactors.set_blank_line(number_of_blank_lines = 0)
 
         c = 0.5**exponent
         for block in (equations, fields):
-            for param in dictParse.find_elements([{'type': 'dictionary'}], parent = block):
-                value = dictParse.find_element([{'type': 'word|float|integer'}], parent = param)['element']
+            for param in block.find_all_elements([{'type': 'dictionary'}]):
+                value = param['element'].find_element([{'type': 'word|float|integer'}])['element']
                 if value is None:
                     continue
                 value['parent'][value['index']:] = dictParse.DictParser(string =
                     f'#calc "({value["element"]["value"]})*{c}";'
-                    ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR\n').elements
+                    ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR\n')['value']
             block.set_blank_line(number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string())[0]

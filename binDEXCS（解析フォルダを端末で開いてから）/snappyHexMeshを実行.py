@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:57:46 AM
+# 2026/5/12 3:08:49 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -225,11 +225,11 @@ if __name__ == '__main__':
     # }
     CUSTOM_OPTIONS = snappyHexMeshDict.find_element([{'type': 'block', 'key': 'CUSTOM_OPTIONS'}])['element']
     makeBlockMeshDict(
-        max_cell_size = float(dictParse.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
-            {'except type': 'ignorable'}], parent = CUSTOM_OPTIONS)['element']['value']),
+        max_cell_size = float(CUSTOM_OPTIONS.find_element([{'type': 'dictionary', 'key': 'maxCellSize'},
+			{'except type': 'ignorable'}])['element']['value']),
         bounding_box = [float(i['element']['value']) for i in
-            dictParse.find_all_elements([{'type': 'dictionary', 'key': 'boundingBox'}, {'type': 'list'},
-                {'type': 'list'}, {'except type': 'ignorable|list_start|list_end'}], parent = CUSTOM_OPTIONS)],
+            CUSTOM_OPTIONS.find_all_elements([{'type': 'dictionary', 'key': 'boundingBox'}, {'type': 'list'},
+                {'type': 'list'}, {'except type': 'ignorable|list_start|list_end'}])],
         front_name = front_name, back_name = back_name)
 
     # geometry
@@ -243,11 +243,11 @@ if __name__ == '__main__':
     #   ...
     geometry_stl_name = None
     for b in snappyHexMeshDict.find_all_elements([{'type': 'block', 'key': 'geometry'}, {'type': 'block'}]):
-        if b['element']['key'].endswith('.stl'): # STLファイルは1つにまとめられていると仮定
-            geometry_stl_block = b['element']
-            stl_file_name = b['element']['key']
-            n = dictParse.find_element([{'type': 'dictionary', 'key': 'name'},
-                {'except type': 'ignorable'}], parent = b['element'])['element']
+		b = b['element']
+        if b['key'].endswith('.stl'): # STLファイルは1つにまとめられていると仮定
+            geometry_stl_block = b
+            stl_file_name = b['key']
+            n = b.find_element([{'type': 'dictionary', 'key': 'name'}, {'except type': 'ignorable'}])['element']
             if n is not None:
                 geometry_stl_name = n['value'] # 最終的なパッチ名は nameの値 + _ + STL内のsolid名 になります。
             break
@@ -274,8 +274,9 @@ if __name__ == '__main__':
             path_list += [{'type': 'block', 'key': geometry_stl_name}, {'type': 'block', 'key': 'regions'}]
         path_list.append({'type': 'block'})
         for b in reversed(snappyHexMeshDict.find_all_elements(path_list)):
-            if dictParse.find_element([{'type': 'block', 'key': 'patchInfo'}, {'type': 'dictionary', 'key': 'type'},
-                {'except type': 'ignorable'}], parent = b['element'])['element']['value'] == 'empty':
+            if b['element'].find_element([{'type': 'block', 'key': 'patchInfo'},
+				{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}]
+				)['element']['value'] == 'empty':
                 empty_list.append(b['key'])
                 del b['parent'][b['index']]
         stl_2D_file_name = os.path.splitext(stl_file_name)[0] + '_2D.stl'
@@ -349,8 +350,9 @@ if __name__ == '__main__':
         boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
         boundary = dictParse.DictParser(file_name = boundary_path)
         for p in boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}]):
-            if p['element']['key'].startswith(prefix):
-                p['element']['key'] = p['element']['key'][len_prefix:]
+			p = p['element']
+            if p['key'].startswith(prefix):
+                p['key'] = p['key'][len_prefix:]
         with open(boundary_path, 'w') as f:
             f.write(dictParse.normalize(string = boundary.file_string())[0])
 
@@ -415,9 +417,9 @@ if __name__ == '__main__':
                 shutil.move(i0_bak, '0') # can't overwrite, 0_bak/i_name -> 0/i_name
                 parser = dictParse.DictParser(file_name = i0) # i0 is file
                 for i in parser.find_all_elements([{'type': 'directive', 'key': '#include'}]):
-                    n = dictParse.find_element([{'type': 'string'}], parent = i['element'])
-                    if n['element']['value'].startswith('"../'):
-                        n['element']['value'] = '"../' + n['element']['value'][1:]
+                    n = i['element'].find_element([{'type': 'string'}])['element']
+                    if n['value'].startswith('"../'):
+                        n['value'] = '"../' + n['value'][1:]
                 string = dictParse.normalize(string = parser.file_string())[0]
                 for r in regions:
                     if not os.path.isdir(os.path.join('0_bak', r)):

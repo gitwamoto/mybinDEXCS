@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:57:29 AM
+# 2026/5/12 3:05:02 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         while True:
             patch_name = input(' '.join([i['element']['key'] for i in patches]) +
                 ' の中から平面にしたいpatchの名前を1つ入力して下さい． > ').strip()
-            patch = next((i for i in patches if i['element']['key'] == patch_name), None)
+            patch = next((i['element'] for i in patches if i['element']['key'] == patch_name), None)
             if patch is not None:
                 break
         ans = input('座標=値の形式で座標と値を決めて下さい．(例: x=0.0) > ').strip().lower().split('=')
@@ -115,12 +115,12 @@ if __name__ == '__main__':
                 pass
 
     nFaces = startFace = -1
-    patch = next((i for i in patches if i['element']['key'] == patch_name), None)
+    patch = next((i['element'] for i in patches if i['element']['key'] == patch_name), None)
     if patch is None:
         print(f'エラー: {patch_name}という名前のpatchはありません．')
         sys.exit(1)
-    patch_type_value = dictparse.find_element([{'type': 'dictionary', 'key': 'type'}, {'type': 'string'}],
-        parent = patch)['element']
+    patch_type_value = patch.find_element(
+        [{'type': 'dictionary', 'key': 'type'}, {'type': 'string'}])['element']
     if interactive:
         print(f"{patch_name}のtypeは{patch_type_value['value']}です．")
         while True:
@@ -129,10 +129,10 @@ if __name__ == '__main__':
             if patch_type in ('empty', 'symmetryPlane', 'wedge'):
                 break
     patch_type_value['value'] = patch_type
-    nFaces = int(dictparse.find_element([{'type': 'dictionary', 'key': 'nFaces'}, {'type': 'integer'}],
-        parent = patch)['element']['value'])
-    startFace = int(dictparse.find_element([{'type': 'dictionary', 'key': 'startFace'}, {'type': 'integer'}],
-        parent = patch)['element']['value'])
+    nFaces = int(patch.find_element(
+        [{'type': 'dictionary', 'key': 'nFaces'}, {'type': 'integer'}])['element']['value'])
+    startFace = int(patch.find_element(
+        [{'type': 'dictionary', 'key': 'startFace'}, {'type': 'integer'}])['element']['value'])
     string = dictParse.normalize(string = boundary.file_string())[0]
     if boundary.string != string:
 #        os.rename(boundary_path, f'{boundary_path}_bak')

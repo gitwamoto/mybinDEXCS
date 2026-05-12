@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:56:45 AM
+# 2026/5/12 2:59:17 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -108,10 +108,11 @@ if __name__ == '__main__':
     empty_list = []
     for p in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
         {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
-        n = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'}, {'except type': 'ignorable'}],
-            parent = p['element'])['element']['value']
-        t = dictParse.find_element([{'type': 'dictionary', 'key': 'newType'}, {'except type': 'ignorable'}],
-            parent = p['element'])['element']['value']
+        p = p['element']
+        n = p.find_element(
+            [{'type': 'dictionary', 'key': 'newName'}, {'except type': 'ignorable'}])['element']['value']
+        t = p.find_element(
+            [{'type': 'dictionary', 'key': 'newType'}, {'except type': 'ignorable'}])['element']['value']
         patch_types[n] = t
         if t == 'empty':
             empty_list.append(n)
@@ -187,15 +188,16 @@ if __name__ == '__main__':
             f.write(dictParse.normalize(string = boundary.file_string())[0])
     else: # not two_dimensional
         for p in boundary.find_all_elements([{'type': 'list',}, {'type': 'block'}]):
-            i = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}],
-                parent = p['element'])
-            t = patch_types[p['element']['key']]
-            if i['element']['value'] != t:
-                i['element']['value'] = t
-                i = dictParse.find_element([{'type': 'dictionary', 'key': 'inGroups'}, {'type': 'list'},
-                    {'except type': 'ignorable|list_start'}], parent = p['element'])
-                if i['element'] is not None:
-                    i['element']['value'] = t
+            p = p['element']
+            i = p.find_element(
+                [{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}])['element']
+            t = patch_types[p['key']]
+            if i['value'] != t:
+                i['value'] = t
+                i = p.find_element([{'type': 'dictionary', 'key': 'inGroups'},
+                    {'type': 'list'}, {'except type': 'ignorable|list_start'}])['element']
+                if i is not None:
+                    i['value'] = t
         string = dictParse.normalize(string = boundary.file_string())[0]
         if boundary.string != string:
 #            os.rename(boundary_path, f'{boundary_path}_bak')

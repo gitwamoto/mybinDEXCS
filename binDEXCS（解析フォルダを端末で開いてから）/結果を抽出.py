@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:11:36 PM
+# 2026/5/12 3:20:25 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -39,10 +39,10 @@ def append_functions_in_controlDict(controlDict_path):
             '\n'
             'functions\n'
             '{\n'
-            '}').elements
+            '}')['value']
         tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
-        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+            reverse = True, index_not_found = len(controlDict['value']) - 1)['index'] + 1
+        controlDict['value'][tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
     fields = ' '.join(misc.volFieldList(misc.latestTime()))
@@ -50,7 +50,7 @@ def append_functions_in_controlDict(controlDict_path):
         os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
 
-    block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
+    block_end = functions.find_element([{'type': 'block_end'}], reverse = True)
     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
         '\n'
         '\tsetSampling // postProcessingフォルダ内に作られるフォルダの名前\n'
@@ -146,7 +146,7 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\t\t\tinterpolate\tno;\n'
         '\t\t\t}\n'
         '\t\t);\n'
-        '\t}\n').elements
+        '\t}\n')['value']
     functions.set_blank_line(number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
@@ -217,14 +217,13 @@ if __name__ == '__main__':
     controlDict = DictParser(file_name = controlDict_path)
     sets_dir_list = []
     surface_dir_list = []
-    for block in controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
+    for block in controlDict.find_all_elements(
+        [{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
         block = block['element']
-        function_type = dictparse.find_element([{'type': 'dictionary', 'key':'type'}], parent = block)
-        if dictparse.find_element([{'type': 'word', 'value': 'sets'}],
-            parent = function_type)['element'] is not None:
+        function_type = block.find_element([{'type': 'dictionary', 'key':'type'}])['element']
+        if function_type.find_element([{'type': 'word', 'value': 'sets'}])['element'] is not None:
             sets_dir_list.append(block['key'])
-        elif dictparse.find_element([{'type': 'word', 'value': 'surfaces'}],
-            parent = function_type)['element'] is not None:
+        elif function_type.find_element([{'type': 'word', 'value': 'surfaces'}])['element'] is not None:
             surface_dir_list.append(block['key'])
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
         print(f'エラー: ファイル{controlDict_path}でsetsまたはsurfacesに関する指示がありません．')

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:11:30 PM
+# 2026/5/12 3:19:43 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -42,10 +42,10 @@ def append_functions_in_controlDict(controlDict_path):
             '\n'
             'functions\n'
             '{\n'
-            '}').elements
+            '}')['value']
         tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
-        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+            reverse = True, index_not_found = len(controlDict['value']) - 1)['index'] + 1
+        controlDict['value'][tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
     string = (
@@ -77,8 +77,8 @@ def append_functions_in_controlDict(controlDict_path):
         '\t}\n'
     )
 
-    block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string = string).elements
+    block_end = functions.find_element([{'type': 'block_end'}], reverse = True)
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string = string)['value']
     functions.set_blank_line(number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     properties_list = [f'{i["parent"]["key"]}Properties' for i in types
-        if dictParse.find_element([{'type': 'word'}], parent = i['element'])['element'] == 'fieldAverage']
+        if i['element'].find_element([{'type': 'word'}])['element'] == 'fieldAverage']
     if len(properties_list) == 0:
         print(f'エラー: ファイル{controlDict_path}でfieldAverageに関する指示がありません．')
         sys.exit(1)

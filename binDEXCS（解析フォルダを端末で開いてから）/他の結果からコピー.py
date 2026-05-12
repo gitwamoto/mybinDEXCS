@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:54:35 AM
+# 2026/5/12 3:17:46 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -46,8 +46,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     controlDict = DictParser(file_name = controlDict_path)
-    startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
-        {'except type': 'ignorable'}])['element']
+    startFrom = controlDict.find_element(
+        [{'type': 'dictionary', 'key': 'startFrom'}, {'except type': 'ignorable'}])['element']
     if startFrom is None:
         print(f'エラー: ファイル{controlDict_path}にstartFromの指定がありません．')
         sys.exit(1)
@@ -65,8 +65,8 @@ if __name__ == '__main__':
             sys.exit(1)
         start_from = f'firstTime = {start_from}'
     elif startFrom == 'startTime':
-        start_from = controlDict.find_element([{'type': 'dictionary', 'key': 'startTime'},
-            {'except type': 'ignorable'}])['element']
+        start_from = controlDict.find_element(
+            [{'type': 'dictionary', 'key': 'startTime'}, {'except type': 'ignorable'}])['element']
         if start_from is None:
             print(f'エラー: ファイル{controlDict_path}にstartTimeの指定がありません．')
             sys.exit(1)

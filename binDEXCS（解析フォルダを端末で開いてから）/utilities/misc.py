@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:58:18 AM
+# 2026/5/12 3:17:15 PM
 
 import glob
 import os
@@ -146,8 +146,8 @@ def writeCommentInBoundary(comment):
     i = boundary.find_element([{'except type': 'whitespace|linebreak'}],
         start = boundary.find_element([{'type': 'list'}])['index'] - 1,
         reverse = True, index_not_found = 0)['index']
-    boundary.elements[i:i] = dictParse.DictParser(string =
-        f'\n// {comment}' if i > 0 else f'// {comment}\n').elements
+    boundary['value'][i:i] = dictParse.DictParser(string =
+        f'\n// {comment}' if i > 0 else f'// {comment}\n')['value']
     with open(boundary_path, 'w') as f:
         f.write(dictParse.normalize(string = boundary.file_string())[0])
 
@@ -248,11 +248,11 @@ def correctLocation():
         FoamFile = parser.find_element([{'type': 'block', 'key': 'FoamFile'}])['element']
         if FoamFile is None:
             return
-        location = dictParse.find_element([{'type': 'dictionary', 'key': 'location'}], parent = FoamFile)['element']
+        location = FoamFile.find_element([{'type': 'dictionary', 'key': 'location'}])['element']
         if location is not None:
-            i = dictParse.find_element([{'except type': 'ignorable'}], parent = location)
+            i = location.find_element([{'except type': 'ignorable'}])
             i['parent']['value'][i['index']:i['index'] + 1] = dictParse.DictParser(string =
-                '"' + os.path.dirname(file_name) + '"').elements
+                '"' + os.path.dirname(file_name) + '"')['value']
         string = dictParse.normalize(string = parser.file_string())[0]
         if parser.string != string:
 #            os.rename(file_name, f'{file_name}_bak')
@@ -328,23 +328,23 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
     if function is None:
         return
     yesno = 'yes' if enabled else 'no'
-    for f in dictParse.find_all_elements([{'type': 'block'}], parent = functions):
+    for f in functions.find_all_elements([{'type': 'block'}]):
         f = f['element']
-        t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = f)
+        t = f.find_element([{'type': 'dictionary', 'key': 'type'}])
         if t['element'] is None:
             print(f'エラー: ファイル{controlDict_path}のfunctionsで，typeがない項目があります．')
             sys.exit(1)
-        if type_name is not None and dictParse.find_element([{'type': 'word', 'value': type_name}],
-            parent = t['element'])['element'] is None:
+        if type_name is not None and t['element'].find_element(
+            [{'type': 'word', 'value': type_name}])['element'] is None:
             continue
-        e = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = f)['element']
+        e = f.find_element([{'type': 'dictionary', 'key': 'enabled'}])['element']
         if e is None:
-            i = dictParse.find_element([{'type': 'dictionary', 'except key': 'libs'}], parent = f,
+            i = f.find_element([{'type': 'dictionary', 'except key': 'libs'}],
                 start = t['index'] + 1, index_not_found = t['index'])['index'] + 1
             f['value'][i:i] = dictParse.DictParser(string = '\n'
-                f'enabled\t{yesno}; yesで実行\n').elements
+                f'enabled\t{yesno}; yesで実行\n')['value']
         else:
-            e['value'][dictParse.find_element([{'type': 'word'}], parent = e)['index']] = yesno
+            e['value'][e.find_element([{'type': 'word'}])['index']] = yesno
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
     if type_name is None:
@@ -375,16 +375,15 @@ def controlDictFunctionsList(path = os.curdir):
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if function is None:
         return enable_function_list, disable_function_list
-    for f in dictParse.find_all_elements([{'type': 'block'}], parent = functions):
+    for f in functions.find_all_elements([{'type': 'block'}]):
         f = f['element']
-        t = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = f)['element']
+        t = f.find_element([{'type': 'dictionary', 'key': 'type'}])['element']
         if t is None:
             print(f'エラー: ファイル{controlDict_path}のfunctionsで，typeがない項目があります．')
             sys.exit(1)
-        type_name = dictParse.find_element([{'type': 'word'}], parent = t)['element']['value']
-        e = dictParse.find_element([{'type': 'dictionary', 'key': 'enabled'}], parent = f)['element']
-        if (e is None or
-            dictParse.find_element([{'type': 'word'}], parent = e)['element']['value'] in ('yes', 'true', 'on')):
+        type_name = t.find_element([{'type': 'word'}])['element']['value']
+        e = f.find_element([{'type': 'dictionary', 'key': 'enabled'}])['element']
+        if (e is None or e.find_element([{'type': 'word'}])['element']['value'] in ('yes', 'true', 'on')):
             enable_function_list.append(type_name)
         else:
             disable_function_list.append(type_name)

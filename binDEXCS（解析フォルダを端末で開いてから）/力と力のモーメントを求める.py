@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:11:23 PM
+# 2026/5/12 3:19:04 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -51,13 +51,13 @@ def append_functions_in_controlDict(controlDict_path):
             '\n'
             'functions\n'
             '{\n'
-            '}').elements
+            '}')['value']
         tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
-        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+            reverse = True, index_not_found = len(controlDict['value']) - 1)['index'] + 1
+        controlDict['value'][tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
-    block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
+    block_end = functions.find_element([{'type': 'block_end'}], reverse = True)
     patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
         os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
@@ -83,7 +83,7 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\twriteControl\ttimeStep;\n'
         '\t\twriteInterval\t1;\n'
         '\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n'
-        '\t}').elements
+        '\t}')['value']
     functions.set_blank_line(number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
@@ -152,8 +152,8 @@ if __name__ == '__main__':
     controlDict = DictParser(file_name = controlDict_path)
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
-    forces_dir_list = [i['parent']['key'] for i in types if dictParse.find_element([{'type': 'word'}],
-        parent = i['element'])['element'] == 'forces']
+    forces_dir_list = [i['parent']['key'] for i in types
+        if i['element'].find_element([{'type': 'word'}])['element'] == 'forces']
     if len(forces_dir_list) == 0:
         print(f'エラー: ファイル{controlDict_path}でforcesに関する指示がありません．')
         sys.exit(1)
