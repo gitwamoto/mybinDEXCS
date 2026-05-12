@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/1 3:32:28 PM
+# 2026/5/12 9:20:35 AM
 
 import sys
 import os
@@ -230,29 +230,33 @@ def set_blank_line(parent, number_of_blank_lines = 1):
             i += 1
 
 def structure_string(parent, parent_header = '', indent_level = 0):
-    if not isinstance(parent, list):
+    if isinstance(parent, DictParser) and parent['type'] != 'root':
+        parent = [parent]
+    elif not isinstance(parent, list):
         parent = parent['value']
     l = len(str(len(parent) - 1))
     h = ' '*l
-    s = '[\n'
+    s = ''
     indent = '  '*indent_level
     for n, i in enumerate(parent):
         s += f'{str(n).zfill(l)}: {indent}'
         if i['type'] in ('dictionary', 'block'):
             s += (f"{{'type': '{i['type']}', "  +
                 (f"'key': '{i['key']}', " if 'key' in i else "") + 
-                f"'value': {structure_string(i['value'], h, indent_level + 1)}}},\n")
+                f"'value': {structure_string(i['value'], h, indent_level + 1)}}}\n")
         elif i['type'] == 'list':
             s += ("{'type': 'list', " +
                 (f"'length': {i['length']}, " if 'length' in i else "") +
-                f"'value': {structure_string(i['value'], h, indent_level + 1)}}},\n")
+                f"'value': {structure_string(i['value'], h, indent_level + 1)}}}\n")
         else:
-            s += f'{i},\n'
-    return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '') + ']'
+            s += f'{i}\n'
+    return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '')
 
 def file_string(parent, indent_level = 0, pretty_print = True, commentless = False):
     # 【注意】indent_levelがいくらであれ，1行目はインデントしない！
-    if not isinstance(parent, list):
+    if isinstance(parent, DictParser) and parent['type'] != 'root':
+        parent = [parent]
+    elif not isinstance(parent, list):
         parent = parent['value']
     s = ''
     indent = '\t'*indent_level
@@ -490,11 +494,14 @@ if __name__ == '__main__':
         dp = DictParser(file_name = sys.argv[1])
     except:
         print(sys.exc_info())
-    print(dp.structure_string())
-    print(dp.file_string(pretty_print = True, commentless = False))
-    set_blank_line(dp.find_element([{'type': 'block', 'key': 'functions'}])['element'], 1)
-    print(dp.structure_string())
-    print(dp.file_string(pretty_print = True, commentless = False))
+#    print(dp.structure_string())
+#    print(dp.file_string(pretty_print = True, commentless = False))
+    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].file_string())
+    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].structure_string())
+
+#    set_blank_line(dp.find_element([{'type': 'block', 'key': 'functions'}])['element'], 1)
+#    print(dp.structure_string())
+#    print(dp.file_string(pretty_print = True, commentless = False))
 #    print([i['index']
 #        for i in dp.find_all_elements([{'type': 'block', 'key': 'gradSchemes'}, {'type': 'dictionary'},
 #            {'type': 'whitespace|linebreak|semicolon'}])])
