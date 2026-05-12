@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/11 11:17:21 PM
+# 2026/5/12 9:44:03 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -773,9 +773,8 @@ class MyModel:
                 {'type': 'block'}]):
                 block = block['element']
                 if block['key'] != surface_file_name and block['key'] not in object_names:
-                    string = dictParse.DictParser(element = block).file_string(indent_level = 1)
                     f.write('\n'
-                        f'\t{string}\n')
+                        f'\t{block.file_string(indent_level = 1)}\n')
             f.write('\n'
                 '//\tboxExample\n'
                 '//\t{\n'
@@ -837,18 +836,16 @@ class MyModel:
                 '\t// ----- Refinement parameters -----\n'
                 '\n'
                 '\t// Maximum number of cells per processor during refinement\n')
-            maxLocalCells = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'maxLocalCells'}, {'type': 'integer'}],
-                parent = castellatedMeshControls)['element']
+            maxLocalCells = castellatedMeshControls.find_element(
+                [{'type': 'dictionary', 'key': 'maxLocalCells'}, {'type': 'integer'}])['element']
             if maxLocalCells is None:
                 f.write('\tmaxLocalCells\t100000;\n')
             else:
                 f.write(f'\tmaxLocalCells\t{maxLocalCells["value"]};\n')
             f.write('\n'
                 '\t// Overall cell limit during refinement (i.e. before removal)\n')
-            maxGlobalCells = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'maxGlobalCells'}, {'type': 'integer'}],
-                parent = castellatedMeshControls)['element']
+            maxGlobalCells = castellatedMeshControls.find_element(
+                [{'type': 'dictionary', 'key': 'maxGlobalCells'}, {'type': 'integer'}])['element']
             if maxGlobalCells is None:
                 f.write('\tmaxGlobalCells\t2000000;\n')
             else:
@@ -858,18 +855,16 @@ class MyModel:
                 '\t// of only few cells. Whenever the number of cells to be refined is less than\n'
                 '\t// or equal to the minRefinementCells parameter, the refinement will stop.\n'
                 '\t// be performed.\n')
-            minRefinementCells = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'minRefinementCells'}, {'type': 'integer'}],
-                parent = castellatedMeshControls)['element']
+            minRefinementCells = castellatedMeshControls.find_element(
+                [{'type': 'dictionary', 'key': 'minRefinementCells'}, {'type': 'integer'}])['element']
             if minRefinementCells is None:
                 f.write('\tminRefinementCells\t2;\n')
             else:
                 f.write(f'\tminRefinementCells\t{minRefinementCells["value"]};\n')
             f.write('\n'
                 '\t// Number of buffer layers of cells between different levels of refinement\n')
-            nCellsBetweenLevels = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'nCellsBetweenLevels'}, {'type': 'integer'}],
-                parent = castellatedMeshControls)['element']
+            nCellsBetweenLevels = castellatedMeshControls.find_element(
+                [{'type': 'dictionary', 'key': 'nCellsBetweenLevels'}, {'type': 'integer'}])['element']
             if nCellsBetweenLevels is None:
                 f.write('\tnCellsBetweenLevels\t3;\n')
             else:
@@ -944,13 +939,12 @@ class MyModel:
                         ' // ((distance1 level1) (distance2 level2) ...), '
                         'distance1 < distance2, level1 > level2\n')
                 f.write('\t\t}\n')
-            for block in dictParse.find_all_elements([{'type': 'block', 'key': 'refinementRegions'},
-                {'type': 'block'}], parent = castellatedMeshControls):
+            for block in castellatedMeshControls.find_all_elements(
+                [{'type': 'block', 'key': 'refinementRegions'}, {'type': 'block'}]):
                 block = block['element']
                 if block['key'] != surface_file_name and block['key'] not in object_names:
-                    string = dictParse.DictParser(element = block).file_string(indent_level = 2)
                     f.write('\n'
-                        f'\t\t{string}\n')
+                        f'\t\t{block.file_string(indent_level = 2)}\n')
             f.write('\t}\n') # refinementRegions
 
             f.write('\n'
@@ -988,22 +982,19 @@ class MyModel:
                     '\n'
                     '\t// allowFreeStandingZoneFaces allowing zone faces that share the same\n'
                     '\t// owner and neighbour cell zone. Not used if there are no faceZones.\n')
-            allowFreeStandingZoneFaces = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'allowFreeStandingZoneFaces'}, {'type': 'word'}],
-                parent = castellatedMeshControls)['element']
+            allowFreeStandingZoneFaces = castellatedMeshControls.find_element(
+                [{'type': 'dictionary', 'key': 'allowFreeStandingZoneFaces'}, {'type': 'word'}])['element']
             if allowFreeStandingZoneFaces is None:
                 f.write('\tallowFreeStandingZoneFaces\ttrue;\n')
             else:
                 f.write(f'\tallowFreeStandingZoneFaces\t{allowFreeStandingZoneFaces["value"]};\n')
-            for element in dictParse.find_all_elements([{'type': 'block|dictionary',
+            for element in castellatedMeshControls.find_all_elements([{'type': 'block|dictionary',
                 'except key': ('maxLocalCells' '|' 'maxGlobalCells' '|' 'minRefinementCells' '|'
                     'nCellsBetweenLevels' '|' 'features' '|' 'refinementSurfaces' '|'
                     'resolveFeatureAngle' '|' 'refinementRegions' '|' 'locationInMesh' '|'
-                    'locationsInMesh' '|' 'allowFreeStandingZoneFaces')}],
-                    parent = castellatedMeshControls):
-                string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 1)
+                    'locationsInMesh' '|' 'allowFreeStandingZoneFaces')}]):
                 f.write('\n'
-                    f'\t{string}\n')
+                    f'\t{element["element"].file_string(indent_level = 1)}\n')
             f.write('}\n') # castellatedMeshControls
 
             snapControls = meshDict.find_element([{'type': 'block', 'key': 'snapControls'}])['element']
@@ -1012,8 +1003,8 @@ class MyModel:
                 'snapControls\n'
                 '{\n'
                 '\t// Number of smoothing iterations along the surface\n')
-            nSmoothPatch = dictParse.find_element([{'type': 'dictionary', 'key': 'nSmoothPatch'},
-                {'type': 'integer'}], parent = snapControls)['element']
+            nSmoothPatch = snapControls.find_element(
+                [{'type': 'dictionary', 'key': 'nSmoothPatch'}, {'type': 'integer'}])['element']
             if nSmoothPatch is None:
                 f.write('\tnSmoothPatch\t3;\n')
             else:
@@ -1022,8 +1013,8 @@ class MyModel:
                 '\t// Number of iterations for internal smoothing to reduce non-orthogonality\n'
                 '\t// at the face of refinement (effectively making the faces non-planar).\n'
                 '\t// Default value is 0.\n')
-            nSmoothInternal = dictParse.find_element([{'type': 'dictionary', 'key': 'nSmoothInternal'},
-                {'type': 'integer'}], parent = snapControls)['element']
+            nSmoothInternal = snapControls.find_element(
+                [{'type': 'dictionary', 'key': 'nSmoothInternal'}, {'type': 'integer'}])['element']
             if nSmoothInternal is None:
                 f.write('\tnSmoothInternal\t1;\n')
             else:
@@ -1031,16 +1022,16 @@ class MyModel:
             f.write('\n'
                 '\t// Multiplied by local cell-edge length specifies region along the surface\n'
                 '\t// within which the points are attracted by the surface\n')
-            tolerance = dictParse.find_element([{'type': 'dictionary', 'key': 'tolerance'},
-                {'type': 'float|integer'}], parent = snapControls)['element']
+            tolerance = snapControls.find_element(
+                [{'type': 'dictionary', 'key': 'tolerance'}, {'type': 'float|integer'}])['element']
             if tolerance is None:
                 f.write('\ttolerance\t1.0;\n')
             else:
                 f.write(f'\ttolerance\t{tolerance["value"]};\n')
             f.write('\n'
                 '\t// Number of mesh displacement iterations\n')
-            nSolveIter = dictParse.find_element([{'type': 'dictionary', 'key': 'nSolveIter'},
-                {'type': 'integer'}], parent = snapControls)['element']
+            nSolveIter = snapControls.find_element(
+                [{'type': 'dictionary', 'key': 'nSolveIter'}, {'type': 'integer'}])['element']
             if nSolveIter is None:
                 f.write('\tnSolveIter\t30;\n')
             else:
@@ -1049,8 +1040,8 @@ class MyModel:
                 '\t// Number of relaxation iterations during the snapping. If the mesh does not\n'
                 '\t// conform the geometry and all the iterations are spend, user may try to\n'
                 '\t// increase the number of iterations.\n')
-            nRelaxIter = dictParse.find_element([{'type': 'dictionary', 'key': 'nRelaxIter'},
-                {'type': 'integer'}], parent = snapControls)['element']
+            nRelaxIter = snapControls.find_element(
+                [{'type': 'dictionary', 'key': 'nRelaxIter'}, {'type': 'integer'}])['element']
             if nRelaxIter is None:
                 f.write('\tnRelaxIter\t5;\n')
             else:
@@ -1058,19 +1049,17 @@ class MyModel:
             f.write('\n'
                 '\t// Number of relaxation iterations used for snapping onto the features.\n'
                 '\t// If not specified, feature snapping will be disabled.\n')
-            nFeatureSnapIter = dictParse.find_element([{'type': 'dictionary', 'key': 'nFeatureSnapIter'},
-                {'type': 'integer'}], parent = snapControls)['element']
+            nFeatureSnapIter = snapControls.find_element(
+                [{'type': 'dictionary', 'key': 'nFeatureSnapIter'}, {'type': 'integer'}])['element']
             if nFeatureSnapIter is None:
                 f.write('\tnFeatureSnapIter\t10;\n')
             else:
                 f.write(f'\tnFeatureSnapIter\t{nFeatureSnapIter["value"]};\n')
-            for element in dictParse.find_all_elements([{'type': 'block|dictionary',
+            for element in snapControls.find_all_elements([{'type': 'block|dictionary',
                 'except key': ('nSmoothPatch' '|' 'nSmoothInternal' '|' 'tolerance' '|'
-                    'nSolveIter' '|' 'nRelaxIter' '|' 'nFeatureSnapIter')}],
-                    parent = snapControls):
-                string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 1)
+                    'nSolveIter' '|' 'nRelaxIter' '|' 'nFeatureSnapIter')}]):
                 f.write('\n'
-                    f'\t{string}\n')
+                    f'\t{element["element"].file_string(indent_level = 1)}\n')
             f.write('}\n') # snapControls
 
             addLayersControls = meshDict.find_element(
@@ -1095,40 +1084,38 @@ class MyModel:
                     '\t\t{\n'
                     f'\t\t\tnSurfaceLayers\t{i[grid.N_LAYERS]};\n'
                     f'\t\t\texpansionRatio\t{i[grid.RATIO]};\n')
-                for element in dictParse.find_all_elements([{'type': 'block', 'key': 'layers'},
+                for element in addLayersControls.find_all_elements([{'type': 'block', 'key': 'layers'},
                     {'type': 'block', 'key': f'{surface_file_name_wo_ext}_{i[grid.OBJECT_NAME]}'},
-                    {'type': 'block|dictionary', 'except key': 'nSurfaceLayers|expansionRatio'}],
-                    parent = addLayersControls):
-                    string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 3)
-                    f.write(f'\t\t\t{string}\n')
+                    {'type': 'block|dictionary', 'except key': 'nSurfaceLayers|expansionRatio'}]):
+                    f.write(f'\t\t\t{element["element"].file_string(indent_level = 3)}\n')
                 f.write('\t\t}\n')
             f.write('\t}\n') # layers
-            expansionRatio = dictParse.find_element([{'type': 'dictionary', 'key': 'expansionRatio'},
-                {'type': 'float|integer'}], parent = addLayersControls)['element']
+            expansionRatio = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'expansionRatio'}, {'type': 'float|integer'}])['element']
             if expansionRatio is None:
                 f.write('\texpansionRatio\t1; // mandatory\n')
             else:
                 f.write(f'\texpansionRatio\t{expansionRatio["value"]}; // mandatory\n')
             f.write('\n'
                 '\t// Thickness of the layer furthest away from the wall\n')
-            finalLayerThickness = dictParse.find_element([{'type': 'dictionary', 'key': 'finalLayerThickness'},
-                {'type': 'float|integer'}], parent = finalLayerThickness)['element']
+            finalLayerThickness = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'finalLayerThickness'}, {'type': 'float|integer'}])['element']
             if finalLayerThickness is None:
                 f.write('\tfinalLayerThickness\t1;\n')
             else:
                 f.write(f'\tfinalLayerThickness\t{finalLayerThickness["value"]};\n')
             f.write('\n'
                 '\t// Minimum thickness of cell layer\n')
-            minThickness = dictParse.find_element([{'type': 'dictionary', 'key': 'minThickness'},
-                {'type': 'float|integer'}], parent = addLayersControls)['element']
+            minThickness = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'minThickness'}, {'type': 'float|integer'}])['element']
             if minThickness is None:
                 f.write('\tminThickness\t0.1;\n')
             else:
                 f.write(f'\tminThickness\t{minThickness["value"]};\n')
             f.write('\n'
                 '\t// Number of layers of cells where point extrusion is cancelled\n')
-            nGrow = dictParse.find_element([{'type': 'dictionary', 'key': 'nGrow'},
-                {'type': 'integer'}], parent = addLayersControls)['element']
+            nGrow = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nGrow'}, {'type': 'integer'}])['element']
             if nGrow is None:
                 f.write('\tnGrow\t0;\n')
             else:
@@ -1141,57 +1128,56 @@ class MyModel:
                 f'\tfeatureAngle\t{feature_angle};\n'
                 '\n'
                 '\t// Number of relaxation steps (where relaxed mesh quality parameters are used)\n')
-            nRelaxIter = dictParse.find_element([{'type': 'dictionary', 'key': 'nRelaxIter'},
-                {'type': 'integer'}], parent = addLayersControls)['element']
+            nRelaxIter = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nRelaxIter'}, {'type': 'integer'}])['element']
             if nRelaxIter is None:
                 f.write('\tnRelaxIter\t3;\n')
             else:
                 f.write(f'\tnRelaxIter\t{nRelaxIter["value"]};\n')
             f.write('\n'
                 '\t// Number of smoothing iterations of surface normals\n')
-            nSmoothSurfaceNormals = dictParse.find_element([{'type': 'dictionary', 'key': 'nSmoothSurfaceNormals'},
-                {'type': 'integer'}], parent = addLayersControls)['element']
+            nSmoothSurfaceNormals = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nSmoothSurfaceNormals'}, {'type': 'integer'}])['element']
             if nSmoothSurfaceNormals is None:
                 f.write('\tnSmoothSurfaceNormals\t1;\n')
             else:
                 f.write(f'\tnSmoothSurfaceNormals\t{nSmoothSurfaceNormals["value"]};\n')
             f.write('\n'
                 '\t// Number of smoothing iterations of interior mesh movement direction\n')
-            nSmoothNormals = dictParse.find_element([{'type': 'dictionary', 'key': 'nSmoothNormals'},
-                {'type': 'integer'}], parent = addLayersControls)['element']
+            nSmoothNormals = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nSmoothNormals'}, {'type': 'integer'}])['element']
             if nSmoothNormals is None:
                 f.write('\tnSmoothNormals\t3;\n')
             else:
                 f.write(f'\tnSmoothNormals\t{nSmoothNormals["value"]};\n')
             f.write('\n'
                 '\t// Smooth layer thickness over surface patches\n')
-            nSmoothThickness = dictParse.find_element([{'type': 'dictionary', 'key': 'nSmoothThickness'},
-                {'type': 'integer'}], parent = addLayersControls)['element']
+            nSmoothThickness = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nSmoothThickness'}, {'type': 'integer'}])['element']
             if nSmoothThickness is None:
                 f.write('\tnSmoothThickness\t10;\n')
             else:
                 f.write(f'\tnSmoothThickness\t{nSmoothThickness["value"]};\n')
             f.write('\n'
                 '\t// Stop layer growth on highly warped cells\n')
-            maxFaceThicknessRatio = dictParse.find_element([{'type': 'dictionary', 'key': 'maxFaceThicknessRatio'},
-                {'type': 'float|integer'}], parent = addLayersControls)['element']
+            maxFaceThicknessRatio = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'maxFaceThicknessRatio'}, {'type': 'float|integer'}])['element']
             if maxFaceThicknessRatio is None:
                 f.write('\tmaxFaceThicknessRatio\t0.5;\n')
             else:
                 f.write(f'\tmaxFaceThicknessRatio\t{maxFaceThicknessRatio["value"]};\n')
             f.write('\n'
                 '\t// Reduce layer growth where ratio thickness to medial distance is large\n')
-            maxThicknessToMedialRatio = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'maxThicknessToMedialRatio'},
-                {'type': 'float|integer'}], parent = addLayersControls)['element']
+            maxThicknessToMedialRatio = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'maxThicknessToMedialRatio'}, {'type': 'float|integer'}])['element']
             if maxThicknessToMedialRatio is None:
                 f.write('\tmaxThicknessToMedialRatio\t1;\n')
             else:
                 f.write(f'\tmaxThicknessToMedialRatio\t{maxThicknessToMedialRatio["value"]};\n')
             f.write('\n'
                 '\t// Angle used to select medial axis points\n')
-            minMedialAxisAngle = dictParse.find_element([{'type': 'dictionary', 'key': 'minMedialAxisAngle'},
-                {'type': 'float|integer'}], parent = addLayersControls)['element']
+            minMedialAxisAngle = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'minMedialAxisAngle'}, {'type': 'float|integer'}])['element']
             if minMedialAxisAngle is None:
                 f.write('\tminMedialAxisAngle\t90;\n')
             else:
@@ -1199,17 +1185,16 @@ class MyModel:
 
             f.write('\n'
                 '\t// Create buffer region for new layer terminations\n')
-            nBufferCellsNoExtrude = dictParse.find_element(
-                [{'type': 'dictionary', 'key': 'nBufferCellsNoExtrude'},
-                {'type': 'float|integer'}], parent = addLayersControls)['element']
+            nBufferCellsNoExtrude = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nBufferCellsNoExtrude'}, {'type': 'float|integer'}])['element']
             if nBufferCellsNoExtrude is None:
                 f.write('\tnBufferCellsNoExtrude\t0;\n')
             else:
                 f.write(f'\tnBufferCellsNoExtrude\t{nBufferCellsNoExtrude["value"]};\n')
             f.write('\n'
                 '\t// Overall max number of layer addition iterations\n')
-            nLayerIter = dictParse.find_element([{'type': 'dictionary', 'key': 'nLayerIter'},
-                {'type': 'integer'}], parent = addLayersControls)['element']
+            nLayerIter = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nLayerIter'}, {'type': 'integer'}])['element']
             if nLayerIter is None:
                 f.write('\tnLayerIter\t50;\n')
             else:
@@ -1219,23 +1204,21 @@ class MyModel:
                 '\t// Max number of iterations after which relaxed meshQuality controls\n'
                 '\t// get used. Up to nRelaxIter it uses the settings in meshQualityControls,\n'
                 '\t// after nRelaxIter it uses the values in meshQualityControls::relaxed.\n')
-            nRelaxedIter = dictParse.find_element([{'type': 'dictionary', 'key': 'nRelaxedIter'},
-                {'type': 'integer'}], parent = addLayersControls)['element']
+            nRelaxedIter = addLayersControls.find_element(
+                [{'type': 'dictionary', 'key': 'nRelaxedIter'}, {'type': 'integer'}])['element']
             if nRelaxedIter is None:
                 f.write('\tnRelaxedIter\t50;\n')
             else:
                 f.write(f'\tnRelaxedIter\t{nRelaxedIter["value"]};\n')
-            for element in dictParse.find_all_elements([{'type': 'block|dictionary',
+            for element in addLayersControls.find_all_elements([{'type': 'block|dictionary',
                 'except key': ('relativeSizes' '|' 'layers' '|' 'expansionRatio' '|'
                     'finalLayerThickness' '|' 'minThickness' '|' 'nGrow' '|' 'featureAngle' '|'
                     'nRelaxIter' '|' 'nSmoothSurfaceNormals' '|' 'nSmoothNormals' '|'
                     'nSmoothThickness' '|' 'maxFaceThicknessRatio' '|' 'maxThicknessToMedialRatio' '|'
                     'minMedialAxisAngle' '|' 'nBufferCellsNoExtrude' '|' 
-                    'nLayerIter' '|' 'nRelaxedIter')}],
-                    parent = addLayersControls):
-                string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 1)
+                    'nLayerIter' '|' 'nRelaxedIter')}]):
                 f.write('\n'
-                    f'\t{string}\n')
+                    f'\t{element["element"].file_string(indent_level = 1)}\n')
             f.write('}\n') # addLayersControls
 
             meshQualityControls = meshDict.find_element(
@@ -1252,44 +1235,39 @@ class MyModel:
                 '\trelaxed\n'
                 '\t{\n'
                 '\t\t// Maximum non-orthogonality allowed. Set to 180 to disable.\n')
-            relaxed = dictParse.find_element([{'type': 'block', 'key': 'relaxed'}],
-                parent = meshQualityControls)['element']
-            maxNonOrtho = dictParse.find_element([{'type': 'dictionary', 'key': 'maxNonOrtho'},
-                {'type': 'float|integer'}], parent = relaxed)['element']
+            relaxed = meshQualityControls.find_element([{'type': 'block', 'key': 'relaxed'}])['element']
+            maxNonOrtho = relaxed.find_element(
+                [{'type': 'dictionary', 'key': 'maxNonOrtho'}, {'type': 'float|integer'}])['element']
             if maxNonOrtho is None:
                 f.write('\tmaxNonOrtho\t75;\n')
             else:
                 f.write(f'\tmaxNonOrtho\t{maxNonOrtho["value"]};\n')
-            for element in dictParse.find_all_elements(
-                [{'type': 'block|dictionary', 'except key': 'maxNonOrtho'}], parent = relaxed):
-                string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 2)
+            for element in relaxed.find_all_elements([{'type': 'block|dictionary', 'except key': 'maxNonOrtho'}]):
                 f.write('\n'
-                    f'\t\t{string}\n')
+                    f'\t\t{element["element"].file_string(indent_level = 2)}\n')
             f.write('\t}\n' # relaxed
                 '\n'
                 '\t// ----- Advanced -----\n'
                 '\n'
                 '\t// Smoothing iterations. Used in combination with errorReduction.\n')
-            nSmoothScale = dictParse.find_element([{'type': 'dictionary', 'key': 'nSmoothScale'},
-                {'type': 'integer'}], parent = meshQualityControls)['element']
+            nSmoothScale = meshQualityControls.find_element(
+                [{'type': 'dictionary', 'key': 'nSmoothScale'}, {'type': 'integer'}])['element']
             if nSmoothScale is None:
                 f.write('\tnSmoothScale\t4;\n')
             else:
                 f.write(f'\tnSmoothScale\t{nSmoothScale["value"]};\n')
             f.write('\n'
                 '\t// Error reduction. Used in combination with nSmoothScale.\n')
-            errorReduction = dictParse.find_element([{'type': 'dictionary', 'key': 'errorReduction'},
-                {'type': 'float|integer'}], parent = meshQualityControls)['element']
+            errorReduction = meshQualityControls.find_element(
+                [{'type': 'dictionary', 'key': 'errorReduction'}, {'type': 'float|integer'}])['element']
             if errorReduction is None:
                 f.write('\terrorReduction\t0.75;\n')
             else:
                 f.write(f'\terrorReduction\t{errorReduction["value"]};\n')
-            for element in dictParse.find_all_elements([{'type': 'block|dictionary',
-                'except key': 'nSmoothScale|relaxed|errorReduction'}],
-                    parent = meshQualityControls):
-                string = dictParse.DictParser(element = element["element"]).file_string(indent_level = 1)
+            for element in meshQualityControls.find_all_elements(
+                [{'type': 'block|dictionary', 'except key': 'nSmoothScale|relaxed|errorReduction'}] ):
                 f.write('\n'
-                    f'\t{string}\n')
+                    f'\t{element["element"].file_string(indent_level = 1)}\n')
             f.write('}\n') # meshQualityControls
 
             f.write('\n'
@@ -1308,9 +1286,8 @@ class MyModel:
                 'except key': ('FoamFile' '|' 'CUSTOM_OPTIONS' '|' 'castellatedMesh' '|' 'snap' '|'
                     'addLayers' '|' 'geometry' '|' 'castellatedMeshControls' '|' 'snapControls' '|'
                     'addLayersControls' '|' 'meshQualityControls' '|' 'mergeTolerance')}]):
-                string = dictParse.DictParser(element = element["element"]).file_string()
                 f.write('\n'
-                    f'{string}\n')
+                    f'{element["element"].file_string()}\n')
 
         os.chmod(dict_name, 0o0666)
 
@@ -1341,8 +1318,7 @@ class MyModel:
             defaultFieldValues = setFieldsDict.find_element(
                 [{'type': 'dictionary', 'key': 'defaultFieldValues'}])['element']
             if defaultFieldValues is not None:
-                string = dictParse.DictParser(element = defaultFieldValues).file_string()
-                f.write(f'{string}\n')
+                f.write(f'{defaultFieldValues.file_string()}\n')
             else:
                 f.write('defaultFieldValues // regionsで指定しない領域における値\n'
                     '(\n'
@@ -1385,37 +1361,32 @@ class MyModel:
                                 f'{0.001*obj.Placement.Base.y} {0.001*obj.Placement.Base.z});\n'
                                 f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                         break
-                for comment in dictParse.find_all_elements(
-                    [{'type': 'block'}, {'type': 'line_comment|block_comment'}], parent = regions):
-                    block = block['element']
+                for comment in regions.find_all_elements(
+                    [{'type': 'block'}, {'type': 'line_comment|block_comment'}]):
                     if i[grid.OBJECT_NAME] not in comment['element']['value']:
                         continue
-                    fieldValues = dictParse.find_element([{'type': 'dictionary', 'key': 'fieldValues'}],
-                        parent = comment['parent'])['element']
+                    fieldValues = comment['parent'].find_element(
+                        [{'type': 'dictionary', 'key': 'fieldValues'}])['element']
                     if fieldValues is None:
                         f.write('\t\tfieldValues\n'
                         '\t\t(\n'
                         '\t\t\tvolScalarFieldValue alpha.water 1 // ←自分の目的に合わせて書き換える\n'
                         '\t\t);\n')
                     else:
-                        string = dictParse.DictParser(element = fieldValues).file_string(indent_level = 2)
-                        f.write(f'\t\t{string}\n')
+                        f.write(f'\t\t{fieldValues.file_string(indent_level = 2)}\n')
                 f.write('\t}\n') # boxToCell, cylinderToCell, sphereToCell
-            for block in dictParse.find_all_elements([{'type': 'block'}], parent = regions):
+            for block in regions.find_all_elements([{'type': 'block'}]):
                 block = block['element']
-                comment = dictParse.find_element([{'type': 'line_comment|block_comment'}],
-                    parent = block)['element']['value']
+                comment = block.find_element([{'type': 'line_comment|block_comment'}])['element']['value']
                 if 'freecad' not in comment.lower():
-                    string = dictParse.DictParser(element = block).file_string(indent_level = 1)
                     f.write('\n'
-                        f'\t{string}\n')
+                        f'\t{block.file_string(indent_level = 1)}\n')
                 f.write(');\n') # regions
 
             for element in setFieldsDict.find_all_elements([{'type': 'block|dictionary',
                 'except key': 'FoamFile|defaultFieldValues|regions'}]):
-                string = dictParse.DictParser(element = element["element"]).file_string()
                 f.write('\n'
-                    f'{string}\n')
+                    f'{element["element"].file_string()}\n')
 
         os.chmod(dict_name, 0o0666)
 
@@ -1450,15 +1421,14 @@ class MyModel:
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
                     continue
-                block = next((i['element'] for i in actions if dictParse.find_element(
+                block = next((i['element'] for i in actions if i['element'].find_element(
                     [{'type': 'dictionary', 'key': 'name'},
-                    {'type': 'word', 'value': f'{i[grid.OBJECT_NAME]}CellSet'}],
-                    parent = i['element'])['element'] is not None), None)
+                    {'type': 'word', 'value': f'{i[grid.OBJECT_NAME]}CellSet'}])['element'] is not None), None)
                 if block is None:
                     action = 'new'
                 else:
-                    action = dictParse.find_element([{'type': 'dictionary', 'key': 'action'},
-                        {'type': 'word'}], parent = block)['element']
+                    action = block.find_element(
+                        [{'type': 'dictionary', 'key': 'action'}, {'type': 'word'}])['element']
                     if action is None:
                         action = 'new'
                 f.write('\t{' f' // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
@@ -1509,19 +1479,16 @@ class MyModel:
                 [f'{i[grid.OBJECT_NAME]}|{i[grid.OBJECT_NAME]}CellSet' for i in grid.table])
             for block in actions:
                 block = ['element']
-                if dictParse.find_element( [{'type': 'dictionary', 'key': 'name'},
-                    {'type': 'word', 'except value': written_action_names}],
-                    parent = block)['element'] is not None:
-                    string = dictParse.DictParser(element = block).file_string(indent_level = 1)
+                if block.find_element( [{'type': 'dictionary', 'key': 'name'},
+                    {'type': 'word', 'except value': written_action_names}])['element'] is not None:
                     f.write('\n'
-                        f'\t{string}\n')
+                        f'\t{block.file_string(indent_level = 1)}\n')
             f.write(');\n') # actions
 
             for element in topoSetDict.find_all_elements([{'type': 'block|dictionary',
                 'except key': 'FoamFile|actions'}]):
-                string = dictParse.DictParser(element = element["element"]).file_string()
                 f.write('\n'
-                    f'{string}\n')
+                    f'{element["element"].file_string()}\n')
 
         os.chmod(dict_name, 0o0666)
 
