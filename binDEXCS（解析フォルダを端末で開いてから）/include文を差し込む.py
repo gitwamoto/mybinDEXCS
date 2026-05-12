@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 # include文を差し込む.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:22:09 PM
+# 2026/5/12 9:57:13 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -f include_file -> 差し込みたいincludeファイルの名前をinclude_fileにする
-
-# DictParser2で書き直し済み
 
 import signal
 import os
@@ -31,7 +29,7 @@ def append_include_sentence(dir_name, include_file_name):
         if os.path.basename(f) == 'cellToRegion':
             continue
         print('{}を処理中...'.format(f))
-        parser = dictParse.DictParser2(file_name = f)
+        parser = dictParse.DictParser(file_name = f)
         inserted = False
         for i in reversed(parser.find_all_elements([{'type': 'directive', 'key': '#include'}])):
             n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['element']['value'].strip('"')
@@ -47,10 +45,10 @@ def append_include_sentence(dir_name, include_file_name):
             i = 0
         i = parser.find_element([{'type': 'block', 'key': 'FoamFile'}], start = i, index_not_found = i - 1)['index'] + 1
         head_index = parser.find_element([{'except type': 'whitespace|linebreak|separator'}], start = i)['index']
-        parser.elements[head_index:head_index] = dictParse.DictParser2(string = 
+        parser.elements[head_index:head_index] = dictParse.DictParser(string = 
             f'#include "{include_file_name}"\n' +
             '\n').elements
-        string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = parser.file_string())[0]
 #        os.rename(f, f'{f}_bak')
         with open(f, 'w') as fp:
             fp.write(string)

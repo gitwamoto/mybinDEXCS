@@ -65,7 +65,7 @@ if __name__ == '__main__':
     if interactive:
         patch_list = input(
             'どのパッチに対して流量を計算しますか？ ' +
-            ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+            ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
                 os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                     [{'type': 'list'}, {'type': 'block'}])]) +
             ' の中からスペース区切りで指定して下さい． > ').split()

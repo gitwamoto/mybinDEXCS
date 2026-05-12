@@ -106,7 +106,7 @@ if __name__ == '__main__':
     z_back, z_front = bouding_box[2]
 
     if interactive:
-        patches = [i['element']['key'] for i in dictParse.DictParser2(file_name =
+        patches = [i['element']['key'] for i in dictParse.DictParser(file_name =
             os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                 [{'type': 'list'}, {'type': 'block'}])]
         space_delimited_patches = ' '.join(patches)

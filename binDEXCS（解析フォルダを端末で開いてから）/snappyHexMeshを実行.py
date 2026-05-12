@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/1 3:45:18 PM
+# 2026/5/12 9:57:46 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -17,8 +17,6 @@
 #                        snappyHexMeshDictのlocationsInMeshに書いた名前が領域名になる．
 # -p -> paraFoamを実行する
 # -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
-
-# DictParser2で書き直し済み
 
 import os
 import sys
@@ -218,7 +216,7 @@ if __name__ == '__main__':
             back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip() or 'back'
     domains = min(domains, threads)
 
-    snappyHexMeshDict = dictParse.DictParser2(file_name = snappyHexMeshDict_path)
+    snappyHexMeshDict = dictParse.DictParser(file_name = snappyHexMeshDict_path)
 
     # CUSTOM_OPTIONS
     # {
@@ -293,7 +291,7 @@ if __name__ == '__main__':
         geometry_stl_block['value'] = stl_2D_file_name
         os.rename(snappyHexMeshDict_path, snappyHexMeshDict_3D_path) # can overwrite
         with open(snappyHexMeshDict_path, 'w') as f:
-            f.write(dictParse.normalize(string = snappyHexMeshDict.file_string(pretty_print = True))[0])
+            f.write(dictParse.normalize(string = snappyHexMeshDict.file_string())[0])
 
     command = 'blockMesh'
     if subprocess.call(command, shell = True) != 0:
@@ -349,12 +347,12 @@ if __name__ == '__main__':
         prefix = geometry_stl_name + '_'
         len_prefix = len(prefix)
         boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-        boundary = dictParse.DictParser2(file_name = boundary_path)
+        boundary = dictParse.DictParser(file_name = boundary_path)
         for p in boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}]):
             if p['element']['key'].startswith(prefix):
                 p['element']['key'] = p['element']['key'][len_prefix:]
         with open(boundary_path, 'w') as f:
-            f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
+            f.write(dictParse.normalize(string = boundary.file_string())[0])
 
     misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
@@ -415,12 +413,12 @@ if __name__ == '__main__':
                 elif os.path.isdir(i0):
                     os.rmtree(i0)
                 shutil.move(i0_bak, '0') # can't overwrite, 0_bak/i_name -> 0/i_name
-                parser = dictParse.DictParser2(file_name = i0) # i0 is file
+                parser = dictParse.DictParser(file_name = i0) # i0 is file
                 for i in parser.find_all_elements([{'type': 'directive', 'key': '#include'}]):
                     n = dictParse.find_element([{'type': 'string'}], parent = i['element'])
                     if n['element']['value'].startswith('"../'):
                         n['element']['value'] = '"../' + n['element']['value'][1:]
-                string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+                string = dictParse.normalize(string = parser.file_string())[0]
                 for r in regions:
                     if not os.path.isdir(os.path.join('0_bak', r)):
                         with open(os.path.join('0', r, i_name)) as f:
@@ -445,7 +443,7 @@ if __name__ == '__main__':
             # :   +-- fvSchemes
             fvSolution_path = os.path.join(r, 'fvSolution')
             if os.path.isfile(fvSolution_path):
-                parser = dictParse.DictParser2(file_name = fvSolution_path)
+                parser = dictParse.DictParser(file_name = fvSolution_path)
                 contents = parser.find_all_elements([{'except type': 'ignorable|separator'}])
                 for c in contents:
                     if c['element']['type'] == 'block' and c['element']['key'] == 'FoamFile':

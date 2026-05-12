@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/4/30 5:33:40 PM
+# 2026/5/12 9:57:29 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -13,8 +13,6 @@
 # -x value -> 面のx座標をvalueに固定する
 # -y value -> 面のy座標をvalueに固定する
 # -z value -> 面のz座標をvalueに固定する
-
-# DictParser2で書き直し済み
 
 import os
 import sys
@@ -97,7 +95,7 @@ if __name__ == '__main__':
 
     print('x, y, z座標をある値に固定することでpatchを平面にします．')
 
-    boundary = dictParse.DictParser2(file_name = boundary_path)
+    boundary = dictParse.DictParser(file_name = boundary_path)
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     if interactive:
         while True:
@@ -135,7 +133,7 @@ if __name__ == '__main__':
         parent = patch)['element']['value'])
     startFace = int(dictparse.find_element([{'type': 'dictionary', 'key': 'startFace'}, {'type': 'integer'}],
         parent = patch)['element']['value'])
-    string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = boundary.file_string())[0]
     if boundary.string != string:
 #        os.rename(boundary_path, f'{boundary_path}_bak')
         with open(boundary_path, 'w') as f:

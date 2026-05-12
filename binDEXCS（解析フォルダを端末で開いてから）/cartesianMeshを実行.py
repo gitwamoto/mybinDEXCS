@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:17:03 PM
+# 2026/5/12 9:56:45 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -14,8 +14,6 @@
 #                  このオプションがない場合，frontという名前になる．
 # -p -> paraFoamを実行する
 # -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
-
-# DictParser2で書き直し済み
 
 import os
 import sys
@@ -94,7 +92,7 @@ if __name__ == '__main__':
             back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip() or 'back'
     domains = min(domains, threads)
 
-    meshDict = dictParse.DictParser2(file_name = meshDict_path)
+    meshDict = dictParse.DictParser(file_name = meshDict_path)
 
     # renameBoundary
     # {
@@ -136,7 +134,7 @@ if __name__ == '__main__':
         surfaceFile['value'] = f'"{stl_2D_file_name}"'
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
         with open(meshDict_path, 'w') as f:
-            f.write(dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0])
+            f.write(dictParse.normalize(string = meshDict.file_string())[0])
 
     cfMesh = 'cartesian2DMesh' if two_dimensional else 'cartesianMesh'
     if domains != 1:
@@ -177,7 +175,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    boundary = dictParse.DictParser2(file_name = boundary_path)
+    boundary = dictParse.DictParser(file_name = boundary_path)
     if two_dimensional:
         os.rename(meshDict_path, meshDict_path + '_2D') # can overwrite
         os.rename(meshDict_3D_path, meshDict_path) # can overwrite
@@ -186,7 +184,7 @@ if __name__ == '__main__':
         boundary.find_element(
             [{'type': 'list'}, {'type': 'block', 'key': 'bottomEmptyFaces'}])['element']['key'] = back_name
         with open(boundary_path, 'w') as f:
-            f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
+            f.write(dictParse.normalize(string = boundary.file_string())[0])
     else: # not two_dimensional
         for p in boundary.find_all_elements([{'type': 'list',}, {'type': 'block'}]):
             i = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}],
@@ -198,7 +196,7 @@ if __name__ == '__main__':
                     {'except type': 'ignorable|list_start'}], parent = p['element'])
                 if i['element'] is not None:
                     i['element']['value'] = t
-        string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = boundary.file_string())[0]
         if boundary.string != string:
 #            os.rename(boundary_path, f'{boundary_path}_bak')
             with open(boundary_path, 'w') as f:

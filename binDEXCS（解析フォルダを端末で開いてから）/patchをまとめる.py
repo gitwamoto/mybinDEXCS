@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 '\t\t}\n'
                 '\t\tconstructFrom\tpatches;\n'
                 '\t\tpatches\t(')
-            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
                 os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                     [{'type': 'list'}, {'type': 'block'}])]))
             f.write(') /* <- (C) まとめたいパッチの名前だけを残す */;\n'

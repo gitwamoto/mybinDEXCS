@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:32:29 PM
+# 2026/5/12 9:58:49 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -14,8 +14,6 @@
 # -d: 最も大きい値を持つ時間以外の平均を消去する．多くの場合必要
 # -j: 平均を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
 # -p -> paraFoamを実行する
-
-# DictParser2で書き直し済み
 
 import sys
 import signal
@@ -36,10 +34,10 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
-        linebreak_and_functions = dictParse.DictParser2(string =
+        linebreak_and_functions = dictParse.DictParser(string =
             '\n'
             '\n'
             'functions\n'
@@ -80,10 +78,10 @@ def append_functions_in_controlDict(controlDict_path):
     )
 
     block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string = string).elements
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string = string).elements
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
-    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = controlDict.file_string())[0]
     os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
@@ -156,7 +154,7 @@ if __name__ == '__main__':
         if not fieldAverage_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = DictParser2(file_name = controlDict_path)
+    controlDict = DictParser(file_name = controlDict_path)
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     properties_list = [f'{i["parent"]["key"]}Properties' for i in types

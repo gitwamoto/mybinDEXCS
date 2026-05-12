@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:32:23 PM
+# 2026/5/12 9:58:40 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -12,8 +12,6 @@
 # -e time_end: 力の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
 # -0: 0秒のデータを含める
 # -j: 力の計算を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
-
-# DictParser2で書き直し済み
 
 import math
 import sys
@@ -45,10 +43,10 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
-        linebreak_and_functions = dictParse.DictParser2(string =
+        linebreak_and_functions = dictParse.DictParser(string =
             '\n'
             '\n'
             'functions\n'
@@ -60,10 +58,10 @@ def append_functions_in_controlDict(controlDict_path):
         functions = linebreak_and_functions[-1]
 
     block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
         os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
         '\n'
         '\t// patchにかかる力を求める．\n'
         '\t// 少なくともpatches(B)は修正する必要がある．\n'
@@ -88,7 +86,7 @@ def append_functions_in_controlDict(controlDict_path):
         '\t}').elements
     dictParse.set_blank_line(functions, number_of_blank_lines = 1)
 
-    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = controlDict.file_string())[0]
     os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
@@ -151,7 +149,7 @@ if __name__ == '__main__':
         if not forces_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = DictParser2(file_name = controlDict_path)
+    controlDict = DictParser(file_name = controlDict_path)
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     forces_dir_list = [i['parent']['key'] for i in types if dictParse.find_element([{'type': 'word'}],

@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:23:05 PM
-
-# DictParser2で書き直し済み
+# 2026/5/12 9:57:57 AM
 
 import os
 import sys
@@ -23,7 +21,7 @@ def intoFvSolution():
         os.chmod(fvSolution_path, 0o0666)
         dictParse.normalize(file_name = fvSolution_path)
 
-        fvSolution = dictParse.DictParser2(file_name = fvSolution_path)
+        fvSolution = dictParse.DictParser(file_name = fvSolution_path)
 
         solvers = fvSolution.find_element([{'type': 'block', 'key': 'solvers'}])['element']
         if solvers is not None:
@@ -36,7 +34,7 @@ def intoFvSolution():
                     del i['parent'][i['index']]
                     i['element'] = None
             if i['element'] is None or '数値的に安定だと思われる設定' not in i['element']['value']:
-                solvers['value'][solvers_start:solvers_start] = dictParse.DictParser2(string =
+                solvers['value'][solvers_start:solvers_start] = dictParse.DictParser(string =
                 '\n'
                 '/*\n'
                 f'\t数値的に安定だと思われる設定({information_date}現在)\n'
@@ -68,7 +66,7 @@ def intoFvSolution():
                     p = re.search(params, 'p_rgh')
                 if p is not None:
                     block_end = dictParse.find_element([{'type': 'block_end'}], parent = solvers, reverse = True)
-                    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+                    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
                         '\n'
                         'Phi\n'
                         '{\n'
@@ -83,7 +81,7 @@ def intoFvSolution():
         # potentialFlow
         potentialFlow = fvSolution.find_element([{'type': 'block', 'key': 'potentialFlow'}])['element']
         if potentialFlow is None:
-            linebreak_and_potentialFlow = dictParse.DictParser2(string =
+            linebreak_and_potentialFlow = dictParse.DictParser(string =
                 '\n'
                 '\n'
                 'potentialFlow\n'
@@ -97,15 +95,15 @@ def intoFvSolution():
                 [{'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = potentialFlow)['element']
             if nNonOrthogonalCorrectors is None:
                 block_end = dictParse.find_element([{'type': 'block_end'}], parent = potentialFlow, reverse = True)
-                block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+                block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
                     'nNonOrthogonalCorrectors\t10;\n').elements
 
         # SIMPLE, PIMPLE, PISO
-        linebreak = dictParse.DictParser2(string = '\n').elements[0]
+        linebreak = dictParse.DictParser(string = '\n').elements[0]
         for k in ('SIMPLE', 'PIMPLE', 'PISO'):
             block = fvSolution.find_element([{'type': 'block', 'key': k}])['element']
             if block is None:
-                linebreak_and_block = dictParse.DictParser2(string =
+                linebreak_and_block = dictParse.DictParser(string =
                     '\n'
                     '\n'
                     f'{k}\n'
@@ -121,7 +119,7 @@ def intoFvSolution():
             if k == 'SIMPLE':
                 residualControl = dictParse.find_element([{'type': 'block', 'key': 'residualControl'}], parent = block)
                 if residualControl['element'] is None:
-                    block['value'][block_start:block_start] = dictParse.DictParser2(string =
+                    block['value'][block_start:block_start] = dictParse.DictParser(string =
                         'residualControl\n'
                         '{\n'
                         '\t".*"\t1.0e-03;\n'
@@ -133,7 +131,7 @@ def intoFvSolution():
             if k != 'PISO':
                 consistent = dictParse.find_element([{'type': 'dictionary', 'key': 'consistent'}], parent = block)
                 if consistent['element'] is None:
-                    block['value'][block_start:block_start] = dictParse.DictParser2(string =
+                    block['value'][block_start:block_start] = dictParse.DictParser(string =
                         'consistent\tyes;\n').elements
                 else:
                     consistent['parent'][block_start:block_start] = [
@@ -142,7 +140,7 @@ def intoFvSolution():
             nNonOrthogonalCorrectors = dictParse.find_element([
                 {'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}], parent = block)
             if nNonOrthogonalCorrectors['element'] is None:
-                block['value'][block_start:block_start] = dictParse.DictParser2(string =
+                block['value'][block_start:block_start] = dictParse.DictParser(string =
                     'nNonOrthogonalCorrectors\t1;\n').elements
             else:
                 nNonOrthogonalCorrectors['parent'][block_start:block_start] = [
@@ -151,7 +149,7 @@ def intoFvSolution():
             if k != 'SIMPLE':
                 nCorrectors = dictParse.find_element([{'type': 'dictionary', 'key': 'nCorrectors'}], parent = block)
                 if nCorrectors['element'] is None:
-                    block['value'][block_start:block_start] = dictParse.DictParser2(string =
+                    block['value'][block_start:block_start] = dictParse.DictParser(string =
                         'nCorrectors\t3;\n').elements
                 else:
                     nCorrectors['parent'][block_start:block_start] = [
@@ -165,7 +163,7 @@ def intoFvSolution():
                 v = dictParse.find_element([{'except type': 'ignorable'}],
                     parent = momentumPredictor['element'])['element']['value']
                 del block['value'][momentumPredictor['index']]
-            block['value'][block_start:block_start] = dictParse.DictParser2(string =
+            block['value'][block_start:block_start] = dictParse.DictParser(string =
                 f'momentumPredictor\t{v};'
                 ' // yes -> 圧力方程式を解く前に，運動方程式を解いて速度を求める．\n').elements
 
@@ -173,7 +171,7 @@ def intoFvSolution():
 
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
-            linebreak_and_relaxationFactors = dictParse.DictParser2(string =
+            linebreak_and_relaxationFactors = dictParse.DictParser(string =
                 '\n'
                 '\n'
                 'relaxationFactors\n'
@@ -188,7 +186,7 @@ def intoFvSolution():
         fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
         if fields is None:
             relaxationFactors['value'][
-                relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
+                relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser(string =
                 '\n'
                 '\tfields // p = p^{old} + \\alpha (p - p^{old})\n'
                 '\t{\n'
@@ -197,14 +195,14 @@ def intoFvSolution():
                 '\t}').elements
         else:
             fields['value'][:dictParse.find_element(
-                [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser2(string =
+                [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser(string =
                     ' // p = p^{old} + \\alpha (p - p^{old})\n').elements
 
         equations = dictParse.find_element(
             [{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)['element']
         if equations is None:
             relaxationFactors['value'][
-                relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser2(string =
+                relaxationFactors_start:relaxationFactors_start] = dictParse.DictParser(string =
                 '\n'
                 '\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
                 '\t{\n'
@@ -213,12 +211,12 @@ def intoFvSolution():
                 '\t}').elements
         else:
             equations['value'][:dictParse.find_element(
-                [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser2(string =
+                [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser(string =
                 ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
 
         dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
 
-        string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = fvSolution.file_string())[0]
         if fvSolution.string != string:
 #            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, 'w') as f:
@@ -237,7 +235,7 @@ def intoFvSchemes():
         os.chmod(fvSchemes_path, 0o0666)
         dictParse.normalize(file_name = fvSchemes_path)
 
-        fvSchemes = dictParse.DictParser2(file_name = fvSchemes_path)
+        fvSchemes = dictParse.DictParser(file_name = fvSchemes_path)
 
         # divSchemes, laplacianSchemes, wallDist
         for b, k, v in (
@@ -246,7 +244,7 @@ def intoFvSchemes():
             ('wallDist', 'method', 'meshWave')):
             block = fvSchemes.find_element([{'type': 'block', 'key': b}])['element']
             if block is None:
-                linebreak_and_block = dictParse.DictParser2(string =
+                linebreak_and_block = dictParse.DictParser(string =
                     '\n'
                     '\n'
                     f'{b}\n'
@@ -260,10 +258,10 @@ def intoFvSchemes():
             else:
                 if dictParse.find_element([{'type': 'dictionary', 'key': k}], parent = block)['element'] is None:
                     block_end = dictParse.find_element([{'type': 'block_end'}], parent = block, reverse = True)
-                    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+                    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
                         f'{k}\t{v};\n').elements
 
-        string = dictParse.normalize(string = fvSchemes.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = fvSchemes.file_string())[0]
         if fvSchemes.string != string:
 #            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
             with open(fvSchemes_path, 'w') as f:
@@ -279,19 +277,19 @@ def intoControlDict():
     os.chmod(controlDict_path, 0o0666)
     dictParse.normalize(file_name = controlDict_path)
 
-    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
 
     startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
         {'except type': 'ignorable'}])['element']
     if startFrom != 'latestTime':
-        startFrom['patent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser2(string =
+        startFrom['patent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser(string =
             'latestTime').elements
         print(f'!!! ファイル{controlDict_path}のstartFromをlatestTimeに書き換えました．')
 
     deltaT = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}])
     i = controlDict.find_element([{'type': 'block_comment'}], start = deltaT['index'] - 1, reverse = True)
     if i['element'] is None or 'simpleFoam' not in i['element']['value']:
-        controlDict.elements[deltaT['index']:deltaT['index']] = dictParse.DictParser2(string =
+        controlDict.elements[deltaT['index']:deltaT['index']] = dictParse.DictParser(string =
             '/*\n'
             'simpleFoamnの場合，deltaTは使っていないのでいくらでも良い．\n'
             '計算の安定性はsystem/fvSolutionの中のrelaxationFactorsで制御する．\n'
@@ -302,7 +300,7 @@ def intoControlDict():
 
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])
     if functions['element'] is None:
-        linebreak_and_functions = dictParse.DictParser2(string =
+        linebreak_and_functions = dictParse.DictParser(string =
             '\n'
             '\n'
             'functions\n'
@@ -333,7 +331,7 @@ def intoControlDict():
             insertion = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}], parent = block)['index'] + 1
         insertion = dictParse.find_element(
             [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
-        block['value'][insertion:insertion] = dictParse.DictParser2(string =
+        block['value'][insertion:insertion] = dictParse.DictParser(string =
             f'enabled\t{v}; // yesで実行\n').elements
         dictParse.set_blank_line(block, number_of_blank_lines = 0)
 
@@ -365,7 +363,7 @@ def intoControlDict():
 #            has_printCoMinMax = True
 
     if not has_limitNut:
-        limitNut = dictParse.DictParser2(string =
+        limitNut = dictParse.DictParser(string =
             '\n'
             '\tlimitNut // nutの最大値を制限する\n'
             '\t{\n'
@@ -379,7 +377,7 @@ def intoControlDict():
         functions['value'][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
 #    if not has_calcCo:
-#        calcCo = dictParse.DictParser2(string =
+#        calcCo = dictParse.DictParser(string =
 #            '\n'
 #            '\tcalcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
 #            '\t{\n'
@@ -390,7 +388,7 @@ def intoControlDict():
 #        functions['value'][functions_end:functions_end] = calcCo
 #        functions_end += len(calcCo)
 #    if not has_printCoMinMax:
-#        printCoMinMax = dictParse.DictParser2(string =
+#        printCoMinMax = dictParse.DictParser(string =
 #            '\n'
 #            '\tprintCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
 #            '\t{\n'
@@ -405,7 +403,7 @@ def intoControlDict():
 
     runTimeModifiable = controlDict.find_element([{'type': 'dictionary', 'key': 'runTimeModifiable'}])['element']
     if runTimeModifiable is None:
-        linebreak_and_runTimeModifiable = dictParse.DictParser2(string =
+        linebreak_and_runTimeModifiable = dictParse.DictParser(string =
             '\n'
             'runTimeModifiable\tyes;\n').elements
         controlDict.elements[functions_index:functions_index] = linebreak_and_runTimeModifiable
@@ -413,9 +411,9 @@ def intoControlDict():
         tail_index += len(linebreak_and_runTimeModifiable)
     else:
         i = dictParse.find_element([{'except type': 'ignorable'}], parent = runTimeModifiable)
-        i['parent'][i['index']] = dictParse.DictParser2(string = 'yes').elements[0]
+        i['parent'][i['index']] = dictParse.DictParser(string = 'yes').elements[0]
 
-    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = controlDict.file_string())[0]
     if controlDict.string != string:
 #        os.rename(controlDict_path, f'{controlDict_path}_bak')
         with open(controlDict_path, 'w') as f:

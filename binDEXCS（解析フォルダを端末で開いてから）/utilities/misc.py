@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:38:16 PM
-
-# DictParser2で書き直し済み
+# 2026/5/12 9:58:18 AM
 
 import glob
 import os
@@ -144,14 +142,14 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
 
 def writeCommentInBoundary(comment):
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    boundary = dictParse.DictParser2(file_name = boundary_path)
+    boundary = dictParse.DictParser(file_name = boundary_path)
     i = boundary.find_element([{'except type': 'whitespace|linebreak'}],
         start = boundary.find_element([{'type': 'list'}])['index'] - 1,
         reverse = True, index_not_found = 0)['index']
-    boundary.elements[i:i] = dictParse.DictParser2(string =
+    boundary.elements[i:i] = dictParse.DictParser(string =
         f'\n// {comment}' if i > 0 else f'// {comment}\n').elements
     with open(boundary_path, 'w') as f:
-        f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
+        f.write(dictParse.normalize(string = boundary.file_string())[0])
 
 def removePatchesHavingNoFaces():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
@@ -246,16 +244,16 @@ def texteditwx_works_well():
 def correctLocation():
     def correctLocationIn(file_name):
         os.chmod(file_name, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
-        parser = dictParse.DictParser2(file_name = file_name)
+        parser = dictParse.DictParser(file_name = file_name)
         FoamFile = parser.find_element([{'type': 'block', 'key': 'FoamFile'}])['element']
         if FoamFile is None:
             return
         location = dictParse.find_element([{'type': 'dictionary', 'key': 'location'}], parent = FoamFile)['element']
         if location is not None:
             i = dictParse.find_element([{'except type': 'ignorable'}], parent = location)
-            i['parent']['value'][i['index']:i['index'] + 1] = dictParse.DictParser2(string =
+            i['parent']['value'][i['index']:i['index'] + 1] = dictParse.DictParser(string =
                 '"' + os.path.dirname(file_name) + '"').elements
-        string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = parser.file_string())[0]
         if parser.string != string:
 #            os.rename(file_name, f'{file_name}_bak')
             with open(file_name, 'w') as f:
@@ -324,7 +322,7 @@ def timesFolders(path = os.curdir):
 
 def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os.curdir):
     controlDict_path = os.path.join(path, 'system', 'controlDict')
-    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
 
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if function is None:
@@ -343,12 +341,12 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
         if e is None:
             i = dictParse.find_element([{'type': 'dictionary', 'except key': 'libs'}], parent = f,
                 start = t['index'] + 1, index_not_found = t['index'])['index'] + 1
-            f['value'][i:i] = dictParse.DictParser2(string = '\n'
+            f['value'][i:i] = dictParse.DictParser(string = '\n'
                 f'enabled\t{yesno}; yesで実行\n').elements
         else:
             e['value'][dictParse.find_element([{'type': 'word'}], parent = e)['index']] = yesno
 
-    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = controlDict.file_string())[0]
     if type_name is None:
         if enabled:
             string = dictParse.re_sub_in_comments(
@@ -370,7 +368,7 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
 
 def controlDictFunctionsList(path = os.curdir):
     controlDict_path = os.path.join(path, 'system', 'controlDict')
-    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
 
     enable_function_list = []
     disable_function_list = []
@@ -391,7 +389,7 @@ def controlDictFunctionsList(path = os.curdir):
         else:
             disable_function_list.append(type_name)
 
-    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = controlDict.file_string())[0]
     enable_function_list.extend(
         dictParse.re_findall_except_comments(r'(?<!\S)#includeFunc\s+([^;]+);', string))
     disable_function_list.extend(

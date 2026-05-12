@@ -71,7 +71,7 @@ if __name__ == '__main__':
         sys.exit(0) # 正常終了
 
     if interactive:
-        patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+        patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
             os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                 [{'type': 'list'}, {'type': 'block'}])])
         fields = ' '.join(misc.volFieldList(misc.latestTime()))

@@ -103,8 +103,8 @@ def potentialFoam(latest_time):
                     '\n'
                     'p\n'
                     '{\n')
-                f.write(dictparse.file_string([dictParse.DictParser2(file_name = p_bak_path).find_element(
-                    [{'type': 'block'}, {'key': 'boundaryField'}])['element']], indent_level = 1, pretty_print = True))
+                f.write(dictParse.DictParser(file_name = p_bak_path).find_element(
+                    [{'type': 'block'}, {'key': 'boundaryField'}])['element'].file_string(indent_level = 1))
                 f.write('\n'
                     '}\n')
             command = (('changeDictionary' if domains == 1 else f'mpirun -np {domains} changeDictionary -parallel') +
@@ -143,7 +143,7 @@ def reset_relaxationFactors_in_fvSolution():
         if os.path.islink(fvSolution_path):
             return
 
-        fvSolution = dictParse.DictParser2(file_name = fvSolution_path)
+        fvSolution = dictParse.DictParser(file_name = fvSolution_path)
 
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
@@ -166,11 +166,11 @@ def reset_relaxationFactors_in_fvSolution():
                     dictParse.find_element([{'type': 'string'}], parent = calc)['element']['value'])
                 if value is None:
                     continue
-                calc['parent'][calc['index']:calc['index'] + 1] = dictParse.DictParser2(string =
+                calc['parent'][calc['index']:calc['index'] + 1] = dictParse.DictParser(string =
                     value[1]).elements
             dictparse.set_blank_line(block, number_of_blank_lines = 0)
 
-        string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = fvSolution.file_string())[0]
         if fvSolution.string != string:
 #            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, 'w') as f:
@@ -187,14 +187,14 @@ def change_relaxationFactors_in_controlDict(exponent):
         if os.path.islink(fvSolution_path):
             return
 
-        fvSolution = dictParse.DictParser2(file_name = fvSolution_path)
+        fvSolution = dictParse.DictParser(file_name = fvSolution_path)
 
         tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
             reverse = True, index_not_found = len(fvSolution.elements) - 1)['index'] + 1
 
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
-            linebreak_and_relaxationFactors = dictParse.DictParser2(string =
+            linebreak_and_relaxationFactors = dictParse.DictParser(string =
                 '\n'
                 '\n'
                 'relaxationFactors\n'
@@ -208,7 +208,7 @@ def change_relaxationFactors_in_controlDict(exponent):
 
         fields = dictParse.find_element([{'type': 'block', 'key': 'fields'}], parent = relaxationFactors)['element']
         if fields is None:
-            linebreak_and_fields = dictParse.DictParser2(string =
+            linebreak_and_fields = dictParse.DictParser(string =
                 '\n'
                 '\tfields // p = p^{old} + \\alpha (p - p^{old})\n'
                 '\t{\n'
@@ -219,13 +219,13 @@ def change_relaxationFactors_in_controlDict(exponent):
             fields = linebreak_and_fields[-1]
         else:
             fields['value'][:dictParse.find_element(
-                [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser2(string =
+                [{'type': 'block_start'}], parent = fields)['index']] = dictParse.DictParser(string =
                     ' // p = p^{old} + \\alpha (p - p^{old})\n').elements
 
         equations = dictParse.find_element(
             [{'type': 'block', 'key': 'equations'}], parent = relaxationFactors)['element']
         if equations is None:
-            linebreak_and_equations = dictParse.DictParser2(string =
+            linebreak_and_equations = dictParse.DictParser(string =
                 '\n'
                 '\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
                 '\t{\n'
@@ -236,7 +236,7 @@ def change_relaxationFactors_in_controlDict(exponent):
             equations = linebreak_and_equations[-1]
         else:
             equations['value'][:dictParse.find_element(
-                [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser2(string =
+                [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser(string =
                 ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
 
         dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
@@ -247,12 +247,12 @@ def change_relaxationFactors_in_controlDict(exponent):
                 value = dictParse.find_element([{'type': 'word|float|integer'}], parent = param)['element']
                 if value is None:
                     continue
-                value['parent'][value['index']:] = dictParse.DictParser2(string =
+                value['parent'][value['index']:] = dictParse.DictParser(string =
                     f'#calc "({value["element"]["value"]})*{c}";'
                     ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR\n').elements
             dictparse.set_blank_line(block, number_of_blank_lines = 0)
 
-        string = dictParse.normalize(string = fvSolution.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = fvSolution.file_string())[0]
         if fvSolution.string != string:
 #            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, 'w') as f:

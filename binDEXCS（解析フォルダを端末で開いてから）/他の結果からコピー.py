@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:00:51 PM
+# 2026/5/12 9:54:35 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -s source_path -> コピー元となる解析フォルダのパスをsource_pathにする．解析フォルダからの相対パスでも良い
 # -p -> paraFoamを実行する
-
-# DictParser2で書き直し済み
 
 import signal
 import subprocess
@@ -47,7 +45,7 @@ if __name__ == '__main__':
         print(f'エラー: ファイル{controlDict_path}がありません．')
         sys.exit(1)
 
-    controlDict = DictParser2(file_name = controlDict_path)
+    controlDict = DictParser(file_name = controlDict_path)
     startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
         {'except type': 'ignorable'}])['element']
     if startFrom is None:

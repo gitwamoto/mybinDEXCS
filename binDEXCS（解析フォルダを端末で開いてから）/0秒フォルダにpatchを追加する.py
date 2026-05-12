@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:01:01 PM
+# 2026/5/12 9:56:20 AM
 
 # ---- オプションはない ----
-
-# DictParser2で書き直し済み
 
 import os
 import signal
@@ -20,12 +18,12 @@ def append_patches(src, dst):
     src = os.path.join(src, 'polyMesh', 'boundary')
     os.chmod(src, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
 
-    boundary = dictParse.DictParser2(file_name = src)
+    boundary = dictParse.DictParser(file_name = src)
 
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     patches.sort(key = lambda p: p['element']['key'])
 
-    linebreak = dictParse.DictParser2(string = '\n').elements[0]
+    linebreak = dictParse.DictParser(string = '\n').elements[0]
     for f_path in glob.iglob(os.path.join(dst, '*')):
         if not os.path.isfile(f_path):
             continue
@@ -35,7 +33,7 @@ def append_patches(src, dst):
             continue
 
         print(f'{f_path}を処理中...')
-        parameter = dictParse.DictParser2(file_name = f_path)
+        parameter = dictParse.DictParser(file_name = f_path)
 
         if f_base in ('k', 'epsilon', 'omega'):
             internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
@@ -66,11 +64,11 @@ def append_patches(src, dst):
                         c += '_omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
                     c += '*/\n'
                 parameter.elements[
-                    internalField['index']:internalField['index']] = dictParse.DictParser2(string = c).elements
+                    internalField['index']:internalField['index']] = dictParse.DictParser(string = c).elements
 
         boundaryField = parameter.find_element([{'type': 'block', 'key': 'boundaryField'}])['element']
         if boundaryField is None:
-            linebreak_and_boundaryField = dictParse.DictParser2(string =
+            linebreak_and_boundaryField = dictParse.DictParser(string =
                 '\n'
                 'boundaryField\n'
                 '{\n'
@@ -131,7 +129,7 @@ def append_patches(src, dst):
                         'value\t$internalField; // 実際には使わないけど必要\n')
                 else:
                     s += (v if v in ('empty', 'symmetryPlane', 'symmetry', 'wedge') else 'zeroGradient') + ';\n'
-                b = dictParse.DictParser2(string = s + '}\n').elements
+                b = dictParse.DictParser(string = s + '}\n').elements
                 boundaryField['value'][boundaryField_end:boundaryField_end] = b
                 boundaryField_end += len(b)
             else:
@@ -141,7 +139,7 @@ def append_patches(src, dst):
                 boundaryField_end += 1 # linebreakのぶん増える
         dictParse.set_blank_line(boundaryField, number_of_blank_lines = 1)
 
-        string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = parameter.file_string())[0]
         if parameter.string != string:
 #            os.rename(f_path, f'{f_path}_bak')
             with open(f_path, 'w') as f:

@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 # 半角に出来る文字は全て半角に.py
 # by Yukiharu Iwamoto
-# 2026/3/2 8:58:18 PM
+# 2026/5/12 9:54:48 AM
 
 # ---- オプションはない ----
-
-# DictParser2で書き直し済み
 
 import sys
 import signal
@@ -26,7 +24,7 @@ def normalize(dir_name):
         if os.path.isfile(i):
             print('{}を処理中...'.format(i))
             dictParse.normalize(file_name = i, overwrite_file = True)
-            dp = dictParse.DictParser2(file_name = i)
+            dp = dictParse.DictParser(file_name = i)
             for e in dp.find_all_elements([{'type': 'directive', 'key': '#include'}, {'type': 'string'}]):
                 # os.path.normpath -> パスの余計な部分を整理して、きれいな形に整える
                 include_files.add(os.path.normpath(os.path.join(dir_name, e['element']['value'][1:-1])))
