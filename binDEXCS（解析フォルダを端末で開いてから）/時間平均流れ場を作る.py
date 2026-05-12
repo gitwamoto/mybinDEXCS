@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:58:49 AM
+# 2026/5/12 2:11:30 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -79,7 +79,7 @@ def append_functions_in_controlDict(controlDict_path):
 
     block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string = string).elements
-    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
+    functions.set_blank_line(number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
     os.rename(controlDict_path, f'{controlDict_path}_bak')

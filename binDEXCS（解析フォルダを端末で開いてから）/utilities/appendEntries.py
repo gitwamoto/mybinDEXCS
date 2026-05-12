@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:57:57 AM
+# 2026/5/12 2:10:55 PM
 
 import os
 import sys
@@ -73,7 +73,7 @@ def intoFvSolution():
                         f'\t${p.groups()};\n'
                         '}\n').elements
 
-            dictParse.set_blank_line(solvers, number_of_blank_lines = 1)
+            solvers.set_blank_line(number_of_blank_lines = 1)
 
         tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
             reverse = True, index_not_found = len(fvSolution.elements) - 1)['index'] + 1
@@ -167,7 +167,7 @@ def intoFvSolution():
                 f'momentumPredictor\t{v};'
                 ' // yes -> 圧力方程式を解く前に，運動方程式を解いて速度を求める．\n').elements
 
-            dictParse.set_blank_line(block, number_of_blank_lines = 0)
+            block.set_blank_line(number_of_blank_lines = 0)
 
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
@@ -214,7 +214,7 @@ def intoFvSolution():
                 [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser(string =
                 ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
 
-        dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
+        relaxationFactors.set_blank_line(number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string())[0]
         if fvSolution.string != string:
@@ -333,7 +333,7 @@ def intoControlDict():
             [{'type': 'linebreak'}], parent = block, start = insertion, index_not_found = insertion - 1)['index'] + 1
         block['value'][insertion:insertion] = dictParse.DictParser(string =
             f'enabled\t{v}; // yesで実行\n').elements
-        dictParse.set_blank_line(block, number_of_blank_lines = 0)
+        block.set_blank_line(number_of_blank_lines = 0)
 
     functions_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)['index']
     has_limitNut = False
@@ -399,7 +399,7 @@ def intoControlDict():
 #            '\t}\n').elements
 #        functions['value'][functions_end:functions_end] = printCoMinMax
 #        functions_end += len(printCoMinMax)
-    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
+    functions.set_blank_line(number_of_blank_lines = 1)
 
     runTimeModifiable = controlDict.find_element([{'type': 'dictionary', 'key': 'runTimeModifiable'}])['element']
     if runTimeModifiable is None:

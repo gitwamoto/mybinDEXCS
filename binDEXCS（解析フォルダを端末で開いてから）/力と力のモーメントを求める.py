@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:58:40 AM
+# 2026/5/12 2:11:23 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -84,7 +84,7 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\twriteInterval\t1;\n'
         '\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n'
         '\t}').elements
-    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
+    functions.set_blank_line(number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
     os.rename(controlDict_path, f'{controlDict_path}_bak')

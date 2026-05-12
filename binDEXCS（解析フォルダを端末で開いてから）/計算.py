@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/1 3:39:58 PM
+# 2026/5/12 2:11:44 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -168,7 +168,7 @@ def reset_relaxationFactors_in_fvSolution():
                     continue
                 calc['parent'][calc['index']:calc['index'] + 1] = dictParse.DictParser(string =
                     value[1]).elements
-            dictparse.set_blank_line(block, number_of_blank_lines = 0)
+            block.set_blank_line(number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string())[0]
         if fvSolution.string != string:
@@ -239,7 +239,7 @@ def change_relaxationFactors_in_controlDict(exponent):
                 [{'type': 'block_start'}], parent = equations)['index']] = dictParse.DictParser(string =
                 ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n').elements
 
-        dictParse.set_blank_line(relaxationFactors, number_of_blank_lines = 0)
+        relaxationFactors.set_blank_line(number_of_blank_lines = 0)
 
         c = 0.5**exponent
         for block in (equations, fields):
@@ -250,7 +250,7 @@ def change_relaxationFactors_in_controlDict(exponent):
                 value['parent'][value['index']:] = dictParse.DictParser(string =
                     f'#calc "({value["element"]["value"]})*{c}";'
                     ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR\n').elements
-            dictparse.set_blank_line(block, number_of_blank_lines = 0)
+            block.set_blank_line(number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string())[0]
         if fvSolution.string != string:

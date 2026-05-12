@@ -122,36 +122,6 @@ def re_findall_in_comments(pattern, string):
         index = s.end()
     return result
 
-def find_element(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
-    # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
-    #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
-    #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
-    assert (start is None and end is None) or len(path_list) == 1
-    if not isinstance(parent, list):
-        parent = parent['value']
-    if isinstance(path_list, dict):
-        path_list = [path_list]
-    elif len(path_list) == 0:
-        return None
-    p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
-        for k, v in path_list[0].items()}
-    # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
-    # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
-    # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
-    c = next(({'index': i, 'element': parent[i]} for i in range(
-        (len(parent) - 1 if reverse else 0) if start is None else start,
-        (-1 if reverse else len(parent)) if end is None else end,
-        -1 if reverse else 1)
-        if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
-            for k, v in p.items())), None)
-    if c is None:
-        return {'parent': None, 'index': index_not_found, 'element': None}
-    elif len(path_list) == 1:
-        return {'parent': parent, 'index': c['index'], 'element': c['element']}
-    else:
-        return find_element(path_list[1:], parent = c['element'], start = start, end = end, reverse = reverse,
-            index_not_found = index_not_found)
-
 def find_all_elements(path_list, parent):
     # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
     #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
@@ -176,58 +146,6 @@ def find_all_elements(path_list, parent):
         for i in c:
             elements += find_all_elements(path_list[1:], i['element'])
         return elements
-
-def set_blank_line(parent, number_of_blank_lines = 1):
-    number_of_blank_lines = max(0, number_of_blank_lines)
-    if isinstance(parent, list):
-        if find_element([{'type': 'linebreak'}], parent)['element'] is None:
-            return
-        start = 0
-        end = len(parent)
-    else:
-        if parent['type'] in ('block', 'list', 'dimension'):
-            start = find_element([{'type': parent['type'] + '_start'}], parent = parent['value'])['index'] + 1
-            end = find_element([{'type': parent['type'] + '_end'}], parent = parent['value'], reverse = True)['index']
-            parent = parent['value']
-            i = find_element([{'type': 'linebreak'}], parent = parent, start = start, end = end)
-            if i['element'] is None:
-                return
-            start = i['index'] + 1
-            i = find_element([{'except type': 'whitespace|linebreak'}], parent = parent, start = start, end = end)
-            if i['element'] is not None:
-                i = i['index']
-                del parent[start:i]
-                end += start - i
-            if start != end:
-                end = find_element([{'type': 'linebreak'}], parent = parent, start = end - 1, end = start - 1,
-                    reverse = True)['index']
-                i = find_element([{'except type': 'whitespace|linebreak'}], parent = parent, start = end - 1,
-                    end = start - 1, reverse = True)
-                if i['element'] is not None:
-                    i = i['index'] + 1
-                    del parent[i:end]
-                    end = i
-        else:
-            if find_element([{'type': 'linebreak'}], parent['value'])['element'] is None:
-                return
-            parent = parent['value']
-            start = 0
-            end = len(parent)
-    i = start
-    while i < end:
-        if (parent[i]['type'] == 'linebreak' and
-            i > start and parent[i - 1]['type'] not in ('line_comment', 'block_comment')):
-            linebreak = parent[i]
-            if parent[i - 1]['type'] != 'linebreak':
-                i += 1
-            j = i
-            while j < end and parent[j]['type'] in ('whitespace', 'linebreak'):
-                j += 1
-            parent[i:j] = number_of_blank_lines*[linebreak]
-            end += i - j + number_of_blank_lines
-            i += number_of_blank_lines
-        else:
-            i += 1
 
 def structure_string(parent, parent_header = '', indent_level = 0):
     if isinstance(parent, DictParser) and parent['type'] != 'root':
@@ -269,9 +187,9 @@ def file_string(parent, indent_level = 0, pretty_print = True, commentless = Fal
             elif i['type'] != 'linebreak':
                 s += indent
         if i['type'] in ('block', 'list', 'dimension'):
-            start = find_element([{'type': i['type'] + '_start'}], parent = i['value'])['index'] + 1
-            end = find_element([{'type': i['type'] + '_end'}], parent = i['value'], reverse = True)['index']
-            j = find_element([{'except type': 'whitespace'}], parent = i['value'], start = end - 1, end = start - 1,
+            start = DictParser.find_element_static([{'type': i['type'] + '_start'}], parent = i['value'])['index'] + 1
+            end = DictParser.find_element_static([{'type': i['type'] + '_end'}], parent = i['value'], reverse = True)['index']
+            j = DictParser.find_element_static([{'except type': 'whitespace'}], parent = i['value'], start = end - 1, end = start - 1,
                 reverse = True)
             if j['element'] is not None:
                 end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
@@ -465,22 +383,98 @@ class DictParser(UserDict):
         if len(separators) == 0:
             return [{'parent': None, 'index': header_index_not_found, 'element': None},
                 {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
-        if self.find_element([{'except type': 'ignorable'}],
-            start = separators[-1]['index'] + 1)['element'] is not None:
+        if self.find_element(
+            [{'except type': 'ignorable'}], start = separators[-1]['index'] + 1)['element'] is not None:
             return [separators[0],
                 {'parent': None, 'index': footer_index_not_found, 'element': None}] # header, footer
         return [{'parent': None, 'index': header_index_not_found, 'element': None}
             if len(separators) == 1 else separators[0], separators[-1]] # header, footer
 
+    @staticmethod
+    def find_element_static(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
+        # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
+        #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
+        #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
+        assert (start is None and end is None) or len(path_list) == 1
+        if not isinstance(parent, list):
+            parent = parent['value']
+        if isinstance(path_list, dict):
+            path_list = [path_list]
+        elif len(path_list) == 0:
+            return None
+        p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
+            for k, v in path_list[0].items()}
+        # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
+        # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
+        # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
+        c = next(({'index': i, 'element': parent[i]} for i in range(
+            (len(parent) - 1 if reverse else 0) if start is None else start,
+            (-1 if reverse else len(parent)) if end is None else end,
+            -1 if reverse else 1)
+            if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
+                for k, v in p.items())), None)
+        if c is None:
+            return {'parent': None, 'index': index_not_found, 'element': None}
+        elif len(path_list) == 1:
+            return {'parent': parent, 'index': c['index'], 'element': c['element']}
+        else:
+            return DictParser.find_element_static(path_list[1:], parent = c['element'],
+                start = start, end = end, reverse = reverse, index_not_found = index_not_found)
+
     def find_element(self, path_list, start = None, end = None, reverse = False, index_not_found = None):
-        return find_element(path_list, parent = self, start = start, end = end, reverse = reverse,
-            index_not_found = index_not_found)
+        return DictParser.find_element_static(path_list, parent = self, start = start, end = end,
+            reverse = reverse, index_not_found = index_not_found)
 
     def find_all_elements(self, path_list):
         return find_all_elements(path_list, self)
 
     def set_blank_line(self, number_of_blank_lines = 1):
-        set_blank_line(self, number_of_blank_lines)
+        number_of_blank_lines = max(0, number_of_blank_lines)
+        if self['type'] in ('block', 'list', 'dimension'):
+            start = self.find_element([{'type': self['type'] + '_start'}])['index'] + 1
+            end = self.find_element([{'type': self['type'] + '_end'}], reverse = True)['index']
+            parent = self['value']
+            i = DictParser.find_element_static(
+                [{'type': 'linebreak'}], parent = parent, start = start, end = end)
+            if i['element'] is None:
+                return
+            start = i['index'] + 1
+            i = DictParser.find_element_static(
+                [{'except type': 'whitespace|linebreak'}], parent = parent, start = start, end = end)
+            if i['element'] is not None:
+                i = i['index']
+                del parent[start:i]
+                end += start - i
+            if start != end:
+                end = DictParser.find_element_static([{'type': 'linebreak'}],
+                    parent = parent, start = end - 1, end = start - 1, reverse = True)['index']
+                i = DictParser.find_element_static([{'except type': 'whitespace|linebreak'}],
+                    parent = parent, start = end - 1, end = start - 1, reverse = True)
+                if i['element'] is not None:
+                    i = i['index'] + 1
+                    del parent[i:end]
+                    end = i
+        else:
+            if self.find_element([{'type': 'linebreak'}])['element'] is None:
+                return
+            parent = self['value']
+            start = 0
+            end = len(parent)
+        i = start
+        while i < end:
+            if (parent[i]['type'] == 'linebreak' and
+                i > start and parent[i - 1]['type'] not in ('line_comment', 'block_comment')):
+                linebreak = parent[i]
+                if parent[i - 1]['type'] != 'linebreak':
+                    i += 1
+                j = i
+                while j < end and parent[j]['type'] in ('whitespace', 'linebreak'):
+                    j += 1
+                parent[i:j] = number_of_blank_lines*[linebreak]
+                end += i - j + number_of_blank_lines
+                i += number_of_blank_lines
+            else:
+                i += 1
 
     def structure_string(self, indent_level = 0):
         return structure_string(self, indent_level)
@@ -496,12 +490,12 @@ if __name__ == '__main__':
         print(sys.exc_info())
 #    print(dp.structure_string())
 #    print(dp.file_string(pretty_print = True, commentless = False))
-    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].file_string())
-    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].structure_string())
+#    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].file_string())
+#    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].structure_string())
 
-#    set_blank_line(dp.find_element([{'type': 'block', 'key': 'functions'}])['element'], 1)
+    dp.find_element([{'type': 'block', 'key': 'functions'}])['element'].set_blank_line(2)
 #    print(dp.structure_string())
-#    print(dp.file_string(pretty_print = True, commentless = False))
+    print(dp.file_string())
 #    print([i['index']
 #        for i in dp.find_all_elements([{'type': 'block', 'key': 'gradSchemes'}, {'type': 'dictionary'},
 #            {'type': 'whitespace|linebreak|semicolon'}])])

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:58:56 AM
+# 2026/5/12 2:11:36 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -147,7 +147,7 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\t\t}\n'
         '\t\t);\n'
         '\t}\n').elements
-    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
+    functions.set_blank_line(number_of_blank_lines = 1)
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
     os.rename(controlDict_path, f'{controlDict_path}_bak')

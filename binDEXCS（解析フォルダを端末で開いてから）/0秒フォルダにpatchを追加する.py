@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:56:20 AM
+# 2026/5/12 2:09:37 PM
 
 # ---- オプションはない ----
 
@@ -137,7 +137,7 @@ def append_patches(src, dst):
                 # popで1つ引き抜くので，差し込む場所はboundaryField_end - 1にする．
                 i['parent'][boundaryField_end - 1:boundaryField_end - 1] = [linebreak, p]
                 boundaryField_end += 1 # linebreakのぶん増える
-        dictParse.set_blank_line(boundaryField, number_of_blank_lines = 1)
+        boundaryField.set_blank_line(number_of_blank_lines = 1)
 
         string = dictParse.normalize(string = parameter.file_string())[0]
         if parameter.string != string:
