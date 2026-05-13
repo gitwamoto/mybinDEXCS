@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:31:02 PM
+# 2026/5/13 4:04:33 PM
 
 import sys
 import os
@@ -296,12 +296,14 @@ class DictParser(UserDict):
         #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
         #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
         assert (start is None and end is None) or len(path_list) == 1
-        if not isinstance(parent, list):
+        if parent is None:
+            return {'parent': None, 'index': index_not_found, 'element': None}
+        elif not isinstance(parent, list):
             parent = parent['value']
         if isinstance(path_list, dict):
             path_list = [path_list]
         elif len(path_list) == 0:
-            return None
+            return {'parent': None, 'index': index_not_found, 'element': None}
         p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
             for k, v in path_list[0].items()}
         # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
@@ -326,7 +328,9 @@ class DictParser(UserDict):
         # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
         #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
         #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
-        if not isinstance(parent, list):
+        if parent is None:
+            return []
+        elif not isinstance(parent, list):
             parent = parent['value']
         if isinstance(path_list, dict):
             path_list = [path_list]
