@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/13 4:04:33 PM
+# 2026/5/13 5:33:34 PM
 
 import sys
 import os
@@ -433,11 +433,11 @@ class DictParser(UserDict):
             if i['type'] in ('dictionary', 'block'):
                 s += (f"{{'type': '{i['type']}', "  +
                     (f"'key': '{i['key']}', " if 'key' in i else "") + 
-                    f"'value': {DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
+                    f"'value':\n{DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
             elif i['type'] == 'list':
                 s += ("{'type': 'list', " +
                     (f"'length': {i['length']}, " if 'length' in i else "") +
-                    f"'value': {DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
+                    f"'value':\n{DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
             else:
                 s += f'{i}\n'
         return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '')
@@ -472,7 +472,7 @@ class DictParser(UserDict):
                     reverse = True)
                 if j['element'] is not None:
                     end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
-                    s += (i.get('key', '') + i.get('length', '') +
+                    s += (f'{i.get("key", "")}{i.get("length", "")}' +
                         DictParser.file_string_static(
                             i['value'][:start], indent_level, pretty_print, commentless) +
                         DictParser.file_string_static(
@@ -498,50 +498,13 @@ class DictParser(UserDict):
 if __name__ == '__main__':
 #    normalize(file_name = sys.argv[1])
     try:
-        dp = DictParser(file_name = sys.argv[1])
+        parser = DictParser(file_name = sys.argv[1])
     except:
         print(sys.exc_info())
-#    print(dp.structure_string())
-#    print(dp.file_string(pretty_print = True, commentless = False))
-#    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].file_string())
-#    print(dp.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].structure_string())
-
-    dp.find_element([{'type': 'block', 'key': 'functions'}])['element'].set_blank_line(2)
-#    print(dp.structure_string())
-    print(dp.file_string())
-#    print([i['index']
-#        for i in dp.find_all_elements([{'type': 'block', 'key': 'gradSchemes'}, {'type': 'dictionary'},
-#            {'type': 'whitespace|linebreak|semicolon'}])])
-#    print(dp.find_element([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}]))
-#    print([i['element']['key'] for i in dp.find_all_elements([{'type': 'block', 'key': 'solvers'}, {'type': 'block'}, {'type': 'dictionary'}])])
-#    for i, e in enumerate(dp.find_element([{'type': 'block', 'key': 'solvers'}])[1]['value']):
-#        print(i, e)
-#    separators = dp.find_separators()
-#    print([(s['index'], s['element']) for s in separators])
-#    print(structure_string(DictParser(string =
-#        '#includeFunc surfaceFieldValue(name=inletFlux, patch=inlet, field=phi)'
-#        #f'surfaceFile\t"{stl_2D_file_name}";\n'
-#        )))
-#    dp = DictParser(string =
-#'''castellatedMeshControls
-#{
-#	features
-#	(
-#		{
-#			file	"probe.extendedFeatureEdgeMesh";
-#			level	1;
-#		}
-#	);
-#}''')
-#    print(dp.structure_string())
-#    print(dp.find_element(
-#                [{'type': 'block', 'key': 'castellatedMeshControls'},
-#                {'type': 'dictionary', 'key': 'features'}, {'type': 'list'}, {'type': 'block'},
-#                {'type': 'dictionary', 'key': 'level'}, {'type': 'integer'}])['element']['value'])
-#    dp = DictParser(string = '''CUSTOM_OPTIONS
-#{
-#	maxCellSize	3; // used to generate blockMeshDict
-#	boundingBox	((-59.0 -78.0 -47.0) (41.0 22.0 53.0)); // used to generate blockMeshDict
-#}
-#''')
-#    print(f'{structure_string(dp, indent_level = 1)}')
+    
+#    print(parser.structure_string())
+    for element in parser.find_all_elements(
+        [{'type': 'block|dictionary'}]):
+        print("'" f'{element["element"]["key"]}' "' '|'")
+#    print(parser.file_string(pretty_print = True, commentless = False))
+#    print(parser.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element'].file_string())

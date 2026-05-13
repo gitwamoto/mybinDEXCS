@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:59:17 PM
+# 2026/5/13 4:52:16 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -110,9 +110,9 @@ if __name__ == '__main__':
         {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
         p = p['element']
         n = p.find_element(
-            [{'type': 'dictionary', 'key': 'newName'}, {'except type': 'ignorable'}])['element']['value']
+            [{'type': 'dictionary', 'key': 'newName'}, {'type': 'word'}])['element']['value']
         t = p.find_element(
-            [{'type': 'dictionary', 'key': 'newType'}, {'except type': 'ignorable'}])['element']['value']
+            [{'type': 'dictionary', 'key': 'newType'}, {'type': 'word'}])['element']['value']
         patch_types[n] = t
         if t == 'empty':
             empty_list.append(n)

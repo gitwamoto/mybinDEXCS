@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:33:57 PM
+# 2026/5/13 5:14:03 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -275,9 +275,9 @@ if __name__ == '__main__':
         path_list.append({'type': 'block'})
         for b in reversed(snappyHexMeshDict.find_all_elements(path_list)):
             if b['element'].find_element([{'type': 'block', 'key': 'patchInfo'},
-				{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}]
+				{'type': 'dictionary', 'key': 'type'}, {'type': 'word'}]
 				)['element']['value'] == 'empty':
-                empty_list.append(b['key'])
+                empty_list.append(b['element']['key'])
                 del b['parent'][b['index']]
         stl_2D_file_name = os.path.splitext(stl_file_name)[0] + '_2D.stl'
         should_write = True
@@ -289,7 +289,7 @@ if __name__ == '__main__':
                     should_write = False
                 elif should_write:
                     f.write(line)
-        geometry_stl_block['value'] = stl_2D_file_name
+        geometry_stl_block['key'] = stl_2D_file_name
         os.rename(snappyHexMeshDict_path, snappyHexMeshDict_3D_path) # can overwrite
         with open(snappyHexMeshDict_path, 'w') as f:
             f.write(dictParse.normalize(string = snappyHexMeshDict.file_string())[0])

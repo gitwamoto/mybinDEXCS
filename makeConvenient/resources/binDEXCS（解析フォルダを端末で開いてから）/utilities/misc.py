@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:50:16 AM
+# 2026/5/13 7:14:09 PM
 
 import glob
 import os
@@ -142,11 +142,8 @@ def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func =
 def writeCommentInBoundary(comment):
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
     boundary = dictParse.DictParser(file_name = boundary_path)
-    i = boundary.find_element([{'except type': 'whitespace|linebreak'}],
-        start = boundary.find_element([{'type': 'list'}])['index'] - 1,
-        reverse = True, index_not_found = 0)['index']
-    boundary['value'][i:i] = dictParse.DictParser(string =
-        f'\n// {comment}' if i > 0 else f'// {comment}\n')['value']
+    i = boundary.find_element([{'type': 'list'}])['index']
+    boundary['value'][i:i] = dictParse.DictParser(string = f'// {comment}\n\n')['value']
     with open(boundary_path, 'w') as f:
         f.write(dictParse.normalize(string = boundary.file_string())[0])
 

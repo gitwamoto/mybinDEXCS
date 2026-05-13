@@ -27,7 +27,7 @@ def append_include_sentence(dir_name, include_file_name):
         os.chmod(f, 0o0666)
         if os.path.basename(f) == 'cellToRegion':
             continue
-        print('{}を処理中...'.format(f))
+        print(f'{f}を処理中...')
         parser = dictParse.DictParser(file_name = f)
         inserted = False
         for i in reversed(parser.find_all_elements([{'type': 'directive', 'key': '#include'}])):
@@ -42,8 +42,10 @@ def append_include_sentence(dir_name, include_file_name):
             i = i['index'] + 1
         else:
             i = 0
-        i = parser.find_element([{'type': 'block', 'key': 'FoamFile'}], start = i, index_not_found = i - 1)['index'] + 1
-        head_index = parser.find_element([{'except type': 'whitespace|linebreak|separator'}], start = i)['index']
+        i = parser.find_element([{'type': 'block', 'key': 'FoamFile'}],
+            start = i, index_not_found = i - 1)['index'] + 1
+        head_index = parser.find_element(
+            [{'except type': 'whitespace|linebreak|separator'}], start = i)['index']
         parser['value'][head_index:head_index] = dictParse.DictParser(string = 
             f'#include "{include_file_name}"\n' +
             '\n')['value']
