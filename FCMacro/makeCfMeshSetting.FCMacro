@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/12 9:41:41 PM
+# 2026/5/13 9:05:40 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -659,7 +659,7 @@ class MyModel:
             if min_cell_size is None:
                 f.write('// minCellSize\t1; // (optional)\n')
             else:
-                f.write(f'minCellSize\t{minCellSize}; // (optional)\n')
+                f.write(f'minCellSize\t{min_cell_size}; // (optional)\n')
 
             f.write('\n'
                 f'surfaceFile\t"constant/triSurface/{os.path.basename(surface_file_name)}"; // (mandatory)\n')
@@ -977,7 +977,7 @@ class MyModel:
 
     @staticmethod
     def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
-        if any((i[grid.TYPE] in ('BoxSet', 'CylinderSet', 'SphereSet') for i in grid.table)) == False:
+        if not any((i[grid.TYPE] in ('BoxSet', 'CylinderSet', 'SphereSet') for i in grid.table)):
             return
         dict_path = os.path.join(case_dir_path, 'system', 'setFieldsDict')
         if os.path.isfile(dict_path):
@@ -1067,7 +1067,7 @@ class MyModel:
 
     @staticmethod
     def makeTopoSetDict(case_dir_path, freecad_objects, grid, topoSetDict):
-        if any((i[grid.TYPE] == 'BoxTopo' for i in grid.table)) == False:
+        if not any((i[grid.TYPE] == 'BoxTopo' for i in grid.table)):
             return
         dict_path = os.path.join(case_dir_path, 'system', 'topoSetDict')
         if os.path.isfile(dict_path):
@@ -1107,7 +1107,6 @@ class MyModel:
                     '\t\ttype\tcellSet;\n'
                     f'\t\taction\t{action};\t// new | add | subtract\n')
                 obj = next((j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None)
-                p = obj.Placement
                 if i[grid.TYPE] == 'BoxTopo':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix

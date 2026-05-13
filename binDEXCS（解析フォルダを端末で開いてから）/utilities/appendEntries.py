@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/12 10:05:40 PM
+# 2026/5/13 9:52:12 AM
 
 import os
 import sys
@@ -191,7 +191,7 @@ def intoFvSolution():
                 '\t\trho\t1.0;\n'
                 '\t}')['value']
         else:
-            fields['value'][:parent.find_element([{'type': 'block_start'}])['index']
+            fields['value'][:fields.find_element([{'type': 'block_start'}])['index']
                 ] = dictParse.DictParser(string = ' // p = p^{old} + \\alpha (p - p^{old})\n')['value']
 
         equations = relaxationFactors.find_element([{'type': 'block', 'key': 'equations'}])['element']

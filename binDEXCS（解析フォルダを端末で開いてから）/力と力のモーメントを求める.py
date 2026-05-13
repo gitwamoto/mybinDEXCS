@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:59:45 PM
+# 2026/5/13 9:18:01 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -100,7 +100,7 @@ def append_functions_in_controlDict(controlDict_path):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
-    if misc.texteditwx_works_well() == False:
+    if not misc.texteditwx_works_well():
         exit(1)
 
     just_delete_previous_files = False
@@ -149,7 +149,7 @@ if __name__ == '__main__':
         if not forces_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = DictParser(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     forces_dir_list = [i['parent']['key'] for i in types

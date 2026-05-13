@@ -10,6 +10,7 @@ import re
 import shutil
 import sys
 import filecmp
+import misc
 
 def removeInessentials():
     dir_name = os.path.dirname(__file__)

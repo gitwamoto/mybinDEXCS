@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 流量を求める.py
 # by Yukiharu Iwamoto
-# 2026/4/30 5:34:21 PM
+# 2026/5/13 9:14:12 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -19,7 +19,6 @@ import signal
 import os
 import glob
 import shutil
-import re
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:17:46 PM
+# 2026/5/13 9:18:37 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -13,7 +13,6 @@ import signal
 import subprocess
 import os
 import sys
-import shutil
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
@@ -45,7 +44,7 @@ if __name__ == '__main__':
         print(f'エラー: ファイル{controlDict_path}がありません．')
         sys.exit(1)
 
-    controlDict = DictParser(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     startFrom = controlDict.find_element(
         [{'type': 'dictionary', 'key': 'startFrom'}, {'except type': 'ignorable'}])['element']
     if startFrom is None:

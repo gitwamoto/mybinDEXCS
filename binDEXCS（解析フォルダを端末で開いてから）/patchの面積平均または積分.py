@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:00:53 PM
+# 2026/5/13 9:32:13 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -21,7 +21,6 @@ import signal
 import os
 import glob
 import shutil
-import re
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse

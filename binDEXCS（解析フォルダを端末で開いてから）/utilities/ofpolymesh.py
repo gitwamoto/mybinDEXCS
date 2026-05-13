@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # ofpolymesh.py
 # by Yukiharu Iwamoto
-# 2026/5/8 2:48:15 PM
+# 2026/5/13 9:49:36 AM
 
 import sys
 import os
@@ -42,14 +42,14 @@ class structure2D(object):
         self.boundary = []
 
     def set_boundary(self, name, type, i0 = None, i1 = None, j0 = None, j1 = None):
-        if i1 == None:
-            if i0 == None:
+        if i1 is None:
+            if i0 is None:
                 i0 = 0
                 i1 = self.imax
             else:
                 i1 = i0
-        if j1 == None:
-            if j0 == None:
+        if j1 is None:
+            if j0 is None:
                 j0 = 0
                 j1 = self.jmax
             else:
@@ -142,7 +142,7 @@ class structure2D(object):
                 n = 1
                 if self.pidx[i + self.cb, j + self.ca] != self.pidx[i, j]:
                     n += 1
-                    self.fkidx[i, j, n] = pidx[i + self.cb, j + self.ca]
+                    self.fkidx[i, j, n] = self.pidx[i + self.cb, j + self.ca]
                 if self.pidx[i + 1, j + 1] != self.pidx[i + self.cb, j + self.ca]:
                     n += 1
                     self.fkidx[i, j, n] = self.pidx[i + 1, j + 1]
@@ -314,13 +314,13 @@ class structure2D(object):
                 n = 0
                 for j in range(self.jmax):
                     for i in range(self.imax):
-                        if pidx[i, j] == n:
+                        if self.pidx[i, j] == n:
                             fp.write(pack('<ddd', self.x[i, j], self.y[i, j], 0.0))
                             n += 1
                 n = 0
                 for j in range(self.jmax):
                     for i in range(self.imax):
-                        if pidx[i, j] == n:
+                        if self.pidx[i, j] == n:
                             fp.write(pack('<ddd', self.x[i, j], self.y[i, j], self.depth))
                             n += 1
                 fp.write(')\n')
@@ -518,20 +518,20 @@ class structured3D(object):
         self.boundary = []
 
     def set_boundary(self, name, type, i0 = None, i1 = None, j0 = None, j1 = None, k0 = None, k1 = None):
-        if i1 == None:
-            if i0 == None:
+        if i1 is None:
+            if i0 is None:
                 i0 = 0
                 i1 = self.imax
             else:
                 i1 = i0
-        if j1 == None:
-            if j0 == None:
+        if j1 is None:
+            if j0 is None:
                 j0 = 0
                 j1 = self.jmax
             else:
                 j1 = j0
-        if k1 == None:
-            if k0 == None:
+        if k1 is None:
+            if k0 is None:
                 k0 = 0
                 k1 = self.kmax
             else:
@@ -625,7 +625,7 @@ class structured3D(object):
         self.nFaces = self.nInternalFaces
         # boundary faces
         for b in self.boundary:
-            b.startFace = self.nFaces;
+            b.startFace = self.nFaces
             if b.i0 == b.i1:
                 ca, cb = (self.ca, self.cb) if b.i0 > 0 else (self.cb, self.ca)
                 for k in range(b.k0, b.k1 - 1):
@@ -779,9 +779,9 @@ class structured3D(object):
                             f'{self.nInternalFaces}\n'
                             '(\n')
                         # internal faces
-                        for i in range(1, imax - 1):
-                            for k in range(self.kmax - 1):
-                                for j in range(self.jmax - 1):
+                        for i in range(1, self.imax - 1):
+                            for k in range(self.self.kmax - 1):
+                                for j in range(self.self.jmax - 1):
                                     if self.fiidx[i, j, k, 0] > 0:
                                         ff.write(f'{self.fiidx[i, j, k, 0]}({self.fiidx[i, j, k, 1]}')
                                         for n in range(2, self.fiidx[i, j, k, 0] + 1):
@@ -789,9 +789,9 @@ class structured3D(object):
                                         ff.write(')\n')
                                         fo.write(f'{self.cindex(i - 1, j, k)}\n')
                                         fn.write(f'{self.cindex(i, j, k)}\n')
-                        for j in range(1, jmax - 1):
-                            for i in range(imax - 1):
-                                for k in range(kmax - 1):
+                        for j in range(1, self.jmax - 1):
+                            for i in range(self.imax - 1):
+                                for k in range(self.kmax - 1):
                                     if self.fjidx[i, j, k, 0] > 0:
                                         ff.write(f'{self.fjidx[i, j, k, 0]}({self.fjidx[i, j, k, 1]}')
                                         for n in range(2, self.fjidx[i, j, k, 0] + 1):
@@ -799,9 +799,9 @@ class structured3D(object):
                                         ff.write(')\n')
                                         fo.write(f'{self.cindex(i, j - 1, k)}\n')
                                         fn.write(f'{self.cindex(i, j, k)}\n')
-                        for k in range(1, kmax - 1):
-                            for j in range(jmax - 1):
-                                for i in range(imax - 1):
+                        for k in range(1, self.kmax - 1):
+                            for j in range(self.jmax - 1):
+                                for i in range(self.imax - 1):
                                     if self.fkidx[i, j, k, 0] > 0:
                                         ff.write(f'{self.fkidx[i, j, k, 0]}({self.fkidx[i, j, k, 1]}')
                                         for n in range(2, self.fkidx[i, j, k, 0] + 1):
@@ -854,10 +854,10 @@ class structured3D(object):
                     f'{self.nPoints}\n'
                     '(')
                 n = 0
-                for k in range(kmax):
-                    for j in range(jmax):
-                        for i in range(imax):
-                            if pidx[i, j, k] == n:
+                for k in range(self.kmax):
+                    for j in range(self.jmax):
+                        for i in range(self.imax):
+                            if self.pidx[i, j, k] == n:
                                 fp.write(pack('<ddd', self.x[i, j, k], self.y[i, j, k], self.z[i, j, k]))
                                 n += 1
                 fp.write(')\n')
@@ -876,21 +876,21 @@ class structured3D(object):
                 n = 0
                 ff.write(pack('<I', n))
                 # internal faces
-                for i in range(1, imax - 1):
-                    for k in range(kmax - 1):
-                        for j in range(jmax - 1):
+                for i in range(1, self.imax - 1):
+                    for k in range(self.kmax - 1):
+                        for j in range(self.jmax - 1):
                             if self.fiidx[i, j, k, 0] > 0:
                                 n += self.fiidx[i, j, k, 0]
                                 ff.write(pack('<I', n))
-                for j in range(1, jmax - 1):
-                    for i in range(imax - 1):
-                        for k in range(kmax - 1):
+                for j in range(1, self.jmax - 1):
+                    for i in range(self.imax - 1):
+                        for k in range(self.kmax - 1):
                             if self.fjidx[i, j, k, 0] > 0:
                                 n += self.fjidx[i, j, k, 0]
                                 ff.write(pack('<I', n))
-                for k in range(1, kmax - 1):
-                    for j in range(jmax - 1):
-                        for i in range(imax - 1):
+                for k in range(1, self.kmax - 1):
+                    for j in range(self.jmax - 1):
+                        for i in range(self.imax - 1):
                             if self.fkidx[i, j, k, 0] > 0:
                                 n += self.fkidx[i, j, k, 0]
                                 ff.write(pack('<I', n))
@@ -945,23 +945,23 @@ class structured3D(object):
                             f'{self.nInternalFaces}\n'
                             '(')
                         # internal faces
-                        for i in range(1, imax - 1):
-                            for k in range(kmax - 1):
-                                for j in range(jmax - 1):
+                        for i in range(1, self.imax - 1):
+                            for k in range(self.kmax - 1):
+                                for j in range(self.jmax - 1):
                                     if self.fiidx[i, j, k, 0] > 0:
                                         self.fiidx[i, j, k, 1:1 + self.fiidx[i, j, k, 0]].astype('<I').tofile(ff)
                                         fo.write(pack('<I', self.cindex(i - 1, j, k)))
                                         fn.write(pack('<I', self.cindex(i, j, k)))
-                        for j in range(1, jmax - 1):
-                            for i in range(imax - 1):
-                                for k in range(kmax - 1):
+                        for j in range(1, self.jmax - 1):
+                            for i in range(self.imax - 1):
+                                for k in range(self.kmax - 1):
                                     if self.fjidx[i, j, k, 0] > 0:
                                         self.fjidx[i, j, k, 1:1 + self.fjidx[i, j, k, 0]].astype('<I').tofile(ff)
                                         fo.write(pack('<I', self.cindex(i, j - 1, k)))
                                         fn.write(pack('<I', self.cindex(i, j, k)))
-                        for k in range(1, kmax - 1):
-                            for j in range(jmax - 1):
-                                for i in range(imax - 1):
+                        for k in range(1, self.kmax - 1):
+                            for j in range(self.jmax - 1):
+                                for i in range(self.imax - 1):
                                     if self.fkidx[i, j, k, 0] > 0:
                                         self.fkidx[i, j, k, 1:1 + self.fkidx[i, j, k, 0]].astype('<I').tofile(ff)
                                         fo.write(pack('<I', self.cindex(i, j, k - 1)))

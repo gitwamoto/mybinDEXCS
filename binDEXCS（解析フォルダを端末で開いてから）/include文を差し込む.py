@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を差し込む.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:00:36 PM
+# 2026/5/13 9:32:21 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -12,7 +12,6 @@ import signal
 import os
 import sys
 import glob
-import re
 from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects

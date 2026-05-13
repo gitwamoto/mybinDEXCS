@@ -2,14 +2,13 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/12 2:53:06 PM
+# 2026/5/13 9:37:26 AM
 
 # ---- オプションはない ----
 
 import os
 import signal
 import glob
-import re
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse

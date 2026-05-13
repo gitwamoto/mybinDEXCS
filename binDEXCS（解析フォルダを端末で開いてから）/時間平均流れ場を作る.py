@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:19:43 PM
+# 2026/5/13 9:15:14 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -20,9 +20,7 @@ import signal
 import subprocess
 import os
 import glob
-import shutil
 from utilities import misc
-from utilities import dictFormat
 from utilities import rmObjects
 from utilities import dictParse
 binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
@@ -95,7 +93,7 @@ def append_functions_in_controlDict(controlDict_path):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
-    if misc.texteditwx_works_well() == False:
+    if not misc.texteditwx_works_well():
         exit(1)
 
     just_delete_previous_files = False
@@ -154,7 +152,7 @@ if __name__ == '__main__':
         if not fieldAverage_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = DictParser(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
     properties_list = [f'{i["parent"]["key"]}Properties' for i in types

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/12 9:44:09 PM
+# 2026/5/13 9:07:44 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -412,7 +412,6 @@ class MyController:
         self.meshDict = None
         self.setFieldsDict = None
         self.topoSetDict = None
-        starts_with_number = False
         if self.doc.FileName == '':
             QtGui.QMessageBox.critical(None, 'Error',
                 'This document has never been saved. Save the document and retry.', QtGui.QMessageBox.Close)
@@ -877,10 +876,10 @@ class MyModel:
                 '\trefinementSurfaces\n'
                 '\t{\n'
                 f'\t\t{surface_file_name_wo_ext}\n'
-                '\t\t{\n');
+                '\t\t{\n')
             f.write('\t\t\tlevel\t(0 1); // (min max)\n'
                 '\t\t\tregions\n'
-                '\t\t\t{\n');
+                '\t\t\t{\n')
             for i in grid.table:
                 if i[grid.TYPE] in (
                     'BoxRefine', 'CylinderRefine', 'SphereRefine', 'SurfaceRefine',
@@ -1238,7 +1237,7 @@ class MyModel:
 
     @staticmethod
     def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
-        if any((i[grid.TYPE] in ('BoxSet', 'CylinderSet', 'SphereSet') for i in grid.table)) == False:
+        if not any((i[grid.TYPE] in ('BoxSet', 'CylinderSet', 'SphereSet') for i in grid.table)):
             return
         dict_path = os.path.join(case_dir_path, 'system', 'setFieldsDict')
         if os.path.isfile(dict_path):
@@ -1328,7 +1327,7 @@ class MyModel:
 
     @staticmethod
     def makeTopoSetDict(case_dir_path, freecad_objects, grid, topoSetDict):
-        if any((i[grid.TYPE] == 'BoxTopo' for i in grid.table)) == False:
+        if not any((i[grid.TYPE] == 'BoxTopo' for i in grid.table)):
             return
         dict_path = os.path.join(case_dir_path, 'system', 'topoSetDict')
         if os.path.isfile(dict_path):
@@ -1368,7 +1367,6 @@ class MyModel:
                     '\t\ttype\tcellSet;\n'
                     f'\t\taction\t{action};\t// new | add | subtract\n')
                 obj = next((j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None)
-                p = obj.Placement
                 if i[grid.TYPE] == 'BoxTopo':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix

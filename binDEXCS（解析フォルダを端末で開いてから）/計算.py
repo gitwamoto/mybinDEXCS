@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/12 10:05:37 PM
+# 2026/5/13 9:12:56 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -26,11 +26,8 @@ import sys
 import signal
 import subprocess
 import re
-from datetime import datetime
 import filecmp
-import numpy as np
 from utilities import misc
-from utilities import dictFormat
 from utilities import appendEntries
 from utilities import rmObjects
 from utilities import dictParse
@@ -43,17 +40,11 @@ boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
 
 def handler(signum, frame):
     if domains != 1:
-        if best_folder_shakedown is None:
-            command = 'reconstructPar -newTimes -noFunctionObjects'
-            if os.path.exists(regionProperties_path):
-                command += ' -allRegions'
-            subprocess.call(command, shell = True)
-            rmObjects.removeProcessorDirs('noLatest')
-        else:
-            subprocess.call('foamListTimes -rm -noZero', shell = True)
-            if domains != 1:
-                rmObjects.removeProcessorDirs('noZero')
-            shutil.move(best_folder_shakedown, best_folder_shakedown[:-len(best_folder_shakedown_suffix)])
+        command = 'reconstructPar -newTimes -noFunctionObjects'
+        if os.path.exists(regionProperties_path):
+            command += ' -allRegions'
+        subprocess.call(command, shell = True)
+        rmObjects.removeProcessorDirs('noLatest')
     if os.path.isdir('0_bak'):
         if os.path.isdir('0'):
             shutil.rmtree('0')

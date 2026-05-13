@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/5/12 10:02:00 PM
+# 2026/5/13 9:14:01 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -19,7 +19,6 @@ import subprocess
 import os
 import shutil
 from utilities import misc
-from utilities import dictFormat
 from utilities import rmObjects
 from utilities import dictParse
 binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
@@ -163,7 +162,7 @@ def append_functions_in_controlDict(controlDict_path):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
-    if misc.texteditwx_works_well() == False:
+    if not misc.texteditwx_works_well():
         exit(1)
 
     just_delete_previous_files = False
@@ -214,7 +213,7 @@ if __name__ == '__main__':
         if not sampling_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = DictParser(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     sets_dir_list = []
     surface_dir_list = []
     for block in controlDict.find_all_elements(

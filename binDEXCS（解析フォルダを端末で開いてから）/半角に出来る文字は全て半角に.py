@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 # 半角に出来る文字は全て半角に.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:54:48 AM
+# 2026/5/13 9:17:16 AM
 
 # ---- オプションはない ----
 
-import sys
 import signal
 import os
 import glob

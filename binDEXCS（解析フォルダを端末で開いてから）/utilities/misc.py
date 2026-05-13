@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:55:53 PM
+# 2026/5/13 9:50:16 AM
 
 import glob
 import os
@@ -104,8 +104,7 @@ def setTimeBeginEnd(action):
                 break
             except ValueError:
                 pass
-    noZero = (False if (raw_input if sys.version_info.major <= 2 else input)(
-        '0秒のデータを含めますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else True)
+    noZero = False if input('0秒のデータを含めますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else True
     return time_begin, time_end, noZero
 
 def getApplication():
@@ -325,7 +324,7 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
     controlDict = dictParse.DictParser(file_name = controlDict_path)
 
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
-    if function is None:
+    if functions is None:
         return
     yesno = 'yes' if enabled else 'no'
     for f in functions.find_all_elements([{'type': 'block'}]):
@@ -373,7 +372,7 @@ def controlDictFunctionsList(path = os.curdir):
     enable_function_list = []
     disable_function_list = []
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
-    if function is None:
+    if functions is None:
         return enable_function_list, disable_function_list
     for f in functions.find_all_elements([{'type': 'block'}]):
         f = f['element']

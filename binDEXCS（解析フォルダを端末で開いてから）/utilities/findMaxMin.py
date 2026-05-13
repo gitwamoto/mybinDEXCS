@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 # findMaxMin.py
 # by Yukiharu Iwamoto
-# 2026/5/12 10:07:43 PM
+# 2026/5/13 9:50:27 AM
 
-import os
 import sys
 
 def find_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter = None):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 壁面熱流束を求める.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:20:15 PM
+# 2026/5/13 9:16:15 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -18,8 +18,6 @@ import sys
 import signal
 import os
 import glob
-import shutil
-import re
 from utilities import misc
 from utilities import rmObjects
 
@@ -92,8 +90,7 @@ if __name__ == '__main__':
     print('\n結果はpostProcessingフォルダに保存されています．')
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()

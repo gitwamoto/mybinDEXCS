@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 # setComment.py
 # by Yukiharu Iwamoto
-# 2021/1/28 3:19:51 PM
+# 2026/5/13 9:44:33 AM
 
-import os
 import re
 
 def comment(line, tail_regexp_wo_n):

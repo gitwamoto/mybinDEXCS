@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:23:33 PM
+# 2026/5/13 9:21:51 AM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -18,8 +18,6 @@ import signal
 import subprocess
 import os
 import sys
-import re
-import shutil
 from utilities import misc
 from utilities import rmObjects
 
