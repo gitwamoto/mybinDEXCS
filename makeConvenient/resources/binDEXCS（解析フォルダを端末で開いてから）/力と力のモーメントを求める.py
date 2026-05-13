@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:32:23 PM
+# 2026/5/13 9:18:01 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -12,8 +12,6 @@
 # -e time_end: 力の計算を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
 # -0: 0秒のデータを含める
 # -j: 力の計算を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
-
-# DictParser2で書き直し済み
 
 import math
 import sys
@@ -45,25 +43,25 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
-        linebreak_and_functions = dictParse.DictParser2(string =
+        linebreak_and_functions = dictParse.DictParser(string =
             '\n'
             '\n'
             'functions\n'
             '{\n'
-            '}').elements
+            '}')['value']
         tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
-        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+            reverse = True, index_not_found = len(controlDict['value']) - 1)['index'] + 1
+        controlDict['value'][tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
-    block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+    block_end = functions.find_element([{'type': 'block_end'}], reverse = True)
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
         os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
         '\n'
         '\t// patchにかかる力を求める．\n'
         '\t// 少なくともpatches(B)は修正する必要がある．\n'
@@ -85,10 +83,10 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\twriteControl\ttimeStep;\n'
         '\t\twriteInterval\t1;\n'
         '\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n'
-        '\t}').elements
-    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
+        '\t}')['value']
+    functions.set_blank_line(number_of_blank_lines = 1)
 
-    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = controlDict.file_string())[0]
     os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
@@ -102,7 +100,7 @@ def append_functions_in_controlDict(controlDict_path):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
-    if misc.texteditwx_works_well() == False:
+    if not misc.texteditwx_works_well():
         exit(1)
 
     just_delete_previous_files = False
@@ -151,11 +149,11 @@ if __name__ == '__main__':
         if not forces_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
         {'type': 'dictionary', 'key': 'type'}])
-    forces_dir_list = [i['parent']['key'] for i in types if dictParse.find_element([{'type': 'word'}],
-        parent = i['element'])['element'] == 'forces']
+    forces_dir_list = [i['parent']['key'] for i in types
+        if i['element'].find_element([{'type': 'word'}])['element'] == 'forces']
     if len(forces_dir_list) == 0:
         print(f'エラー: ファイル{controlDict_path}でforcesに関する指示がありません．')
         sys.exit(1)
@@ -223,8 +221,8 @@ if __name__ == '__main__':
                             Fx_list.append(Fx)
                             Fy_list.append(Fy)
                             Fz_list.append(Fz)
-                            fw.write('{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\t{:g}\n'.format(
-                                t, Fx, Fy, Fz, float(linem[1]), float(linem[2]), float(linem[3])))
+                            fw.write(f'{t:g}\t{Fx:g}\t{Fy:g}\t{Fz:g}\t'
+                                f'{float(linem[1]):g}\t{float(linem[2]):g}\t{float(linem[3]):g}\n')
         plt.plot(t_list, Fx_list, label = 'Fx')
         plt.plot(t_list, Fy_list, label = 'Fy')
         plt.plot(t_list, Fz_list, label = 'Fz')
@@ -247,7 +245,7 @@ if __name__ == '__main__':
         forces_png = os.path.join(pdir, forces_dir + '.png')
         plt.savefig(forces_png)
         plt.clf()
-        subprocess.call('xdg-open ' + forces_png, shell = True)
-        print('\nグラフは{}, 結果は{}に保存しました．'.format(forces_png, forces_tab_txt))
+        subprocess.call(f'xdg-open {forces_png}', shell = True)
+        print(f'\nグラフは{forces_png}, 結果は{forces_tab_txt}に保存しました．')
 
     rmObjects.removeInessentials()

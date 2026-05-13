@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:32:37 PM
+# 2026/5/13 9:14:01 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -13,15 +13,12 @@
 # -0: 0秒のデータを含める
 # -j: 抽出を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
 
-# DictParser2で書き直し済み
-
 import sys
 import signal
 import subprocess
 import os
 import shutil
 from utilities import misc
-from utilities import dictFormat
 from utilities import rmObjects
 from utilities import dictParse
 binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
@@ -33,27 +30,27 @@ def handler(signum, frame):
     sys.exit(1)
 
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = dictParse.DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
     if functions is None:
-        linebreak_and_functions = dictParse.DictParser2(string =
+        linebreak_and_functions = dictParse.DictParser(string =
             '\n'
             '\n'
             'functions\n'
             '{\n'
-            '}').elements
+            '}')['value']
         tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(controlDict.elements) - 1)['index'] + 1
-        controlDict.elements[tail_index:tail_index] = linebreak_and_functions
+            reverse = True, index_not_found = len(controlDict['value']) - 1)['index'] + 1
+        controlDict['value'][tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
     fields = ' '.join(misc.volFieldList(misc.latestTime()))
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
         os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
             [{'type': 'list'}, {'type': 'block'}])])
 
-    block_end = dictParse.find_element([{'type': 'block_end'}], parent = functions, reverse = True)
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser2(string =
+    block_end = functions.find_element([{'type': 'block_end'}], reverse = True)
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
         '\n'
         '\tsetSampling // postProcessingフォルダ内に作られるフォルダの名前\n'
         '\t{\n'
@@ -148,10 +145,10 @@ def append_functions_in_controlDict(controlDict_path):
         '\t\t\t\tinterpolate\tno;\n'
         '\t\t\t}\n'
         '\t\t);\n'
-        '\t}\n').elements
-    dictParse.set_blank_line(functions, number_of_blank_lines = 1)
+        '\t}\n')['value']
+    functions.set_blank_line(number_of_blank_lines = 1)
 
-    string = dictParse.normalize(string = controlDict.file_string(pretty_print = True))[0]
+    string = dictParse.normalize(string = controlDict.file_string())[0]
     os.rename(controlDict_path, f'{controlDict_path}_bak')
     with open(controlDict_path, 'w') as f:
         f.write(string)
@@ -165,7 +162,7 @@ def append_functions_in_controlDict(controlDict_path):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
-    if misc.texteditwx_works_well() == False:
+    if not misc.texteditwx_works_well():
         exit(1)
 
     just_delete_previous_files = False
@@ -216,17 +213,16 @@ if __name__ == '__main__':
         if not sampling_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = DictParser2(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
     sets_dir_list = []
     surface_dir_list = []
-    for block in controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
+    for block in controlDict.find_all_elements(
+        [{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
         block = block['element']
-        function_type = dictparse.find_element([{'type': 'dictionary', 'key':'type'}], parent = block)
-        if dictparse.find_element([{'type': 'word', 'value': 'sets'}],
-            parent = function_type)['element'] is not None:
+        function_type = block.find_element([{'type': 'dictionary', 'key':'type'}])['element']
+        if function_type.find_element([{'type': 'word', 'value': 'sets'}])['element'] is not None:
             sets_dir_list.append(block['key'])
-        elif dictparse.find_element([{'type': 'word', 'value': 'surfaces'}],
-            parent = function_type)['element'] is not None:
+        elif function_type.find_element([{'type': 'word', 'value': 'surfaces'}])['element'] is not None:
             surface_dir_list.append(block['key'])
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
         print(f'エラー: ファイル{controlDict_path}でsetsまたはsurfacesに関する指示がありません．')

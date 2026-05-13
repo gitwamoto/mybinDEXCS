@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 流量を求める.py
 # by Yukiharu Iwamoto
-# 2026/4/30 5:34:21 PM
+# 2026/5/13 9:14:12 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -19,7 +19,6 @@ import signal
 import os
 import glob
 import shutil
-import re
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
@@ -65,7 +64,7 @@ if __name__ == '__main__':
     if interactive:
         patch_list = input(
             'どのパッチに対して流量を計算しますか？ ' +
-            ' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+            ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
                 os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                     [{'type': 'list'}, {'type': 'block'}])]) +
             ' の中からスペース区切りで指定して下さい． > ').split()

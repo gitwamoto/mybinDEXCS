@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # ミリをメートルに.py
 # by Yukiharu Iwamoto
-# 2026/4/30 3:57:50 PM
+# 2026/5/13 9:22:20 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -10,7 +10,6 @@
 # -p -> paraFoamを実行する
 
 import signal
-import subprocess
 import os
 import sys
 from utilities import misc
@@ -43,8 +42,7 @@ if __name__ == '__main__':
         misc.convertMillimeterIntoMeter()
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()

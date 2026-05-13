@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 # 0秒以外を除いてコピーを作る.py
 # by Yukiharu Iwamoto
-# 2021/6/30 12:05:11 PM
+# 2026/5/13 9:36:26 AM
 
 import signal
-import subprocess
 import os
 import re
 import shutil
@@ -18,14 +17,36 @@ if __name__ == '__main__':
 
     i = 1
     while True:
-        cname = os.getcwd() + '_{}'.format(i)
+        cname = f'{os.getcwd()}_{i}'
         if not os.path.exists(cname):
             os.mkdir(cname)
             break
         else:
             i += 1
-    pat = re.compile(r'(dynamicCode|postProcessing|logs|processor[0-9]+|0_potentialflow|log\..+|' +
-        r'PyFoam.+|.+\.(analyzed|fcstd1|logfile(\.restart[0-9]+)?|log|fms|stl|png|foam|OpenFOAM|blockMesh|FCStd1))$')
+    pat = re.compile(
+        '('
+            'dynamicCode' '|'
+            'postProcessing' '|'
+            'logs' '|'
+            'processor[0-9]+' '|'
+            '0_potentialflow' '|'
+            r'log\..+' '|'
+            'PyFoam.+' '|'
+            r'.+\.('
+                'analyzed' '|'
+                'fcstd1' '|'
+                r'logfile(\.restart[0-9]+)?' '|'
+                'log' '|'
+                'fms' '|'
+                'stl' '|'
+                'png' '|'
+                'foam' '|'
+                'OpenFOAM' '|'
+                'blockMesh' '|'
+                'FCStd1'
+            ')'
+        ')$'
+    )
     files = ['0']
     for i in os.listdir(os.curdir):
         try:
@@ -40,6 +61,6 @@ if __name__ == '__main__':
             shutil.copy2(src, dst)
         elif os.path.isdir(src):
             shutil.copytree(src, dst)
-    print('{}にコピーを作りました．'.format(cname))
+    print(f'{cname}にコピーを作りました．')
 
     rmObjects.removeInessentials()

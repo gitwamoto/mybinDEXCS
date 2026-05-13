@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 # include文を取り除く.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:22:02 PM
+# 2026/5/12 2:59:56 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -f include_file -> 取り除きたいincludeファイルの名前をinclude_fileにする
 # -p -> パスが一致していなくても，ファイル名が同じならば取り除く
-
-# DictParser2で書き直し済み
 
 import signal
 import os
@@ -32,16 +30,16 @@ def remove_include_sentence(dir_name, include_file_name, ignore_path):
         if os.path.basename(f) == 'cellToRegion':
             continue
         print('{}を処理中...'.format(f))
-        parser = dictParse.DictParser2(file_name = f)
+        parser = dictParse.DictParser(file_name = f)
         for i in reversed(parser.find_all_elements([{'type': 'directive', 'key': '#include'}])):
-            n = dictParse.find_element([{'type': 'string'}], parent = i['element'])['element']['value'].strip('"')
+            n = i['element'].find_element([{'type': 'string'}])['element']['value'].strip('"')
             if ignore_path:
                 n = re.sub(r'^(?:\.\./)+', '', n)
             if n == include_file_name:
                 del i['parent'][i['index']:
-                    dictParse.find_element([{'except type': 'whitespace|linebreak'}],
-                        parent = i['parent'], start = i['index'] + 1, index_not_found = i['index'] + 1)['index']]
-        string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+                    i['parent'].find_element([{'except type': 'whitespace|linebreak'}],
+                        start = i['index'] + 1, index_not_found = i['index'] + 1)['index']]
+        string = dictParse.normalize(string = parser.file_string())[0]
         if parser.string != string:
 #            os.rename(f, f'{f}_bak')
             with open(f, 'w') as fp:

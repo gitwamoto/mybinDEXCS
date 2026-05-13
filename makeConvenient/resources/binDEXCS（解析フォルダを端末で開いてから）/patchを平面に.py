@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/4/30 5:33:40 PM
+# 2026/5/13 9:31:48 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -14,13 +14,10 @@
 # -y value -> 面のy座標をvalueに固定する
 # -z value -> 面のz座標をvalueに固定する
 
-# DictParser2で書き直し済み
-
 import os
 import sys
 import signal
 import numpy as np
-import math
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
@@ -97,13 +94,13 @@ if __name__ == '__main__':
 
     print('x, y, z座標をある値に固定することでpatchを平面にします．')
 
-    boundary = dictParse.DictParser2(file_name = boundary_path)
+    boundary = dictParse.DictParser(file_name = boundary_path)
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     if interactive:
         while True:
             patch_name = input(' '.join([i['element']['key'] for i in patches]) +
                 ' の中から平面にしたいpatchの名前を1つ入力して下さい． > ').strip()
-            patch = next((i for i in patches if i['element']['key'] == patch_name), None)
+            patch = next((i['element'] for i in patches if i['element']['key'] == patch_name), None)
             if patch is not None:
                 break
         ans = input('座標=値の形式で座標と値を決めて下さい．(例: x=0.0) > ').strip().lower().split('=')
@@ -117,12 +114,12 @@ if __name__ == '__main__':
                 pass
 
     nFaces = startFace = -1
-    patch = next((i for i in patches if i['element']['key'] == patch_name), None)
+    patch = next((i['element'] for i in patches if i['element']['key'] == patch_name), None)
     if patch is None:
         print(f'エラー: {patch_name}という名前のpatchはありません．')
         sys.exit(1)
-    patch_type_value = dictparse.find_element([{'type': 'dictionary', 'key': 'type'}, {'type': 'string'}],
-        parent = patch)['element']
+    patch_type_value = patch.find_element(
+        [{'type': 'dictionary', 'key': 'type'}, {'type': 'string'}])['element']
     if interactive:
         print(f"{patch_name}のtypeは{patch_type_value['value']}です．")
         while True:
@@ -131,11 +128,11 @@ if __name__ == '__main__':
             if patch_type in ('empty', 'symmetryPlane', 'wedge'):
                 break
     patch_type_value['value'] = patch_type
-    nFaces = int(dictparse.find_element([{'type': 'dictionary', 'key': 'nFaces'}, {'type': 'integer'}],
-        parent = patch)['element']['value'])
-    startFace = int(dictparse.find_element([{'type': 'dictionary', 'key': 'startFace'}, {'type': 'integer'}],
-        parent = patch)['element']['value'])
-    string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
+    nFaces = int(patch.find_element(
+        [{'type': 'dictionary', 'key': 'nFaces'}, {'type': 'integer'}])['element']['value'])
+    startFace = int(patch.find_element(
+        [{'type': 'dictionary', 'key': 'startFace'}, {'type': 'integer'}])['element']['value'])
+    string = dictParse.normalize(string = boundary.file_string())[0]
     if boundary.string != string:
 #        os.rename(boundary_path, f'{boundary_path}_bak')
         with open(boundary_path, 'w') as f:
@@ -200,7 +197,7 @@ if __name__ == '__main__':
         with open(points_path, 'w') as f: # can overwrite
             f.write(s[:ph])
             for i in points_data:
-                f.write('({} {} {})\n'.format(i[0], i[1], i[2]))
+                f.write(f'({i[0]} {i[1]} {i[2]})\n')
             f.write(s[pf:])
 
     if not converted_millimeter_into_meter:
@@ -216,8 +213,7 @@ if __name__ == '__main__':
     misc.execCheckMesh()
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
 
     rmObjects.removeInessentials()

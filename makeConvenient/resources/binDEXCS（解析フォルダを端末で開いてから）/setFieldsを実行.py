@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:32:10 PM
+# 2026/5/12 3:05:31 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行．system/setFieldsDictに設定値に関する指示を書き込んでいることが前提
-
-# DictParser2で書き直し済み
 
 import sys
 import signal
@@ -24,7 +22,7 @@ sys.path.append(binDEXCS_path)
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
-    if misc.texteditwx_works_well() == False:
+    if not misc.texteditwx_works_well():
         exit(1)
 
     if len(sys.argv) == 1:
@@ -83,7 +81,7 @@ if __name__ == '__main__':
         print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
         subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} setFieldsDict_path', shell = True)
 
-    setFieldsDict = dictParse.DictParser2(file_name = setFieldsDict_path)
+    setFieldsDict = dictParse.DictParser(file_name = setFieldsDict_path)
 
     fieldValues = (
         setFieldsDict.find_all_elements(

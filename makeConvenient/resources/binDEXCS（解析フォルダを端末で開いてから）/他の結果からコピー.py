@@ -2,20 +2,17 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/4/30 4:00:51 PM
+# 2026/5/13 9:18:37 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -s source_path -> コピー元となる解析フォルダのパスをsource_pathにする．解析フォルダからの相対パスでも良い
 # -p -> paraFoamを実行する
 
-# DictParser2で書き直し済み
-
 import signal
 import subprocess
 import os
 import sys
-import shutil
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
@@ -47,9 +44,9 @@ if __name__ == '__main__':
         print(f'エラー: ファイル{controlDict_path}がありません．')
         sys.exit(1)
 
-    controlDict = DictParser2(file_name = controlDict_path)
-    startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
-        {'except type': 'ignorable'}])['element']
+    controlDict = dictParse.DictParser(file_name = controlDict_path)
+    startFrom = controlDict.find_element(
+        [{'type': 'dictionary', 'key': 'startFrom'}, {'except type': 'ignorable'}])['element']
     if startFrom is None:
         print(f'エラー: ファイル{controlDict_path}にstartFromの指定がありません．')
         sys.exit(1)
@@ -67,8 +64,8 @@ if __name__ == '__main__':
             sys.exit(1)
         start_from = f'firstTime = {start_from}'
     elif startFrom == 'startTime':
-        start_from = controlDict.find_element([{'type': 'dictionary', 'key': 'startTime'},
-            {'except type': 'ignorable'}])['element']
+        start_from = controlDict.find_element(
+            [{'type': 'dictionary', 'key': 'startTime'}, {'except type': 'ignorable'}])['element']
         if start_from is None:
             print(f'エラー: ファイル{controlDict_path}にstartTimeの指定がありません．')
             sys.exit(1)

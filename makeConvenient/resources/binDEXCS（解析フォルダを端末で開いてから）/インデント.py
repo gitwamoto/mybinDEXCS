@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 # インデント.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:18:53 PM
+# 2026/5/12 9:58:32 AM
 
 # ---- オプションはない ----
-
-# DictParser2で書き直し済み
 
 import signal
 import os
@@ -20,8 +18,8 @@ def indent(dir_name):
     for i in glob.iglob(os.path.join(dir_name, '*')):
         if os.path.isfile(i):
             print(f'{i}を処理中...')
-            parser = dictParse.DictParser2(file_name = i)
-            string = dictParse.normalize(string = parser.file_string(pretty_print = True))[0]
+            parser = dictParse.DictParser(file_name = i)
+            string = dictParse.normalize(string = parser.file_string())[0]
             if parser.string != string:
 #               os.rename(i, f'{i}_bak')
                 with open(i, 'w') as f:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Qと渦度を求める.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:16:30 PM
+# 2026/5/13 9:32:31 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -18,7 +18,6 @@ import sys
 import signal
 import os
 import glob
-import shutil
 from utilities import misc
 from utilities import rmObjects
 

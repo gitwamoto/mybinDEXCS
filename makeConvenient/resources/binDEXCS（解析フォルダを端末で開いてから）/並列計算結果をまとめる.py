@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 並列計算結果をまとめる.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:20:32 PM
+# 2026/5/13 9:21:29 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -12,8 +12,6 @@
 import os
 import signal
 import sys
-import shutil
-import re
 import subprocess
 from utilities import misc
 from utilities import rmObjects
@@ -42,8 +40,7 @@ if __name__ == '__main__':
     rmObjects.removeProcessorDirs('noLatest')
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()

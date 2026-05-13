@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 乱流量を求める.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:19:05 PM
+# 2026/5/13 9:19:29 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -17,7 +17,6 @@ import sys
 import signal
 import os
 import glob
-import shutil
 from utilities import misc
 from utilities import rmObjects
 
@@ -62,8 +61,7 @@ if __name__ == '__main__':
         print('(2) epsilon')
         print('(3) omega')
         print('(4) R')
-        func = (raw_input if sys.version_info.major <= 2 else input)(
-            '何を求めますか？番号または名前で入力して下さい > ').strip()
+        func = input('何を求めますか？番号または名前で入力して下さい > ').strip()
         try:
             func = int(func)
             if func == 1:
@@ -95,8 +93,7 @@ if __name__ == '__main__':
             pass
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()

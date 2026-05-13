@@ -7,6 +7,7 @@
 import subprocess
 import sys
 import re
+import matplotlib.pyplot as plt
 
 def run_foam_solver(solver_name):
     # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
@@ -36,11 +37,6 @@ def run_foam_solver(solver_name):
         process.terminate()
     finally:
         process.wait()
-
-import subprocess
-import sys
-import re
-import matplotlib.pyplot as plt
 
 def run_foam_live_plot(solver_name):
     # --- 1. データ格納用のリスト ---
@@ -140,11 +136,6 @@ def update_plots(ax1, ax2, ax3, times, residuals, cont_errors, courant_nums):
 
 #if __name__ == "__main__":
 #    run_foam_live_plot("simpleFoam")
-
-import subprocess
-import sys
-import re
-import matplotlib.pyplot as plt
 
 def trigger_action(iteration, residuals):
     """

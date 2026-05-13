@@ -2,16 +2,13 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:01:01 PM
+# 2026/5/13 9:37:26 AM
 
 # ---- オプションはない ----
-
-# DictParser2で書き直し済み
 
 import os
 import signal
 import glob
-import re
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
@@ -20,12 +17,12 @@ def append_patches(src, dst):
     src = os.path.join(src, 'polyMesh', 'boundary')
     os.chmod(src, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
 
-    boundary = dictParse.DictParser2(file_name = src)
+    boundary = dictParse.DictParser(file_name = src)
 
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     patches.sort(key = lambda p: p['element']['key'])
 
-    linebreak = dictParse.DictParser2(string = '\n').elements[0]
+    linebreak = dictParse.DictParser(string = '\n')['value'][0]
     for f_path in glob.iglob(os.path.join(dst, '*')):
         if not os.path.isfile(f_path):
             continue
@@ -35,11 +32,12 @@ def append_patches(src, dst):
             continue
 
         print(f'{f_path}を処理中...')
-        parameter = dictParse.DictParser2(file_name = f_path)
+        parameter = dictParse.DictParser(file_name = f_path)
 
         if f_base in ('k', 'epsilon', 'omega'):
             internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
-            i = parameter.find_element([{'type': 'block_comment'}], start = internalField['index'] - 1, reverse = True)
+            i = parameter.find_element(
+                [{'type': 'block_comment'}], start = internalField['index'] - 1, reverse = True)
             if i['element'] is None or '初期値の例' not in i['element']['value']:
                 if f_base == 'k':
                     c = ('/*\n'
@@ -65,32 +63,33 @@ def append_patches(src, dst):
                     else: # omega
                         c += '_omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
                     c += '*/\n'
-                parameter.elements[
-                    internalField['index']:internalField['index']] = dictParse.DictParser2(string = c).elements
+                parameter['value'][
+                    internalField['index']:internalField['index']] = dictParse.DictParser(string = c)['value']
 
         boundaryField = parameter.find_element([{'type': 'block', 'key': 'boundaryField'}])['element']
         if boundaryField is None:
-            linebreak_and_boundaryField = dictParse.DictParser2(string =
+            linebreak_and_boundaryField = dictParse.DictParser(string =
                 '\n'
                 'boundaryField\n'
                 '{\n'
-                '}\n').elements
+                '}\n')['value']
             tail_index = parameter.find_element([{'except type': 'whitespace|linebreak|separator'}],
-                reverse = True, index_not_found = len(parameter.elements) - 1)['index'] + 1
-            parameter.elements[tail_index:tail_index] = linebreak_and_boundaryField
+                reverse = True, index_not_found = len(parameter['value']) - 1)['index'] + 1
+            parameter['value'][tail_index:tail_index] = linebreak_and_boundaryField
             boundaryField = linebreak_and_boundaryField[1]
-        i = dictParse.find_element([{'type': 'block_end'}], parent = boundaryField, reverse = True)['index']
-        boundaryField_end = dictParse.find_element([{'type': 'linebreak'}], parent = boundaryField, start = i - 1,
-            reverse = True, index_not_found = i)['index']
+        i = boundaryField.find_element([{'type': 'block_end'}], reverse = True)['index']
+        boundaryField_end = boundaryField.find_element(
+            [{'type': 'linebreak'}], start = i - 1, reverse = True, index_not_found = i)['index']
 
         for p in patches:
-            i = dictParse.find_element([{'type': 'block', 'key': p['element']['key']}], parent = boundaryField)
+            p = p['element']
+            i = boundaryField.find_element([{'type': 'block', 'key': p['key']}])
             if i['element'] is None:
-                v = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}],
-                    parent = p['element'])['element']['value']
-                s = ('\n' +
-                    p['element']['key'] + '\n' +
-                    '{\n' +
+                v = p.find_element(
+                    [{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}])['element']['value']
+                s = ('\n'
+                    f'{p["key"]}\n'
+                    '{\n'
                     'type\t')
                 if v == 'wall':
                     if f_base == 'U':
@@ -131,7 +130,7 @@ def append_patches(src, dst):
                         'value\t$internalField; // 実際には使わないけど必要\n')
                 else:
                     s += (v if v in ('empty', 'symmetryPlane', 'symmetry', 'wedge') else 'zeroGradient') + ';\n'
-                b = dictParse.DictParser2(string = s + '}\n').elements
+                b = dictParse.DictParser(string = f'{s}' '}\n')['value']
                 boundaryField['value'][boundaryField_end:boundaryField_end] = b
                 boundaryField_end += len(b)
             else:
@@ -139,9 +138,9 @@ def append_patches(src, dst):
                 # popで1つ引き抜くので，差し込む場所はboundaryField_end - 1にする．
                 i['parent'][boundaryField_end - 1:boundaryField_end - 1] = [linebreak, p]
                 boundaryField_end += 1 # linebreakのぶん増える
-        dictParse.set_blank_line(boundaryField, number_of_blank_lines = 1)
+        boundaryField.set_blank_line(number_of_blank_lines = 1)
 
-        string = dictParse.normalize(string = parameter.file_string(pretty_print = True))[0]
+        string = dictParse.normalize(string = parameter.file_string())[0]
         if parameter.string != string:
 #            os.rename(f_path, f'{f_path}_bak')
             with open(f_path, 'w') as f:

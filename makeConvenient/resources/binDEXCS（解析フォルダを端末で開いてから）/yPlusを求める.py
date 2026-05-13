@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # yPlusを求める.py
 # by Yukiharu Iwamoto
-# 2026/3/7 7:36:21 PM
+# 2026/5/13 9:22:47 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -16,7 +16,6 @@
 
 import sys
 import signal
-import subprocess
 import os
 import glob
 import shutil
@@ -91,8 +90,7 @@ if __name__ == '__main__':
     print('\n結果は各時間のフォルダに書き出され，さらにpostProcessingフォルダにまとめが保存されます．')
 
     if interactive:
-        exec_paraFoam = True if (raw_input if sys.version_info.major <= 2 else input)(
-            '\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()

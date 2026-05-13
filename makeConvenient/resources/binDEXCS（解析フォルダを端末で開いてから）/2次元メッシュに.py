@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:16:00 PM
+# 2026/5/12 9:45:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -56,7 +56,7 @@ def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
                 'expansionRatio\t1.0;\n'
                 'linearNormalCoeffs\n'
                 '{\n'
-                '\tthickness\t{z_thickness};\n'
+                f'\tthickness\t{z_thickness};\n'
                 '}\n'
                 'mergeFaces\tfalse;\n'
                 'mergeTol\t0;\n')
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     z_back, z_front = bouding_box[2]
 
     if interactive:
-        patches = [i['element']['key'] for i in dictParse.DictParser2(file_name =
+        patches = [i['element']['key'] for i in dictParse.DictParser(file_name =
             os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                 [{'type': 'list'}, {'type': 'block'}])]
         space_delimited_patches = ' '.join(patches)

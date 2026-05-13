@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchをまとめる.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:31:01 PM
+# 2026/5/13 9:31:24 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -21,7 +21,7 @@ sys.path.append(binDEXCS_path)
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
-    if misc.texteditwx_works_well() == False:
+    if not misc.texteditwx_works_well():
         exit(1)
 
     if len(sys.argv) == 1:
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 '\t\t}\n'
                 '\t\tconstructFrom\tpatches;\n'
                 '\t\tpatches\t(')
-            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser2(file_name =
+            f.write(' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
                 os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
                     [{'type': 'list'}, {'type': 'block'}])]))
             f.write(') /* <- (C) まとめたいパッチの名前だけを残す */;\n'

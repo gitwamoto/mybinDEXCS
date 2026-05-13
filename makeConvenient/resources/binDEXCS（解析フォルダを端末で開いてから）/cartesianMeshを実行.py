@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/1 2:17:03 PM
+# 2026/5/12 2:59:17 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -14,8 +14,6 @@
 #                  このオプションがない場合，frontという名前になる．
 # -p -> paraFoamを実行する
 # -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
-
-# DictParser2で書き直し済み
 
 import os
 import sys
@@ -94,7 +92,7 @@ if __name__ == '__main__':
             back_name = input('(zが小さい)後側patchの名前を決めて下さい． (Enterのみ: back) > ').strip() or 'back'
     domains = min(domains, threads)
 
-    meshDict = dictParse.DictParser2(file_name = meshDict_path)
+    meshDict = dictParse.DictParser(file_name = meshDict_path)
 
     # renameBoundary
     # {
@@ -110,10 +108,11 @@ if __name__ == '__main__':
     empty_list = []
     for p in meshDict.find_all_elements([{'type': 'block', 'key': 'renameBoundary'},
         {'type': 'block', 'key': 'newPatchNames'}, {'type': 'block'}]):
-        n = dictParse.find_element([{'type': 'dictionary', 'key': 'newName'}, {'except type': 'ignorable'}],
-            parent = p['element'])['element']['value']
-        t = dictParse.find_element([{'type': 'dictionary', 'key': 'newType'}, {'except type': 'ignorable'}],
-            parent = p['element'])['element']['value']
+        p = p['element']
+        n = p.find_element(
+            [{'type': 'dictionary', 'key': 'newName'}, {'except type': 'ignorable'}])['element']['value']
+        t = p.find_element(
+            [{'type': 'dictionary', 'key': 'newType'}, {'except type': 'ignorable'}])['element']['value']
         patch_types[n] = t
         if t == 'empty':
             empty_list.append(n)
@@ -136,7 +135,7 @@ if __name__ == '__main__':
         surfaceFile['value'] = f'"{stl_2D_file_name}"'
         os.rename(meshDict_path, meshDict_3D_path) # can overwrite
         with open(meshDict_path, 'w') as f:
-            f.write(dictParse.normalize(string = meshDict.file_string(pretty_print = True))[0])
+            f.write(dictParse.normalize(string = meshDict.file_string())[0])
 
     cfMesh = 'cartesian2DMesh' if two_dimensional else 'cartesianMesh'
     if domains != 1:
@@ -177,7 +176,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    boundary = dictParse.DictParser2(file_name = boundary_path)
+    boundary = dictParse.DictParser(file_name = boundary_path)
     if two_dimensional:
         os.rename(meshDict_path, meshDict_path + '_2D') # can overwrite
         os.rename(meshDict_3D_path, meshDict_path) # can overwrite
@@ -186,19 +185,20 @@ if __name__ == '__main__':
         boundary.find_element(
             [{'type': 'list'}, {'type': 'block', 'key': 'bottomEmptyFaces'}])['element']['key'] = back_name
         with open(boundary_path, 'w') as f:
-            f.write(dictParse.normalize(string = boundary.file_string(pretty_print = True))[0])
+            f.write(dictParse.normalize(string = boundary.file_string())[0])
     else: # not two_dimensional
         for p in boundary.find_all_elements([{'type': 'list',}, {'type': 'block'}]):
-            i = dictParse.find_element([{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}],
-                parent = p['element'])
-            t = patch_types[p['element']['key']]
-            if i['element']['value'] != t:
-                i['element']['value'] = t
-                i = dictParse.find_element([{'type': 'dictionary', 'key': 'inGroups'}, {'type': 'list'},
-                    {'except type': 'ignorable|list_start'}], parent = p['element'])
-                if i['element'] is not None:
-                    i['element']['value'] = t
-        string = dictParse.normalize(string = boundary.file_string(pretty_print = True))[0]
+            p = p['element']
+            i = p.find_element(
+                [{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}])['element']
+            t = patch_types[p['key']]
+            if i['value'] != t:
+                i['value'] = t
+                i = p.find_element([{'type': 'dictionary', 'key': 'inGroups'},
+                    {'type': 'list'}, {'except type': 'ignorable|list_start'}])['element']
+                if i is not None:
+                    i['value'] = t
+        string = dictParse.normalize(string = boundary.file_string())[0]
         if boundary.string != string:
 #            os.rename(boundary_path, f'{boundary_path}_bak')
             with open(boundary_path, 'w') as f:

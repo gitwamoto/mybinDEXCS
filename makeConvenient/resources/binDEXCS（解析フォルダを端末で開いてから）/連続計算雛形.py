@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/5/1 1:32:45 PM
+# 2026/5/13 9:09:25 AM
 
 import os
 import signal
@@ -59,7 +59,7 @@ if __name__ == '__main__':
         with open('setting.txt', 'r') as f:
             lines = f.readlines()
         os.rename('setting.txt', 'setting_bak.txt')
-        for i in xrange(len(lines)):
+        for i in range(len(lines)):
             lines[i] = setComment.uncomment(setComment.comment(lines[i], '// accurate'), '// shakedown')
             # 行の末尾に// accurateと書かれている行をコメントアウトし，末尾に// shakedownと書かれている行をアンコメントする
             # '// accurate', '// shakedown'の文字は，スペースの個数を含めて完全に一致する必要あり
@@ -70,18 +70,18 @@ if __name__ == '__main__':
         with open(fvSolution, 'r') as f:
             lines = f.readlines()
         os.rename(fvSolution, f'{fvSolution}_bak')
-        for i in xrange(len(lines)):
+        for i in range(len(lines)):
             lines[i] = setComment.uncomment(setComment.comment(lines[i], '// accurate'), '// shakedown')
             # 行の末尾に// accurateと書かれている行をコメントアウトし，末尾に// shakedownと書かれている行をアンコメントする
             # '// accurate', '// shakedown'の文字は，スペースの個数を含めて完全に一致する必要あり
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r {}'.format(regions) + ' -e -d', shell = True)
+        subprocess.call(f'os.path.join(binDEXCS_path, "計算.py" -r {regions} -e -d', shell = True)
         # ' -e -d'などのオプションの意味は，計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
 
 #        # ----- ベイズ最適化を使ったならし計算を使う場合 -----
-#        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r {}'.format(regions) + ' -e -d -i -1 -6', shell = True)
+#        subprocess.call(f'os.path.join(binDEXCS_path, "計算.py") -r {regions} -e -d -i -1 -6', shell = True)
 
     # 正確な計算
     for d in ('elbow_vane01_10', 'elbow_vane02_10', 'elbow_vane03_10', 'elbow_wovane'):
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         with open('setting.txt', 'r') as f:
             lines = f.readlines()
         os.rename('setting.txt', 'setting_bak.txt')
-        for i in xrange(len(lines)):
+        for i in range(len(lines)):
             lines[i] = setComment.comment(setComment.uncomment(lines[i], '// accurate'), '// shakedown')
             # 行の末尾に// accurateと書かれている行をアンコメントし，末尾に// shakedownと書かれている行をコメントアウトする
             # '// accurate', '// shakedown'の文字は，スペースの個数を含めて完全に一致する必要あり
@@ -102,16 +102,16 @@ if __name__ == '__main__':
         with open(fvSolution, 'r') as f:
             lines = f.readlines()
         os.rename(fvSolution, f'{fvSolution}_bak')
-        for i in xrange(len(lines)):
+        for i in range(len(lines)):
             lines[i] = setComment.comment(setComment.uncomment(lines[i], '// accurate'), '// shakedown')
             # 行の末尾に// accurateと書かれている行をアンコメントし，末尾に// shakedownと書かれている行をコメントアウトする
             # '// accurate', '// shakedown'の文字は，スペースの個数を含めて完全に一致する必要あり
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r %{}'.format(regions) + ' -e', shell = True)
+        subprocess.call(f'os.path.join(binDEXCS_path, "計算.py") -r {regions} -e', shell = True)
         # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
 
 #        # ----- ベイズ最適化を使ったならし計算を使う場合 -----
-#        subprocess.call(os.path.join(binDEXCS_path, '計算.py') + ' -r {}'.format(regions) + ' -e', shell = True)
+#        subprocess.call(f'os.path.join(binDEXCS_path, "計算.py") -r {regions} -e', shell = True)
 #        # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．オプションなので半角スペースで区切らないといけない
