@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/13 9:05:40 AM
+# 2026/5/13 4:05:59 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -318,25 +318,25 @@ class MeshFrame(QtGui.QDialog):
                 {'type': 'dictionary', 'key': 'object'},
                 {'type': 'word', 'value': 'setFieldsDict'}])['element'] is None:
                 raise Exception(f'{setFieldsDict_path} is not a setFieldsDict file.')
+
+            for block in setFieldsDict.find_all_elements(
+                [{'type': 'dictionary', 'key': 'regions'}, {'type': 'list'}, {'type': 'block'}]):
+                block = block['element']
+                comment = block.find_element([{'type': 'line_comment|block_comment'}])['element']
+                if comment is None or 'freecad' not in comment['value'].lower():
+                    continue
+                for i, obj in enumerate(object_names):
+                    if obj not in comment['value']:
+                        continue
+                    remainder_names.remove(obj)
+                    if block['key'] == 'boxToCell':
+                        self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
+                    elif block['key'] == 'cylinderToCell':
+                        self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
+                    else:
+                        self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
         else:
             setFieldsDict = None
-
-        for block in setFieldsDict.find_all_elements(
-            [{'type': 'dictionary', 'key': 'regions'}, {'type': 'list'}, {'type': 'block'}]):
-            block = block['element']
-            comment = block.find_element([{'type': 'line_comment|block_comment'}])['element']
-            if comment is None or 'freecad' not in comment['value'].lower():
-                continue
-            for i, obj in enumerate(object_names):
-                if obj not in comment['value']:
-                    continue
-                remainder_names.remove(obj)
-                if block['key'] == 'boxToCell':
-                    self.grid.setCellValue(i, self.grid.TYPE, 'BoxSet')
-                elif block['key'] == 'cylinderToCell':
-                    self.grid.setCellValue(i, self.grid.TYPE, 'CylinderSet')
-                else:
-                    self.grid.setCellValue(i, self.grid.TYPE, 'SphereSet')
 
         if os.path.isfile(topoSetDict_path):
             topoSetDict = dictParse.DictParser(file_name = topoSetDict_path)
@@ -344,21 +344,21 @@ class MeshFrame(QtGui.QDialog):
                 {'type': 'dictionary', 'key': 'object'},
                 {'type': 'word', 'value': 'topoSetDict'}])['element'] is None:
                 raise Exception(f'{topoSetDict_path} is not a topoSetDict file.')
+
+            for block in topoSetDict.find_all_elements(
+                [{'type': 'dictionary', 'key': 'actions'}, {'type': 'list'}, {'type': 'block'}]):
+                block = block['element']
+                v = block.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}]
+                    )['element']['value'].replace('CellSet', '').replace()
+                if v not in object_names:
+                    continue
+                if block.find_element([{'type': 'dictionary', 'key': 'source'}, {'type': 'word'}]
+                    )['element']['value'] != 'rotatedBoxToCell':
+                    continue
+                remainder_names.remove(v)
+                self.grid.setCellValue(object_names.index(v), self.grid.TYPE, 'BoxTopo')
         else:
             topoSetDict = None
-
-        for block in topoSetDict.find_all_elements(
-            [{'type': 'dictionary', 'key': 'actions'}, {'type': 'list'}, {'type': 'block'}]):
-            block = block['element']
-            v = block.find_element([{'type': 'dictionary', 'key': 'name'}, {'type': 'word'}]
-                )['element']['value'].replace('CellSet', '').replace()
-            if v not in object_names:
-                continue
-            if block.find_element([{'type': 'dictionary', 'key': 'source'}, {'type': 'word'}]
-                )['element']['value'] != 'rotatedBoxToCell':
-                continue
-            remainder_names.remove(v)
-            self.grid.setCellValue(object_names.index(v), self.grid.TYPE, 'BoxTopo')
 
         for i in remainder_names:
             self.grid.setCellValue(object_names.index(i), self.grid.TYPE, 'N/A')
@@ -616,16 +616,18 @@ class MyModel:
                 f'\tfeatureAngle\t{feature_angle}; // used in surfaceFeatureEdges utility\n'
                 '}\n')
 
-            e = meshDict.find_element([{'type': 'dictionary', 'key': 'keepCellsIntersectingBoundary'},
-                {'type': 'integer'}])['element']
+            e = dictParse.DictParser.find_element_static(
+                [{'type': 'dictionary', 'key': 'keepCellsIntersectingBoundary'}, {'type': 'integer'}],
+                parent = meshDict)['element']
             f.write('\n'
                 '// Keep all the cells intersecting the surface template.\n'
                 '// Useful in capturing small gaps in a geometry. (default: 0)\n'
                 f'keepCellsIntersectingBoundary\t{"1" if e is None else e["value"]}; '
                 '// 1 active or 0 inactive\n')
 
-            e = meshDict.find_element([{'type': 'dictionary', 'key': 'checkForGluedMesh'},
-                {'type': 'integer'}])['element']
+            e = dictParse.DictParser.find_element_static(
+                [{'type': 'dictionary', 'key': 'checkForGluedMesh'}, {'type': 'integer'}],
+                parent = meshDict)['element']
             f.write('\n'
                 '// Remove cells where distinct parts of the mesh are joined together.\n'
                 '// Valid only when keepCellsIntersectingBoundary is active. (default: 0)\n'
@@ -635,16 +637,17 @@ class MyModel:
                 f'maxCellSize\t{max_cell_size}; // (mandatory)\n')
 
             f.write('\n')
-            e = meshDict.find_element([{'type': 'dictionary', 'key': 'boundaryCellSize'},
-                {'type': 'float|integer'}])['element']
+            e = dictParse.DictParser.find_element_static(
+                [{'type': 'dictionary', 'key': 'boundaryCellSize'}, {'type': 'float|integer'}],
+                parent = meshDict)['element']
             if e is None:
                 f.write('// boundaryCellSize\t0.5; // (optional)\n')
             else:
                 f.write(f'boundaryCellSize\t{e["value"]}; // (optional)\n')
 
-            e = meshDict.find_element(
+            e = dictParse.DictParser.find_element_static(
                 [{'type': 'dictionary', 'key': 'boundaryCellSizeRefinementThickness'},
-                {'type': 'float|integer'}])['element']
+                {'type': 'float|integer'}], parent = meshDict)['element']
             if e is None:
                 f.write('// boundaryCellSizeRefinementThickness\t 5.0; // (optional)\n')
             else:
@@ -652,8 +655,9 @@ class MyModel:
 
             f.write('\n')
             if min_cell_size == '':
-                min_cell_size = meshDict.find_element(
-                    [{'type': 'dictionary', 'key': 'minCellSize'}, {'type': 'float|integer'}])['element']
+                min_cell_size = dictParse.DictParser.find_element_static(
+                    [{'type': 'dictionary', 'key': 'minCellSize'}, {'type': 'float|integer'}],
+                    parent = meshDict)['element']
                 if min_cell_size is not None:
                     min_cell_size = min_cell_size['value']
             if min_cell_size is None:
@@ -664,50 +668,55 @@ class MyModel:
             f.write('\n'
                 f'surfaceFile\t"constant/triSurface/{os.path.basename(surface_file_name)}"; // (mandatory)\n')
 
-            boundaryLayers = meshDict.find_element([{'type': 'block', 'key': 'boundaryLayers'}])['element']
+            boundaryLayers = dictParse.DictParser.find_element_static(
+                [{'type': 'block', 'key': 'boundaryLayers'}], parent = meshDict)['element']
 
             f.write('\n'
                 'boundaryLayers\n'
                 '{\n')
 
-            e = boundaryLayers.find_element(
-                [{'type': 'dictionary', 'key': 'optimiseLayer'}, {'type': 'integer'}])['element']
+            e = dictParse.DictParser.find_element_static(
+                [{'type': 'dictionary', 'key': 'optimiseLayer'}, {'type': 'integer'}],
+                parent = boundaryLayers)['element']
             f.write('\t// Smoothing of boundary layers (default: 0)\n'
                 f'\toptimiseLayer\t{"1" if e is None else e["element"]}; // 1 active or 0 inactive\n')
 
-            for dictionary in boundaryLayers.find_all_elements(
-                [{'type': 'dictionary', 'except key': 'optimiseLayer'}]):
+            for dictionary in dictParse.DictParser.find_all_elements_static(
+                [{'type': 'dictionary', 'except key': 'optimiseLayer'}], parent = boundaryLayers):
                 f.write('\n'
                     f'\t{dictionary["element"].file_string(indent_level = 1)}\n')
 
-            optimisationParameters = boundaryLayers.find_element(
-                [{'type': 'block', 'key': 'optimisationParameters'}])['element']
+            optimisationParameters = dictParse.DictParser.find_element_static(
+                [{'type': 'block', 'key': 'optimisationParameters'}], parent = boundaryLayers)['element']
 
             f.write('\n'
                 '\toptimisationParameters\n'
                 '\t{\n')
 
-            e = optimisationParameters.find_element(
-                [{'type': 'dictionary', 'key': 'featureSizeFactor'}, {'type': 'float|integer'}])['element']
+            e = dictParse.DictParser.find_element_static(
+                [{'type': 'dictionary', 'key': 'featureSizeFactor'}, {'type': 'float|integer'}],
+                parent = optimisationParameters)['element']
             f.write('\t\t// Ratio between the maximum boundary layer thickness and the patch size\n'
                 '\t\t// Ued to limit layer thickness in the regions dominated by curvature. (default: 0.3)\n'
                 f'\t\tfeatureSizeFactor\t{"0.3" if e is None else e["value"]};\n')
 
-            e = optimisationParameters.find_element(
-                [{'type': 'dictionary', 'key': 'relThicknessTol'}, {'type': 'float|integer'}])['element']
+            e = dictParse.DictParser.find_element_static(
+                [{'type': 'dictionary', 'key': 'relThicknessTol'}, {'type': 'float|integer'}],
+                parent = optimisationParameters)['element']
             f.write('\n'
                 '\t\t// Maximum difference of the layer thickness between two neighboring points\n'
                 '\t\t// divided by the distance between the points (optional)\n'
                 f'\t\trelThicknessTol\t{"0.2" if e is None else e["value"]};\n')
-            for dictionary in optimisationParameters.find_all_elements(
-                [{'type': 'dictionary', 'except key': 'featureSizeFactor|relThicknessTol'}]):
+            for dictionary in dictParse.DictParser.find_all_elements_static(
+                [{'type': 'dictionary', 'except key': 'featureSizeFactor|relThicknessTol'}],
+                parent = optimisationParameters):
                 f.write('\n'
                     f'\t\t{dictionary["element"].file_string(indent_level = 2)}\n')
 
             f.write('\t}\n') # optimisationParameters
 
-            patchBoundaryLayers = boundaryLayers.find_element(
-                [{'type': 'block', 'key': 'patchBoundaryLayers'}])['element']
+            patchBoundaryLayers = dictParse.DictParser.find_element_static(
+                [{'type': 'block', 'key': 'patchBoundaryLayers'}], parent = boundaryLayers)['element']
 
             f.write('\n'
                 '\tpatchBoundaryLayers\n'
@@ -721,16 +730,19 @@ class MyModel:
                     '\t\t{\n'
                     f'\t\t\tnLayers\t{i[grid.N_LAYERS]}; // (optional)\n'
                     f'\t\t\tthicknessRatio\t{i[grid.RATIO]};\n')
-                block = patchBoundaryLayers.find_element(
-                    [{'type': 'block', 'key': i[grid.OBJECT_NAME]}])['element']
-                e = block.find_element([{'type': 'dictionary', 'key': 'maxFirstLayerThickness'},
-                    {'type': 'float|integer'}])['element']
+                block = dictParse.DictParser.find_element_static(
+                    [{'type': 'block', 'key': i[grid.OBJECT_NAME]}],
+                    parent = patchBoundaryLayers)['element']
+                e = dictParse.DictParser.find_element_static(
+                    [{'type': 'dictionary', 'key': 'maxFirstLayerThickness'},
+                    {'type': 'float|integer'}], parent = block)['element']
                 if e is None:
                     f.write('//\t\t\tmaxFirstLayerThickness\t0.5; // (optional)\n')
                 else:
                     f.write(f'\t\t\tmaxFirstLayerThickness\t{e["value"]}; // (optional)\n')
-                e = block.find_element([{'type': 'dictionary', 'key': 'allowDiscontinuity'},
-                    {'type': 'integer'}])['element']
+                e = dictParse.DictParser.find_element_static(
+                    [{'type': 'dictionary', 'key': 'allowDiscontinuity'}, {'type': 'integer'}],
+                    parent = block)['element']
                 f.write(f'\t\t\tallowDiscontinuity\t{"0" if e is None else e["value"]}; '
                     '// 1 active or 0 inactive\n')
                 f.write('\t\t}\n')
@@ -836,8 +848,9 @@ class MyModel:
                         f'\t\tradius\t{obj.Radius.Value};\n'
                         f'\t\trefinementThickness\t{obj.Radius.Value};\n')
                 f.write('\t}\n')
-            for block in meshDict.find_all_elements(
-                [{'type': 'block', 'key': 'objectRefinements'}, {'type': 'block'}]):
+            for block in dictParse.DictParser.find_all_elements_static(
+                [{'type': 'block', 'key': 'objectRefinements'}, {'type': 'block'}],
+                parent = meshDict):
                 block = block['element']
                 if block['key'] not in object_names:
                     f.write('\n'
@@ -914,8 +927,9 @@ class MyModel:
                         '// Relative to the maximum cell size\n'
                         f'\t\trefinementThickness\t{i[grid.RATIO]};\n'
                         '\t}\n')
-            for block in meshDict.find_all_elements(
-                [{'type': 'block', 'key': 'surfaceMeshRefinement'}, {'type': 'block'}]):
+            for block in dictParse.DictParser.find_all_elements_static(
+                [{'type': 'block', 'key': 'surfaceMeshRefinement'}, {'type': 'block'}],
+                parent = meshDict):
                 block = block['element']
                 if block['key'] not in object_names:
                     f.write('\n'
@@ -963,13 +977,14 @@ class MyModel:
             f.write('\t}\n' # newPatchNames
                 '}\n') # renameBoundary
 
-            for element in meshDict.find_all_elements([{'type': 'block|dictionary',
+            for element in dictParse.DictParser.find_all_elements_static([{'type': 'block|dictionary',
                 'except key': ('FoamFile' '|' 'CUSTOM_OPTIONS' '|' 'keepCellsIntersectingBoundary'
                     'checkForGluedMesh' '|' 'maxCellSize' '|' 'boundaryCellSize' '|'
                     'boundaryCellSizeRefinementThickness' '|' 'minCellSize' '|' 'surfaceFile' '|'
                     'boundaryLayers' '|' 'keepCellsIntersectingPatches' '|'
                     'removeCellsIntersectingPatches' '|' 'localRefinement' '|' 'objectRefinements' '|'
-                    'surfaceMeshRefinement' '|' 'anisotropicSources' '|' 'renameBoundary')}]):
+                    'surfaceMeshRefinement' '|' 'anisotropicSources' '|' 'renameBoundary')}],
+                parent = meshDict):
                 f.write('\n'
                     f'{element["element"].file_string()}\n')
 
@@ -994,8 +1009,9 @@ class MyModel:
                 '}\n'
                 '\n')
 
-            defaultFieldValues = setFieldsDict.find_element(
-                [{'type': 'dictionary', 'key': 'defaultFieldValues'}])['element']
+            defaultFieldValues = dictParse.DictParser.find_element_static(
+                [{'type': 'dictionary', 'key': 'defaultFieldValues'}],
+                parent = setFieldsDict)['element']
             if defaultFieldValues is not None:
                 f.write(f'{defaultFieldValues.file_string()}\n')
             else:
@@ -1005,8 +1021,8 @@ class MyModel:
                     '\tvolVectorFieldValue\tU ( 0 0 0 ) // ←自分の目的に合わせて書き換える\n'
                     ');\n')
 
-            regions = setFieldsDict.find_element([{'type': 'dictionary', 'key': 'regions'},
-                {'type': 'list'}])['element']
+            regions = dictParse.DictParser.find_element_static([{'type': 'dictionary', 'key': 'regions'},
+                {'type': 'list'}], parent = setFieldsDict)['element']
             f.write('\n'
                 'regions\n'
                 '(\n')
@@ -1036,12 +1052,13 @@ class MyModel:
                         '\t{\n'
                         f'\t\tcentre\t({0.001*b.x} {0.001*b.y} {0.001*b.z});\n'
                         f'\t\tradius\t{0.001*obj.Radius.Value};\n')
-                for comment in regions.find_all_elements(
-                    [{'type': 'block'}, {'type': 'line_comment|block_comment'}]):
+                for comment in dictParse.DictParser.find_all_elements_static(
+                    [{'type': 'block'}, {'type': 'line_comment|block_comment'}],parent = regions):
                     if i[grid.OBJECT_NAME] not in comment['element']['value']:
                         continue
-                    fieldValues = comment['parent'].find_element(
-                        [{'type': 'dictionary', 'key': 'fieldValues'}])['element']
+                    fieldValues = dictParse.DictParser.find_element_static(
+                        [{'type': 'dictionary', 'key': 'fieldValues'}],
+                        parent = comment['parent'])['element']
                     if fieldValues is None:
                         f.write('\t\tfieldValues\n'
                             '\t\t(\n'
@@ -1050,16 +1067,19 @@ class MyModel:
                     else:
                         f.write(f'\t\t{fieldValues.file_string(indent_level = 2)}\n')
                 f.write('\t}\n') # boxToCell, cylinderToCell, sphereToCell
-            for block in regions.find_all_elements([{'type': 'block'}]):
+            for block in dictParse.DictParser.find_all_elements_static(
+                [{'type': 'block'}],parent = regions):
                 block = block['element']
-                comment = block.find_element([{'type': 'line_comment|block_comment'}])['element']['value']
+                comment = dictParse.DictParser.find_element_static(
+                    [{'type': 'line_comment|block_comment'}], parent = block)['element']['value']
                 if 'freecad' not in comment.lower():
                     f.write('\n'
                         f'\t{block.file_string(indent_level = 1)}\n')
                 f.write(');\n') # regions
 
-            for element in setFieldsDict.find_all_elements([{'type': 'block|dictionary',
-                'except key': 'FoamFile|defaultFieldValues|regions'}]):
+            for element in dictParse.DictParser.find_all_elements_static(
+                [{'type': 'block|dictionary', 'except key': 'FoamFile|defaultFieldValues|regions'}],
+                parent = setFieldsDict):
                 f.write('\n'
                     f'{element["element"].file_string()}\n')
 
@@ -1083,23 +1103,26 @@ class MyModel:
                 '\tobject\ttopoSetDict;\n'
                 '}\n') # FoamFile
 
-            actions = topoSetDict.find_all_element([{'type': 'dictionary', 'key': 'actions'},
-                {'type': 'list'}, {'type': 'block'}])
+            actions = dictParse.DictParser.find_all_element_static(
+                [{'type': 'dictionary', 'key': 'actions'}, {'type': 'list'}, {'type': 'block'}],
+                parent = topoSetDict)
             f.write('\n'
                 'actions\n'
                 '(\n')
             for i in grid.table:
                 if i[grid.TYPE] not in ('BoxTopo', 'CylinderTopo', 'SphereTopo'):
                     continue
-                block = next((i['element'] for i in actions if i['element'].find_element(
-                    [{'type': 'dictionary', 'key': 'name'},
-                    {'type': 'word', 'value': f'{i[grid.OBJECT_NAME]}CellSet'}]
-                    )['element'] is not None), None)
+                block = next((i['element'] for i in actions
+                    if dictParse.DictParser.find_element_static(
+                        [{'type': 'dictionary', 'key': 'name'},
+                        {'type': 'word', 'value': f'{i[grid.OBJECT_NAME]}CellSet'}],
+                        parent = i['element'])['element'] is not None), None)
                 if block is None:
                     action = 'new'
                 else:
-                    action = block.find_element(
-                        [{'type': 'dictionary', 'key': 'action'}, {'type': 'word'}])['element']
+                    action = dictParse.DictParser.find_element_static(
+                        [{'type': 'dictionary', 'key': 'action'}, {'type': 'word'}],
+                        parent = block)['element']
                     if action is None:
                         action = 'new'
                 f.write('\t{' f' // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
@@ -1146,14 +1169,16 @@ class MyModel:
                 [f'{i[grid.OBJECT_NAME]}|{i[grid.OBJECT_NAME]}CellSet' for i in grid.table])
             for block in actions:
                 block = ['element']
-                if block.find_element( [{'type': 'dictionary', 'key': 'name'},
-                    {'type': 'word', 'except value': written_action_names}])['element'] is not None:
+                if dictParse.DictParser.find_element_static(
+                    [{'type': 'dictionary', 'key': 'name'},
+                    {'type': 'word', 'except value': written_action_names}],
+                    parent = block)['element'] is not None:
                     f.write('\n'
                         f'\t{block.file_string(indent_level = 1)}\n')
             f.write(');\n') # actions
 
-            for element in topoSetDict.find_all_elements([{'type': 'block|dictionary',
-                'except key': 'FoamFile|actions'}]):
+            for element in dictParse.DictParser.find_all_elements_static(
+                [{'type': 'block|dictionary', 'except key': 'FoamFile|actions'}], parent = topoSetDict):
                 f.write('\n'
                     f'{element["element"].file_string()}\n')
 
