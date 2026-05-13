@@ -122,6 +122,133 @@ def re_findall_in_comments(pattern, string):
         index = s.end()
     return result
 
+def find_element(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
+    # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
+    #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
+    #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
+    assert (start is None and end is None) or len(path_list) == 1
+    if parent is None:
+        return {'parent': None, 'index': index_not_found, 'element': None}
+    elif not isinstance(parent, list):
+        parent = parent['value']
+    if isinstance(path_list, dict):
+        path_list = [path_list]
+    elif len(path_list) == 0:
+        return {'parent': None, 'index': index_not_found, 'element': None}
+    p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
+        for k, v in path_list[0].items()}
+    # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
+    # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
+    # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
+    c = next(({'index': i, 'element': parent[i]} for i in range(
+        (len(parent) - 1 if reverse else 0) if start is None else start,
+        (-1 if reverse else len(parent)) if end is None else end,
+        -1 if reverse else 1)
+        if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
+            for k, v in p.items())), None)
+    if c is None:
+        return {'parent': None, 'index': index_not_found, 'element': None}
+    elif len(path_list) == 1:
+        return {'parent': parent, 'index': c['index'], 'element': c['element']}
+    else:
+        return find_element(path_list[1:], parent = c['element'],
+            start = start, end = end, reverse = reverse, index_not_found = index_not_found)
+
+def find_all_elements(path_list, parent):
+    # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
+    #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
+    #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
+    if parent is None:
+        return []
+    elif not isinstance(parent, list):
+        parent = parent['value']
+    if isinstance(path_list, dict):
+        path_list = [path_list]
+    elif len(path_list) == 0:
+        return []
+    p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
+        for k, v in path_list[0].items()}
+    # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
+    # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
+    c = [{'index': i, 'element': parent[i]} for i in range(len(parent))
+        if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
+            for k, v in path_list[0].items())]
+    if len(c) == 0 or len(path_list) == 1:
+        return [{'parent': parent, 'index': i['index'], 'element': i['element']} for i in c]
+    else:
+        elements = []
+        for i in c:
+            elements += find_all_elements(path_list[1:], i['element'])
+        return elements
+
+def structure_string(parent, parent_header = '', indent_level = 0):
+    if parent is None:
+        return None
+    elif isinstance(parent, DictParser) and parent['type'] != 'root':
+        parent = [parent]
+    elif not isinstance(parent, list):
+        parent = parent['value']
+    l = len(str(len(parent) - 1))
+    h = ' '*l
+    s = ''
+    indent = '  '*indent_level
+    for n, i in enumerate(parent):
+        s += f'{str(n).zfill(l)}: {indent}'
+        if i['type'] in ('dictionary', 'block'):
+            s += (f"{{'type': '{i['type']}', "  +
+                (f"'key': '{i['key']}', " if 'key' in i else "") + 
+                f"'value':\n{structure_string(i['value'], h, indent_level + 1)}}}\n")
+        elif i['type'] == 'list':
+            s += ("{'type': 'list', " +
+                (f"'length': {i['length']}, " if 'length' in i else "") +
+                f"'value':\n{structure_string(i['value'], h, indent_level + 1)}}}\n")
+        else:
+            s += f'{i}\n'
+    return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '')
+
+def file_string(parent, indent_level = 0, pretty_print = True, commentless = False):
+    # 【注意】indent_levelがいくらであれ，1行目はインデントしない！
+    if parent is None:
+        return None
+    elif isinstance(parent, DictParser) and parent['type'] != 'root':
+        parent = [parent]
+    elif not isinstance(parent, list):
+        parent = parent['value']
+    s = ''
+    indent = '\t'*indent_level
+    linebreak = False
+    for i in parent:
+        if pretty_print and linebreak: # 改行直後
+            if (i['type'] == 'whitespace' or
+                commentless and i['type'] in ('line_comment', 'block_comment')):
+                continue
+            elif i['type'] != 'linebreak':
+                s += indent
+        if i['type'] in ('block', 'list', 'dimension'):
+            start = find_element([{'type': i['type'] + '_start'}], parent = i['value'])['index'] + 1
+            end = find_element([{'type': i['type'] + '_end'}], parent = i['value'], reverse = True)['index']
+            j = find_element(
+                [{'except type': 'whitespace'}], parent = i['value'], start = end - 1, end = start - 1,
+                reverse = True)
+            if j['element'] is not None:
+                end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
+                s += (f'{i.get("key", "")}{i.get("length", "")}' +
+                    file_string(i['value'][:start], indent_level, pretty_print, commentless) +
+                    file_string(i['value'][start:end], indent_level + 1, pretty_print, commentless) +
+                    file_string(i['value'][end:], indent_level, pretty_print, commentless))
+        else:
+            if commentless and i['type'] == 'block_comment':
+                if not s.endswith(' '):
+                    s += ' '
+            elif not commentless or i['type'] != 'line_comment':
+                if isinstance(i['value'], list):
+                    s += (f'{i.get("key", "")}{i.get("length", "")}' +
+                        file_string(i['value'], indent_level, pretty_print, commentless))
+                else:
+                    s += i['value']
+        linebreak = (i['type'] == 'linebreak')
+    return s
+
 class DictParser(UserDict):
     PATTERN = re.compile(
         # .      -> 改行（\n）以外の任意の1文字
@@ -290,73 +417,12 @@ class DictParser(UserDict):
             print(f'    return {l}')
         return l, index
 
-    @staticmethod
-    def find_element_static(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
-        # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
-        #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
-        #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
-        assert (start is None and end is None) or len(path_list) == 1
-        if parent is None:
-            return {'parent': None, 'index': index_not_found, 'element': None}
-        elif not isinstance(parent, list):
-            parent = parent['value']
-        if isinstance(path_list, dict):
-            path_list = [path_list]
-        elif len(path_list) == 0:
-            return {'parent': None, 'index': index_not_found, 'element': None}
-        p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
-            for k, v in path_list[0].items()}
-        # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
-        # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
-        # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
-        c = next(({'index': i, 'element': parent[i]} for i in range(
-            (len(parent) - 1 if reverse else 0) if start is None else start,
-            (-1 if reverse else len(parent)) if end is None else end,
-            -1 if reverse else 1)
-            if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
-                for k, v in p.items())), None)
-        if c is None:
-            return {'parent': None, 'index': index_not_found, 'element': None}
-        elif len(path_list) == 1:
-            return {'parent': parent, 'index': c['index'], 'element': c['element']}
-        else:
-            return DictParser.find_element_static(path_list[1:], parent = c['element'],
-                start = start, end = end, reverse = reverse, index_not_found = index_not_found)
-
-    @staticmethod
-    def find_all_elements_static(path_list, parent):
-        # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
-        #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
-        #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
-        if parent is None:
-            return []
-        elif not isinstance(parent, list):
-            parent = parent['value']
-        if isinstance(path_list, dict):
-            path_list = [path_list]
-        elif len(path_list) == 0:
-            return []
-        p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
-            for k, v in path_list[0].items()}
-        # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
-        # k.startswith('except ') = True  -> (parent[i].get(k.replace('except ', '')) in p[k]) = Falseのものを抽出したい
-        c = [{'index': i, 'element': parent[i]} for i in range(len(parent))
-            if all((parent[i].get(k.replace('except ', '')) in p[k]) != k.startswith('except ')
-                for k, v in path_list[0].items())]
-        if len(c) == 0 or len(path_list) == 1:
-            return [{'parent': parent, 'index': i['index'], 'element': i['element']} for i in c]
-        else:
-            elements = []
-            for i in c:
-                elements += DictParser.find_all_elements_static(path_list[1:], i['element'])
-            return elements
-
     def find_element(self, path_list, start = None, end = None, reverse = False, index_not_found = None):
-        return DictParser.find_element_static(path_list, parent = self, start = start, end = end,
+        return find_element(path_list, parent = self, start = start, end = end,
             reverse = reverse, index_not_found = index_not_found)
 
     def find_all_elements(self, path_list):
-        return DictParser.find_all_elements_static(path_list, self)
+        return find_all_elements(path_list, self)
 
     def find_separators(self, header_index_not_found = None, footer_index_not_found = None):
         separators = self.find_all_elements([{'type': 'separator'}])
@@ -376,21 +442,19 @@ class DictParser(UserDict):
             start = self.find_element([{'type': self['type'] + '_start'}])['index'] + 1
             end = self.find_element([{'type': self['type'] + '_end'}], reverse = True)['index']
             parent = self['value']
-            i = DictParser.find_element_static(
-                [{'type': 'linebreak'}], parent = parent, start = start, end = end)
+            i = find_element([{'type': 'linebreak'}], parent = parent, start = start, end = end)
             if i['element'] is None:
                 return
             start = i['index'] + 1
-            i = DictParser.find_element_static(
-                [{'except type': 'whitespace|linebreak'}], parent = parent, start = start, end = end)
+            i = find_element([{'except type': 'whitespace|linebreak'}], parent = parent, start = start, end = end)
             if i['element'] is not None:
                 i = i['index']
                 del parent[start:i]
                 end += start - i
             if start != end:
-                end = DictParser.find_element_static([{'type': 'linebreak'}],
+                end = find_element([{'type': 'linebreak'}],
                     parent = parent, start = end - 1, end = start - 1, reverse = True)['index']
-                i = DictParser.find_element_static([{'except type': 'whitespace|linebreak'}],
+                i = find_element([{'except type': 'whitespace|linebreak'}],
                     parent = parent, start = end - 1, end = start - 1, reverse = True)
                 if i['element'] is not None:
                     i = i['index'] + 1
@@ -418,82 +482,11 @@ class DictParser(UserDict):
             else:
                 i += 1
 
-    @staticmethod
-    def structure_string_static(parent, parent_header = '', indent_level = 0):
-        if isinstance(parent, DictParser) and parent['type'] != 'root':
-            parent = [parent]
-        elif not isinstance(parent, list):
-            parent = parent['value']
-        l = len(str(len(parent) - 1))
-        h = ' '*l
-        s = ''
-        indent = '  '*indent_level
-        for n, i in enumerate(parent):
-            s += f'{str(n).zfill(l)}: {indent}'
-            if i['type'] in ('dictionary', 'block'):
-                s += (f"{{'type': '{i['type']}', "  +
-                    (f"'key': '{i['key']}', " if 'key' in i else "") + 
-                    f"'value':\n{DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
-            elif i['type'] == 'list':
-                s += ("{'type': 'list', " +
-                    (f"'length': {i['length']}, " if 'length' in i else "") +
-                    f"'value':\n{DictParser.structure_string_static(i['value'], h, indent_level + 1)}}}\n")
-            else:
-                s += f'{i}\n'
-        return s + (parent_header + '  ' + '  '*(indent_level - 1) if indent_level > 0 else '')
-
     def structure_string(self, indent_level = 0):
-        return DictParser.structure_string_static(self, indent_level)
-
-    @staticmethod
-    def file_string_static(parent, indent_level = 0, pretty_print = True, commentless = False):
-        # 【注意】indent_levelがいくらであれ，1行目はインデントしない！
-        if isinstance(parent, DictParser) and parent['type'] != 'root':
-            parent = [parent]
-        elif not isinstance(parent, list):
-            parent = parent['value']
-        s = ''
-        indent = '\t'*indent_level
-        linebreak = False
-        for i in parent:
-            if pretty_print and linebreak: # 改行直後
-                if (i['type'] == 'whitespace' or
-                    commentless and i['type'] in ('line_comment', 'block_comment')):
-                    continue
-                elif i['type'] != 'linebreak':
-                    s += indent
-            if i['type'] in ('block', 'list', 'dimension'):
-                start = DictParser.find_element_static(
-                    [{'type': i['type'] + '_start'}], parent = i['value'])['index'] + 1
-                end = DictParser.find_element_static(
-                    [{'type': i['type'] + '_end'}], parent = i['value'], reverse = True)['index']
-                j = DictParser.find_element_static(
-                    [{'except type': 'whitespace'}], parent = i['value'], start = end - 1, end = start - 1,
-                    reverse = True)
-                if j['element'] is not None:
-                    end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
-                    s += (f'{i.get("key", "")}{i.get("length", "")}' +
-                        DictParser.file_string_static(
-                            i['value'][:start], indent_level, pretty_print, commentless) +
-                        DictParser.file_string_static(
-                            i['value'][start:end], indent_level + 1, pretty_print, commentless) +
-                        DictParser.file_string_static(
-                            i['value'][end:], indent_level, pretty_print, commentless))
-            else:
-                if commentless and i['type'] == 'block_comment':
-                    if not s.endswith(' '):
-                        s += ' '
-                elif not commentless or i['type'] != 'line_comment':
-                    if isinstance(i['value'], list):
-                        s += (i.get('key', '') + i.get('length', '') +
-                            DictParser.file_string_static(i['value'], indent_level, pretty_print, commentless))
-                    else:
-                        s += i['value']
-            linebreak = (i['type'] == 'linebreak')
-        return s
+        return structure_string(self, indent_level)
 
     def file_string(self, indent_level = 0, pretty_print = True, commentless = False):
-        return DictParser.file_string_static(self, indent_level, pretty_print, commentless)
+        return file_string(self, indent_level, pretty_print, commentless)
 
 if __name__ == '__main__':
 #    normalize(file_name = sys.argv[1])
