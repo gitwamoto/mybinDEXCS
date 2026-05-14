@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/14 2:17:59 PM
+# 2026/5/14 6:05:18 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -704,7 +704,7 @@ class MyModel:
                 f'castellatedMesh\t{"true" if e is None else e["value"]}; // true or false\n')
             e = dictParse.find_element(meshDict,
                 [{'type': 'dictionary', 'key': 'snap'}, {'type': 'word'}])['element']
-            f.write('// - メッシュを形状にピタッと密着させる．\n'
+            f.write('// - メッシュを形状にピタッと吸着させる．\n'
                 f'snap\t{"true" if e is None else e["value"]}; // true or false\n')
             e = dictParse.find_element(meshDict,
                 [{'type': 'dictionary', 'key': 'addLayers'}, {'type': 'word'}])['element']
@@ -856,8 +856,8 @@ class MyModel:
                 [{'type': 'dictionary', 'key': 'nCellsBetweenLevels'}, {'type': 'integer'}])['element']
             f.write('\n'
                 '\t// 異なる細分化レベル間のセルのバッファ層の数\n'
-                f'\tnCellsBetweenLevels\t{"3" if e is None else e["value"]};\n')
-            f.write('\n'
+                f'\tnCellsBetweenLevels\t{"3" if e is None else e["value"]};\n'
+                '\n'
                 '\t// ----- 特徴エッジの細分化 -----\n'
                 '\n'
                 '\t// 特徴エッジと交差するすセルの細分化レベル\n'
@@ -867,8 +867,8 @@ class MyModel:
                 f'\t\t\tfile\t"{surface_file_name_wo_ext}.extendedFeatureEdgeMesh";\n'
                 f'\t\t\tlevel\t{features_level};\n'
                 '\t\t}\n'
-                '\t);\n')
-            f.write('\n'
+                '\t);\n'
+                '\n'
                 '\t// ----- 面形状の細分化 -----\n'
                 '\n'
                 '\trefinementSurfaces\n'
@@ -891,11 +891,11 @@ class MyModel:
                     '\t\t\t\t}\n')
             f.write('\t\t\t}\n'
                 '\t\t}\n'
-                '\t}\n')
-            f.write('\n'
-                f'\tresolveFeatureAngle\t{feature_angle};\n')
-            f.write('\n'
-                '\t// ----- Region-wise refinement -----\n'
+                '\t}\n'
+                '\n'
+                f'\tresolveFeatureAngle\t{feature_angle};\n'
+                '\n'
+                '\t// ----- 領域の細分化 -----\n'
                 '\n'
                 '\trefinementRegions\n'
                 '\t{\n'
@@ -937,18 +937,17 @@ class MyModel:
                 '//\t\tboxExample // geometryで定義した名前\n'
                 '//\t\t{\n'
                 '//\t\t\tmode\tinside; // distance | inside | outside\n'
-                '//\t\t\tlevels\t((1.0 1));'
-                ' // ((distance level)), distanceはdistanceモードの時のみ使われる．\n'
+                '//\t\t\tlevels\t((1.0 1)); // ((distance level)), distanceはdistanceモードの時のみ使われる．\n'
                 '//\t\t}\n'
-                '\t}\n')
-            f.write('\n'
+                '\t}\n'
+                '\n'
                 '\t// ----- メッシュ選択 -----\n')
             cellZone = []
             for i in grid.table:
                 if i[grid.TYPE] == 'LocationInMesh':
                     obj = next((j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None)
-                    cellZone.append((obj.Shape.CenterOfMass.x, obj.Shape.CenterOfMass.y,
-                                    obj.Shape.CenterOfMass.z, i[grid.OBJECT_NAME]))
+                    c = obj.Shape.CenterOfMass
+                    cellZone.append((c.x, c.y, c.z, i[grid.OBJECT_NAME]))
             if len(cellZone) == 1:
                 f.write('\n'
                     f'\tlocationInMesh\t({cellZone[0][0]} {cellZone[0][1]} {cellZone[0][2]});\n'
@@ -970,8 +969,8 @@ class MyModel:
             e = dictParse.find_element(castellatedMeshControls,
                 [{'type': 'dictionary', 'key': 'allowFreeStandingZoneFaces'}, {'type': 'word'}])['element']
             f.write('\n'
-                '\t// 通常なら「計算領域の中にある面」は消されてしまうが，allowFreeStandingZoneFacesがtrueならば，\n'
-                '\t// 「厚みのない仕切り板（faceZone）」としてメッシュに残せる．\n'
+                '\t// 通常なら計算領域の中にある面は消されてしまうが，allowFreeStandingZoneFacesがtrueならば，\n'
+                '\t// 厚みのない仕切り板（faceZone）としてメッシュに残せる．\n'
                 '\t// refinementSurfacesの中でfaceZonesが定義されている場合のみ機能する．\n'
                 f'\tallowFreeStandingZoneFaces\t{"true" if e is None else e["value"]};\n')
             for element in dictParse.find_all_elements(castellatedMeshControls,
@@ -994,43 +993,39 @@ class MyModel:
             snapControls = dictParse.find_element(meshDict,
                 [{'type': 'block', 'key': 'snapControls'}])['element']
             f.write('\n'
-                '// Settings for the snapping.\n'
+                '// snap工程の設定\n'
                 'snapControls\n'
                 '{\n')
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nSmoothPatch'}, {'type': 'integer'}])['element']
-            f.write('\t// Number of smoothing iterations along the surface\n'
+            f.write('\t// 境界表面を滑らかにする反復回数\n'
                 f'\tnSmoothPatch\t{"3" if e is None else e["value"]};\n')
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nSmoothInternal'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of iterations for internal smoothing to reduce non-orthogonality\n'
-                '\t// at the face of refinement (effectively making the faces non-planar).\n'
-                '\t// Default value is 0.\n'
+                '\t// 境界表面を滑らかにした後で歪んでしまった内部メッシュを整える\n'
+                '\t// （＝境界のメッシュをなるべく直交させる）反復回数（デフォルト：0）\n'
                 f'\tnSmoothInternal\t{"1" if e is None else e["value"]};\n')
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'tolerance'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Multiplied by local cell-edge length specifies region along the surface\n'
-                '\t// within which the points are attracted by the surface\n'
+                '\t// castellatedMeshで作られた階段状の頂点から(局所的なセル長さ)*toleranceの距離まで境界を探し，\n'
+                '\t// 見つかった境界に頂点を吸着させる．\n'
                 f'\ttolerance\t{"1.0" if e is None else e["value"]};\n')
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nSolveIter'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of mesh displacement iterations\n'
+                '\t// メッシュ移動（＝表面への吸着を完遂させる）の反復回数\n'
                 f'\tnSolveIter\t{"30" if e is None else e["value"]};\n')
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nRelaxIter'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of relaxation iterations during the snapping. If the mesh does not\n'
-                '\t// conform the geometry and all the iterations are spend, user may try to\n'
-                '\t// increase the number of iterations.\n'
+                '\t// メッシュ移動によるメッシュの歪みを緩和する（＝checkMeshエラーを消す）反復回数\n'
                 f'\tnRelaxIter\t{"5" if e is None else e["value"]};\n')
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nFeatureSnapIter'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of relaxation iterations used for snapping onto the features.\n'
-                '\t// If not specified, feature snapping will be disabled.\n'
+                '\t// 物体の角や特徴線に対して，メッシュを吸着させる反復回数\n'
                 f'\tnFeatureSnapIter\t{"10" if e is None else e["value"]};\n')
             for element in dictParse.find_all_elements(snapControls,
                 [{'type': 'block|dictionary', 'except key': (
@@ -1046,16 +1041,16 @@ class MyModel:
 
             addLayersControls = dictParse.find_element(meshDict,
                 [{'type': 'block', 'key': 'addLayersControls'}])['element']
-
             f.write('\n'
-                '// Settings for the layer addition.\n'
-                'addLayersControls\n'
+                '// addLayers工程の設定\n'
+                'addLyaersControls\n'
                 '{\n'
-                '\t// Layer thickness is set in a relative (true) or absolute (false) scale.\n'
+                '\t// addLyaersControlsaddLyaersControlsの中で指定されるthicknessの設定．\n'
+                '\t// relativeSizesがtrueだと，細分化後のセルサイズに対して相対的なものになる．\n'
+                '\t// falseだと，メートル単位の長さになる．\n'
                 '\trelativeSizes\ttrue;\n')
-
             f.write('\n'
-                '\t// Layer information per final patch (so not geometry!)\n'
+                '\t// 最終パッチにおける境界層メッシュの設定\n'
                 '\tlayers\n'
                 '\t{\n')
             for i in grid.table:
@@ -1075,97 +1070,83 @@ class MyModel:
                     f.write(f'\t\t\t{element["element"].file_string(indent_level = 3)}\n')
                 f.write('\t\t}\n')
             f.write('\t}\n') # layers
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'expansionRatio'}, {'type': 'float|integer'}])['element']
             f.write(f'\texpansionRatio\t{"1" if e is None else e["value"]}; // mandatory\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'finalLayerThickness'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Thickness of the layer furthest away from the wall\n'
+                '\t// 壁から最も遠い境界層メッシュの厚さ\n'
                 f'\tfinalLayerThickness\t{"1" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'minThickness'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Minimum thickness of cell layer\n'
+                '\t// minThickness以下の厚さになるのであれば，その場所には境界層メッシュを追加しない．\n'
                 f'\tminThickness\t{"0.1" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nGrow'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of layers of cells where point extrusion is cancelled\n'
+                '\t// 狭くて境界層メッシュを追加できない点を中心にして，\n'
+                '\t// nGrow個分の境界層メッシュの範囲には境界層メッシュを追加しない．\n'
                 f'\tnGrow\t{"0" if e is None else e["value"]};\n')
-
             f.write('\n'
-                '\t// ----- Advanced settings -----\n'
+                '\t// ----- 詳細設定 -----\n'
                 '\n'
-                '\t// When not to extrude surface. 0 is flat surface, 90 is when two faces are perpendicular\n'
+                '\t// 隣り合う面の角度がfeatureAngleより大きいと，その場所には境界層メッシュを追加しない．\n'
                 f'\tfeatureAngle\t{feature_angle};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nRelaxIter'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of relaxation steps (where relaxed mesh quality parameters are used)\n'
+                '\t// 境界層メッシュが追加されたことによるメッシュの歪みを緩和する（＝checkMeshエラーを消す）反復回数\n'
                 f'\tnRelaxIter\t{"3" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nSmoothSurfaceNormals'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of smoothing iterations of surface normals\n'
+                '\t// 壁面から境界層メッシュを追加する方向（法線方向）を整える反復回数\n'
                 f'\tnSmoothSurfaceNormals\t{"1" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nSmoothNormals'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of smoothing iterations of interior mesh movement direction\n'
+                '\t// 境界層メッシュの追加により歪んだ内側メッシュを整える反復回数\\n'
                 f'\tnSmoothNormals\t{"3" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nSmoothThickness'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Smooth layer thickness over surface patches\n'
+                '\t// メッシュを整える領域の厚さ\n'
                 f'\tnSmoothThickness\t{"10" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls, [{'type': 'dictionary',
                 'key': 'maxFaceThicknessRatio'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Stop layer growth on highly warped cells\n'
+                '\t// メッシュセルのアスペクト比がmaxFaceThicknessRatioより小さいと，境界層メッシュを追加しない．\n'
                 f'\tmaxFaceThicknessRatio\t{"0.5" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls, [{'type': 'dictionary',
                 'key': 'maxThicknessToMedialRatio'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Reduce layer growth where ratio thickness to medial distance is large\n'
+                '\t// 流路幅に対する境界層メッシュの厚さがmaxThicknessToMedialRatioより大きい所では，\n'
+                '\t境界層メッシュを薄くしたり，追加しない．\n'
                 f'\tmaxThicknessToMedialRatio\t{"1" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls, [{'type': 'dictionary',
                 'key': 'minMedialAxisAngle'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Angle used to select medial axis points\n'
+                '\t// 向かい合う壁からの法線が交差する角度がminMedialAxisAngleよりも大きい場合，\n'
+                '\t// 対面する壁がある狭い場所とみなす．\n'
                 f'\tminMedialAxisAngle\t{"90" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls, [{'type': 'dictionary',
                 'key': 'nBufferCellsNoExtrude'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Create buffer region for new layer terminations\n'
+                '\t// 境界層メッシュが追加される領域とされない領域の境界に設ける，緩衝セルの数\n'
                 f'\tnBufferCellsNoExtrude\t{"0" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nLayerIter'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Overall max number of layer addition iterations\n'
+                '\t// 境界層メッシュを追加する工程の反復回数\n'
                 f'\tnLayerIter\t{"50" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nRelaxedIter'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Max number of iterations after which relaxed meshQuality controls\n'
-                '\t// get used. Up to nRelaxIter it uses the settings in meshQualityControls,\n'
-                '\t// after nRelaxIter it uses the values in meshQualityControls::relaxed.\n'
+                '\t// 境界層メッシュを追加する工程の最終段階で，\n'
+                '\t// メッシュ品質の基準を少し緩めて（Relaxed）追加で修正を行う反復回数\n'
                 f'\tnRelaxedIter\t{"50" if e is None else e["value"]};\n')
-
             for element in dictParse.find_all_elements(addLayersControls,
                 [{'type': 'block|dictionary', 'except key': (
                     'relativeSizes' '|'
@@ -1191,58 +1172,52 @@ class MyModel:
 
             meshQualityControls = dictParse.find_element(meshDict,
                 [{'type': 'block', 'key': 'meshQualityControls'}])['element']
-
             f.write('\n'
-                '// Generic mesh quality settings. At any undoable phase these determine where to undo.\n'
+                '// メッシュ品質の設定\n'
                 'meshQualityControls\n'
                 '{\n'
-                '\t#includeEtc "caseDicts/meshQualityDict"\n')
-
-            f.write('\n'
-                '\t// Optional: some meshing phases allow usage of relaxed rules.\n'
-                '\t// See e.g. addLayersControls.nRelaxedIter.\n'
+                '\t#includeEtc "caseDicts/meshQualityDict"\n'
+                '\n'
+                '\t// メッシュ品質の基準を緩めたとき（Relaxed）に，どこまで妥協して良いか\n'
+                '\t// addLayersControls.nRelaxedIterなどで使う．\n'
                 '\trelaxed\n'
                 '\t{\n')
             e = dictParse.find_element(meshQualityControls, [{'type': 'block', 'key': 'relaxed'},
                 {'type': 'dictionary', 'key': 'maxNonOrtho'}, {'type': 'float|integer'}])['element']
-            f.write('\t// Maximum non-orthogonality allowed. Set to 180 to disable.\n'
+            f.write('\t// 非直交の許容角度．180だと全てを許容する.\n'
                 f'\tmaxNonOrtho\t{"75" if e is None else e["value"]};\n')
             for element in dictParse.find_all_elements(meshQualityControls,
                 [{'type': 'block', 'key': 'relaxed'},
                 {'type': 'block|dictionary', 'except key': 'maxNonOrtho'}]):
                 f.write('\n'
                     f'\t\t{element["element"].file_string(indent_level = 2)}\n')
-            f.write('\t}\n')
-
-            f.write('\n'
-                '\t// ----- Advanced -----\n')
-
+            f.write('\t}\n'
+                '\n'
+                '\t// ----- 詳細設定 -----\n')
             e = dictParse.find_element(meshQualityControls,
                 [{'type': 'dictionary', 'key': 'nSmoothScale'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Smoothing iterations. Used in combination with errorReduction.\n'
+                '\t// 境界層メッシュの厚みの制限倍率（Scale field）を平滑化する反復回数\n'
+                '\t// errorReductionと一緒に使う．\n'
                 f'\tnSmoothScale\t{"4" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(meshQualityControls,
                 [{'type': 'dictionary', 'key': 'errorReduction'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '\t// Error reduction. Used in combination with nSmoothScale.\n'
+                '\t// 境界層メッシュの品質のエラーが発生した場所で，厚さをerrorReduction倍薄くする．\n'
+                '\t// nSmoothScaleと一緒に使う．\n'
                 f'\terrorReduction\t{"0.75" if e is None else e["value"]};\n')
-
             for element in dictParse.find_all_elements(meshQualityControls,
                 [{'type': 'block|dictionary', 'except key': 'relaxed|nSmoothScale|errorReduction'}]):
                 f.write('\n'
                     f'\t{element["element"].file_string(indent_level = 1)}\n')
-
             f.write('}\n') # meshQualityControls
 
             e = dictParse.find_element(meshDict,
                 [{'type': 'block', 'key': 'mergeTolerance'}, {'type': 'float|integer'}])['element']
             f.write('\n'
-                '// ----- Advanced -----\n'
+                '// ----- 詳細設定 -----\n'
                 '\n'
-                '// Merge tolerance. Is fraction of overall bounding box of initial mesh.\n'
-                '// Note: the write tolerance needs to be higher than this.\n'
+                '// 離れている2つの点を，同じ場所にあるとみなして1つに統合（マージ）する距離のしきい値\n'
                 f'\tmergeTolerance\t{"1.0e-06" if e is None else e["value"]};\n')
 
             for element in dictParse.find_all_elements(meshDict,
