@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/13 5:33:34 PM
+# 2026/5/14 9:01:05 AM
 
 import sys
 import os
@@ -122,7 +122,7 @@ def re_findall_in_comments(pattern, string):
         index = s.end()
     return result
 
-def find_element(path_list, parent, start = None, end = None, reverse = False, index_not_found = None):
+def find_element(parent, path_list, start = None, end = None, reverse = False, index_not_found = None):
     # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
     #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
     #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
@@ -151,10 +151,10 @@ def find_element(path_list, parent, start = None, end = None, reverse = False, i
     elif len(path_list) == 1:
         return {'parent': parent, 'index': c['index'], 'element': c['element']}
     else:
-        return find_element(path_list[1:], parent = c['element'],
+        return find_element(c['element'], path_list[1:],
             start = start, end = end, reverse = reverse, index_not_found = index_not_found)
 
-def find_all_elements(path_list, parent):
+def find_all_elements(parent, path_list):
     # path_list = [{'type': 'block', 'key': 'FoamFile'}, {'type': 'dictionary', 'key': 'version'}, ...]
     #   {'type': 'block_start|block_end'} -> 'type' is 'block_start' or 'block_end'
     #   {'except type': 'whitespace|semicolon'} -> 'type' is neither 'whitespace' nor 'semicolon'
@@ -178,7 +178,7 @@ def find_all_elements(path_list, parent):
     else:
         elements = []
         for i in c:
-            elements += find_all_elements(path_list[1:], i['element'])
+            elements += find_all_elements(i['element'], path_list[1:])
         return elements
 
 def structure_string(parent, parent_header = '', indent_level = 0):
@@ -225,11 +225,10 @@ def file_string(parent, indent_level = 0, pretty_print = True, commentless = Fal
             elif i['type'] != 'linebreak':
                 s += indent
         if i['type'] in ('block', 'list', 'dimension'):
-            start = find_element([{'type': i['type'] + '_start'}], parent = i['value'])['index'] + 1
-            end = find_element([{'type': i['type'] + '_end'}], parent = i['value'], reverse = True)['index']
-            j = find_element(
-                [{'except type': 'whitespace'}], parent = i['value'], start = end - 1, end = start - 1,
-                reverse = True)
+            start = find_element(i['value'], [{'type': i['type'] + '_start'}])['index'] + 1
+            end = find_element(i['value'], [{'type': i['type'] + '_end'}], reverse = True)['index']
+            j = find_element(i['value'], [{'except type': 'whitespace'}],
+                start = end - 1, end = start - 1, reverse = True)
             if j['element'] is not None:
                 end = j['index'] if j['element']['type'] == 'linebreak' else len(i['value'])
                 s += (f'{i.get("key", "")}{i.get("length", "")}' +
@@ -418,11 +417,11 @@ class DictParser(UserDict):
         return l, index
 
     def find_element(self, path_list, start = None, end = None, reverse = False, index_not_found = None):
-        return find_element(path_list, parent = self, start = start, end = end,
+        return find_element(self, path_list, start = start, end = end,
             reverse = reverse, index_not_found = index_not_found)
 
     def find_all_elements(self, path_list):
-        return find_all_elements(path_list, self)
+        return find_all_elements(self, path_list)
 
     def find_separators(self, header_index_not_found = None, footer_index_not_found = None):
         separators = self.find_all_elements([{'type': 'separator'}])
@@ -442,20 +441,20 @@ class DictParser(UserDict):
             start = self.find_element([{'type': self['type'] + '_start'}])['index'] + 1
             end = self.find_element([{'type': self['type'] + '_end'}], reverse = True)['index']
             parent = self['value']
-            i = find_element([{'type': 'linebreak'}], parent = parent, start = start, end = end)
+            i = find_element(parent, [{'type': 'linebreak'}], start = start, end = end)
             if i['element'] is None:
                 return
             start = i['index'] + 1
-            i = find_element([{'except type': 'whitespace|linebreak'}], parent = parent, start = start, end = end)
+            i = find_element(parent, [{'except type': 'whitespace|linebreak'}], start = start, end = end)
             if i['element'] is not None:
                 i = i['index']
                 del parent[start:i]
                 end += start - i
             if start != end:
-                end = find_element([{'type': 'linebreak'}],
-                    parent = parent, start = end - 1, end = start - 1, reverse = True)['index']
-                i = find_element([{'except type': 'whitespace|linebreak'}],
-                    parent = parent, start = end - 1, end = start - 1, reverse = True)
+                end = find_element(parent, [{'type': 'linebreak'}],
+                    start = end - 1, end = start - 1, reverse = True)['index']
+                i = find_element(parent, [{'except type': 'whitespace|linebreak'}],
+                    start = end - 1, end = start - 1, reverse = True)
                 if i['element'] is not None:
                     i = i['index'] + 1
                     del parent[i:end]
