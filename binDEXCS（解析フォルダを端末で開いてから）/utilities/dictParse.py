@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/14 9:01:05 AM
+# 2026/5/14 9:24:16 AM
 
 import sys
 import os
@@ -343,7 +343,7 @@ class DictParser(UserDict):
                     s.group().replace('\r', r'\r').replace('\n', r'\n').replace('\t', r'\t') + '"')
             if terminator_reached and s.lastgroup not in ('whitespace', 'line_comment', 'block_comment'):
                 if debug:
-                    print('    return {}'.format(l))
+                    print(f'    return {l}')
                 return l, s.start()
             if s.lastgroup == 'directive':
                 if s.group() in ('#else', '#endif', '#merge', '#overwrite', '#protect', '#warn'):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 半角に出来る文字は全て半角に.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:17:16 AM
+# 2026/5/14 9:24:38 AM
 
 # ---- オプションはない ----
 
@@ -21,7 +21,7 @@ def normalize(dir_name):
         return
     for i in glob.iglob(os.path.join(dir_name, '*')):
         if os.path.isfile(i):
-            print('{}を処理中...'.format(i))
+            print(f'{i}を処理中...')
             dictParse.normalize(file_name = i, overwrite_file = True)
             dp = dictParse.DictParser(file_name = i)
             for e in dp.find_all_elements([{'type': 'directive', 'key': '#include'}, {'type': 'string'}]):
@@ -45,7 +45,7 @@ if __name__ == '__main__':
             normalize(d)
 
     for i in include_files:
-        print('{}を処理中...'.format(i))
+        print(f'{i}を処理中...')
         dictParse.normalize(file_name = i, overwrite_file = True)
 
     appendEntries.intoFvSolution()
