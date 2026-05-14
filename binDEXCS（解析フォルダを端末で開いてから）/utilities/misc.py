@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/13 7:14:09 PM
+# 2026/5/14 10:49:22 AM
 
 import glob
 import os
@@ -328,7 +328,7 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
         f = f['element']
         t = f.find_element([{'type': 'dictionary', 'key': 'type'}])
         if t['element'] is None:
-            print(f'エラー: ファイル{controlDict_path}のfunctionsで，typeがない項目があります．')
+            print(f'エラー: {controlDict_path}ファイルのfunctionsで，typeがない項目があります．')
             sys.exit(1)
         if type_name is not None and t['element'].find_element(
             [{'type': 'word', 'value': type_name}])['element'] is None:
@@ -375,7 +375,7 @@ def controlDictFunctionsList(path = os.curdir):
         f = f['element']
         t = f.find_element([{'type': 'dictionary', 'key': 'type'}])['element']
         if t is None:
-            print(f'エラー: ファイル{controlDict_path}のfunctionsで，typeがない項目があります．')
+            print(f'エラー: {controlDict_path}ファイルのfunctionsで，typeがない項目があります．')
             sys.exit(1)
         type_name = t.find_element([{'type': 'word'}])['element']['value']
         e = f.find_element([{'type': 'dictionary', 'key': 'enabled'}])['element']

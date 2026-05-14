@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/12 3:05:31 PM
+# 2026/5/14 10:47:22 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     setFieldsDict_path = os.path.join('system', 'setFieldsDict')
     if interactive:
-        setFieldsDict_is_written = ((True if input(f'ファイル{setFieldsDict_path}の内容を確認して下さい．'
+        setFieldsDict_is_written = ((True if input(f'{setFieldsDict_path}ファイルの内容を確認して下さい．'
             '設定値に関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False)
             if os.path.isfile(setFieldsDict_path) else False)
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
                 '\t\t);\n'
                 '\t}\n'
                 ');\n')
-        print(f'\n\033[3;4;5mファイル{setFieldsDict_path}にテンプレートを追加して，texteditwx.pyで開いています．')
+        print(f'\n\033[3;4;5m{setFieldsDict_path}ファイルにテンプレートを追加して，texteditwx.pyで開いています．')
         print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
         print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
         subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} setFieldsDict_path', shell = True)

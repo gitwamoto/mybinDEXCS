@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchをまとめる.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:31:24 AM
+# 2026/5/14 10:46:43 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     createPatchDict_path = os.path.join('system', 'createPatchDict')
     if interactive:
-        createPatchDict_is_written = True if input(f'ファイル{createPatchDict_path}に'
+        createPatchDict_is_written = True if input(f'{createPatchDict_path}ファイルに'
             'patchをまとめる指示を書き込んでいますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if not createPatchDict_is_written:
@@ -75,7 +75,7 @@ if __name__ == '__main__':
             f.write(') /* <- (C) まとめたいパッチの名前だけを残す */;\n'
                 '\t}\n'
                 ');\n')
-        print(f'\n\033[3;4;5mファイル{createPatchDict_path}をtexteditwx.pyで開いています．')
+        print(f'\n\033[3;4;5m{createPatchDict_path}ファイルをtexteditwx.pyで開いています．')
         print('- 指示を読んで，必要に応じて書き換えて下さい．')
         print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
         subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} {createPatchDict_path}', shell = True)

@@ -619,46 +619,37 @@ class MyModel:
             e = dictParse.find_element(meshDict, [{'type': 'dictionary',
                 'key': 'keepCellsIntersectingBoundary'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '// Keep all the cells intersecting the surface template.\n'
-                '// Useful in capturing small gaps in a geometry. (default: 0)\n'
+                '// STL表面と交差するすべてのセルを保持し，小さな隙間も捉える．（デフォルト：0）\n'
+                '// STL表面に望まない隙間がある時に，0にすると良い場合がある．\n'
                 f'keepCellsIntersectingBoundary\t{"1" if e is None else e["value"]}; '
                 '// 1 active or 0 inactive\n')
-
             e = dictParse.find_element(meshDict, [{'type': 'dictionary', 'key': 'checkForGluedMesh'},
                 {'type': 'integer'}])['element']
             f.write('\n'
-                '// Remove cells where distinct parts of the mesh are joined together.\n'
-                '// Valid only when keepCellsIntersectingBoundary is active. (default: 0)\n'
-                f'checkForGluedMesh\t{"0" if e is None else e["value"]}; // 1 active or 0 inactive\n')
+                '// メッシュ生成の最終段階で，セルが意図せず重なったり，'
+                '密着しすぎたりしていないかをチェックし，修正する．（デフォルト：0）\n'
+                f'checkForGluedMesh\t{"1" if e is None else e["value"]}; // 1 active or 0 inactive\n')
 
             f.write('\n'
                 f'maxCellSize\t{max_cell_size}; // (mandatory)\n')
-
-            f.write('\n')
-            e = dictParse.find_element(meshDict, [{'type': 'dictionary', 'key': 'boundaryCellSize'},
-                {'type': 'float|integer'}])['element']
-            if e is None:
-                f.write('// boundaryCellSize\t0.5; // (optional)\n')
-            else:
-                f.write(f'boundaryCellSize\t{e["value"]}; // (optional)\n')
-
-            e = dictParse.find_element(meshDict, [{'type': 'dictionary',
-                'key': 'boundaryCellSizeRefinementThickness'}, {'type': 'float|integer'}])['element']
-            if e is None:
-                f.write('// boundaryCellSizeRefinementThickness\t 5.0; // (optional)\n')
-            else:
-                f.write(f'boundaryCellSizeRefinementThickness\t{e["value"]}; // (optional)\n')
-
-            f.write('\n')
             if min_cell_size == '':
                 min_cell_size = dictParse.find_element(meshDict,
                     [{'type': 'dictionary', 'key': 'minCellSize'}, {'type': 'float|integer'}])['element']
                 if min_cell_size is not None:
                     min_cell_size = min_cell_size['value']
             if min_cell_size is None:
-                f.write('// minCellSize\t1; // (optional)\n')
-            else:
-                f.write(f'minCellSize\t{min_cell_size}; // (optional)\n')
+                f.write(f'{"// " if min_cell_size is None else ""}minCellSize\t'
+                    f'{"1" if min_cell_size is None else min_cell_size}; // (optional)\n')
+
+            f.write('\n')
+            e = dictParse.find_element(meshDict, [{'type': 'dictionary', 'key': 'boundaryCellSize'},
+                {'type': 'float|integer'}])['element']
+            f.write(f'{"// " if e is None else ""}boundaryCellSize\t'
+                f'{"0.5" if e is None else e["value"]}; // (optional)\n')
+            e = dictParse.find_element(meshDict, [{'type': 'dictionary',
+                'key': 'boundaryCellSizeRefinementThickness'}, {'type': 'float|integer'}])['element']
+            f.write(f'{"// " if e is None else ""}boundaryCellSizeRefinementThickness\t'
+                f'{"5.0" if e is None else e["value"]}; // (optional)\n')
 
             f.write('\n'
                 f'surfaceFile\t"constant/triSurface/{os.path.basename(surface_file_name)}"; // (mandatory)\n')
@@ -795,8 +786,7 @@ class MyModel:
                 'objectRefinements\n'
                 '{\n')
             for i in grid.table:
-                if i[grid.CELL_SIZE] == '' or i[grid.TYPE] not in (
-                    'BoxRefine', 'CylinderRefine', 'SphereRefine'):
+                if i[grid.CELL_SIZE] == '' or i[grid.TYPE] not in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     continue
                 ref_thickness = i[grid.CELL_SIZE]
                 ref_level = 0
@@ -820,14 +810,13 @@ class MyModel:
                 elif i[grid.TYPE] == 'CylinderRefine':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix
+                    h = obj.Height.Value
                     f.write('\t\ttype\tcone;\n'
                         f'\t\tcellSize\t{ref_thickness};\n'
                         f'//\t\tadditionalRefinementLevels\t{ref_level}; '
                         '// Relative to the maximum cell size\n'
-                        '\t\tp0\t'
-                        f'({b.x} {b.y} {b.z});\n'
-                        f'\t\tp1\t({b.x + m.A13*obj.Height.Value} '
-                        f'{b.y + m.A23*obj.Height.Value} {b.z + m.A33*obj.Height.Value});\n'
+                        f'\t\tp0\t({b.x} {b.y} {b.z});\n'
+                        f'\t\tp1\t({b.x + m.A13*h} {b.y + m.A23*h} {b.z + m.A33*h});\n'
                         f'\t\tradius0\t{obj.Radius.Value};\n'
                         f'\t\tradius1\t{obj.Radius.Value};\n')
                 elif i[grid.TYPE] == 'SphereRefine':
@@ -1039,12 +1028,11 @@ class MyModel:
                 elif i[grid.TYPE] == 'CylinderSet':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix
+                    h = obj.Height.Value
                     f.write(f'\tcylinderToCell // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
                         '\t{\n'
                         f'\t\tp1\t({0.001*b.x} {0.001*b.y} {0.001*b.z});\n'
-                        f'\t\tp2\t({0.001*(b.x + m.A13*obj.Height.Value)} '
-                        f'{0.001*(b.y + m.A23*obj.Height.Value)} '
-                        f'{0.001*(b.z + m.A33*obj.Height.Value)});\n'
+                        f'\t\tp2\t({0.001*(b.x + m.A13*h)} {0.001*(b.y + m.A23*h)} {0.001*(b.z + m.A33*h)});\n'
                         f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                 else: # SphereSet
                     b = obj.Placement.Base
@@ -1128,22 +1116,21 @@ class MyModel:
                 if i[grid.TYPE] == 'BoxTopo':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix
+                    l = obj.Length.Value
+                    w = obj.Width.Value
+                    h = obj.Height.Value
                     f.write('\t\tsource\trotatedBoxToCell;\n'
                         f'\t\torigin\t({0.001*b.x} {0.001*b.y} {0.001*b.z});\n'
-                        f'\t\ti\t({0.001*obj.Length.Value*m.A11} '
-                        f'{0.001*obj.Length.Value*m.A21} {0.001*obj.Length.Value*m.A31});\n'
-                        f'\t\tj\t({0.001*obj.Width.Value*m.A12} '
-                        f'{0.001*obj.Width.Value*m.A22} {0.001*obj.Width.Value*m.A32});\n'
-                        f'\t\tk\t({0.001*obj.Height.Value*m.A13} '
-                        f'{0.001*obj.Height.Value*m.A23} {0.001*obj.Height.Value*m.A33});\n')
+                        f'\t\ti\t({0.001*l*m.A11} {0.001*l*m.A21} {0.001*l*m.A31});\n'
+                        f'\t\tj\t({0.001*w*m.A12} {0.001*w*m.A22} {0.001*w*m.A32});\n'
+                        f'\t\tk\t({0.001*h*m.A13} {0.001*h*m.A23} {0.001*h*m.A33});\n')
                 elif i[grid.TYPE] == 'CylinderTopo':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix
+                    h = obj.Height.Value
                     f.write('\t\tsource\tcylinderToCell;\n'
                         f'\t\tp1\t({0.001*b.x} {0.001*b.y} {0.001*b.z});\n'
-                        f'\t\tp2\t({0.001*(b.x + m.A13*obj.Height.Value)} '
-                        f'{0.001*(b.y + m.A23*obj.Height.Value)} '
-                        f'{0.001*(b.z + m.A33*obj.Height.Value)});\n'
+                        f'\t\tp2\t({0.001*(b.x + m.A13*h)} {0.001*(b.y + m.A23*h)} {0.001*(b.z + m.A33*h)});\n'
                         f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                 else: # SphereTopo
                     b = obj.Placement.Base

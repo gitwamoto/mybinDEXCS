@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:12:56 AM
+# 2026/5/14 10:53:40 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     fvSolution_path = os.path.join('system', 'fvSolution')
     for i in (controlDict_path, fvSolution_path, boundary_path):
         if not os.path.isfile(i):
-            print(f'エラー: ファイル{i}がありません．')
+            print(f'エラー: {i}ファイルがありません．')
             sys.exit(1)
 
     for p in ('*.foam', '*.OpenFOAM', '*.blockMesh'):
@@ -348,8 +348,8 @@ if __name__ == '__main__':
             return any(has_diff(sub_dcmp) for sub_dcmp in dcmp.subdirs.values())
         # 実行部分
         if has_diff(filecmp.dircmp('0', '0_bak')):
-            print('エラー: あるはずがないフォルダ 0_bak があります．'
-                'フォルダ 0 と 0_bak を比較して，正しい方を 0 に置き換えてから再実行して下さい．')
+            print('エラー: あるはずがない0_bakフォルダがあります．'
+                '0フォルダと0_bakフォルダを比較して，正しい方を0フォルダに置き換えてから再実行して下さい．')
             sys.exit(1)
         else:
             shutil.rmtree('0_bak')
@@ -416,7 +416,7 @@ if __name__ == '__main__':
 
     enable_function_list, disable_function_list = misc.controlDictFunctionsList()
     if len(enable_function_list) + len(disable_function_list) > 0:
-        print(f'ファイル{controlDict_path}のfunctionsで')
+        print(f'{controlDict_path}ファイルのfunctionsで')
         if len(enable_function_list) > 0:
             print('  実行されるものは' + ', '.join(enable_function_list))
         if len(disable_function_list) > 0:
@@ -425,7 +425,7 @@ if __name__ == '__main__':
         if interactive:
             enable_all_function_objects = True if input(f'全てを実行するように{controlDict_path}を書き換えますか？'
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
-            decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，ファイル{fvSolution_path}の'
+            decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，{fvSolution_path}ファイルの'
                 'relaxationFactorsを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if not enable_all_function_objects:

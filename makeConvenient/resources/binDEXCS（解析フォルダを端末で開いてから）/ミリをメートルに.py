@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # ミリをメートルに.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:22:20 AM
+# 2026/5/14 10:49:32 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
     if not os.path.isfile(boundary_path):
-        print(f'エラー: ファイル{boundary_path}がありません．')
+        print(f'エラー: {boundary_path}ファイルがありません．')
         sys.exit(1)
     if misc.isConvertedMillimeterIntoMeter():
         print('長さの単位はすでにメートルです．')

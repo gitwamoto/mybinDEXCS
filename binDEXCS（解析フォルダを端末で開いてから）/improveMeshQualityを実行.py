@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:48:00 PM
+# 2026/5/14 10:44:42 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     faces_path = os.path.join('constant', 'polyMesh', 'faces')
     for i in (os.path.join('constant', 'polyMesh', 'boundary'), faces_path):
         if not os.path.isfile(i):
-            print(f'エラー: ファイル{i}がありません．')
+            print(f'エラー: {i}ファイルがありません．')
             sys.exit(1)
     if os.path.isdir('dynamicCode'):
         shutil.rmtree('dynamicCode')

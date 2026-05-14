@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:45:41 PM
+# 2026/5/14 10:44:23 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     boundary = os.path.join('constant', 'polyMesh', 'boundary')
     if not os.path.isfile(boundary):
-        print(f'エラー: ファイル{boundary}がありません．')
+        print(f'エラー: {boundary}ファイルがありません．')
         sys.exit(1)
     if os.path.isdir('dynamicCode'):
         shutil.rmtree('dynamicCode')

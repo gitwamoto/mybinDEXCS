@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:18:01 AM
+# 2026/5/14 10:50:30 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -91,7 +91,7 @@ def append_functions_in_controlDict(controlDict_path):
     with open(controlDict_path, 'w') as f:
         f.write(string)
 
-    print(f'\n\033[3;4;5mファイル{controlDict_path}のfunctionsにforcesに関するテンプレートを追加して，'
+    print(f'\n\033[3;4;5m{controlDict_path}ファイルのfunctionsにforcesに関するテンプレートを追加して，'
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n')
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
     controlDict_path = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict_path):
-        print(f'エラー: ファイル{controlDict_path}がありません．')
+        print(f'エラー: {controlDict_path}ファイルがありません．')
         sys.exit(1)
 
     forces_related_folders_txt = os.path.join('postProcessing', '_forces_related_folders.txt')
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     misc.setEnabledInControlDictFunctions(enabled = False)
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'forces')
     if interactive:
-        forces_is_written = True if input(f'ファイル{controlDict_path}の内容を確認して下さい．'
+        forces_is_written = True if input(f'{controlDict_path}ファイルの内容を確認して下さい．'
             'functionsにforcesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
         if not forces_is_written:
             append_functions_in_controlDict(controlDict_path)
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     forces_dir_list = [i['parent']['key'] for i in types
         if i['element'].find_element([{'type': 'word'}])['element'] == 'forces']
     if len(forces_dir_list) == 0:
-        print(f'エラー: ファイル{controlDict_path}でforcesに関する指示がありません．')
+        print(f'エラー: {controlDict_path}ファイルでforcesに関する指示がありません．')
         sys.exit(1)
 
     if interactive:

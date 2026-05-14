@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を取り除く.py
 # by Yukiharu Iwamoto
-# 2026/5/14 9:23:04 AM
+# 2026/5/14 10:45:06 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -51,9 +51,8 @@ if __name__ == '__main__':
 
     if len(sys.argv) == 1:
         include_file = input('取り除きたいincludeファイルの名前を教えて下さい． > ').strip()
-        ignore_path = True if input(
-            'パスが一致していなくても，ファイル名が同じならば取り除きますか？ (y/n) > '
-            ).strip().lower() == 'y' else False
+        ignore_path = True if input('パスが一致していなくても，'
+            'ファイル名が同じならば取り除きますか？ (y/n) > ').strip().lower() == 'y' else False
     else:
         include_file = None
         ignore_path = False

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 結果を抽出.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:14:01 AM
+# 2026/5/14 10:52:11 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -153,7 +153,7 @@ def append_functions_in_controlDict(controlDict_path):
     with open(controlDict_path, 'w') as f:
         f.write(string)
 
-    print(f'\n\033[3;4;5mファイル{controlDict_path}のfunctionsにsetsまたはsurfacesに関する'
+    print(f'\n\033[3;4;5m{controlDict_path}ファイルのfunctionsにsetsまたはsurfacesに関する'
         'テンプレートを追加して，texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n')
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
     controlDict_path = os.path.join('system', 'controlDict')
     if not os.path.isfile(controlDict_path):
-        print(f'エラー: ファイル {controlDict_path} がありません．')
+        print(f'エラー: {controlDict_path}ファイル がありません．')
         sys.exit(1)
 
     sampling_related_folders_txt = os.path.join('postProcessing', '_sampling_related_folders.txt')
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'sets')
     misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'surfaces')
     if interactive:
-        sampling_is_written = True if input(f'ファイル{controlDict_path}の内容を確認して下さい．'
+        sampling_is_written = True if input(f'{controlDict_path}ファイルの内容を確認して下さい．'
             'functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > '
             ).strip().lower() == 'y' else False
         if not sampling_is_written:
@@ -225,7 +225,7 @@ if __name__ == '__main__':
         elif function_type.find_element([{'type': 'word', 'value': 'surfaces'}])['element'] is not None:
             surface_dir_list.append(block['key'])
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
-        print(f'エラー: ファイル{controlDict_path}でsetsまたはsurfacesに関する指示がありません．')
+        print(f'エラー: {controlDict_path}ファイルでsetsまたはsurfacesに関する指示がありません．')
         sys.exit(1)
 
     if interactive:

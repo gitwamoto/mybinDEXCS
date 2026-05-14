@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:52:12 AM
+# 2026/5/14 10:49:02 AM
 
 import os
 import sys
@@ -279,7 +279,7 @@ def intoControlDict():
     if startFrom != 'latestTime':
         startFrom['patent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser(string =
             'latestTime')['value']
-        print(f'!!! ファイル{controlDict_path}のstartFromをlatestTimeに書き換えました．')
+        print(f'!!! {controlDict_path}ファイルのstartFromをlatestTimeに書き換えました．')
 
     deltaT_index = controlDict.find_element([{'type': 'dictionary', 'key': 'deltaT'}])['index']
     i = controlDict.find_element(

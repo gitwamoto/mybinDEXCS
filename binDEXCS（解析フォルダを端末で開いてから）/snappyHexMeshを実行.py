@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/13 5:14:03 PM
+# 2026/5/14 10:47:36 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -187,7 +187,7 @@ if __name__ == '__main__':
             i += 1
 
     if not os.path.isfile(snappyHexMeshDict_path):
-        print(f'エラー: ファイル{snappyHexMeshDict_path}がありません．')
+        print(f'エラー: {snappyHexMeshDict_path}ファイルがありません．')
         sys.exit(1)
     if float(misc.latestTime()) != 0.0:
         print('エラー: 0秒以外のフォルダがあるとうまくいきません．')

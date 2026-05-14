@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # logファイルをプロット.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:49:41 PM
+# 2026/5/14 10:46:20 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     if log_file is None:
         log_file = glob.glob('*Foam.logfile')
         if len(log_file) == 0:
-            print(f'エラー: ファイル {log_file} がありません．')
+            print(f'エラー: {log_file}ファイルがありません．')
             sys.exit(1)
         elif len(log_file) == 1:
             log_file = log_file[0]
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         sys.exit(1)
     print('\nlogsフォルダに残差 (residual) が書き出されます．')
     print('それぞれのファイル名についている最後の数字 (_0など) はサブイタレーションの回数を表します．0が最初のサブイタレーションです．')
-    print('1つのサブイタレーションにおいて初期残差を記したファイルには数字 (_0など) が，' +
+    print('1つのサブイタレーションにおいて初期残差を記したファイルには数字 (_0など) が，'
         '最終残差を記したファイルにはFinalResと数字 (FinalRes_0など) がファイル名についています．')
 
     rmObjects.removeLogPlotPngs()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/14 9:20:13 AM
+# 2026/5/14 12:01:08 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -697,31 +697,37 @@ class MyModel:
                 '// https://www.openfoam.com/documentation/guides/latest/doc/guide-meshing-snappyhexmesh.html\n')
 
             f.write('\n'
-                '// Which of the steps to run\n')
-            for i in ('castellatedMesh', 'snap', 'addLayers'):
-                e = dictParse.find_element(meshDict,
-                    [{'type': 'dictionary', 'key': i}, {'type': 'word'}])['element']
-                f.write(f'{i}\t{"true" if e is None else e["value"]}; // true or false\n')
+                '// 実行する工程\n')
+            e = dictParse.find_element(meshDict,
+                [{'type': 'dictionary', 'key': 'castellatedMesh'}, {'type': 'word'}])['element']
+            f.write('// - 背景メッシュからSTL形状データに沿って階段状のガタガタなメッシュを切り出す．\n'
+                f'castellatedMesh\t{"true" if e is None else e["value"]}; // true or false\n')
+            e = dictParse.find_element(meshDict,
+                [{'type': 'dictionary', 'key': 'snap'}, {'type': 'word'}])['element']
+            f.write('// - メッシュを形状にピタッと密着させる．\n'
+                f'snap\t{"true" if e is None else e["value"]}; // true or false\n')
+            e = dictParse.find_element(meshDict,
+                [{'type': 'dictionary', 'key': 'addLayers'}, {'type': 'word'}])['element']
+            f.write('// - 壁面に沿った薄い層状のメッシュ（境界層メッシュ）を差し込む．\n'
+                f'addLayers\t{"true" if e is None else e["value"]}; // true or false\n')
 
             f.write('\n'
                 'CUSTOM_OPTIONS\n'
                 '{\n'
-                f'\tmaxCellSize\t{max_cell_size}; // used to generate blockMeshDict\n'
+                '// blockMeshDictファイルを作る時に使う．'
+                f'\tmaxCellSize\t{max_cell_size}; \n'
                 f'\tboundingBox\t(({bounding_box[0]} {bounding_box[1]} {bounding_box[2]}) '
-                f'({bounding_box[3]} {bounding_box[4]} {bounding_box[5]})); '
-                '// used to generate blockMeshDict\n'
+                f'({bounding_box[3]} {bounding_box[4]} {bounding_box[5]}));\n'
                 '}\n')
 
             object_names = [i[grid.OBJECT_NAME] for i in grid.table]
             surface_file_name = os.path.basename(surface_file_name)
             surface_file_name_wo_ext = os.path.splitext(surface_file_name)[0]
             f.write('\n'
-                '// Geometry. Definition of all surfaces.\n'
-                '// All surfaces are of class searchableSurface.\n'
-                '// Surfaces are used\n'
-                '// - to specify refinement for any mesh cell intersecting it\n'
-                '// - to specify refinement for any mesh cell inside/outside/near\n'
-                "// - to 'snap' the mesh boundary to the surface\n"
+                '// 面形状の定義．すべての面はsearchableSurfaceクラスに属する．面は以下で使用する：\n'
+                '// - 面と交差するメッシュセルの細分化\n'
+                '// - 内部/外部/近傍のメッシュセルの細分化\n'
+                "// - メッシュ境界を表面にsnapさせる．\n"
                 'geometry\n'
                 '{\n'
                 f'\t{surface_file_name} // in constant/triSurface\n'
@@ -748,10 +754,10 @@ class MyModel:
                     elif i[grid.TYPE] == 'CylinderRefine':
                         b = obj.Placement.Base
                         m = obj.Placement.Matrix
+                        h = obj.Height.Value
                         f.write('\t\ttype\tsearchableCylinder;\n'
                             f'\t\tpoint1\t({b.x} {b.y} {b.z});\n'
-                            f'\t\tpoint2\t({b.x + m.A13*obj.Height.Value} '
-                            f'{b.y + m.A23*obj.Height.Value} {b.z + m.A33*obj.Height.Value});\n'
+                            f'\t\tpoint2\t({b.x + m.A13*h} {b.y + m.A23*h} {b.z + m.A33*h});\n'
                             f'\t\tradius\t{obj.Radius.Value};\n')
                     elif i[grid.TYPE] == 'SphereRefine':
                         b = obj.Placement.Base
@@ -826,44 +832,35 @@ class MyModel:
 
             castellatedMeshControls = dictParse.find_element(meshDict,
                 [{'type': 'block', 'key': 'castellatedMeshControls'}])['element']
-
             f.write('\n'
-                '// Settings for the castellatedMesh generation.\n'
+                '// castellatedMesh工程の設定\n'
                 'castellatedMeshControls\n'
                 '{\n'
-                '\t// ----- Refinement parameters -----\n')
-
+                '\t// ----- メッシュ細分化パラメータ -----\n')
             e = dictParse.find_element(castellatedMeshControls,
                 [{'type': 'dictionary', 'key': 'maxLocalCells'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Maximum number of cells per processor during refinement\n'
+                '\t// 各CPUコア（プロセス）が保持できる最大セル数\n'
                 f'\tmaxLocalCells\t{"100000" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(castellatedMeshControls,
                 [{'type': 'dictionary', 'key': 'maxGlobalCells'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Overall cell limit during refinement (i.e. before removal)\n'
+                '\t// 全CPUコアの合計セル数の限界値（不要なセルを除去する前の値）\n'
                 f'\tmaxGlobalCells\t{"2000000" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(castellatedMeshControls,
                 [{'type': 'dictionary', 'key': 'minRefinementCells'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// The refinement along the surfaces may spend many iterations on refinement\n'
-                '\t// of only few cells. Whenever the number of cells to be refined is less than\n'
-                '\t// or equal to the minRefinementCells parameter, the refinement will stop.\n'
-                '\t// be performed.\n'
+                '\t// 細分化するセルの数がminRefinementCells以下になるまでセルを細分化する．\n'
                 f'\tminRefinementCells\t{"2" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(castellatedMeshControls
                 [{'type': 'dictionary', 'key': 'nCellsBetweenLevels'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// Number of buffer layers of cells between different levels of refinement\n'
+                '\t// 異なる細分化レベル間のセルのバッファ層の数\n'
                 f'\tnCellsBetweenLevels\t{"3" if e is None else e["value"]};\n')
-
             f.write('\n'
-                '\t// ----- Explicit feature edge refinement -----\n'
+                '\t// ----- 特徴エッジの細分化 -----\n'
                 '\n'
-                '\t// Specifies a level for any cell intersected by its edges.\n'
+                '\t// 特徴エッジと交差するすセルの細分化レベル\n'
                 '\tfeatures\n'
                 '\t(\n'
                 '\t\t{\n'
@@ -871,9 +868,8 @@ class MyModel:
                 f'\t\t\tlevel\t{features_level};\n'
                 '\t\t}\n'
                 '\t);\n')
-
             f.write('\n'
-                '\t// ----- Surface based refinement -----\n'
+                '\t// ----- 面形状の細分化 -----\n'
                 '\n'
                 '\trefinementSurfaces\n'
                 '\t{\n'
@@ -896,10 +892,8 @@ class MyModel:
             f.write('\t\t\t}\n'
                 '\t\t}\n'
                 '\t}\n')
-
             f.write('\n'
                 f'\tresolveFeatureAngle\t{feature_angle};\n')
-
             f.write('\n'
                 '\t// ----- Region-wise refinement -----\n'
                 '\n'
@@ -944,12 +938,11 @@ class MyModel:
                 '//\t\t{\n'
                 '//\t\t\tmode\tinside; // distance | inside | outside\n'
                 '//\t\t\tlevels\t((1.0 1));'
-                ' // ((distance level)), distance is used only in a distance mode.\n'
+                ' // ((distance level)), distanceはdistanceモードの時のみ使われる．\n'
                 '//\t\t}\n'
                 '\t}\n')
-
             f.write('\n'
-                '\t// ----- Mesh selection -----\n')
+                '\t// ----- メッシュ選択 -----\n')
             cellZone = []
             for i in grid.table:
                 if i[grid.TYPE] == 'LocationInMesh':
@@ -974,7 +967,6 @@ class MyModel:
                 for i in cellZone:
                     f.write(f'\t\t(({i[0]} {i[1]} {i[2]}) {i[3]})\n')
                 f.write('\t);\n')
-
             e = dictParse.find_element(castellatedMeshControls,
                 [{'type': 'dictionary', 'key': 'allowFreeStandingZoneFaces'}, {'type': 'word'}])['element']
             f.write('\n'
@@ -982,7 +974,6 @@ class MyModel:
                 '\t// 「厚みのない仕切り板（faceZone）」としてメッシュに残せる．\n'
                 '\t// refinementSurfacesの中でfaceZonesが定義されている場合のみ機能する．\n'
                 f'\tallowFreeStandingZoneFaces\t{"true" if e is None else e["value"]};\n')
-
             for element in dictParse.find_all_elements(castellatedMeshControls,
                 [{'type': 'block|dictionary', 'except key': (
                     'maxLocalCells' '|'
@@ -998,22 +989,18 @@ class MyModel:
                     'allowFreeStandingZoneFaces')}]):
                 f.write('\n'
                     f'\t{element["element"].file_string(indent_level = 1)}\n')
-
             f.write('}\n') # castellatedMeshControls
 
             snapControls = dictParse.find_element(meshDict,
                 [{'type': 'block', 'key': 'snapControls'}])['element']
-
             f.write('\n'
                 '// Settings for the snapping.\n'
                 'snapControls\n'
                 '{\n')
-
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nSmoothPatch'}, {'type': 'integer'}])['element']
             f.write('\t// Number of smoothing iterations along the surface\n'
                 f'\tnSmoothPatch\t{"3" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nSmoothInternal'}, {'type': 'integer'}])['element']
             f.write('\n'
@@ -1021,20 +1008,17 @@ class MyModel:
                 '\t// at the face of refinement (effectively making the faces non-planar).\n'
                 '\t// Default value is 0.\n'
                 f'\tnSmoothInternal\t{"1" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'tolerance'}, {'type': 'float|integer'}])['element']
             f.write('\n'
                 '\t// Multiplied by local cell-edge length specifies region along the surface\n'
                 '\t// within which the points are attracted by the surface\n'
                 f'\ttolerance\t{"1.0" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nSolveIter'}, {'type': 'integer'}])['element']
             f.write('\n'
                 '\t// Number of mesh displacement iterations\n'
                 f'\tnSolveIter\t{"30" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nRelaxIter'}, {'type': 'integer'}])['element']
             f.write('\n'
@@ -1042,14 +1026,12 @@ class MyModel:
                 '\t// conform the geometry and all the iterations are spend, user may try to\n'
                 '\t// increase the number of iterations.\n'
                 f'\tnRelaxIter\t{"5" if e is None else e["value"]};\n')
-
             e = dictParse.find_element(snapControls,
                 [{'type': 'dictionary', 'key': 'nFeatureSnapIter'}, {'type': 'integer'}])['element']
             f.write('\n'
                 '\t// Number of relaxation iterations used for snapping onto the features.\n'
                 '\t// If not specified, feature snapping will be disabled.\n'
                 f'\tnFeatureSnapIter\t{"10" if e is None else e["value"]};\n')
-
             for element in dictParse.find_all_elements(snapControls,
                 [{'type': 'block|dictionary', 'except key': (
                     'nSmoothPatch' '|'
@@ -1060,7 +1042,6 @@ class MyModel:
                     'nFeatureSnapIter')}]):
                 f.write('\n'
                     f'\t{element["element"].file_string(indent_level = 1)}\n')
-
             f.write('}\n') # snapControls
 
             addLayersControls = dictParse.find_element(meshDict,
@@ -1330,12 +1311,11 @@ class MyModel:
                 elif i[grid.TYPE] == 'CylinderSet':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix
+                    h = obj.Height.Value
                     f.write(f'\tcylinderToCell // Object {i[grid.OBJECT_NAME]} in FreeCAD\n'
                         '\t{\n'
                         f'\t\tp1\t({0.001*b.x} {0.001*b.y} {0.001*b.z});\n'
-                        f'\t\tp2\t({0.001*(b.x + m.A13*obj.Height.Value)} '
-                        f'{0.001*(b.y + m.A23*obj.Height.Value)} '
-                        f'{0.001*(b.z + m.A33*obj.Height.Value)});\n'
+                        f'\t\tp2\t({0.001*(b.x + m.A13*h)} {0.001*(b.y + m.A23*h)} {0.001*(b.z + m.A33*h)});\n'
                         f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                 else: # SphereSet
                     b = obj.Placement.Base
@@ -1419,22 +1399,21 @@ class MyModel:
                 if i[grid.TYPE] == 'BoxTopo':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix
+                    l = obj.Length.Value
+                    w = obj.Width.Value
+                    h = obj.Height.Value
                     f.write('\t\tsource\trotatedBoxToCell;\n'
                         f'\t\torigin\t({0.001*b.x} {0.001*b.y} {0.001*b.z});\n'
-                        f'\t\ti\t({0.001*obj.Length.Value*m.A11} '
-                        f'{0.001*obj.Length.Value*m.A21} {0.001*obj.Length.Value*m.A31});\n'
-                        f'\t\tj\t({0.001*obj.Width.Value*m.A12} '
-                        f'{0.001*obj.Width.Value*m.A22} {0.001*obj.Width.Value*m.A32});\n'
-                        f'\t\tk\t({0.001*obj.Height.Value*m.A13} '
-                        f'{0.001*obj.Height.Value*m.A23} {0.001*obj.Height.Value*m.A33});\n')
+                        f'\t\ti\t({0.001*l*m.A11} {0.001*l*m.A21} {0.001*l*m.A31});\n'
+                        f'\t\tj\t({0.001*w*m.A12} {0.001*w*m.A22} {0.001*w*m.A32});\n'
+                        f'\t\tk\t({0.001*h*m.A13} {0.001*h*m.A23} {0.001*h*m.A33});\n')
                 elif i[grid.TYPE] == 'CylinderTopo':
                     b = obj.Placement.Base
                     m = obj.Placement.Matrix
+                    h = obj.Height.Value
                     f.write('\t\tsource\tcylinderToCell;\n'
                         f'\t\tp1\t({0.001*b.x} {0.001*b.y} {0.001*b.z});\n'
-                        f'\t\tp2\t({0.001*(b.x + m.A13*obj.Height.Value)} '
-                        f'{0.001*(b.y + m.A23*obj.Height.Value)} '
-                        f'{0.001*(b.z + m.A33*obj.Height.Value)});\n'
+                        f'\t\tp2\t({0.001*(b.x + m.A13*h)} {0.001*(b.y + m.A23*h)} {0.001*(b.z + m.A33*h)});\n'
                         f'\t\tradius\t{0.001*obj.Radius.Value};\n')
                 else: # SphereTopo
                     b = obj.Placement.Base

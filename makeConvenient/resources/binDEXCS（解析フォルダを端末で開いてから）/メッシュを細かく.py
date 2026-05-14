@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:21:51 AM
+# 2026/5/14 10:49:40 AM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
     if not os.path.isfile(boundary_path):
-        print(f'エラー: ファイル{boundary_path}がありません．')
+        print(f'エラー: {boundary_path}ファイルがありません．')
         sys.exit(1)
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
