@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/14 12:01:08 PM
+# 2026/5/14 2:17:59 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -714,7 +714,7 @@ class MyModel:
             f.write('\n'
                 'CUSTOM_OPTIONS\n'
                 '{\n'
-                '// blockMeshDictファイルを作る時に使う．'
+                '\t// blockMeshDictファイルを作る時に使う．\n'
                 f'\tmaxCellSize\t{max_cell_size}; \n'
                 f'\tboundingBox\t(({bounding_box[0]} {bounding_box[1]} {bounding_box[2]}) '
                 f'({bounding_box[3]} {bounding_box[4]} {bounding_box[5]}));\n'
@@ -852,7 +852,7 @@ class MyModel:
             f.write('\n'
                 '\t// 細分化するセルの数がminRefinementCells以下になるまでセルを細分化する．\n'
                 f'\tminRefinementCells\t{"2" if e is None else e["value"]};\n')
-            e = dictParse.find_element(castellatedMeshControls
+            e = dictParse.find_element(castellatedMeshControls,
                 [{'type': 'dictionary', 'key': 'nCellsBetweenLevels'}, {'type': 'integer'}])['element']
             f.write('\n'
                 '\t// 異なる細分化レベル間のセルのバッファ層の数\n'
