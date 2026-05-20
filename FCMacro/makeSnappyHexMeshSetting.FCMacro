@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/20 12:39:52 PM
+# 2026/5/20 2:01:11 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -715,7 +715,7 @@ class MyModel:
                 'CUSTOM_OPTIONS\n'
                 '{\n'
                 '\t// blockMeshDictファイルを作る時に使う．\n'
-                f'\tmaxCellSize\t{max_cell_size}; \n'
+                f'\tmaxCellSize\t{max_cell_size};\n'
                 f'\tboundingBox\t(({bounding_box[0]} {bounding_box[1]} {bounding_box[2]}) '
                 f'({bounding_box[3]} {bounding_box[4]} {bounding_box[5]}));\n'
                 '}\n')
@@ -1043,9 +1043,9 @@ class MyModel:
                 [{'type': 'block', 'key': 'addLayersControls'}])['element']
             f.write('\n'
                 '// addLayers工程の設定\n'
-                'addLyaersControls\n'
+                'addLayersControls\n'
                 '{\n'
-                '\t// addLyaersControlsaddLyaersControlsの中で指定されるthicknessの設定．\n'
+                '\t// addLayersControlsの中で指定されるthicknessの設定．\n'
                 '\t// relativeSizesがtrueだと，細分化後のセルサイズに対して相対的なものになる．\n'
                 '\t// falseだと，メートル単位の長さになる．\n'
                 '\trelativeSizes\ttrue;\n')
@@ -1123,7 +1123,7 @@ class MyModel:
                 'key': 'maxThicknessToMedialRatio'}, {'type': 'float|integer'}])['element']
             f.write('\n'
                 '\t// 流路幅に対する境界層メッシュの厚さがmaxThicknessToMedialRatioより大きい所では，\n'
-                '\t境界層メッシュを薄くしたり，追加しない．\n'
+                '\t// 境界層メッシュを薄くしたり，追加しない．\n'
                 f'\tmaxThicknessToMedialRatio\t{"1" if e is None else e["value"]};\n')
             e = dictParse.find_element(addLayersControls, [{'type': 'dictionary',
                 'key': 'minMedialAxisAngle'}, {'type': 'float|integer'}])['element']
