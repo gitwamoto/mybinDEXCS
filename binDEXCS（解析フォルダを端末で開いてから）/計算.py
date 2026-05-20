@@ -146,9 +146,9 @@ def reset_relaxationFactors_in_fvSolution():
             for i in block.find_all_elements([{'type': 'dictionary'}]):
                 i = i['element']
                 comment = i.find_element([{'type': 'line_comment|block_comment'}], reverse = True)
-                if (comment['element'] is not None or
+                if (comment['element'] is None or
                     re.search(r'DECREASED\s+IN\s+RESPONCE\s+TO\s+FLOATING\s+POINT\s+ERROR',
-                        comment['element']['value'].upper()) is not None):
+                        comment['element']['value'].upper()) is None):
                     continue
                 del comment['parent'][comment['index']]
                 calc = i.find_element([{'type': 'directive', 'key': '#calc'}])['element']
