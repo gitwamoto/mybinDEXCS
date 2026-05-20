@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:49:22 AM
+# 2026/5/20 11:20:02 AM
 
 import glob
 import os
@@ -247,7 +247,7 @@ def correctLocation():
         location = FoamFile.find_element([{'type': 'dictionary', 'key': 'location'}])['element']
         if location is not None:
             i = location.find_element([{'except type': 'ignorable'}])
-            i['parent']['value'][i['index']:i['index'] + 1] = dictParse.DictParser(string =
+            i['parent'][i['index']:i['index'] + 1] = dictParse.DictParser(string =
                 '"' + os.path.dirname(file_name) + '"')['value']
         string = dictParse.normalize(string = parser.file_string())[0]
         if parser.string != string:
