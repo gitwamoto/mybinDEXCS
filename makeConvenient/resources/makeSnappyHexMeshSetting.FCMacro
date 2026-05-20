@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/14 6:05:18 PM
+# 2026/5/20 12:39:52 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -920,7 +920,7 @@ class MyModel:
                 if i[grid.TYPE] in ('BoxRefine', 'CylinderRefine', 'SphereRefine'):
                     f.write('\t\t\tmode\tinside; // distance | inside | outside\n'
                         f'\t\t\tlevels\t((1.0 {i[grid.LEVEL]}));'
-                        ' // ((distance level)), distance is used only in a distance mode.\n')
+                        ' // ((distance level)), distanceはmodeがdistanceの時のみ有効\n')
                 else: # SurfaceRefine
                     f.write('\t\t\tmode\tdistance;\n'
                         f'\t\t\tlevels\t(({i[grid.RATIO]} {i[grid.LEVEL]})); '
