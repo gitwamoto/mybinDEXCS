@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:37:26 AM
+# 2026/5/20 5:38:56 PM
 
 # ---- オプションはない ----
 
@@ -22,7 +22,6 @@ def append_patches(src, dst):
     patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
     patches.sort(key = lambda p: p['element']['key'])
 
-    linebreak = dictParse.DictParser(string = '\n')['value'][0]
     for f_path in glob.iglob(os.path.join(dst, '*')):
         if not os.path.isfile(f_path):
             continue
@@ -136,7 +135,8 @@ def append_patches(src, dst):
             else:
                 p = i['parent'].pop(i['index'])
                 # popで1つ引き抜くので，差し込む場所はboundaryField_end - 1にする．
-                i['parent'][boundaryField_end - 1:boundaryField_end - 1] = [linebreak, p]
+                i['parent'][boundaryField_end - 1:boundaryField_end - 1] = [
+                    dictParse.DictParser(string = '\n')['value'][0], p]
                 boundaryField_end += 1 # linebreakのぶん増える
         boundaryField.set_blank_line(number_of_blank_lines = 1)
 

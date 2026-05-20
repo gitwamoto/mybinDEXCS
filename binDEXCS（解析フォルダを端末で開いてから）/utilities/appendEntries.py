@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/20 3:56:00 PM
+# 2026/5/20 5:40:48 PM
 
 import os
 import sys
@@ -99,7 +99,6 @@ def intoFvSolution():
                     'nNonOrthogonalCorrectors\t10;\n')['value']
 
         # SIMPLE, PIMPLE, PISO
-        linebreak = dictParse.DictParser(string = '\n')['value'][0]
         for k in ('SIMPLE', 'PIMPLE', 'PISO'):
             block = fvSolution.find_element([{'type': 'block', 'key': k}])['element']
             if block is None:
@@ -126,7 +125,8 @@ def intoFvSolution():
                         '}\n')['value']
                 else:
                     residualControl['parent'][block_start:block_start] = [
-                        residualControl['parent'].pop(residualControl['index']), linebreak]
+                        residualControl['parent'].pop(residualControl['index']),
+                        dictParse.DictParser(string = '\n')['value'][0]]
 
             if k != 'PISO':
                 consistent = block.find_element([{'type': 'dictionary', 'key': 'consistent'}])
@@ -135,7 +135,8 @@ def intoFvSolution():
                         'consistent\tyes;\n')['value']
                 else:
                     consistent['parent'][block_start:block_start] = [
-                        consistent['parent'].pop(consistent['index']), linebreak]
+                        consistent['parent'].pop(consistent['index']),
+                        dictParse.DictParser(string = '\n')['value'][0]]
 
             nNonOrthogonalCorrectors = block.find_element([
                 {'type': 'dictionary', 'key': 'nNonOrthogonalCorrectors'}])
@@ -144,7 +145,8 @@ def intoFvSolution():
                     'nNonOrthogonalCorrectors\t1;\n')['value']
             else:
                 nNonOrthogonalCorrectors['parent'][block_start:block_start] = [
-                    nNonOrthogonalCorrectors['parent'].pop(nNonOrthogonalCorrectors['index']), linebreak]
+                    nNonOrthogonalCorrectors['parent'].pop(nNonOrthogonalCorrectors['index']),
+                    dictParse.DictParser(string = '\n')['value'][0]]
 
             if k != 'SIMPLE':
                 nCorrectors = block.find_element([{'type': 'dictionary', 'key': 'nCorrectors'}])
@@ -153,7 +155,8 @@ def intoFvSolution():
                         'nCorrectors\t3;\n')['value']
                 else:
                     nCorrectors['parent'][block_start:block_start] = [
-                        nCorrectors['parent'].pop(nCorrectors['index']), linebreak]
+                        nCorrectors['parent'].pop(nCorrectors['index']),
+                        dictParse.DictParser(string = '\n')['value'][0]]
 
             momentumPredictor = block.find_element([{'type': 'dictionary', 'key': 'momentumPredictor'}])
             if momentumPredictor['element'] is None:

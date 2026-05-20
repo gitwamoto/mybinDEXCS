@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/14 9:24:16 AM
+# 2026/5/20 5:32:45 PM
 
 import sys
 import os
@@ -135,6 +135,7 @@ def find_element(parent, path_list, start = None, end = None, reverse = False, i
         path_list = [path_list]
     elif len(path_list) == 0:
         return {'parent': None, 'index': index_not_found, 'element': None}
+    assert isinstance(path_list[0], dict)
     p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
         for k, v in path_list[0].items()}
     # next(..., None) とすることで、見つからない場合にエラーにならず None を返します
@@ -166,6 +167,7 @@ def find_all_elements(parent, path_list):
         path_list = [path_list]
     elif len(path_list) == 0:
         return []
+    assert isinstance(path_list[0], dict)
     p = {k: v.replace('ignorable', 'whitespace|linebreak|line_comment|block_comment').split('|')
         for k, v in path_list[0].items()}
     # k.startswith('except ') = False -> (parent[i].get(k.replace('except ', '')) in p[k]) = True のものを抽出したい
