@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:49:02 AM
+# 2026/5/20 11:51:21 AM
 
 import os
 import sys
@@ -275,9 +275,9 @@ def intoControlDict():
     controlDict = dictParse.DictParser(file_name = controlDict_path)
 
     startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
-        {'except type': 'ignorable'}])['element']
-    if startFrom != 'latestTime':
-        startFrom['patent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser(string =
+        {'except type': 'ignorable'}])
+    if startFrom['element']['value'] != 'latestTime':
+        startFrom['parent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser(string =
             'latestTime')['value']
         print(f'!!! {controlDict_path}ファイルのstartFromをlatestTimeに書き換えました．')
 
@@ -338,10 +338,10 @@ def intoControlDict():
         if (not has_limitNut and
             (t['element'].find_element([{'except type': 'ignorable'}]
                 )['element']['value'] == 'limitFields' and
-            t['parent'].find_element([{'type': 'dictionary', 'key': 'fields'}, 
+            dictParse.find_element(t['parent'], [{'type': 'dictionary', 'key': 'fields'}, 
                 {'except type': 'ignorable'}, {'except type': 'ignorable|list_start'}]
                 )['element']['value'] == 'nut' and
-            t['parent'].find_element([{'type': 'dictionary', 'key': 'limit'},
+            dictParse.find_element(t['parent'], [{'type': 'dictionary', 'key': 'limit'},
                 {'except type': 'ignorable'}])['element']['value'] == 'max')):
             has_limitNut = True
 #        elif (not has_calcCo and
