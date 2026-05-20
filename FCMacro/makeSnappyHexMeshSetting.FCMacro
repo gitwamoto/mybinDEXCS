@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/20 2:01:11 PM
+# 2026/5/20 2:42:05 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -309,7 +309,7 @@ class MeshFrame(QtGui.QDialog):
             else:
                 self.grid.setCellValue(i, self.grid.TYPE, 'SurfaceRefine')
             levels = block.find_element([{'type': 'dictionary', 'key': 'levels'},
-                {'type', 'list'}, {'type', 'list'}])['element']
+                {'type': 'list'}, {'type': 'list'}])['element']
             if levels is None:
                 continue
             e = levels.find_element([{'type': 'integer'}], reverse = True)['element'] # level
