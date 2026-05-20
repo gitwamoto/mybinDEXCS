@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:49:02 AM
+# 2026/5/20 11:40:13 AM
 
 import os
 import sys
@@ -275,9 +275,9 @@ def intoControlDict():
     controlDict = dictParse.DictParser(file_name = controlDict_path)
 
     startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
-        {'except type': 'ignorable'}])['element']
-    if startFrom != 'latestTime':
-        startFrom['patent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser(string =
+        {'except type': 'ignorable'}])
+    if startFrom['element']['value'] != 'latestTime':
+        startFrom['parent'][startFrom['index']:startFrom['index'] + 1] = dictParse.DictParser(string =
             'latestTime')['value']
         print(f'!!! {controlDict_path}ファイルのstartFromをlatestTimeに書き換えました．')
 
