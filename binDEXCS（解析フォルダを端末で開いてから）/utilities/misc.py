@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/20 11:47:40 AM
+# 2026/5/20 12:03:29 PM
 
 import glob
 import os
@@ -340,7 +340,7 @@ def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os
             f['value'][i:i] = dictParse.DictParser(string = '\n'
                 f'enabled\t{yesno}; yesで実行\n')['value']
         else:
-            e['value'][e.find_element([{'type': 'word'}])['index']] = yesno
+            e['value'][e.find_element([{'type': 'word'}])['index']] = dictParse.DictParser(string = yesno)
 
     string = dictParse.normalize(string = controlDict.file_string())[0]
     if type_name is None:
