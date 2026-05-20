@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/20 11:40:13 AM
+# 2026/5/20 11:51:21 AM
 
 import os
 import sys
@@ -338,10 +338,10 @@ def intoControlDict():
         if (not has_limitNut and
             (t['element'].find_element([{'except type': 'ignorable'}]
                 )['element']['value'] == 'limitFields' and
-            t['parent'].find_element([{'type': 'dictionary', 'key': 'fields'}, 
+            dictParse.find_element(t['parent'], [{'type': 'dictionary', 'key': 'fields'}, 
                 {'except type': 'ignorable'}, {'except type': 'ignorable|list_start'}]
                 )['element']['value'] == 'nut' and
-            t['parent'].find_element([{'type': 'dictionary', 'key': 'limit'},
+            dictParse.find_element(t['parent'], [{'type': 'dictionary', 'key': 'limit'},
                 {'except type': 'ignorable'}])['element']['value'] == 'max')):
             has_limitNut = True
 #        elif (not has_calcCo and
