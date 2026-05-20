@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/20 11:33:46 AM
+# 2026/5/20 11:47:40 AM
 
 import glob
 import os
@@ -388,7 +388,7 @@ def controlDictFunctionsList(path = os.curdir):
     enable_function_list.extend(
         dictParse.re_findall_except_comments(r'(?<!\S)#includeFunc\s+([^;]+);', string))
     disable_function_list.extend(
-        dictParse.re_findall_in_comments(r'//\s*!!DISABLED!!\s*(#includeFunc\s+([^;]+);', string))
+        dictParse.re_findall_in_comments(r'//\s*!!DISABLED!!\s*#includeFunc\s+([^;]+);', string))
     return enable_function_list, disable_function_list
 
 if __name__ == '__main__':
