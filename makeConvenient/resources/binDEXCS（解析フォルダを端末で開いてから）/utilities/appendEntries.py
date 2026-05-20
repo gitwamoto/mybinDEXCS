@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/20 11:51:21 AM
+# 2026/5/20 3:56:00 PM
 
 import os
 import sys
@@ -349,7 +349,7 @@ def intoControlDict():
 #            has_calcCo = True
 #        elif (not has_printCoMinMax and
 #            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'fieldMinMax' and
-#            t['parent'].find_element([{'type': 'dictionary', 'key': 'fields'}, 
+#            dictParse.find_element(t['parent'], [{'type': 'dictionary', 'key': 'fields'}, 
 #                {'except type': 'ignorable'}, {'except type': 'ignorable|list_start'}]
 #                )['element']['value'] == 'Co')):
 #            has_printCoMinMax = True

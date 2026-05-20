@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を取り除く.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:45:06 AM
+# 2026/5/20 3:56:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -37,7 +37,7 @@ def remove_include_sentence(dir_name, include_file_name, ignore_path):
                 n = re.sub(r'^(?:\.\./)+', '', n)
             if n == include_file_name:
                 del i['parent'][i['index']:
-                    i['parent'].find_element([{'except type': 'whitespace|linebreak'}],
+                    dictParse.find_element(i['parent'], [{'except type': 'whitespace|linebreak'}],
                         start = i['index'] + 1, index_not_found = i['index'] + 1)['index']]
         string = dictParse.normalize(string = parser.file_string())[0]
         if parser.string != string:
