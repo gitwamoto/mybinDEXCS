@@ -2,14 +2,24 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/2/21 9:03:36 PM
+# 2026/5/21 9:35:47 PM
 
-import subprocess
+import os
 import sys
 import re
+import glob
+import shutil
+import signal
+import subprocess
+import filecmp
 import matplotlib.pyplot as plt
 from utilities import misc
+from utilities import appendEntries
 from utilities import rmObjects
+from utilities import dictParse
+
+domains = 1
+regionProperties_path = os.path.join('constant', 'regionProperties')
 
 def handler(signum, frame):
     if domains != 1:
@@ -25,37 +35,90 @@ def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-def plot_runner(application, domains):
-    command = ['stdbuf', '-oL']
-    if domains > 1:
-        command += 
-    process = subprocess.Popen( # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
-        ['stdbuf', '-oL', 'mpirun', '-np', f'{domains}', application, '-parallel']
-        if domains > 1 else ['stdbuf', '-oL', application], # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
-        stdout = subprocess.PIPE,
-        stderr = subprocess.STDOUT,
-        text = True, # 出力を文字列として扱う
-        bufsize = 1 # Python側でも行単位でバッファリング
-    )
+def plot_runner(application):
+    # グラフの初期設定
+    plt.ion() # インタラクティブモードON
+    fig, ax = plt.subplots()
+    ax.set_xlabel('iteration', fontsize = 12)
+    ax.set_ylabel('final residual', fontsize = 12)
+    ax.set_yscale('log')
+    ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
+    ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
+    line_styles = ['-', '--', '-.', ':']
+
+    res_pattern = re.compile(r'Solving for (\w+), Initial residual = [\d\.\+e-]+, Final residual = ([\d\.\+e-]+)')
+    residuals = {}
+    line2D_objects = {}
+    new_time = {} # 時間ステップが更新したか？
+    iteration = 0
 
     try:
-        # iter(process.stdout.readline, '') は readline() を
-        # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
-        for line in iter(process.stdout.readline, ''):
-            # 1. 端末へそのまま表示（PyFOAMの挙動）
-            sys.stdout.write(line)
-            sys.stdout.flush()
+        with open(f'{application}.log', 'w') as f_log:
+            # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
+            command =  ['stdbuf', '-oL']
+            if domains > 1:
+                command.extend(['mpirun', '-np', f'{domains}'])
+            command.append(application)
+            if domains > 1:
+                command.append('-parallel')
+            process = subprocess.Popen( # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
+                command,
+                stdout = subprocess.PIPE,
+                stderr = subprocess.STDOUT,
+                text = True, # 出力を文字列として扱う
+                bufsize = 1 # Python側でも行単位でバッファリング
+            )
 
-            # 2. アクションの判定（例：残差の監視など）
-            if "Time =" in line:
-                # ここに解析ロジック
-                pass
+            # iter(process.stdout.readline, '') は readline() を
+            # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
+            for line in iter(process.stdout.readline, ''):
+                sys.stdout.write(line) # 端末へそのまま表示（PyFOAMの挙動）
+                sys.stdout.flush() # リアルタイム反映のため
+                f_log.write(line) # ログをファイル保存
+                f_log.flush() # リアルタイム反映のため
 
-    except KeyboardInterrupt:
-        print("\n[Terminating solver...]")
+                if line.startswith('Time = '):
+                    if iteration > 0 and iteration%10 == 0:
+                        for var_name in residuals:
+                            line2D_objects[var_name].set_data(range(1, iteration + 1), residuals[var_name]) # 線を更新
+                        ax.relim() # 表示範囲の自動調整
+                        ax.autoscale_view()
+                        fig.canvas.draw()
+                        plt.pause(0.01)
+                    if iteration%100 == 0:
+                        plt.savefig('final_residual.png')
+                    iteration += 1
+                    for var_name in residuals:
+                        new_time[var_name] = True
+
+                s = res_pattern.search(line)
+                if s:
+                    var_name = s[1]
+                    val = float(s[2])
+                    if var_name not in residuals: # 初回発見時に辞書を自動構築
+                        residuals[var_name] = []
+                        new_time[var_name] = True
+                        line2D_objects[var_name] = ax.plot([], [],
+                            linestyle = line_styles[len(line2D_objects)%len(line_styles)],
+                            label = var_name)[0] # グラフ用の線も動的に作成
+                        ax.legend(loc = 'best') # ここで凡例を更新することで、増えた変数も自動的に反映される
+                    if new_time[var_name]:
+                        residuals[var_name].append(val) # データの追加
+                        new_time[var_name] = False
+                    else:
+                        residuals[var_name][-1] = val # データの更新
+
+            process.stdout.close()
+
+    except:
+        print(sys.exc_info())
         process.terminate()
+
     finally:
-        process.wait()
+        if process.poll() is None:
+            process.wait()
+        plt.savefig('final_residual.png')
+        plt.ioff()
 
 #def run_foam_live_plot(solver_name):
 #    # --- 1. データ格納用のリスト ---
@@ -358,7 +421,7 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = False
-        domains = 1
+        delete_folders_except_for_zero = False
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == '-r':
@@ -425,8 +488,8 @@ if __name__ == '__main__':
             rmObjects.removeProcessorDirs()
             latest_time = '0'
         else:
-            rmObjects.removeProcessorDirs(option = '' if not os.path.isdir(os.path.join('processor0', latest_time))
-                else 'noLatest')
+            rmObjects.removeProcessorDirs(option = '' if not os.path.isdir(
+                os.path.join('processor0', latest_time)) else 'noLatest')
 
     renumberMesh_was_done = misc.isRenumberMeshDone()
     if not renumberMesh_was_done:
@@ -456,4 +519,56 @@ if __name__ == '__main__':
         if os.path.isfile(f):
             os.remove(f)
 
+    if domains != 1:
+        processor_dirs = set()
+        for d in glob.iglob('processor*' + os.sep):
+            try:
+                processor_dirs.add(int(d[len('processor'):-len(os.sep)]))
+            except:
+                pass
+        if len(processor_dirs) != domains or processor_dirs != set(range(domains)):
+            for d in processor_dirs:
+                shutil.rmtree(f'processor{d}')
+        if not os.path.isdir('processor0'):
+            decomposeParDict_path = os.path.join('system', 'decomposeParDict')
+            with open(decomposeParDict_path, 'w') as f:
+                f.write('FoamFile\n'
+                    '{\n'
+                    '\tversion\t2.0;\n'
+                    '\tformat\tascii;\n'
+                    '\tclass\tdictionary;\n'
+                    '\tlocation\t"system";\n'
+                    '\tobject\tdecomposeParDict;\n'
+                    '}\n'
+                    f'numberOfSubdomains\t{domains};\n'
+                    'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+            for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+                if os.path.isfile(os.path.join(d, 'fvSolution')):
+                    os.chdir(d)
+                    if os.path.exists('decomposeParDict'):
+                        os.remove('decomposeParDict')
+                    os.symlink(os.path.join(os.pardir, 'decomposeParDict'), 'decomposeParDict') # can't overwrite
+                    os.chdir(os.path.join(os.pardir, os.pardir))
+            command = 'decomposePar -latestTime -noFunctionObjects'
+            if os.path.exists(regionProperties_path):
+                command += ' -allRegions'
+            if subprocess.call(command, shell = True) != 0:
+                print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+                if os.path.isdir('0_bak'):
+                    if os.path.isdir('0'):
+                        shutil.rmtree('0')
+                    shutil.move('0_bak', '0')
+                sys.exit(1)
+
     plot_runner(misc.getApplication())
+
+    if domains != 1:
+        command = 'reconstructPar -newTimes -noFunctionObjects'
+        if os.path.exists(regionProperties_path):
+            command += ' -allRegions'
+        subprocess.call(command, shell = True)
+        rmObjects.removeProcessorDirs('noLatest')
+    if os.path.isdir('0_bak'):
+        if os.path.isdir('0'):
+            shutil.rmtree('0')
+        shutil.move('0_bak', '0')
