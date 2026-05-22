@@ -22,6 +22,10 @@ domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
 
 def handler(signum, frame):
+    termination_process()
+    sys.exit(1)
+
+def terminate():
     if domains != 1:
         command = 'reconstructPar -newTimes -noFunctionObjects'
         if os.path.exists(regionProperties_path):
@@ -33,7 +37,6 @@ def handler(signum, frame):
             shutil.rmtree('0')
         shutil.move('0_bak', '0')
     rmObjects.removeInessentials()
-    sys.exit(1)
 
 def plot_runner(application):
     # グラフの初期設定
@@ -44,7 +47,9 @@ def plot_runner(application):
     ax.set_yscale('log')
     ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
     ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
-    line_styles = ['-', '--', '-.', ':']
+    ax.set_xmargin(0)
+    ax.set_ymargin(0)
+    line_styles = ['-', '--', '-.']
 
     res_pattern = re.compile(r'Solving for (\w+), Initial residual = [\d\.\+e-]+, Final residual = ([\d\.\+e-]+)')
     residuals = {}
@@ -562,13 +567,4 @@ if __name__ == '__main__':
 
     plot_runner(misc.getApplication())
 
-    if domains != 1:
-        command = 'reconstructPar -newTimes -noFunctionObjects'
-        if os.path.exists(regionProperties_path):
-            command += ' -allRegions'
-        subprocess.call(command, shell = True)
-        rmObjects.removeProcessorDirs('noLatest')
-    if os.path.isdir('0_bak'):
-        if os.path.isdir('0'):
-            shutil.rmtree('0')
-        shutil.move('0_bak', '0')
+    terminate()
