@@ -51,8 +51,15 @@ def plot_runner(application):
     ax.set_ymargin(0)
     line_styles = ['-', '--', '-.']
 
-    res_pattern = re.compile(r'Solving for (\w+), Initial residual = [\d\.\+e-]+, Final residual = ([\d\.\+e-]+)')
-    residuals = {}
+    pat_res = re.compile(r'Solving for ([a-zA-Z0-9_]+), Initial residual = [0-9.e+\-]+, Final residual = ([\d.e+\-]+)')
+    pat_cont = re.compile(r'continuity errors : sum local = ([0-9.e+\-]+), global = ([0-9.e+\-]+)')
+    pat_cour = re.compile(r'Courant Number mean: ([0-9.e+\-]+) max: ([0-9.e+\-]+)')
+    plot_data = {
+        'final residual': {},
+        'continuity error': {'sum local': [], 'global': []}
+        # 'Courant number': {'meqn': [], 'max' []} が必要な時もある
+    }
+
     line2D_objects = {}
     new_time = {} # 時間ステップが更新したか？
     iteration = 0
@@ -96,7 +103,7 @@ def plot_runner(application):
                     for var_name in residuals:
                         new_time[var_name] = True
 
-                s = res_pattern.search(line)
+                s = pat_res.search(line)
                 if s:
                     var_name = s[1]
                     val = float(s[2])
