@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/21 9:35:47 PM
+# 2026/5/25 7:45:28 PM
 
 import os
 import sys
@@ -41,28 +41,53 @@ def terminate():
 def plot_runner(application):
     # グラフの初期設定
     plt.ion() # インタラクティブモードON
-    fig, ax = plt.subplots()
-    ax.set_xlabel('iteration', fontsize = 12)
-    ax.set_ylabel('final residual', fontsize = 12)
-    ax.set_yscale('log')
-    ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
-    ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
-    ax.set_xmargin(0)
-    ax.set_ymargin(0)
     line_styles = ['-', '--', '-.']
 
-    pat_res = re.compile(r'Solving for ([a-zA-Z0-9_]+), Initial residual = [0-9.e+\-]+, Final residual = ([\d.e+\-]+)')
-    pat_cont = re.compile(r'continuity errors : sum local = ([0-9.e+\-]+), global = ([0-9.e+\-]+)')
-    pat_cour = re.compile(r'Courant Number mean: ([0-9.e+\-]+) max: ([0-9.e+\-]+)')
-    plot_data = {
-        'final residual': {},
-        'continuity error': {'sum local': [], 'global': []}
-        # 'Courant number': {'meqn': [], 'max' []} が必要な時もある
-    }
+    def set_subplot(xlabel, ylabel, logscale = True):
+        fig, ax = plt.subplots()
+        ax.set_xlabel(xlabel, fontsize = 12)
+        ax.set_ylabel(ylabel, fontsize = 12)
+        if logscale:
+            ax.set_yscale('log')
+        ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
+        ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
+        ax.set_xmargin(0)
+        ax.set_ymargin(0)
+        return fig, ax
 
-    line2D_objects = {}
-    new_time = {} # 時間ステップが更新したか？
+    pat = re.compile(
+        # 残差
+        r'Solving for (?P<parameter>[a-zA-Z0-9_]+), Initial residual = [0-9.e+\-]+, '
+        r'Final residual = (?P<final_residual>[\d.e+\-]+)' '|'
+        # 連続の式の誤差
+        r'continuity errors : sum local = (?P<continuity_local>[0-9.e+\-]+), '
+        r'global = (?P<continuity_global>[0-9.e+\-]+)' '|'
+        # クーラン数
+        r'Courant Number mean: (?P<courant_mean>[0-9.e+\-]+) max: (?P<courant_max>[0-9.e+\-]+)'
+    )
+    plot_data = {
+        'residual': {}, # {'U': [...], 'p': [...], ...}
+        'continuity': {'sum local': [], 'abs global': []}
+    }
+    fig_res, ax_res = set_subplot('iteration', 'final residual', True)
+    fig_cont, ax_cont = set_subplot('iteration', 'continuity error', True)
+    plt_fig = {'residual': fig_res, 'continuity': fig_cont}
+    plt_ax = {'residual': ax_res, 'continuity': ax_cont}
+    plt_line2d = {
+        'residual' : {}, # {'U': object, 'p': object, ...}
+        'continuity': {k: plt_ax['continuity'].plot([], [], linestyle = line_styles[i], label = k)[0]
+            for i, k in enumerate(plot_data['continuity'])}
+    }
+    plt_ax['continuity'].legend(loc = 'best') # ax.plotを呼び出した後
+    new_time = { # 時間ステップが更新したか？
+        'residual': {}, # {'U': True, 'p': True, ...}
+        'continuity': True,
+        'courant': True
+    }
     iteration = 0
+    iteration_start = 1
+    plot_freq = 10 # グラフ更新頻度
+    plot_freq = 10 # グラフ更新頻度
 
     try:
         with open(f'{application}.log', 'w') as f_log:
@@ -90,35 +115,68 @@ def plot_runner(application):
                 f_log.flush() # リアルタイム反映のため
 
                 if line.startswith('Time = '):
-                    if iteration > 0 and iteration%10 == 0:
-                        for var_name in residuals:
-                            line2D_objects[var_name].set_data(range(1, iteration + 1), residuals[var_name]) # 線を更新
-                        ax.relim() # 表示範囲の自動調整
-                        ax.autoscale_view()
-                        fig.canvas.draw()
-                        plt.pause(0.01)
-                    if iteration%100 == 0:
-                        plt.savefig('final_residual.png')
+                    if iteration >= iteration_start and iteration%plot_freq == 0:
+                        for data_key in plot_data:
+                            for k in plot_data[data_key]:
+                                plt_line2d[data_key][k].set_data(range(1, iteration + 1),
+                                    plot_data[data_key][k]) # 線を更新
+                            plt_ax[data_key].relim() # 表示範囲の自動調整
+                            plt_ax[data_key].autoscale_view()
+                            plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
+                            plt.pause(0.01)
+                            plt_fig[data_key].savefig(f'{data_key}.png')
                     iteration += 1
-                    for var_name in residuals:
-                        new_time[var_name] = True
+                    for k in plot_data['residual']:
+                        new_time['residual'][k] = True
+                    new_time['continuity'] = new_time['courant'] = True
 
-                s = pat_res.search(line)
-                if s:
-                    var_name = s[1]
-                    val = float(s[2])
-                    if var_name not in residuals: # 初回発見時に辞書を自動構築
-                        residuals[var_name] = []
-                        new_time[var_name] = True
-                        line2D_objects[var_name] = ax.plot([], [],
-                            linestyle = line_styles[len(line2D_objects)%len(line_styles)],
-                            label = var_name)[0] # グラフ用の線も動的に作成
-                        ax.legend(loc = 'best') # ここで凡例を更新することで、増えた変数も自動的に反映される
-                    if new_time[var_name]:
-                        residuals[var_name].append(val) # データの追加
-                        new_time[var_name] = False
+                s = pat.search(line)
+                if s.lastgroup == 'final_residual':
+                    par = s.group('parameter')
+                    res = float(s.group('final_residual'))
+                    if iteration == iteration_start and par not in plot_data['residual']: # 初回発見時に辞書を自動構築
+                        plot_data['residual'][par] = []
+                        plt_line2d['residual'][par] = ax.plot([], [],
+                            linestyle = line_styles[len(plt_line2d['residual'])%len(line_styles)],
+                            label = par)[0] # グラフ用の線も動的に作成
+                        plt_ax['residual'].legend(loc = 'best') # ax.plotを呼び出した後
+                        new_time['residual'][par] = True
+                    if new_time['residual'][par]:
+                        plot_data['residual'][par].append(res) # データの追加
+                        new_time['residual'][par] = False
                     else:
-                        residuals[var_name][-1] = val # データの更新
+                        plot_data['residual'][par][-1] = res # データの更新
+                elif s.lastgroup == 'continuity_global':
+                    loc = float(s.group('continuity_local'))
+                    glob = abs(float(s.group('continuity_global')))
+                    if new_time['continuity']:
+                        plot_data['continuity']['sum local'].append(loc) # データの追加
+                        plot_data['continuity']['abs global'].append(glob)
+                        new_time['continuity'] = False
+                    else:
+                        plot_data['continuity']['sum local'][-1] = loc # データの更新
+                        plot_data['continuity']['abs global'][-1] = glob
+                elif s.lastgroup == 'courant_max':
+                    mn = float(s.group('courant_mean'))
+                    mx = float(s.group('courant_max'))
+                    if iteration == iteration_start:
+                        plot_data['courant'] = {'mean': [], 'max': []}
+                        fig_courant, ax_courant = set_subplot('iteration', 'Courant number', True)
+                        plt_fig['courant'] = fig_courant
+                        plt_ax['courant'] = ax_courant
+                        plt_line2d['courant']['mean'] = ax.plot([], [],
+                            linestyle = line_styles[0], label = par)[0] # グラフ用の線も動的に作成
+                        plt_line2d['courant']['max'] = ax.plot([], [],
+                            linestyle = line_styles[0], label = par)[1] # グラフ用の線も動的に作成
+                        plt_ax['courant'].legend(loc = 'best') # ax.plotを呼び出した後
+                        new_time['courant'] = True
+                    if new_time['courant']
+                        plot_data['courant']['mean'].append(mn) # データの追加
+                        plot_data['courant']['max'].append(mx)
+                        new_time['courant'] = False
+                    else:
+                        plot_data['courant']['mean'][-1] = mn # データの更新
+                        plot_data['courant']['max'][-1] = mx
 
             process.stdout.close()
 
