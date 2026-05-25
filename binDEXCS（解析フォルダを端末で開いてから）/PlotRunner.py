@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/25 7:45:28 PM
+# 2026/5/25 8:05:04 PM
 
 import os
 import sys
@@ -187,7 +187,8 @@ def plot_runner(application):
     finally:
         if process.poll() is None:
             process.wait()
-        plt.savefig('final_residual.png')
+        for data_key in plot_data:
+            plt_fig[data_key].savefig(f'{data_key}.png')
         plt.ioff()
 
 #def run_foam_live_plot(solver_name):
