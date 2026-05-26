@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/26 9:53:22 AM
+# 2026/5/26 4:14:27 PM
 
 import os
 import sys
@@ -186,7 +186,7 @@ def plot_runner(application):
                             linestyle = line_styles[0], label = par)[1] # グラフ用の線も動的に作成
                         plt_ax['courant'].legend(loc = 'best') # ax.plotを呼び出した後
                         new_time['courant'] = True
-                    if new_time['courant']
+                    if new_time['courant']:
                         plot_data['courant']['mean'].append(mn) # データの追加
                         plot_data['courant']['max'].append(mx)
                         new_time['courant'] = False
@@ -203,7 +203,7 @@ def plot_runner(application):
     finally:
         if process.poll() is None:
             process.wait()
-         monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
+        monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
         plt.ioff()
 
 #def run_foam_live_plot(solver_name):
@@ -419,16 +419,13 @@ def reset_relaxationFactors_in_fvSolution():
     for d in glob.iglob(os.path.join('system', '*' + os.sep)):
         reset_relaxationFactors_in(d)
 
-def change_relaxationFactors_in_controlDict(exponent):
+def change_relaxationFactors_in_fvSolution(exponent):
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.join(path, 'fvSolution')
         if os.path.islink(fvSolution_path):
             return
 
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
-
-        tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(fvSolution['value']) - 1)['index'] + 1
 
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
@@ -438,8 +435,10 @@ def change_relaxationFactors_in_controlDict(exponent):
                 'relaxationFactors\n'
                 '{\n'
                 '}')['value']
+            tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
+                reverse = True, index_not_found = len(fvSolution['value']) - 1)['index'] + 1
             fvSolution['value'][tail_index:tail_index] = linebreak_and_relaxationFactors
-            tail_index += len(linebreak_and_relaxationFactors)
+#            tail_index += len(linebreak_and_relaxationFactors)
             relaxationFactors = linebreak_and_relaxationFactors[-1]
         relaxationFactors_start = relaxationFactors.find_element([{'type': 'block_start'}])['index'] + 1
 
@@ -500,6 +499,9 @@ def change_relaxationFactors_in_controlDict(exponent):
         change_relaxationFactors_in(d)
 
 if __name__ == '__main__':
+    print(get_relaxation_factor('U'))
+    quit()
+
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
 
