@@ -38,28 +38,18 @@ def terminate():
         shutil.move('0_bak', '0')
     rmObjects.removeInessentials()
 
-def categorize_relaxation():
-    def get_relaxation_category(param):
-        # 指定された変数が equations と fields のどちらにあるか判定する
-        for cat in ('equations', 'fields'):
-            cmd = ['foamDictionary', 'system/fvSolution', '-entry', f'relaxationFactors.{cat}.{param}', '-value']
-            try:
-                # 実行して値が返ってくればそのカテゴリに属する
-                r = float(subprocess.check_output(cmd, stderr = subprocess.DEVNULL, text = True))
-                return cat, r
-            except subprocess.CalledProcessError:
-                continue
-        return None, None
-
-    # 最新時間フォルダ内のファイル名を取得 (ディレクトリや特殊ファイルを除く)
-    params = [os.path.basename(p) for p in glob.glob(os.path.join(misc.latestTime(), '*'))
-        if os.path.isfile(p) and not os.path.basename(p).startswith('.')]
-    classification = {'equations': [], 'fields': []}
-    for param in params:
-        cat, r = get_relaxation_category(param)
-        if cat in classification:
-            classification[cat].append({param: r})
-    return classification # {'equations': [{'U': 0.8}, ...], 'fields': [{'p': 1.0}, ...]}
+def get_relaxation_factor(param):
+    # 指定された変数が equations と fields のどちらにあるか判定する
+    for cat in ('equations', 'fields'):
+        try:
+            # 実行して値が返ってくればそのカテゴリに属する
+            r = float(subprocess.check_output(['foamDictionary', 'system/fvSolution',
+                '-entry', f'relaxationFactors.{cat}.{param}', '-value'],
+                stderr = subprocess.DEVNULL, text = True))
+            return cat, r
+        except subprocess.CalledProcessError:
+            continue
+    return None, None
 
 def plot_runner(application):
     # グラフの初期設定
@@ -111,8 +101,6 @@ def plot_runner(application):
     iteration_start = 1
     plot_freq = 10 # グラフ更新頻度
     plot_freq = 10 # グラフ更新頻度
-
-    relaxation = categorize_relaxation()
 
     try:
         with open(f'{application}.log', 'w') as f_log:
