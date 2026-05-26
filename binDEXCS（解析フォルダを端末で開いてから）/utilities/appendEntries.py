@@ -257,7 +257,7 @@ def intoFvSchemes():
                 if block.find_element([{'type': 'dictionary', 'key': k}])['element'] is None:
                     block_end = block.find_element([{'type': 'block_end'}], reverse = True)
                     block_end['parent'][block_end['index']:block_end['index']
-                        ] = dictParse.DictParser(string =f'{k}\t{v};\n')['value']
+                        ] = dictParse.DictParser(string = f'{k}\t{v};\n')['value']
 
         string = dictParse.normalize(string = fvSchemes.file_string())[0]
         if fvSchemes.string != string:
