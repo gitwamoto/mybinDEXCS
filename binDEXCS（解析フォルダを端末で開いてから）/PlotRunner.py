@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/26 9:42:21 AM
+# 2026/5/26 9:53:22 AM
 
 import os
 import sys
@@ -70,7 +70,7 @@ def plot_runner(application):
 
     pat = re.compile(
         # 残差
-        r'Solving for (?P<parameter>[a-zA-Z0-9_]+), Initial residual = [0-9.e+\-]+, '
+        r'Solving for (?P<parameter>[a-zA-Z0-9_.]+), Initial residual = [0-9.e+\-]+, '
         r'Final residual = (?P<final_residual>[\d.e+\-]+)' '|'
         # 連続の式の誤差
         r'continuity errors : sum local = (?P<continuity_local>[0-9.e+\-]+), '
@@ -101,6 +101,17 @@ def plot_runner(application):
     iteration_start = 1
     plot_freq = 10 # グラフ更新頻度
 
+    def monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d):
+        for data_key in plot_data:
+            for k in plot_data[data_key]:
+                plt_line2d[data_key][k].set_data(range(1, iteration + 1),
+                    plot_data[data_key][k]) # 線を更新
+            plt_ax[data_key].relim() # 表示範囲の自動調整
+            plt_ax[data_key].autoscale_view()
+            plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
+            plt.pause(0.01)
+            plt_fig[data_key].savefig(f'{data_key}.png')
+
     try:
         with open(f'{application}.log', 'w') as f_log:
             # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
@@ -129,14 +140,7 @@ def plot_runner(application):
                 if line.startswith('Time = '):
                     if iteration >= iteration_start and iteration%plot_freq == 0:
                         for data_key in plot_data:
-                            for k in plot_data[data_key]:
-                                plt_line2d[data_key][k].set_data(range(1, iteration + 1),
-                                    plot_data[data_key][k]) # 線を更新
-                            plt_ax[data_key].relim() # 表示範囲の自動調整
-                            plt_ax[data_key].autoscale_view()
-                            plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
-                            plt.pause(0.01)
-                            plt_fig[data_key].savefig(f'{data_key}.png')
+                            monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
                     iteration += 1
                     for k in plot_data['residual']:
                         new_time['residual'][k] = True
@@ -199,8 +203,7 @@ def plot_runner(application):
     finally:
         if process.poll() is None:
             process.wait()
-        for data_key in plot_data:
-            plt_fig[data_key].savefig(f'{data_key}.png')
+         monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
         plt.ioff()
 
 #def run_foam_live_plot(solver_name):
