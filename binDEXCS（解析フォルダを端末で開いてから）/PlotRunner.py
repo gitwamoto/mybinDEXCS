@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/26 9:34:51 AM
+# 2026/5/26 9:42:21 AM
 
 import os
 import sys
@@ -99,7 +99,6 @@ def plot_runner(application):
     }
     iteration = 0
     iteration_start = 1
-    plot_freq = 10 # グラフ更新頻度
     plot_freq = 10 # グラフ更新頻度
 
     try:
