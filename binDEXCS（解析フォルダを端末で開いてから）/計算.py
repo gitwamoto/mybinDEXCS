@@ -172,7 +172,7 @@ def reset_relaxationFactors_in_fvSolution():
     for d in glob.iglob(os.path.join('system', '*' + os.sep)):
         reset_relaxationFactors_in(d)
 
-def change_relaxationFactors_in_controlDict(exponent):
+def change_relaxationFactors_in_fvSolution(exponent):
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.join(path, 'fvSolution')
         if os.path.islink(fvSolution_path):
@@ -485,7 +485,7 @@ if __name__ == '__main__':
             rmObjects.removeProcessorDirs('noLatest')
         if not decrease_relaxationFactors_after_fpe or not sigFpe_is_found:
             break
-        change_relaxationFactors_in_controlDict(trial + 1)
+        change_relaxationFactors_in_fvSolution(trial + 1)
     if sigFpe_is_found:
         print('\n計算が発散して終了しました．\n'
             '「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．')
