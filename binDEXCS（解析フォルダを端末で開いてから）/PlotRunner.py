@@ -20,9 +20,8 @@ from utilities import rmObjects
 from utilities import dictParse
 
 # To do:
-# 履歴ファイルを使って，やり直すときにはその時間から始める
-# 履歴ファイルの末尾をlatestTimeに合わせる
 # 緩和係数のコントロール
+# クーラン数から時間ステップのコントロール
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
@@ -128,6 +127,7 @@ def plot_runner(application, latest_time):
                         break
                     iteration = int(cols[0])
                     f_out.write(line)
+            os.remove(old_history_path)
     iteration_start = iteration + 1
     plot_freq = 10 # グラフ更新頻度
 
