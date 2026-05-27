@@ -190,7 +190,8 @@ def intoFvSolution():
                 '\n'
                 '\tfields // p = p^{old} + \\alpha (p - p^{old})\n'
                 '\t{\n'
-                '\t\t"p|p_rgh"\t1.0;\n'
+                '\t\tp\t1.0;\n'
+                '\t\tp_rgh\t1.0;\n'
                 '\t\trho\t1.0;\n'
                 '\t}')['value']
         else:
@@ -205,7 +206,9 @@ def intoFvSolution():
                 '\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
                 '\t{\n'
                 '\t\tU\t1.0;\n'
-                '\t\t"k|epsilon|omega"\t1.0;\n'
+                '\t\tk\t1.0;\n'
+                '\t\tepsilon\t1.0;\n'
+                '\t\tomega\t1.0;\n'
                 '\t}')['value']
         else:
             equations['value'][:equations.find_element(
