@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/27 9:48:40 PM
+# 2026/5/27 9:51:55 PM
 
 import os
 import sys
@@ -89,9 +89,9 @@ def plot_runner(application, latest_time):
         'continuity': {'sum local': [], 'abs global': []}
     }
     fig_res, ax_res = set_subplot('iteration', 'final residual', True)
-    fig_res.canvas.manager.set_window_title('temporal histories of final residuals')
+    fig_res.canvas.manager.set_window_title('iteration histories of final residuals')
     fig_cont, ax_cont = set_subplot('iteration', 'continuity error', True)
-    fig_cont.canvas.manager.set_window_title('temporal histories of continuity errors')
+    fig_cont.canvas.manager.set_window_title('iteration histories of continuity errors')
     plt_fig = {'residual': fig_res, 'continuity': fig_cont}
     plt_ax = {'residual': ax_res, 'continuity': ax_cont}
     plt_line2d = {
@@ -231,7 +231,7 @@ def plot_runner(application, latest_time):
                     if iteration == iteration_start:
                         plot_data['Courant'] = {'mean': [], 'max': []}
                         fig_Courant, ax_Courant = set_subplot('iteration', 'Courant number', True)
-                        fig_Courant.canvas.manager.set_window_title('temporal histories of Courant numbers')
+                        fig_Courant.canvas.manager.set_window_title('iteration histories of Courant numbers')
                         plt_fig['Courant'] = fig_Courant
                         plt_ax['Courant'] = ax_Courant
                         plt_line2d['Courant']['mean'] = plt_ax['Courant'].plot([], [],
