@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/27 12:59:10 PM
+# 2026/5/27 6:29:05 PM
 
 import os
 import sys
@@ -124,8 +124,8 @@ def plot_runner(application):
             plt_fig[data_key].savefig(f'{data_key}.png')
 
     try:
-        with open(f'{application}.log', 'w') as f_log, open(f'history_path', 'a') as f_history:
-            f_history.write(f'# {application} {now.strftime("%Y/%m/%d %H:%M:%S")}\n')
+        with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
+            f_history.write(f'# {application} {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}\n')
 
             # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
             command =  ['stdbuf', '-oL']
@@ -150,24 +150,27 @@ def plot_runner(application):
                 f_log.write(line) # ログをファイル保存
                 f_log.flush() # リアルタイム反映のため
 
-                if line.startswith('Time = ') and iteration >= iteration_start:
+                if line.startswith('Time = '):
+                    if iteration < iteration_start:
+                        time = line[7:].strip()
                     if iteration == iteration_start:
                         f_history.write(f'# iteration\ttime [s]')
                         for data_key in plot_data:
                             for k in plot_data[data_key]:
                                 f_history.write(f'\t{data_key} {k}')
-                            f_history.write('\n')
-                    f_history.write(f'{iteration}\t{line[7:].strip()}')
-                    for data_key in plot_data:
-                        for k in plot_data[data_key]:
-                            f_history.write(f'\t{plot_data[data_key][k]}')
                         f_history.write('\n')
-                    for k in plot_data[data_key]:
-                        f_history.write(f'{data_key} {par}')
-                    if iteration%plot_freq == 0:
+                    if iteration >= iteration_start:
+                        f_history.write(f'{iteration}\t{time}')
                         for data_key in plot_data:
-                            monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
+                            for k in plot_data[data_key]:
+                                f_history.write(f'\t{plot_data[data_key][k][-1]}')
+                        f_history.write('\n')
+                        f_history.flush() # リアルタイム反映のため
+                        if iteration%plot_freq == 0:
+                            for data_key in plot_data:
+                                monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
                     iteration += 1
+                    time = line[7:].strip()
                     for k in plot_data['residual']:
                         new_time['residual'][k] = True
                     new_time['continuity'] = new_time['Courant'] = True
@@ -445,7 +448,6 @@ if __name__ == '__main__':
         if os.path.isdir(i):
             shutil.rmtree(i)
     rmObjects.removeLogPlotPngs()
-    rmObjects.removePyFoamPlots()
 
     threads = misc.cpu_count()
     if interactive:

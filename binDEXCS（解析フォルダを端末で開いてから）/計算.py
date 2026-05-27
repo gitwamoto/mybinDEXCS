@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:53:40 AM
+# 2026/5/27 6:29:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -390,7 +390,6 @@ if __name__ == '__main__':
         if os.path.isdir(i):
             shutil.rmtree(i)
     rmObjects.removeLogPlotPngs()
-    rmObjects.removePyFoamPlots()
 
     threads = misc.cpu_count()
     if interactive:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒以外のフォルダを消す.py
 # by Yukiharu Iwamoto
-# 2021/4/27 2:17:11 PM
+# 2026/5/27 6:28:58 PM
 
 import os
 import signal
@@ -27,6 +27,5 @@ if __name__ == '__main__':
         for f in glob.iglob(i):
             os.remove(f)
     rmObjects.removeLogPlotPngs()
-    rmObjects.removePyFoamPlots()
 
     rmObjects.removeInessentials()
