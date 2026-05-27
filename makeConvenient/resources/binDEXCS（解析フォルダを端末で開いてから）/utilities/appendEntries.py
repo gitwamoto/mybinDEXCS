@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/20 5:40:48 PM
+# 2026/5/27 7:31:01 PM
 
 import os
 import sys
@@ -225,7 +225,7 @@ def intoFvSolution():
 
     if os.path.isdir('system'):
         intoFvSolutionIn('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         intoFvSolutionIn(d)
 
 def intoFvSchemes():
@@ -270,7 +270,7 @@ def intoFvSchemes():
 
     if os.path.isdir('system'):
         intoFvSchemesIn('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         intoFvSchemesIn(d)
 
 def intoControlDict():

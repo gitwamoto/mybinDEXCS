@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/27 12:59:10 PM
+# 2026/5/27 7:29:21 PM
 
 import os
 import sys
@@ -12,6 +12,7 @@ import shutil
 import signal
 import subprocess
 import filecmp
+from datetime import datetime
 import matplotlib.pyplot as plt
 from utilities import misc
 from utilities import appendEntries
@@ -20,6 +21,7 @@ from utilities import dictParse
 
 # To do:
 # 履歴ファイルを使って，やり直すときにはその時間から始める
+# 履歴ファイルの末尾をlatestTimeに合わせる
 # 緩和係数のコントロール
 
 domains = 1
@@ -55,7 +57,7 @@ def get_relaxation_factor(param):
             continue
     return None, None
 
-def plot_runner(application):
+def plot_runner(application, latest_time):
     # グラフの初期設定
     plt.ion() # インタラクティブモードON
     line_styles = ['-', '--', '-.']
@@ -80,7 +82,7 @@ def plot_runner(application):
         r'continuity errors : sum local = (?P<continuity_local>[0-9.e+\-]+), '
         r'global = (?P<continuity_global>[0-9.e+\-]+)' '|'
         # クーラン数
-        r'Courant Number mean: (?P<courant_mean>[0-9.e+\-]+) max: (?P<courant_max>[0-9.e+\-]+)'
+        r'Courant Number mean: (?P<Courant_mean>[0-9.e+\-]+) max: (?P<Courant_max>[0-9.e+\-]+)'
     )
     plot_data = {
         'residual': {}, # {'U': [...], 'p': [...], ...}
@@ -101,17 +103,39 @@ def plot_runner(application):
     new_time = { # 時間ステップが更新したか？
         'residual': {}, # {'U': True, 'p': True, ...}
         'continuity': True,
-        'courant': True
+        'Courant': True
     }
-    iteration = 0
-    iteration_start = 1
+
+    latest_time = float(latest_time)
+    history_path = f'{application}_history.txt'
+    if os.path.isfile(history_path):
+        if latest_time == 0.0:
+            os.remove(history_path)
+            iteration = 0
+        else:
+            old_history_path = f'{application}_old_history.txt'
+            os.rename(history_path, old_history_path)
+            with open(old_history_path, 'r') as f_in, open(history_path, 'w') as f_out:
+                for line in f_in:
+                    if line.startswith('#'):
+                        f_out.write(line)
+                        continue
+                    stripped = line.strip()
+                    if len(stripped) == 0:
+                        continue
+                    cols = stripped.split('\t')
+                    if float(cols[1]) > latest_time:
+                        break
+                    iteration = int(cols[0])
+                    f_out.write(line)
+    iteration_start = iteration + 1
     plot_freq = 10 # グラフ更新頻度
 
     def monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d):
         for data_key in plot_data:
             for k in plot_data[data_key]:
-                if len(plot_data[data_key][k]) != iteration:
-                    print(f'iteration = {iteration}, {data_key}[{k}], len = {len(plot_data[data_key][k])}')
+                assert len(plot_data[data_key][k]) == iteration, (
+                    f'iteration = {iteration}, len["data_key"]["k"] = {len(plot_data[data_key][k])}')
                 plt_line2d[data_key][k].set_data(range(1, iteration + 1),
                     plot_data[data_key][k]) # 線を更新
             plt_ax[data_key].relim() # 表示範囲の自動調整
@@ -121,7 +145,9 @@ def plot_runner(application):
             plt_fig[data_key].savefig(f'{data_key}.png')
 
     try:
-        with open(f'{application}.log', 'w') as f_log:
+        with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
+            f_history.write(f'# {application} {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}\n')
+
             # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
             command =  ['stdbuf', '-oL']
             if domains > 1:
@@ -146,13 +172,29 @@ def plot_runner(application):
                 f_log.flush() # リアルタイム反映のため
 
                 if line.startswith('Time = '):
-                    if iteration >= iteration_start and iteration%plot_freq == 0:
+                    if iteration < iteration_start:
+                        time = line[7:].strip()
+                    if iteration == iteration_start:
+                        f_history.write(f'# iteration\ttime [s]')
                         for data_key in plot_data:
-                            monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
+                            for k in plot_data[data_key]:
+                                f_history.write(f'\t{data_key} {k}')
+                        f_history.write('\n')
+                    if iteration >= iteration_start:
+                        f_history.write(f'{iteration}\t{time}')
+                        for data_key in plot_data:
+                            for k in plot_data[data_key]:
+                                f_history.write(f'\t{plot_data[data_key][k][-1]}')
+                        f_history.write('\n')
+                        f_history.flush() # リアルタイム反映のため
+                        if iteration%plot_freq == 0:
+                            for data_key in plot_data:
+                                monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
                     iteration += 1
+                    time = line[7:].strip()
                     for k in plot_data['residual']:
                         new_time['residual'][k] = True
-                    new_time['continuity'] = new_time['courant'] = True
+                    new_time['continuity'] = new_time['Courant'] = True
 
                 s = pat.search(line)
                 if s is None:
@@ -182,28 +224,28 @@ def plot_runner(application):
                     else:
                         plot_data['continuity']['sum local'][-1] = loc # データの更新
                         plot_data['continuity']['abs global'][-1] = glob
-                elif s.lastgroup == 'courant_max':
-                    mn = float(s.group('courant_mean'))
-                    mx = float(s.group('courant_max'))
+                elif s.lastgroup == 'Courant_max':
+                    mn = float(s.group('Courant_mean'))
+                    mx = float(s.group('Courant_max'))
                     if iteration == iteration_start:
-                        plot_data['courant'] = {'mean': [], 'max': []}
-                        fig_courant, ax_courant = set_subplot('iteration', 'Courant number', True)
-                        fig_courant.canvas.manager.set_window_title('temporal histories of Courant numbers')
-                        plt_fig['courant'] = fig_courant
-                        plt_ax['courant'] = ax_courant
-                        plt_line2d['courant']['mean'] = plt_ax['courant'].plot([], [],
+                        plot_data['Courant'] = {'mean': [], 'max': []}
+                        fig_Courant, ax_Courant = set_subplot('iteration', 'Courant number', True)
+                        fig_Courant.canvas.manager.set_window_title('temporal histories of Courant numbers')
+                        plt_fig['Courant'] = fig_Courant
+                        plt_ax['Courant'] = ax_Courant
+                        plt_line2d['Courant']['mean'] = plt_ax['Courant'].plot([], [],
                             linestyle = line_styles[0], label = par)[0] # グラフ用の線も動的に作成
-                        plt_line2d['courant']['max'] = plt_ax['courant'].plot([], [],
+                        plt_line2d['Courant']['max'] = plt_ax['Courant'].plot([], [],
                             linestyle = line_styles[0], label = par)[1] # グラフ用の線も動的に作成
-                        plt_ax['courant'].legend(loc = 'best') # ax.plotを呼び出した後
-                        new_time['courant'] = True
-                    if new_time['courant']:
-                        plot_data['courant']['mean'].append(mn) # データの追加
-                        plot_data['courant']['max'].append(mx)
-                        new_time['courant'] = False
+                        plt_ax['Courant'].legend(loc = 'best') # ax.plotを呼び出した後
+                        new_time['Courant'] = True
+                    if new_time['Courant']:
+                        plot_data['Courant']['mean'].append(mn) # データの追加
+                        plot_data['Courant']['max'].append(mx)
+                        new_time['Courant'] = False
                     else:
-                        plot_data['courant']['mean'][-1] = mn # データの更新
-                        plot_data['courant']['max'][-1] = mx
+                        plot_data['Courant']['mean'][-1] = mn # データの更新
+                        plot_data['Courant']['max'][-1] = mx
 
             process.stdout.close()
 
@@ -216,175 +258,6 @@ def plot_runner(application):
             process.wait()
         monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
         plt.ioff()
-
-#def run_foam_live_plot(solver_name):
-#    # --- 1. データ格納用のリスト ---
-#    times = []
-#    residuals = {} # フィールドごとの残差
-#    cont_errors = {"local": [], "global": [], "cumulative": []}
-#    courant_nums = {"max": [], "mean": []}
-#
-#    # --- 2. 正規表現パターン ---
-#    # Time (横軸)
-#    re_time = re.compile(r"^Time = (\d+\.?\d*)")
-#    # 残差 (Final residualのみ抽出)
-#    re_resid = re.compile(r"Solving for (\w+),.*Final residual = ([\d.e+-]+)")
-#    # 連続の式誤差
-#    re_cont = re.compile(r"time step continuity errors : sum local = ([\d.e+-]+), global = ([\d.e+-]+), cumulative = ([\d.e+-]+)")
-#    # クーラン数
-#    re_courant = re.compile(r"Courant Number mean: ([\d.e+-]+) max: ([\d.e+-]+)")
-#
-#    # --- 3. Matplotlib の設定 ---
-#    plt.ion() # インタラクティブモードON
-#    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 10), sharex=True)
-#    plt.subplots_adjust(hspace=0.3)
-#
-#    # ソルバー起動
-#    process = subprocess.Popen(
-#        ["stdbuf", "-oL", solver_name],
-#        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
-#    )
-#
-#    try:
-#        current_t = None
-#        for line in iter(process.stdout.readline, ""):
-#            # 1. 標準出力をそのまま表示
-#            sys.stdout.write(line)
-#            sys.stdout.flush()
-#
-#            # 2. データの抽出
-#            m_time = re_time.match(line)
-#            if m_time:
-#                current_t = float(m_time.group(1))
-#                times.append(current_t)
-#                # 新しいTimeステップに入った際、グラフを更新（例：10ステップごと）
-#                if len(times) % 10 == 0:
-#                    update_plots(ax1, ax2, ax3, times, residuals, cont_errors, courant_nums)
-#
-#            m_resid = re_resid.search(line)
-#            if m_resid:
-#                field, val = m_resid.groups()
-#                residuals.setdefault(field, []).append(float(val))
-#
-#            m_cont = re_cont.search(line)
-#            if m_cont:
-#                cont_errors["local"].append(float(m_cont.group(1)))
-#                cont_errors["global"].append(float(m_cont.group(2)))
-#
-#            m_courant = re_courant.search(line)
-#            if m_courant:
-#                courant_nums["mean"].append(float(m_courant.group(1)))
-#                courant_nums["max"].append(float(m_courant.group(2)))
-#
-#    except KeyboardInterrupt:
-#        process.terminate()
-#    finally:
-#        process.wait()
-#        plt.ioff()
-#        plt.show()
-#
-#def update_plots(ax1, ax2, ax3, times, residuals, cont_errors, courant_nums):
-#    # 残差プロット (対数軸)
-#    ax1.clear()
-#    for field, vals in residuals.items():
-#        # 長さをtimesに合わせる（簡易処理）
-#        ax1.plot(times[:len(vals)], vals, label=field)
-#    ax1.set_yscale('log')
-#    ax1.set_ylabel('Final Residual')
-#    ax1.legend(loc='upper right', fontsize='small')
-#    ax1.grid(True, which="both", ls="-", alpha=0.5)
-#
-#    # 連続の式誤差
-#    ax2.clear()
-#    if cont_errors["local"]:
-#        ax2.plot(times[:len(cont_errors["local"])], cont_errors["local"], label='local')
-#        ax2.set_yscale('log')
-#        ax2.set_ylabel('Cont. Error')
-#        ax2.legend(loc='upper right')
-#
-#    # クーラン数
-#    ax3.clear()
-#    if courant_nums["max"]:
-#        ax3.plot(times[:len(courant_nums["max"])], courant_nums["max"], label='max')
-#        ax3.plot(times[:len(courant_nums["mean"])], courant_nums["mean"], label='mean')
-#        ax3.set_ylabel('Courant Number')
-#        ax3.set_xlabel('Time [s]')
-#        ax3.legend(loc='upper right')
-#
-#    plt.pause(0.01) # 描画を反映させるための短い一時停止
-#
-##if __name__ == "__main__":
-##    run_foam_live_plot("simpleFoam")
-#
-#def trigger_action(iteration, residuals):
-#    """
-#    残差が目標値を下回ったときに実行されるカスタムアクション
-#    """
-#    print(f"\n{'!'*40}")
-#    print(f"検知: Iteration {iteration} で全残差が閾値を下回りました。")
-#    print(f"現在の残差: {residuals}")
-#    print(f"{'!'*40}\n")
-#    
-#    # 例1: 計算を安全に終了させる (OpenFOAMに停止を命令するファイルを生成)
-#    # with open("comms/finish", "w") as f: f.write("stop")
-#    
-#    # 例2: 独自の事後処理スクリプトを走らせる
-#    # subprocess.run(["python3", "post_process.py"])
-#    
-#    return True # 計算を止める場合はTrueを返す
-#
-#def run_foam_with_action(solver_name, threshold=1e-5):
-#    # --- 1. 正規表現の設定 ---
-#    re_time = re.compile(r"^Time = (\d+)")
-#    # サブイタレーションの最後（Final residual）をキャプチャ
-#    re_resid = re.compile(r"Solving for (\w+),.*Final residual = ([\d.e+-]+)")
-#
-#    # データ格納
-#    current_residuals = {}
-#    times = []
-#    
-#    # ソルバー起動 (バッファリング無効化)
-#    process = subprocess.Popen(
-#        ["stdbuf", "-oL", solver_name],
-#        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
-#    )
-#
-#    print(f"監視開始: ターゲット残差 = {threshold}")
-#
-#    try:
-#        current_t = None
-#        for line in iter(process.stdout.readline, ""):
-#            # 1. 端末へ出力（必須要件）
-#            sys.stdout.write(line)
-#            sys.stdout.flush()
-#
-#            # 2. Timeの更新を検知
-#            m_time = re_time.match(line)
-#            if m_time:
-#                # 前のTimeステップの結果で判定を行う
-#                if current_residuals:
-#                    # 全てのフィールド（p, U, k等）が閾値以下かチェック
-#                    if all(v < threshold for v in current_residuals.values()):
-#                        stop_needed = trigger_action(current_t, current_residuals)
-#                        if stop_needed:
-#                            print("[INFO] アクションに基づき、ソルバーを終了します。")
-#                            process.terminate()
-#                            break
-#                
-#                current_t = int(m_time.group(1))
-#                # 次のステップのために残差をクリア
-#                current_residuals = {}
-#
-#            # 3. 残差の抽出
-#            m_resid = re_resid.search(line)
-#            if m_resid:
-#                field, val = m_resid.groups()
-#                current_residuals[field] = float(val)
-#
-#    except KeyboardInterrupt:
-#        process.terminate()
-#    finally:
-#        process.wait()
 
 def reset_relaxationFactors_in_fvSolution():
     def reset_relaxationFactors_in(path):
@@ -427,7 +300,7 @@ def reset_relaxationFactors_in_fvSolution():
 
     if os.path.isdir('system'):
         reset_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(d)
 
 def change_relaxationFactors_in_fvSolution(exponent):
@@ -506,7 +379,7 @@ def change_relaxationFactors_in_fvSolution(exponent):
     reset_relaxationFactors_in_fvSolution()
     if os.path.isdir('system'):
         change_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}':
         change_relaxationFactors_in(d)
 
 if __name__ == '__main__':
@@ -551,7 +424,7 @@ if __name__ == '__main__':
                 return True
             # サブディレクトリを再帰的にチェック
             return any(has_diff(sub_dcmp) for sub_dcmp in dcmp.subdirs.values())
-        # 実行部分
+
         if has_diff(filecmp.dircmp('0', '0_bak')):
             print('エラー: あるはずがない0_bakフォルダがあります．'
                 '0フォルダと0_bakフォルダを比較して，正しい方を0フォルダに置き換えてから再実行して下さい．')
@@ -596,7 +469,6 @@ if __name__ == '__main__':
         if os.path.isdir(i):
             shutil.rmtree(i)
     rmObjects.removeLogPlotPngs()
-    rmObjects.removePyFoamPlots()
 
     threads = misc.cpu_count()
     if interactive:
@@ -618,7 +490,7 @@ if __name__ == '__main__':
 
     if domains != 1:
         processor_dirs = set()
-        for d in glob.iglob('processor*' + os.sep):
+        for d in glob.iglob(f'processor*{os.sep}'):
             try:
                 processor_dirs.add(int(d[len('processor'):-len(os.sep)]))
             except:
@@ -645,7 +517,7 @@ if __name__ == '__main__':
                     '}\n'
                     f'numberOfSubdomains\t{domains};\n'
                     'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-            for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+            for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
                 if os.path.isfile(os.path.join(d, 'fvSolution')):
                     os.chdir(d)
                     if os.path.exists('decomposeParDict'):
@@ -663,6 +535,6 @@ if __name__ == '__main__':
                     shutil.move('0_bak', '0')
                 sys.exit(1)
 
-    plot_runner(misc.getApplication())
+    plot_runner(misc.getApplication(), latest_time)
 
     terminate()

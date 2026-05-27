@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # yPlusを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:22:47 AM
+# 2026/5/27 7:31:57 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -55,10 +55,10 @@ if __name__ == '__main__':
             i += 1
 
     regions = []
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if os.path.isfile(os.path.join(d, 'fvSolution')):
             regions.append(os.path.basename(os.path.dirname(d)))
-    for d in glob.iglob('*' + os.sep):
+    for d in glob.iglob(f'*{os.sep}'):
         try:
             float(os.path.dirname(d))
             f = os.path.join(d, 'yPlus')

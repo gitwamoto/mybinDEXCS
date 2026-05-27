@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 流量を求める.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:14:12 AM
+# 2026/5/27 7:33:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -56,7 +56,7 @@ if __name__ == '__main__':
             i += 1
 
     if os.path.isdir('postProcessing'):
-        for d in glob.iglob(os.path.join('postProcessing', 'flowRatePatch(*' + os.sep)):
+        for d in glob.iglob(os.path.join('postProcessing', f'flowRatePatch(*{os.sep}')):
             shutil.rmtree(d)
     if just_delete_previous_files:
         sys.exit(0) # 正常終了

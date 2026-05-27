@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:51:37 AM
+# 2026/5/27 7:32:53 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     if os.path.isdir('postProcessing') and os.path.isfile(fieldAverage_related_files_txt):
         with open(fieldAverage_related_files_txt, 'r') as f:
             properties = f.readline().rstrip()
-        for d in glob.iglob('*' + os.sep):
+        for d in glob.iglob(f'*{os.sep}'):
             try:
                 float(os.path.dirname(d))
                 for f in glob.iglob(os.path.join(d, '*Mean')):
@@ -179,7 +179,7 @@ if __name__ == '__main__':
             f'さらに各時間のフォルダの{os.path.join("uniform", properties)}に情報（何秒間の平均かなど）が記録されます．')
 
         time_dirs = []
-        for d in glob.iglob('*' + os.sep):
+        for d in glob.iglob(f'*{os.sep}'):
             try:
                 d = os.path.dirname(d)
                 t = float(d)

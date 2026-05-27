@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:57:13 PM
+# 2026/5/27 7:32:00 PM
 
 import os
 import glob
@@ -30,18 +30,12 @@ def removeInessentials():
         shutil.rmtree(d)
 
 def removeLogPlotPngs():
-    for i in ('residualsInitial.png',
-        'residualsFinal.png',
-        'continuityErrors.png',
-        'residuals0.png',
-        'residuals.png',
-        'continuity_errors.png'):
-        if os.path.isfile(i):
-            os.remove(i)
-
-def removePyFoamPlots():
-    pat = re.compile(r'(?:linear|cont|bound|courant|deltaT|custom[0-9][0-9][0-9][0-9])\.png$')
-    for i in glob.glob('*.png'):
+    pat = re.compile('(?:'
+        'linear|cont|bound|courant|deltaT|custom[0-9][0-9][0-9][0-9]' '|' # PyFoamPlotRunner.pyが作るグラフのファイル
+        'residualsInitial|residualsFinal|continuityErrors' '|' # logファイルをプロット.pyが作るグラフのファイル
+        'continuity|residual|Courant' # PlotRunner.pyが作るグラフのファイル
+        r')\.png$')
+    for i in glob.iglob('*.png'):
         if os.path.isfile(i) and pat.match(i):
             os.remove(i)
 
@@ -65,13 +59,7 @@ def removeProcessorDirs(option = '', path = os.curdir):
             if s is not None:
                 pdirs.append(int(s.group(1)))
         pdirs.sort()
-        if noZero:
-            if noLatest:
-                s = f'0秒と{latest_time}秒'
-            else:
-                s = '0秒'
-        else:
-            s = f'{latest_time}秒'
+        s = ('0秒' if noZero else '') + ('と' if noZero and noLatest) + (f'{latest_time}秒' if noLatest else '')
         for p in pdirs:
             p = os.path.join(path, f'processor{p}')
             print(f'{p}から{s}以外の結果を消去中...')
@@ -88,7 +76,7 @@ def removeResultDirsWoZeroAndLatest(path = os.curdir):
     if latest_time is None:
         return
     latest_time = float(latest_time)
-    for t in glob.iglob(os.path.join(path, '*' + os.sep)):
+    for t in glob.iglob(os.path.join(path, f'*{os.sep}')):
         try:
             ft = float(os.path.basename(os.path.dirname(t)))
             if ft != 0.0 and ft < latest_time:
@@ -98,7 +86,7 @@ def removeResultDirsWoZeroAndLatest(path = os.curdir):
 
 def removeResultDirsWithTimeGreaterThan(time, path = os.curdir):
     time = float(time)
-    for t in glob.iglob(os.path.join(path, '*' + os.sep)):
+    for t in glob.iglob(os.path.join(path, f'*{os.sep}')):
         try:
             if float(os.path.basename(os.path.dirname(t))) > time:
                 shutil.rmtree(t)

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # インデント.py
 # by Yukiharu Iwamoto
-# 2026/5/12 9:58:32 AM
+# 2026/5/27 7:32:09 PM
 
 # ---- オプションはない ----
 
@@ -32,12 +32,12 @@ if __name__ == '__main__':
     indent('0')
     indent('constant')
     indent('system')
-    for i in glob.iglob(os.path.join('0', '*' + os.sep)):
+    for i in glob.iglob(os.path.join('0', f'*{os.sep}')):
         indent(i)
-    for i in glob.iglob(os.path.join('constant', '*' + os.sep)):
+    for i in glob.iglob(os.path.join('constant', f'*{os.sep}')):
         if os.path.isdir(os.path.join(i, 'polyMesh')):
             indent(i)
-    for i in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for i in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if os.path.isfile(os.path.join(i, 'fvSolution')):
             indent(i)
 

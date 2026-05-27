@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:53:40 AM
+# 2026/5/27 7:34:28 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -60,7 +60,7 @@ def potentialFoam(latest_time):
         has_p_potentialflow = os.path.isfile(p_potentialflow_path)
     else:
         has_p_potentialflow = False
-        for d in glob.iglob('processor*' + os.sep):
+        for d in glob.iglob(f'processor*{os.sep}'):
             try:
                 int(d[len('processor'):-len(os.sep)])
                 pp = os.path.join(d, p_potentialflow_path)
@@ -118,7 +118,7 @@ def potentialFoam(latest_time):
                 command += ' -allRegions'
             subprocess.call(command, shell = True)
             #                 43210987654321
-        for d in glob.iglob('*_potentialflow' + os.sep):
+        for d in glob.iglob(f'*_potentialflow{os.sep}'):
             try:
                 float(d[:-14 - len(os.sep)])
                 shutil.rmtree(d)
@@ -169,7 +169,7 @@ def reset_relaxationFactors_in_fvSolution():
 
     if os.path.isdir('system'):
         reset_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(d)
 
 def change_relaxationFactors_in_fvSolution(exponent):
@@ -249,7 +249,7 @@ def change_relaxationFactors_in_fvSolution(exponent):
     reset_relaxationFactors_in_fvSolution()
     if os.path.isdir('system'):
         change_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         change_relaxationFactors_in(d)
 
 def calculate():
@@ -390,7 +390,6 @@ if __name__ == '__main__':
         if os.path.isdir(i):
             shutil.rmtree(i)
     rmObjects.removeLogPlotPngs()
-    rmObjects.removePyFoamPlots()
 
     threads = misc.cpu_count()
     if interactive:
@@ -433,7 +432,7 @@ if __name__ == '__main__':
 
     if domains != 1:
         processor_dirs = set()
-        for d in glob.iglob('processor*' + os.sep):
+        for d in glob.iglob(f'processor*{os.sep}'):
             try:
                 processor_dirs.add(int(d[len('processor'):-len(os.sep)]))
             except:
@@ -454,7 +453,7 @@ if __name__ == '__main__':
                     '}\n'
                     f'numberOfSubdomains\t{domains};\n'
                     'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-            for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+            for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
                 if os.path.isfile(os.path.join(d, 'fvSolution')):
                     os.chdir(d)
                     if os.path.exists('decomposeParDict'):

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Qと渦度を求める.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:32:31 AM
+# 2026/5/27 7:29:43 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -55,7 +55,7 @@ if __name__ == '__main__':
                 exec_paraFoam = True
             i += 1
 
-    for d in glob.iglob('*' + os.sep):
+    for d in glob.iglob(f'*{os.sep}'):
         try:
             float(os.path.dirname(d))
             for t in ('Q', 'vorticity'):

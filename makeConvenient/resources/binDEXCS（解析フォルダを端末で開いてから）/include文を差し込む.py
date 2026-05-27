@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を差し込む.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:32:21 AM
+# 2026/5/27 7:30:08 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -82,12 +82,12 @@ if __name__ == '__main__':
     append_include_sentence(dir_name = 'constant', include_file_name = include_file)
     append_include_sentence(dir_name = 'system', include_file_name = include_file)
 
-    for d in glob.iglob(os.path.join('0', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('0', f'*{os.sep}')):
         append_include_sentence(dir_name = d, include_file_name = include_file)
-    for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
         if os.path.isdir(os.path.join(d, 'polyMesh')):
             append_include_sentence(dir_name = d, include_file_name = include_file)
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if os.path.isfile(os.path.join(d, 'fvSolution')):
             append_include_sentence(dir_name = d, include_file_name = include_file)
 

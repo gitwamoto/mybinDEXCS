@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:32:13 AM
+# 2026/5/27 7:30:26 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -62,7 +62,7 @@ if __name__ == '__main__':
             i += 1
 
     if os.path.isdir('postProcessing'):
-        for d in glob.iglob(os.path.join('postProcessing', 'patch*' + os.sep)):
+        for d in glob.iglob(os.path.join('postProcessing', f'patch*{os.sep}')):
             p = os.path.basename(os.path.dirname(d))
             if p.startswith('patchAverage(') or p.startswith('patchIntegrate('):
                 shutil.rmtree(d)

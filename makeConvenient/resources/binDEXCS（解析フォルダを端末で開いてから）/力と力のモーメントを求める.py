@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:50:30 AM
+# 2026/5/27 7:32:22 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -171,7 +171,7 @@ if __name__ == '__main__':
         force_dat = moment_dat = None
         pdir = os.path.join('postProcessing', forces_dir)
         # postProcessing/forces_dir/0/
-        for d in glob.iglob(os.path.join(pdir, '*' + os.sep)):
+        for d in glob.iglob(os.path.join(pdir, f'*{os.sep}')):
             try:
                 float(os.path.basename(os.path.dirname(d)))
                 shutil.move(os.path.join(d, 'force.dat'), pdir)
