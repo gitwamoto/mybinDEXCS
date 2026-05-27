@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/26 4:14:27 PM
+# 2026/5/27 12:59:10 PM
 
 import os
 import sys
@@ -17,6 +17,10 @@ from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects
 from utilities import dictParse
+
+# To do:
+# 履歴ファイルを使って，やり直すときにはその時間から始める
+# 緩和係数のコントロール
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
@@ -64,8 +68,8 @@ def plot_runner(application):
             ax.set_yscale('log')
         ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
         ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
-        ax.set_xmargin(0)
-        ax.set_ymargin(0)
+#        ax.set_xmargin(0)
+#        ax.set_ymargin(0)
         return fig, ax
 
     pat = re.compile(
@@ -83,7 +87,9 @@ def plot_runner(application):
         'continuity': {'sum local': [], 'abs global': []}
     }
     fig_res, ax_res = set_subplot('iteration', 'final residual', True)
+    fig_res.canvas.manager.set_window_title('temporal histories of final residuals')
     fig_cont, ax_cont = set_subplot('iteration', 'continuity error', True)
+    fig_cont.canvas.manager.set_window_title('temporal histories of continuity errors')
     plt_fig = {'residual': fig_res, 'continuity': fig_cont}
     plt_ax = {'residual': ax_res, 'continuity': ax_cont}
     plt_line2d = {
@@ -104,6 +110,8 @@ def plot_runner(application):
     def monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d):
         for data_key in plot_data:
             for k in plot_data[data_key]:
+                if len(plot_data[data_key][k]) != iteration:
+                    print(f'iteration = {iteration}, {data_key}[{k}], len = {len(plot_data[data_key][k])}')
                 plt_line2d[data_key][k].set_data(range(1, iteration + 1),
                     plot_data[data_key][k]) # 線を更新
             plt_ax[data_key].relim() # 表示範囲の自動調整
@@ -147,12 +155,14 @@ def plot_runner(application):
                     new_time['continuity'] = new_time['courant'] = True
 
                 s = pat.search(line)
+                if s is None:
+                    continue
                 if s.lastgroup == 'final_residual':
                     par = s.group('parameter')
                     res = float(s.group('final_residual'))
                     if iteration == iteration_start and par not in plot_data['residual']: # 初回発見時に辞書を自動構築
                         plot_data['residual'][par] = []
-                        plt_line2d['residual'][par] = ax.plot([], [],
+                        plt_line2d['residual'][par] = plt_ax['residual'].plot([], [],
                             linestyle = line_styles[len(plt_line2d['residual'])%len(line_styles)],
                             label = par)[0] # グラフ用の線も動的に作成
                         plt_ax['residual'].legend(loc = 'best') # ax.plotを呼び出した後
@@ -178,11 +188,12 @@ def plot_runner(application):
                     if iteration == iteration_start:
                         plot_data['courant'] = {'mean': [], 'max': []}
                         fig_courant, ax_courant = set_subplot('iteration', 'Courant number', True)
+                        fig_courant.canvas.manager.set_window_title('temporal histories of Courant numbers')
                         plt_fig['courant'] = fig_courant
                         plt_ax['courant'] = ax_courant
-                        plt_line2d['courant']['mean'] = ax.plot([], [],
+                        plt_line2d['courant']['mean'] = plt_ax['courant'].plot([], [],
                             linestyle = line_styles[0], label = par)[0] # グラフ用の線も動的に作成
-                        plt_line2d['courant']['max'] = ax.plot([], [],
+                        plt_line2d['courant']['max'] = plt_ax['courant'].plot([], [],
                             linestyle = line_styles[0], label = par)[1] # グラフ用の線も動的に作成
                         plt_ax['courant'].legend(loc = 'best') # ax.plotを呼び出した後
                         new_time['courant'] = True
@@ -499,9 +510,6 @@ def change_relaxationFactors_in_fvSolution(exponent):
         change_relaxationFactors_in(d)
 
 if __name__ == '__main__':
-    print(get_relaxation_factor('U'))
-    quit()
-
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
 
@@ -559,6 +567,7 @@ if __name__ == '__main__':
         if os.path.exists(regionProperties_path):
             command += ' -allRegions'
         subprocess.call(command, shell = True)
+        print()
     latest_time = misc.latestTime()
     if latest_time is None:
         print('エラー: 結果フォルダがありません．')
@@ -614,11 +623,17 @@ if __name__ == '__main__':
                 processor_dirs.add(int(d[len('processor'):-len(os.sep)]))
             except:
                 pass
-        if len(processor_dirs) != domains or processor_dirs != set(range(domains)):
+        if processor_dirs != set(range(domains)):
             for d in processor_dirs:
                 shutil.rmtree(f'processor{d}')
+        decomposeParDict_path = os.path.join('system', 'decomposeParDict')
+        if os.path.isfile(decomposeParDict_path):
+            numberOfSubdomains = dictParse.DictParser(file_name = decomposeParDict_path).find_element(
+                [{'type': 'dictionary', 'key': 'numberOfSubdomains'}, {'type': 'integer'}])['element']
+            if numberOfSubdomains is not None and int(numberOfSubdomains['value']) != domains:
+                for d in processor_dirs:
+                    shutil.rmtree(f'processor{d}')
         if not os.path.isdir('processor0'):
-            decomposeParDict_path = os.path.join('system', 'decomposeParDict')
             with open(decomposeParDict_path, 'w') as f:
                 f.write('FoamFile\n'
                     '{\n'
