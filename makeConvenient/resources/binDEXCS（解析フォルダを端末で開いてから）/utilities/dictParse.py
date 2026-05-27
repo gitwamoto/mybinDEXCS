@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/20 5:32:45 PM
+# 2026/5/27 12:07:16 PM
 
 import sys
 import os
@@ -443,24 +443,27 @@ class DictParser(UserDict):
             start = self.find_element([{'type': self['type'] + '_start'}])['index'] + 1
             end = self.find_element([{'type': self['type'] + '_end'}], reverse = True)['index']
             parent = self['value']
-            i = find_element(parent, [{'type': 'linebreak'}], start = start, end = end)
-            if i['element'] is None:
+            i = find_element(parent, [{'type': 'linebreak'}], start = start, end = end)['index']
+            if i is None:
                 return
-            start = i['index'] + 1
-            i = find_element(parent, [{'except type': 'whitespace|linebreak'}], start = start, end = end)
-            if i['element'] is not None:
-                i = i['index']
+            start = i + 1
+            i = find_element(parent, [{'except type': 'whitespace|linebreak'}],
+                start = start, end = end)['index']
+            if i is not None:
                 del parent[start:i]
                 end += start - i
             if start != end:
                 end = find_element(parent, [{'type': 'linebreak'}],
                     start = end - 1, end = start - 1, reverse = True)['index']
-                i = find_element(parent, [{'except type': 'whitespace|linebreak'}],
-                    start = end - 1, end = start - 1, reverse = True)
-                if i['element'] is not None:
-                    i = i['index'] + 1
-                    del parent[i:end]
-                    end = i
+                if end is None:
+                    return
+                else:
+                    i = find_element(parent, [{'except type': 'whitespace|linebreak'}],
+                        start = end - 1, end = start - 1, reverse = True)['index']
+                    if i is not None:
+                        i += 1
+                        del parent[i:end]
+                        end = i
         else:
             if self.find_element([{'type': 'linebreak'}])['element'] is None:
                 return
