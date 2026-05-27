@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を取り除く.py
 # by Yukiharu Iwamoto
-# 2026/5/20 3:56:09 PM
+# 2026/5/27 7:29:58 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -72,12 +72,12 @@ if __name__ == '__main__':
     remove_include_sentence(dir_name = 'constant', include_file_name = include_file, ignore_path = ignore_path)
     remove_include_sentence(dir_name = 'system', include_file_name = include_file, ignore_path = ignore_path)
 
-    for d in glob.iglob(os.path.join('0', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('0', f'*{os.sep}')):
         remove_include_sentence(dir_name = d, include_file_name = include_file, ignore_path = ignore_path)
-    for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
         if os.path.isdir(os.path.join(d, 'polyMesh')):
             remove_include_sentence(dir_name = d, include_file_name = include_file, ignore_path = ignore_path)
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if os.path.isfile(os.path.join(d, 'fvSolution')):
             remove_include_sentence(dir_name = d, include_file_name = include_file, ignore_path = ignore_path)
 

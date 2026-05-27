@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 半角に出来る文字は全て半角に.py
 # by Yukiharu Iwamoto
-# 2026/5/14 9:24:38 AM
+# 2026/5/27 7:32:31 PM
 
 # ---- オプションはない ----
 
@@ -35,12 +35,12 @@ if __name__ == '__main__':
     normalize('0')
     normalize('constant')
     normalize('system')
-    for d in glob.iglob(os.path.join('0', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('0', f'*{os.sep}')):
         normalize(d)
-    for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
         if os.path.isdir(os.path.join(d, 'polyMesh')):
             normalize(d)
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if os.path.isfile(os.path.join(d, 'fvSolution')):
             normalize(d)
 

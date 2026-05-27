@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/27 6:29:05 PM
+# 2026/5/27 7:29:21 PM
 
 import os
 import sys
@@ -21,6 +21,7 @@ from utilities import dictParse
 
 # To do:
 # 履歴ファイルを使って，やり直すときにはその時間から始める
+# 履歴ファイルの末尾をlatestTimeに合わせる
 # 緩和係数のコントロール
 
 domains = 1
@@ -56,7 +57,7 @@ def get_relaxation_factor(param):
             continue
     return None, None
 
-def plot_runner(application):
+def plot_runner(application, latest_time):
     # グラフの初期設定
     plt.ion() # インタラクティブモードON
     line_styles = ['-', '--', '-.']
@@ -104,9 +105,29 @@ def plot_runner(application):
         'continuity': True,
         'Courant': True
     }
+
+    latest_time = float(latest_time)
     history_path = f'{application}_history.txt'
-    iteration = int([line.strip() for line in open(history_path, 'r') if line.strip()][-1].split('\t')[0]
-        ) if os.path.isfile(history_path) else 0
+    if os.path.isfile(history_path):
+        if latest_time == 0.0:
+            os.remove(history_path)
+            iteration = 0
+        else:
+            old_history_path = f'{application}_old_history.txt'
+            os.rename(history_path, old_history_path)
+            with open(old_history_path, 'r') as f_in, open(history_path, 'w') as f_out:
+                for line in f_in:
+                    if line.startswith('#'):
+                        f_out.write(line)
+                        continue
+                    stripped = line.strip()
+                    if len(stripped) == 0:
+                        continue
+                    cols = stripped.split('\t')
+                    if float(cols[1]) > latest_time:
+                        break
+                    iteration = int(cols[0])
+                    f_out.write(line)
     iteration_start = iteration + 1
     plot_freq = 10 # グラフ更新頻度
 
@@ -279,7 +300,7 @@ def reset_relaxationFactors_in_fvSolution():
 
     if os.path.isdir('system'):
         reset_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(d)
 
 def change_relaxationFactors_in_fvSolution(exponent):
@@ -358,7 +379,7 @@ def change_relaxationFactors_in_fvSolution(exponent):
     reset_relaxationFactors_in_fvSolution()
     if os.path.isdir('system'):
         change_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}':
         change_relaxationFactors_in(d)
 
 if __name__ == '__main__':
@@ -403,7 +424,7 @@ if __name__ == '__main__':
                 return True
             # サブディレクトリを再帰的にチェック
             return any(has_diff(sub_dcmp) for sub_dcmp in dcmp.subdirs.values())
-        # 実行部分
+
         if has_diff(filecmp.dircmp('0', '0_bak')):
             print('エラー: あるはずがない0_bakフォルダがあります．'
                 '0フォルダと0_bakフォルダを比較して，正しい方を0フォルダに置き換えてから再実行して下さい．')
@@ -469,7 +490,7 @@ if __name__ == '__main__':
 
     if domains != 1:
         processor_dirs = set()
-        for d in glob.iglob('processor*' + os.sep):
+        for d in glob.iglob(f'processor*{os.sep}'):
             try:
                 processor_dirs.add(int(d[len('processor'):-len(os.sep)]))
             except:
@@ -496,7 +517,7 @@ if __name__ == '__main__':
                     '}\n'
                     f'numberOfSubdomains\t{domains};\n'
                     'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-            for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+            for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
                 if os.path.isfile(os.path.join(d, 'fvSolution')):
                     os.chdir(d)
                     if os.path.exists('decomposeParDict'):
@@ -514,6 +535,6 @@ if __name__ == '__main__':
                     shutil.move('0_bak', '0')
                 sys.exit(1)
 
-    plot_runner(misc.getApplication())
+    plot_runner(misc.getApplication(), latest_time)
 
     terminate()

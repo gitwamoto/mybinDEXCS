@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:47:36 AM
+# 2026/5/27 7:30:39 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -369,7 +369,7 @@ if __name__ == '__main__':
     regionProperties_path = os.path.join('constant', 'regionProperties')
     if snappyHexMeshDict.find_element([{'type': 'block', 'key': 'castellatedMeshControls'},
         {'type': 'dictionary', 'key': 'locationsInMesh'}])['element'] is not None:
-        for i in glob.iglob(os.path.join('constant', '*' + os.sep)):
+        for i in glob.iglob(os.path.join('constant', f'*{os.sep}')):
             i += 'polyMesh' # i/polyMeshというパスのフォルダがあるはず
             if os.path.isdir(i):
                 shutil.rmtree(i)
@@ -387,7 +387,7 @@ if __name__ == '__main__':
             print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
         regions = sorted([os.path.basename(os.path.dirname(i))
-            for i in glob.iglob(os.path.join('constant', '*' + os.sep)) if os.path.isdir(i + 'polyMesh')])
+            for i in glob.iglob(os.path.join('constant', f'*{os.sep}')) if os.path.isdir(i + 'polyMesh')])
         if interactive:
             fluid_regions = input(' '.join(regions) +
                 ' の中から，流体側の領域名全てをスペース区切りで指定して下さい． > ').split()
@@ -435,7 +435,7 @@ if __name__ == '__main__':
                         os.rmtree(j0)
                     shutil.move(j0_bak, i0) # can't overwrite, 0_bak/i_name/jname -> 0/i_name/j_name
         shutil.rmtree('0_bak')
-        for r in glob.iglob(os.path.join('system', '*' + os.sep)):
+        for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
             # system/
             # +-- regionA/
             # |   +-- fvSolution

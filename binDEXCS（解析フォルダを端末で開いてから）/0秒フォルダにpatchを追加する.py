@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/20 5:38:56 PM
+# 2026/5/27 7:27:00 PM
 
 # ---- オプションはない ----
 
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     misc.showDirForPresentAnalysis(__file__)
 
     regions = []
-    for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
         if os.path.isdir(d + 'polyMesh'):
             regions.append(os.path.basename(d[:-len(os.sep)]))
     if len(regions) == 0:

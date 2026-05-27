@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒以外のフォルダを消す.py
 # by Yukiharu Iwamoto
-# 2026/5/27 6:28:58 PM
+# 2026/5/27 7:29:07 PM
 
 import os
 import signal
@@ -21,9 +21,9 @@ if __name__ == '__main__':
     for d in ('dynamicCode', 'logs'):
         if os.path.isdir(d):
             shutil.rmtree(d)
-    for d in glob.iglob('*.analyzed/'):
+    for d in glob.iglob(f'*.analyzed{os.sep}'):
         shutil.rmtree(d)
-    for i in ('PyFoam*', '*.logfile', '*.logfile.restart*', '*.log', 'log.*'):
+    for i in ('PyFoam*', '*.logfile', '*.logfile.restart*', '*.log', 'log.*', '*_history.txt'):
         for f in glob.iglob(i):
             os.remove(f)
     rmObjects.removeLogPlotPngs()

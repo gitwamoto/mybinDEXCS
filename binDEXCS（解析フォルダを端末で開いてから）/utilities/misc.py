@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/20 12:03:29 PM
+# 2026/5/27 7:31:10 PM
 
 import glob
 import os
@@ -260,16 +260,16 @@ def correctLocation():
             for f in glob.iglob(os.path.join(d, '*')):
                 if os.path.isfile(f):
                     correctLocationIn(f)
-    for d in glob.iglob(os.path.join('0', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('0', f'*{os.sep}')):
         for f in glob.iglob(os.path.join(d, '*')):
             if os.path.isfile(f):
                 correctLocationIn(f)
-    for d in glob.iglob(os.path.join('constant', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
         if os.path.isdir(os.path.join(d, 'polyMesh')):
             for f in glob.iglob(os.path.join(d, '*')):
                 if os.path.isfile(f):
                     correctLocationIn(f)
-    for d in glob.iglob(os.path.join('system', '*' + os.sep)):
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if os.path.isfile(os.path.join(d, 'fvSolution')):
             for f in glob.iglob(os.path.join(d, '*')):
                 if os.path.isfile(f):
@@ -286,7 +286,7 @@ def volFieldList(path = os.curdir):
     fields = []
     for i in os.listdir(path):
         tmp = os.path.join(path, i)
-        if os.path.isfile(tmp) and os.sep + '.' not in tmp:
+        if os.path.isfile(tmp) and f'{os.sep}.' not in tmp:
             vol_field = False
             for line in open(tmp, 'r'):
                 if 'volScalarField' in line or 'volVectorField' in line:
