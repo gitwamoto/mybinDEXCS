@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/27 9:39:22 PM
+# 2026/5/27 9:48:40 PM
 
 import os
 import sys
@@ -22,6 +22,7 @@ from utilities import dictParse
 # To do:
 # 緩和係数のコントロール
 # クーラン数から時間ステップのコントロール
+# matplotlibを使っている他のスクリプトの見直し
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
