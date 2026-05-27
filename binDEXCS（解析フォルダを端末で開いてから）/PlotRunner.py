@@ -23,6 +23,7 @@ from utilities import dictParse
 # 緩和係数のコントロール
 # クーラン数から時間ステップのコントロール
 # matplotlibを使っている他のスクリプトの見直し
+# リスタート時に履歴のデータをリストに格納する
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
@@ -137,8 +138,7 @@ def plot_runner(application, latest_time):
             for k in plot_data[data_key]:
                 assert len(plot_data[data_key][k]) == iteration, (
                     f'iteration = {iteration}, len["data_key"]["k"] = {len(plot_data[data_key][k])}')
-                plt_line2d[data_key][k].set_data(range(1, iteration + 1),
-                    plot_data[data_key][k]) # 線を更新
+                plt_line2d[data_key][k].set_data(range(1, iteration + 1), plot_data[data_key][k]) # 線を更新
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
