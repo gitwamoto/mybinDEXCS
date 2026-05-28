@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/28 9:37:31 PM
+# 2026/5/28 11:52:30 PM
 
 import os
 import sys
@@ -185,7 +185,7 @@ def plot_runner(application, latest_time):
                 f_log.flush() # リアルタイム反映のため
 
                 if line.startswith('Time = ') or line in 'solution converged':
-                    # ここではまだiteration回目の繰り返しを行っている
+                    # ここはまだ古いiteration回目の繰り返し
                     if iteration == 1:
                         set_subplots()
                         f_history.write(history_title_prefix)
@@ -202,7 +202,7 @@ def plot_runner(application, latest_time):
                         f_history.flush() # リアルタイム反映のため
                         if iteration%plot_freq == 0:
                             monitor()
-                    iteration += 1 # iterationを1つ増やして，iteration回目の繰り返しが始まる
+                    iteration += 1 # ここから新しいiteration回目の繰り返し
                     time = line[7:].strip()
                     for k in plot_data['residual']:
                         new_time['residual'][k] = True
