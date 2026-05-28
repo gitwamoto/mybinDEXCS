@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 # texteditwx.py
 # by Yukiharu Iwamoto
-# 2026/5/15 3:11:54 PM
+# 2026/5/28 2:56:48 PM
 
-version = '2026/5/10 3:21:21 PM'
+version = '2026/5/28 2:56:48 PM'
 
 import sys
 
@@ -150,42 +150,46 @@ def str_diff(str1, str2):
     return [i, str1[i:l1 + j], str2[i:l2 + j]] # j < 0
 
 def str_range_between(string, selection, parentheses):
-    # selection: (from, to) の形式のタプル
     # example of parentheses: (('(', ')'), ('{', '}'), ('[', ']'))
     if not isinstance(parentheses[0], (tuple, list)):
         parentheses = (parentheses,)
-    w = max([max(len(i[0]), len(i[1])) for i in parentheses])
+    w = max([max(len(i[0] or ''), len(i[1] or '')) for i in parentheses])
     l0 = selection[0] - 1
     pair = None
-    while l0 >= 0:
-        s = string[l0:l0 + w] # はみ出した範囲のぶんは空文字になる
-        for i in parentheses:
-            if i[1] is not None and s.startswith(i[1]):
-                l0 = str_range_between(string, (l0, l0), ((i[0], None),))
-                if l0 is None:
-                    return None
-                else:
-                    l0 = l0[0]
-            elif i[0] is not None and s.startswith(i[0]):
-                pair = i[1]
-                break
-        if pair is not None:
-            break
+    stack = []
+    while l0 >= 0: # 左に移動して，かっこの始まりを見つけて対応する終わりをpairに格納する．
+        s = string[l0:l0 + w] # はみ出した範囲のぶんは空文字になる．
+        p0 = next((i[0] for i in parentheses if s.startswith(i[1])), None)
+        if p0 is not None:
+            stack.append(p0)
+        else:
+            p = next((i for i in parentheses if s.startswith(i[0])), None)
+            if p is not None:
+                if len(stack) == 0:
+                    pair = p[1]
+                    break
+                elif stack[-1] == p[0]:
+                    del stack[-1]
         l0 -= 1
     if pair is None:
         return None
+    stack = []
     l1 = selection[1]
     while l1 < len(string):
-        s = string[l1:l1 + w]
-        for i in parentheses:
-            if i[0] is not None and s.startswith(i[0]):
-                l1 = str_range_between(string, (l1 + len(i[0]), l1 + len(i[0])), ((None, i[1]),))
-                if l1 is None:
-                    return None
-                else:
-                    l1 = l1[1] - 1
-            elif s.startswith(pair):
-                return [l0, l1 + len(pair)]
+        s = string[l1:l1 + w] # はみ出した範囲のぶんは空文字になる．
+        p1 = next((i[1] for i in parentheses if s.startswith(i[0])), None)
+        if p1 is not None:
+            stack.append(p1)
+        else:
+            p = next((i for i in parentheses if s.startswith(i[1])), None)
+            if p is not None:
+                if len(stack) == 0:
+                    if pair == p[1]:
+                        return [l0, l1 + len(pair)]
+                    else:
+                        return None
+                elif stack[-1] == p[1]:
+                    del stack[-1]
         l1 += 1
     return None
 
