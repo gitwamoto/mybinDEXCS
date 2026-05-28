@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:29:21 PM
+# 2026/5/28 9:37:31 PM
 
 import os
 import sys
@@ -20,9 +20,10 @@ from utilities import rmObjects
 from utilities import dictParse
 
 # To do:
-# 履歴ファイルを使って，やり直すときにはその時間から始める
-# 履歴ファイルの末尾をlatestTimeに合わせる
 # 緩和係数のコントロール
+# クーラン数から時間ステップのコントロール
+# matplotlibを使っている他のスクリプトの見直し
+# リスタート時に履歴のデータをリストに格納する
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
@@ -62,18 +63,6 @@ def plot_runner(application, latest_time):
     plt.ion() # インタラクティブモードON
     line_styles = ['-', '--', '-.']
 
-    def set_subplot(xlabel, ylabel, logscale = True):
-        fig, ax = plt.subplots()
-        ax.set_xlabel(xlabel, fontsize = 12)
-        ax.set_ylabel(ylabel, fontsize = 12)
-        if logscale:
-            ax.set_yscale('log')
-        ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
-        ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
-#        ax.set_xmargin(0)
-#        ax.set_ymargin(0)
-        return fig, ax
-
     pat = re.compile(
         # 残差
         r'Solving for (?P<parameter>[a-zA-Z0-9_.]+), Initial residual = [0-9.e+\-]+, '
@@ -88,26 +77,44 @@ def plot_runner(application, latest_time):
         'residual': {}, # {'U': [...], 'p': [...], ...}
         'continuity': {'sum local': [], 'abs global': []}
     }
-    fig_res, ax_res = set_subplot('iteration', 'final residual', True)
-    fig_res.canvas.manager.set_window_title('temporal histories of final residuals')
-    fig_cont, ax_cont = set_subplot('iteration', 'continuity error', True)
-    fig_cont.canvas.manager.set_window_title('temporal histories of continuity errors')
-    plt_fig = {'residual': fig_res, 'continuity': fig_cont}
-    plt_ax = {'residual': ax_res, 'continuity': ax_cont}
-    plt_line2d = {
-        'residual' : {}, # {'U': object, 'p': object, ...}
-        'continuity': {k: plt_ax['continuity'].plot([], [], linestyle = line_styles[i], label = k)[0]
-            for i, k in enumerate(plot_data['continuity'])}
-    }
-    plt_ax['continuity'].legend(loc = 'best') # ax.plotを呼び出した後
+    plt_fig = {}
+    plt_ax = {}
+    plt_line2d = {}
     new_time = { # 時間ステップが更新したか？
         'residual': {}, # {'U': True, 'p': True, ...}
         'continuity': True,
         'Courant': True
     }
 
+    def set_subplot(data_key, xlabel, ylabel, window_title, logscale = True):
+        fig, ax = plt.subplots()
+        ax.set_xlabel(xlabel, fontsize = 12)
+        ax.set_ylabel(ylabel, fontsize = 12)
+        if logscale:
+            ax.set_yscale('log')
+        ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
+        ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
+#        ax.set_xmargin(0)
+#        ax.set_ymargin(0)
+        fig.canvas.manager.set_window_title(window_title)
+        plt_line2d[data_key] = {k: ax.plot([], [], linestyle = line_styles[i], label = k)[0]
+            for i, k in enumerate(plot_data['data_key'])}
+        ax.legend(loc = 'best') # ax.plotを呼び出した後
+        plt_fig[data_key] = fig
+        plt_ax[data_key] = ax
+
+    def set_subplots():
+        set_subplot(data_key = 'residual', xlabel = 'iteration', ylabel= 'final residual',
+            window_title = 'iteration histories of final residuals', logscale = True)
+        set_subplot(data_key = 'continuity', xlabel = 'iteration', ylabel= 'continuity error',
+            'window_title = iteration histories of continuity errors', logscale = True)
+        if 'Courant' in plot_data:
+            set_subplot(data_key = 'Courant', xlabel = 'iteration', ylabel= 'Courant number',
+                window_title = 'iteration histories of Courant numbers', logscale = True)
+
     latest_time = float(latest_time)
     history_path = f'{application}_history.txt'
+    history_title_prefix = '# iteration\ttime [s]'
     if os.path.isfile(history_path):
         if latest_time == 0.0:
             os.remove(history_path)
@@ -118,26 +125,33 @@ def plot_runner(application, latest_time):
             with open(old_history_path, 'r') as f_in, open(history_path, 'w') as f_out:
                 for line in f_in:
                     if line.startswith('#'):
+                        if line.startswith(history_title_prefix):
+                            data_ord = [i.split() for i in line[len(history_title_prefix):].strip().split('\t')]
+                            for data_key, k in data_ord:
+                                plot_data.setdefault(data_key, {})[k] = []
+                            set_subplots()
                         f_out.write(line)
                         continue
                     stripped = line.strip()
                     if len(stripped) == 0:
                         continue
                     cols = stripped.split('\t')
+                    for (data_key, k), v in zip(data_ord, cols[2:]):
+                        plot_data[data_key][k].append(v)
                     if float(cols[1]) > latest_time:
                         break
                     iteration = int(cols[0])
                     f_out.write(line)
+            os.remove(old_history_path)
     iteration_start = iteration + 1
     plot_freq = 10 # グラフ更新頻度
 
-    def monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d):
+    def monitor():
         for data_key in plot_data:
             for k in plot_data[data_key]:
                 assert len(plot_data[data_key][k]) == iteration, (
                     f'iteration = {iteration}, len["data_key"]["k"] = {len(plot_data[data_key][k])}')
-                plt_line2d[data_key][k].set_data(range(1, iteration + 1),
-                    plot_data[data_key][k]) # 線を更新
+                plt_line2d[data_key][k].set_data(range(1, iteration + 1), plot_data[data_key][k]) # 線を更新
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
@@ -166,16 +180,15 @@ def plot_runner(application, latest_time):
             # iter(process.stdout.readline, '') は readline() を
             # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
             for line in iter(process.stdout.readline, ''):
-                sys.stdout.write(line) # 端末へそのまま表示（PyFOAMの挙動）
+                sys.stdout.write(line) # 端末へそのまま表示
                 sys.stdout.flush() # リアルタイム反映のため
                 f_log.write(line) # ログをファイル保存
                 f_log.flush() # リアルタイム反映のため
 
-                if line.startswith('Time = '):
-                    if iteration < iteration_start:
-                        time = line[7:].strip()
-                    if iteration == iteration_start:
-                        f_history.write(f'# iteration\ttime [s]')
+                if line.startswith('Time = ') or line in 'solution converged':
+                    if iteration == 1:
+                        set_subplots()
+                        f_history.write(history_title_prefix)
                         for data_key in plot_data:
                             for k in plot_data[data_key]:
                                 f_history.write(f'\t{data_key} {k}')
@@ -188,8 +201,8 @@ def plot_runner(application, latest_time):
                         f_history.write('\n')
                         f_history.flush() # リアルタイム反映のため
                         if iteration%plot_freq == 0:
-                            for data_key in plot_data:
-                                monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
+                            monitor()
+                    # ここまでのiterationは1つ前の繰り返し回数の値
                     iteration += 1
                     time = line[7:].strip()
                     for k in plot_data['residual']:
@@ -202,12 +215,8 @@ def plot_runner(application, latest_time):
                 if s.lastgroup == 'final_residual':
                     par = s.group('parameter')
                     res = float(s.group('final_residual'))
-                    if iteration == iteration_start and par not in plot_data['residual']: # 初回発見時に辞書を自動構築
+                    if iteration == 1 and par not in plot_data['residual']: # 初回発見時に辞書を自動構築
                         plot_data['residual'][par] = []
-                        plt_line2d['residual'][par] = plt_ax['residual'].plot([], [],
-                            linestyle = line_styles[len(plt_line2d['residual'])%len(line_styles)],
-                            label = par)[0] # グラフ用の線も動的に作成
-                        plt_ax['residual'].legend(loc = 'best') # ax.plotを呼び出した後
                         new_time['residual'][par] = True
                     if new_time['residual'][par]:
                         plot_data['residual'][par].append(res) # データの追加
@@ -229,15 +238,6 @@ def plot_runner(application, latest_time):
                     mx = float(s.group('Courant_max'))
                     if iteration == iteration_start:
                         plot_data['Courant'] = {'mean': [], 'max': []}
-                        fig_Courant, ax_Courant = set_subplot('iteration', 'Courant number', True)
-                        fig_Courant.canvas.manager.set_window_title('temporal histories of Courant numbers')
-                        plt_fig['Courant'] = fig_Courant
-                        plt_ax['Courant'] = ax_Courant
-                        plt_line2d['Courant']['mean'] = plt_ax['Courant'].plot([], [],
-                            linestyle = line_styles[0], label = par)[0] # グラフ用の線も動的に作成
-                        plt_line2d['Courant']['max'] = plt_ax['Courant'].plot([], [],
-                            linestyle = line_styles[0], label = par)[1] # グラフ用の線も動的に作成
-                        plt_ax['Courant'].legend(loc = 'best') # ax.plotを呼び出した後
                         new_time['Courant'] = True
                     if new_time['Courant']:
                         plot_data['Courant']['mean'].append(mn) # データの追加
@@ -256,7 +256,7 @@ def plot_runner(application, latest_time):
     finally:
         if process.poll() is None:
             process.wait()
-        monitor(iteration, plot_data, plt_fig, plt_ax, plt_line2d)
+        monitor()
         plt.ioff()
 
 def reset_relaxationFactors_in_fvSolution():
@@ -379,7 +379,7 @@ def change_relaxationFactors_in_fvSolution(exponent):
     reset_relaxationFactors_in_fvSolution()
     if os.path.isdir('system'):
         change_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}':
+    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         change_relaxationFactors_in(d)
 
 if __name__ == '__main__':

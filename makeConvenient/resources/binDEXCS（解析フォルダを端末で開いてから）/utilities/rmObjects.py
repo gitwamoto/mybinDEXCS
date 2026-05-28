@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:32:00 PM
+# 2026/5/27 9:40:58 PM
 
 import os
 import glob
@@ -59,7 +59,7 @@ def removeProcessorDirs(option = '', path = os.curdir):
             if s is not None:
                 pdirs.append(int(s.group(1)))
         pdirs.sort()
-        s = ('0秒' if noZero else '') + ('と' if noZero and noLatest) + (f'{latest_time}秒' if noLatest else '')
+        s = ('0秒' if noZero else '') + ('と' if noZero and noLatest else '') + (f'{latest_time}秒' if noLatest else '')
         for p in pdirs:
             p = os.path.join(path, f'processor{p}')
             print(f'{p}から{s}以外の結果を消去中...')
