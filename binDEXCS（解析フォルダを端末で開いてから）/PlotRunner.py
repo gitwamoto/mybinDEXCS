@@ -23,7 +23,6 @@ from utilities import dictParse
 # 緩和係数のコントロール
 # クーラン数から時間ステップのコントロール
 # matplotlibを使っている他のスクリプトの見直し
-# リスタート時に履歴のデータをリストに格納する
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
@@ -186,6 +185,7 @@ def plot_runner(application, latest_time):
                 f_log.flush() # リアルタイム反映のため
 
                 if line.startswith('Time = ') or line in 'solution converged':
+                    # ここではまだiteration回目の繰り返しを行っている
                     if iteration == 1:
                         set_subplots()
                         f_history.write(history_title_prefix)
@@ -202,8 +202,7 @@ def plot_runner(application, latest_time):
                         f_history.flush() # リアルタイム反映のため
                         if iteration%plot_freq == 0:
                             monitor()
-                    # ここまでのiterationは1つ前の繰り返し回数の値
-                    iteration += 1
+                    iteration += 1 # iterationを1つ増やして，iteration回目の繰り返しが始まる
                     time = line[7:].strip()
                     for k in plot_data['residual']:
                         new_time['residual'][k] = True
