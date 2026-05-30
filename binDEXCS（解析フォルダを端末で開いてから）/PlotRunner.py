@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/28 11:52:30 PM
+# 2026/5/30 8:04:59 PM
 
 import os
 import sys
@@ -96,8 +96,8 @@ def plot_runner(application, latest_time):
 #        ax.set_xmargin(0)
 #        ax.set_ymargin(0)
         fig.canvas.manager.set_window_title(window_title)
-        plt_line2d[data_key] = {k: ax.plot([], [], linestyle = line_styles[i], label = k)[0]
-            for i, k in enumerate(plot_data['data_key'])}
+        plt_line2d[data_key] = {k: ax.plot([], [], linestyle = line_styles[i%len(line_styles)], label = k)[0]
+            for i, k in enumerate(plot_data[data_key])}
         ax.legend(loc = 'best') # ax.plotを呼び出した後
         plt_fig[data_key] = fig
         plt_ax[data_key] = ax
@@ -106,7 +106,7 @@ def plot_runner(application, latest_time):
         set_subplot(data_key = 'residual', xlabel = 'iteration', ylabel= 'final residual',
             window_title = 'iteration histories of final residuals', logscale = True)
         set_subplot(data_key = 'continuity', xlabel = 'iteration', ylabel= 'continuity error',
-            'window_title = iteration histories of continuity errors', logscale = True)
+            window_title = 'iteration histories of continuity errors', logscale = True)
         if 'Courant' in plot_data:
             set_subplot(data_key = 'Courant', xlabel = 'iteration', ylabel= 'Courant number',
                 window_title = 'iteration histories of Courant numbers', logscale = True)
@@ -114,10 +114,10 @@ def plot_runner(application, latest_time):
     latest_time = float(latest_time)
     history_path = f'{application}_history.txt'
     history_title_prefix = '# iteration\ttime [s]'
+    iteration = 0
     if os.path.isfile(history_path):
         if latest_time == 0.0:
             os.remove(history_path)
-            iteration = 0
         else:
             old_history_path = f'{application}_old_history.txt'
             os.rename(history_path, old_history_path)
@@ -149,7 +149,7 @@ def plot_runner(application, latest_time):
         for data_key in plot_data:
             for k in plot_data[data_key]:
                 assert len(plot_data[data_key][k]) == iteration, (
-                    f'iteration = {iteration}, len["data_key"]["k"] = {len(plot_data[data_key][k])}')
+                    f"iteration = {iteration}, len(['{data_key}']['{k}']) = {len(plot_data[data_key][k])}")
                 plt_line2d[data_key][k].set_data(range(1, iteration + 1), plot_data[data_key][k]) # 線を更新
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
@@ -498,12 +498,12 @@ if __name__ == '__main__':
             for d in processor_dirs:
                 shutil.rmtree(f'processor{d}')
         decomposeParDict_path = os.path.join('system', 'decomposeParDict')
-        if os.path.isfile(decomposeParDict_path):
-            numberOfSubdomains = dictParse.DictParser(file_name = decomposeParDict_path).find_element(
-                [{'type': 'dictionary', 'key': 'numberOfSubdomains'}, {'type': 'integer'}])['element']
-            if numberOfSubdomains is not None and int(numberOfSubdomains['value']) != domains:
-                for d in processor_dirs:
-                    shutil.rmtree(f'processor{d}')
+#        if os.path.isfile(decomposeParDict_path):
+#            numberOfSubdomains = dictParse.DictParser(file_name = decomposeParDict_path).find_element(
+#                [{'type': 'dictionary', 'key': 'numberOfSubdomains'}, {'type': 'integer'}])['element']
+#            if numberOfSubdomains is not None and int(numberOfSubdomains['value']) != domains:
+#                for d in processor_dirs:
+#                    shutil.rmtree(f'processor{d}')
         if not os.path.isdir('processor0'):
             with open(decomposeParDict_path, 'w') as f:
                 f.write('FoamFile\n'
