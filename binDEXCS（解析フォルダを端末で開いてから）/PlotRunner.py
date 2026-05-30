@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/30 8:04:59 PM
+# 2026/5/30 8:26:02 PM
 
 import os
 import sys
@@ -125,7 +125,8 @@ def plot_runner(application, latest_time):
                 for line in f_in:
                     if line.startswith('#'):
                         if line.startswith(history_title_prefix):
-                            data_ord = [i.split() for i in line[len(history_title_prefix):].strip().split('\t')]
+                            data_ord = [i.split(maxsplit = 1) for i in
+                                line[len(history_title_prefix):].strip().split('\t')]
                             for data_key, k in data_ord:
                                 plot_data.setdefault(data_key, {})[k] = []
                             set_subplots()
