@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/30 8:26:02 PM
+# 2026/5/31 8:22:03 PM
 
 import os
 import sys
@@ -137,7 +137,7 @@ def plot_runner(application, latest_time):
                         continue
                     cols = stripped.split('\t')
                     for (data_key, k), v in zip(data_ord, cols[2:]):
-                        plot_data[data_key][k].append(v)
+                        plot_data[data_key][k].append(float(v))
                     if float(cols[1]) > latest_time:
                         break
                     iteration = int(cols[0])
@@ -177,6 +177,8 @@ def plot_runner(application, latest_time):
                 bufsize = 1 # Python側でも行単位でバッファリング
             )
 
+            success = True # 無事に終了できたときにTrueを返すフラグ
+
             # iter(process.stdout.readline, '') は readline() を
             # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
             for line in iter(process.stdout.readline, ''):
@@ -185,7 +187,7 @@ def plot_runner(application, latest_time):
                 f_log.write(line) # ログをファイル保存
                 f_log.flush() # リアルタイム反映のため
 
-                if line.startswith('Time = ') or line in 'solution converged':
+                if line.startswith('Time = ') or 'solution converged in' in line:
                     # ここはまだ古いiteration回目の繰り返し
                     if iteration == 1:
                         set_subplots()
@@ -203,11 +205,16 @@ def plot_runner(application, latest_time):
                         f_history.flush() # リアルタイム反映のため
                         if iteration%plot_freq == 0:
                             monitor()
-                    iteration += 1 # ここから新しいiteration回目の繰り返し
-                    time = line[7:].strip()
-                    for k in plot_data['residual']:
-                        new_time['residual'][k] = True
-                    new_time['continuity'] = new_time['Courant'] = True
+                    if line.startswith('Time = '): # ここから新しいiteration回目の繰り返し
+                        iteration += 1
+                        time = line[7:].strip()
+                        for k in plot_data['residual']:
+                            new_time['residual'][k] = True
+                        new_time['continuity'] = new_time['Courant'] = True
+                    continue
+                elif 'Foam::sigFpe::sigHandler(int)' in line:
+                    success = False # 発散したら無事な終了ではない
+                    continue
 
                 s = pat.search(line)
                 if s is None:
@@ -256,8 +263,11 @@ def plot_runner(application, latest_time):
     finally:
         if process.poll() is None:
             process.wait()
-        monitor()
+        if success:
+            monitor()
         plt.ioff()
+
+    return success
 
 def reset_relaxationFactors_in_fvSolution():
     def reset_relaxationFactors_in(path):
@@ -489,6 +499,7 @@ if __name__ == '__main__':
             os.remove(f)
 
     if domains != 1:
+        should_rm_processor_dirs = False
         processor_dirs = set()
         for d in glob.iglob(f'processor*{os.sep}'):
             try:
@@ -496,15 +507,16 @@ if __name__ == '__main__':
             except:
                 pass
         if processor_dirs != set(range(domains)):
+            should_rm_processor_dirs = True
+        decomposeParDict_path = os.path.join('system', 'decomposeParDict')
+        if not should_rm_processor_dirs and os.path.isfile(decomposeParDict_path):
+            numberOfSubdomains = dictParse.DictParser(file_name = decomposeParDict_path).find_element(
+                [{'type': 'dictionary', 'key': 'numberOfSubdomains'}, {'type': 'integer'}])['element']
+            if numberOfSubdomains is not None and int(numberOfSubdomains['value']) != domains:
+                should_rm_processor_dirs = True
+        if should_rm_processor_dirs:
             for d in processor_dirs:
                 shutil.rmtree(f'processor{d}')
-        decomposeParDict_path = os.path.join('system', 'decomposeParDict')
-#        if os.path.isfile(decomposeParDict_path):
-#            numberOfSubdomains = dictParse.DictParser(file_name = decomposeParDict_path).find_element(
-#                [{'type': 'dictionary', 'key': 'numberOfSubdomains'}, {'type': 'integer'}])['element']
-#            if numberOfSubdomains is not None and int(numberOfSubdomains['value']) != domains:
-#                for d in processor_dirs:
-#                    shutil.rmtree(f'processor{d}')
         if not os.path.isdir('processor0'):
             with open(decomposeParDict_path, 'w') as f:
                 f.write('FoamFile\n'
