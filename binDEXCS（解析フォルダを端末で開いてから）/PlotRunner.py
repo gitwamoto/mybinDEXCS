@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/31 8:22:03 PM
+# 2026/5/31 8:59:34 PM
 
 import os
 import sys
@@ -14,6 +14,8 @@ import subprocess
 import filecmp
 from datetime import datetime
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.optimize import curve_fit
 from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects
@@ -149,14 +151,20 @@ def plot_runner(application, latest_time):
     def monitor():
         for data_key in plot_data:
             for k in plot_data[data_key]:
-                assert len(plot_data[data_key][k]) == iteration, (
-                    f"iteration = {iteration}, len(['{data_key}']['{k}']) = {len(plot_data[data_key][k])}")
-                plt_line2d[data_key][k].set_data(range(1, iteration + 1), plot_data[data_key][k]) # 線を更新
+                l = len(plot_data[data_key][k])
+                if l != iteration:
+                    print(f"\niteration = {iteration}, len(['{data_key}']['{k}']) = {l}\n")
+                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
             plt.pause(0.01)
             plt_fig[data_key].savefig(f'{data_key}.png')
+
+    def decay_fit(x, a, b):
+        return a*np.exp(-b*x) # log(y) = log(a) - b*x
+    res_decay_freq = 10 # 残差減少率評価頻度
+    crit_decay_rate = 0.0 # これよりも残差減少率が大きければ，緩和係数を下げる
 
     try:
         with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
@@ -205,8 +213,14 @@ def plot_runner(application, latest_time):
                         f_history.flush() # リアルタイム反映のため
                         if iteration%plot_freq == 0:
                             monitor()
-                    if line.startswith('Time = '): # ここから新しいiteration回目の繰り返し
-                        iteration += 1
+                    if line.startswith('Time = '):
+#                        if iteration >= res_decay_freq and iteration%res_decay_freq == 0:
+#                            for k, v in plot_data['residual'].items():
+#                                (_, decay_rate), _ = curve_fit(
+#                                    decay_fit, np.array(np.arange(res_decay_freq), v[-res_decay_freq:]))
+#                                if decay_rate > crit_decay_rate:
+#                                    緩和係数を下げる関数
+                        iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
                         for k in plot_data['residual']:
                             new_time['residual'][k] = True
@@ -263,8 +277,7 @@ def plot_runner(application, latest_time):
     finally:
         if process.poll() is None:
             process.wait()
-        if success:
-            monitor()
+        monitor()
         plt.ioff()
 
     return success
