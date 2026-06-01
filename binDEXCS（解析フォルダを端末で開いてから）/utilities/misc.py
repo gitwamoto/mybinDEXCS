@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/6/1 11:27:08 PM
+# 2026/6/2 8:25:04 AM
 
 import glob
 import os
@@ -114,7 +114,7 @@ def getApplication(path = os.curdir):
 
 def getRelaxationFactor(param_name, fvSolution_path = None):
     if fvSolution_path is None:
-        fvSolution_path = os.path.join(os.curdir, 'system', fvSolution)
+        fvSolution_path = os.path.join(os.curdir, 'system', 'fvSolution')
     for cat in ['equations', 'fields']:
         try:
             return (cat,
