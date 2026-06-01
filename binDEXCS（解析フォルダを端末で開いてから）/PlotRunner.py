@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/5/31 8:59:34 PM
+# 2026/6/1 7:02:31 PM
 
 import os
 import sys
@@ -28,6 +28,7 @@ from utilities import dictParse
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
+pat_relax = re.compile('// DECREASED [0-9][0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
 
 def handler(signum, frame):
     termination_process()
@@ -129,6 +130,7 @@ def plot_runner(application, latest_time):
                         if line.startswith(history_title_prefix):
                             data_ord = [i.split(maxsplit = 1) for i in
                                 line[len(history_title_prefix):].strip().split('\t')]
+                            l_data_ord = len(data_ord)
                             for data_key, k in data_ord:
                                 plot_data.setdefault(data_key, {})[k] = []
                             set_subplots()
@@ -138,8 +140,9 @@ def plot_runner(application, latest_time):
                     if len(stripped) == 0:
                         continue
                     cols = stripped.split('\t')
-                    for (data_key, k), v in zip(data_ord, cols[2:]):
-                        plot_data[data_key][k].append(float(v))
+                    if l_data_ord == len(cols) - 2:
+                        for (data_key, k), v in zip(data_ord, cols[2:]):
+                            plot_data[data_key][k].append(float(v))
                     if float(cols[1]) > latest_time:
                         break
                     iteration = int(cols[0])
@@ -162,13 +165,14 @@ def plot_runner(application, latest_time):
             plt_fig[data_key].savefig(f'{data_key}.png')
 
     def decay_fit(x, a, b):
-        return a*np.exp(-b*x) # log(y) = log(a) - b*x
-    res_decay_freq = 10 # 残差減少率評価頻度
-    crit_decay_rate = 0.0 # これよりも残差減少率が大きければ，緩和係数を下げる
+        return a*np.power(10.0, -b*x) # log10(y) = log10(a) - b*x
+    res_decay_freq = 5 # 残差減少率評価頻度
+    res_decay_interval = 20 # 残差減少率評価期間
+    crit_decay_rate = 0.1 # これよりも残差減少率が小さければ，緩和係数を下げる
 
     try:
         with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
-            f_history.write(f'# {application} {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}\n')
+            f_history.write(f'# {application} {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}\n') # YYYY/mm/dd HH:MM:SS
 
             # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
             command =  ['stdbuf', '-oL']
@@ -214,12 +218,20 @@ def plot_runner(application, latest_time):
                         if iteration%plot_freq == 0:
                             monitor()
                     if line.startswith('Time = '):
-#                        if iteration >= res_decay_freq and iteration%res_decay_freq == 0:
-#                            for k, v in plot_data['residual'].items():
-#                                (_, decay_rate), _ = curve_fit(
-#                                    decay_fit, np.array(np.arange(res_decay_freq), v[-res_decay_freq:]))
-#                                if decay_rate > crit_decay_rate:
-#                                    緩和係数を下げる関数
+                        if iteration >= res_decay_interval and iteration%res_decay_freq == 0:
+                            U_decreased = False
+                            for k, v in plot_data['residual'].items():
+                                (_, decay_rate), _ = curve_fit(
+                                    decay_fit, np.arange(res_decay_interval), np.array(v[-res_decay_interval:]))
+                                if decay_rate < crit_decay_rate:
+                                    if k in ('Ux', 'Uy', 'Uz'):
+                                        if not U_decreased:
+                                            decrease_relaxationFactors_in_fvSolution(
+                                                param_name = 'U', decrement = 0.05, lower_limit = 0.3)
+                                            U_decreased = True
+                                    else:
+                                        decrease_relaxationFactors_in_fvSolution(
+                                            param_name = k, decrement = 0.05, lower_limit = 0.3)
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
                         for k in plot_data['residual']:
@@ -289,7 +301,6 @@ def reset_relaxationFactors_in_fvSolution():
             return
 
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
-
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
         if relaxationFactors is None:
             return
@@ -297,22 +308,10 @@ def reset_relaxationFactors_in_fvSolution():
             block = relaxationFactors.find_element([{'type': 'block', 'key': k}])['element']
             if block is None:
                 continue
-            for i in block.find_all_elements([{'type': 'dictionary'}]):
-                i = i['element']
-                comment = i.find_element([{'type': 'line_comment|block_comment'}], reverse = True)
-                if (comment['element'] is None or
-                    re.search(r'DECREASED\s+IN\s+RESPONCE\s+TO\s+FLOATING\s+POINT\s+ERROR',
-                        comment['element']['value'].upper()) is None):
-                    continue
-                del comment['parent'][comment['index']]
-                calc = i.find_element([{'type': 'directive', 'key': '#calc'}])['element']
-                if calc is None:
-                    continue
-                value = re.match(r'"\(([^)]+)', calc.find_element([{'type': 'string'}])['element']['value'])
-                if value is None:
-                    continue
-                calc['parent'][calc['index']:calc['index'] + 1] = dictParse.DictParser(string =
-                    value[1])['value']
+            for i in reversed(block.find_all_elements([{'type': 'dictionary'}])):
+                comment = i['element'].find_element([{'type': 'line_comment'}], reverse = True)['element']
+                if comment is not None and pat_relax.search(comment['value']) is not None:
+                    del i['parent'][i['index']]
             block.set_blank_line(number_of_blank_lines = 0)
 
         string = dictParse.normalize(string = fvSolution.file_string())[0]
@@ -326,84 +325,47 @@ def reset_relaxationFactors_in_fvSolution():
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(d)
 
-def change_relaxationFactors_in_fvSolution(exponent):
+def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower_limit = 0.3):
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.join(path, 'fvSolution')
         if os.path.islink(fvSolution_path):
-            return
+            return False # decreased
+        cat, value = misc.getRelaxationFactor(param_name)
+        if cat is None or value <= lower_limit:
+            return False # decreased
 
+        # appendEntries.intoFvSolution()を実行していることを想定
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
-
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
-        if relaxationFactors is None:
-            linebreak_and_relaxationFactors = dictParse.DictParser(string =
-                '\n'
-                '\n'
-                'relaxationFactors\n'
-                '{\n'
-                '}')['value']
-            tail_index = fvSolution.find_element([{'except type': 'whitespace|linebreak|separator'}],
-                reverse = True, index_not_found = len(fvSolution['value']) - 1)['index'] + 1
-            fvSolution['value'][tail_index:tail_index] = linebreak_and_relaxationFactors
-#            tail_index += len(linebreak_and_relaxationFactors)
-            relaxationFactors = linebreak_and_relaxationFactors[-1]
-        relaxationFactors_start = relaxationFactors.find_element([{'type': 'block_start'}])['index'] + 1
-
-        fields = relaxationFactors.find_element([{'type': 'block', 'key': 'fields'}])['element']
-        if fields is None:
-            linebreak_and_fields = dictParse.DictParser(string =
-                '\n'
-                '\tfields // p = p^{old} + \\alpha (p - p^{old})\n'
-                '\t{\n'
-                '\t\t"p|p_rgh"\t1.0;\n'
-                '\t\trho\t1.0;\n'
-                '\t}')['value']
-            relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_fields
-            fields = linebreak_and_fields[-1]
+        block = relaxationFactors.find_element([{'type': 'block', 'key': f'{cat}'}])['element']
+        i = block.find_element([{'type': 'dictionary', 'key': param_name}], reverse = True)
+        comment = i['element'].find_element([{'type': 'line_comment'}], reverse = True)['element']
+        if comment is not None and pat_relax.search(comment['value']) is not None:
+            i_start = i['index']
+            i_end = i['index'] + 1
         else:
-            fields['value'][:fields.find_element([{'type': 'block_start'}])['index']
-                ] = dictParse.DictParser(string = ' // p = p^{old} + \\alpha (p - p^{old})\n')['value']
+            i = block.find_element([{'type': 'block_end'}])
+            i_start = i['index']
+            i_end = i['index']
+        i['parent'][i_start:i_end] = dictParse.DictParser(string =
+            '\n'
+            f'{param_name}\t{value - decrement};'
+            f' // DECREASED {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
+            '\n')['value']
+        block.set_blank_line(number_of_blank_lines = 0)
 
-        equations = relaxationFactors.find_element([{'type': 'block', 'key': 'equations'}])['element']
-        if equations is None:
-            linebreak_and_equations = dictParse.DictParser(string =
-                '\n'
-                '\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n'
-                '\t{\n'
-                '\t\tU\t1.0;\n'
-                '\t\t"k|epsilon|omega"\t1.0;\n'
-                '\t}')['value']
-            relaxationFactors['value'][relaxationFactors_start:relaxationFactors_start] = linebreak_and_equations
-            equations = linebreak_and_equations[-1]
-        else:
-            equations['value'][:equations.find_element(
-                [{'type': 'block_start'}])['index']] = dictParse.DictParser(string =
-                    ' // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n')['value']
+        with open(fvSolution_path, 'w') as f:
+            f.write(dictParse.normalize(string = fvSolution.file_string())[0])
+        return True # decreased
 
-        relaxationFactors.set_blank_line(number_of_blank_lines = 0)
-
-        c = 0.5**exponent
-        for block in (equations, fields):
-            for param in block.find_all_elements([{'type': 'dictionary'}]):
-                value = param['element'].find_element([{'type': 'word|float|integer'}])['element']
-                if value is None:
-                    continue
-                value['parent'][value['index']:] = dictParse.DictParser(string =
-                    f'#calc "({value["element"]["value"]})*{c}";'
-                    ' // DECREASED IN RESPONCE TO FLOATING POINT ERROR\n')['value']
-            block.set_blank_line(number_of_blank_lines = 0)
-
-        string = dictParse.normalize(string = fvSolution.file_string())[0]
-        if fvSolution.string != string:
-#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
-            with open(fvSolution_path, 'w') as f:
-                f.write(string)
-
-    reset_relaxationFactors_in_fvSolution()
+    decreased = False
     if os.path.isdir('system'):
-        change_relaxationFactors_in('system')
+        if change_relaxationFactors_in('system'):
+            decreased = True
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        change_relaxationFactors_in(d)
+        if change_relaxationFactors_in(d):
+            decreased = True
+    return decreased
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
