@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/6/1 6:47:11 PM
+# 2026/6/1 11:27:08 PM
 
 import glob
 import os
@@ -112,13 +112,15 @@ def getApplication(path = os.curdir):
         ['foamDictionary', '-entry', 'application', '-value', os.path.join(path, 'system', 'controlDict')],
         encoding = 'UTF-8').strip() # リスト形式でコマンドを呼ぶ場合は引数にshell = Trueは必要ない
 
-def getRelaxationFactor(param_name, path = os.curdir):
+def getRelaxationFactor(param_name, fvSolution_path = None):
+    if fvSolution_path is None:
+        fvSolution_path = os.path.join(os.curdir, 'system', fvSolution)
     for cat in ['equations', 'fields']:
         try:
             return (cat,
                 float(subprocess.check_output(
                     ['foamDictionary', '-entry', f'relaxationFactors.{cat}.{param_name}', '-value',
-                    os.path.join(path, 'system', 'fvSolution')], stderr = subprocess.DEVNULL, encoding = 'UTF-8')))
+                    fvSolution_path], stderr = subprocess.DEVNULL, encoding = 'UTF-8')))
         except subprocess.CalledProcessError:
             continue
     return None, None
