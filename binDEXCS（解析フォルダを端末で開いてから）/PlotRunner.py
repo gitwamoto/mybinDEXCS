@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/1 7:02:31 PM
+# 2026/6/1 9:17:52 PM
 
 import os
 import sys
@@ -15,7 +15,6 @@ import filecmp
 from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.optimize import curve_fit
 from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects
@@ -25,6 +24,8 @@ from utilities import dictParse
 # 緩和係数のコントロール
 # クーラン数から時間ステップのコントロール
 # matplotlibを使っている他のスクリプトの見直し
+
+plt.rcParams['figure.figsize'] = (4.8, 3.6)
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
@@ -164,11 +165,9 @@ def plot_runner(application, latest_time):
             plt.pause(0.01)
             plt_fig[data_key].savefig(f'{data_key}.png')
 
-    def decay_fit(x, a, b):
-        return a*np.power(10.0, -b*x) # log10(y) = log10(a) - b*x
-    res_decay_freq = 5 # 残差減少率評価頻度
-    res_decay_interval = 20 # 残差減少率評価期間
-    crit_decay_rate = 0.1 # これよりも残差減少率が小さければ，緩和係数を下げる
+    res_decay_eval = 0.001 # これよりも残差が大きい時に残差減少率を評価する
+    res_decay_freq = 10 # 残差減少率評価頻度
+    crit_res_decay_rate = 0.0 # これよりも残差減少率が小さければ，緩和係数を下げる
 
     try:
         with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
@@ -218,20 +217,26 @@ def plot_runner(application, latest_time):
                         if iteration%plot_freq == 0:
                             monitor()
                     if line.startswith('Time = '):
-                        if iteration >= res_decay_interval and iteration%res_decay_freq == 0:
+                        if iteration > 0 and iteration%res_decay_freq == 0:
                             U_decreased = False
                             for k, v in plot_data['residual'].items():
-                                (_, decay_rate), _ = curve_fit(
-                                    decay_fit, np.arange(res_decay_interval), np.array(v[-res_decay_interval:]))
-                                if decay_rate < crit_decay_rate:
-                                    if k in ('Ux', 'Uy', 'Uz'):
-                                        if not U_decreased:
-                                            decrease_relaxationFactors_in_fvSolution(
-                                                param_name = 'U', decrement = 0.05, lower_limit = 0.3)
-                                            U_decreased = True
-                                    else:
+                                if len(v) < res_decay_freq:
+                                    continue
+                                v = np.array(v[-res_decay_freq:])
+                                if np.mean(v) < res_decay_eval:
+                                    continue
+                                # log10(res) = a*iteration + b, decay_rate = -a
+                                res_decay_rate = -np.polyfit(np.arange(res_decay_freq), np.log10(v), 1)[0]
+                                if res_decay_rate > crit_res_decay_rate:
+                                    continue
+                                if k in ('Ux', 'Uy', 'Uz'):
+                                    if not U_decreased:
                                         decrease_relaxationFactors_in_fvSolution(
-                                            param_name = k, decrement = 0.05, lower_limit = 0.3)
+                                            param_name = 'U', decrement = 0.01, lower_limit = 0.3)
+                                        U_decreased = True
+                                else:
+                                    decrease_relaxationFactors_in_fvSolution(
+                                        param_name = k, decrement = 0.01, lower_limit = 0.3)
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
                         for k in plot_data['residual']:
