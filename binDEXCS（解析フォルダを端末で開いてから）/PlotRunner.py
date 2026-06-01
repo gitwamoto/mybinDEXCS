@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/1 11:36:11 PM
+# 2026/6/2 8:28:45 AM
 
 import os
 import sys
@@ -34,7 +34,7 @@ pat_relax = re.compile('// DECREASED [0-9][0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9] 
 relaxationFactor_lower_limit = 0.3
 
 def handler(signum, frame):
-    termination_process()
+    terminate()
     sys.exit(1)
 
 def terminate():
@@ -163,6 +163,7 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
     reached_relax_lower_limit = False # 全てのパラメータで緩和係数の最小値に達しているか
 
     succeed = True # 無事に終了できたときにTrueを返すフラグ
+    time = '0'
 
     try:
         with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
@@ -361,7 +362,7 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
 
     reached_lower_limit = False
     if os.path.isdir('system'):
-        reached_lower_limit = change_relaxationFactors_in('system'):
+        reached_lower_limit = change_relaxationFactors_in('system')
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if change_relaxationFactors_in(d):
             reached_lower_limit = True
