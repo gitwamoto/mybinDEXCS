@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/1 9:17:52 PM
+# 2026/6/1 11:36:11 PM
 
 import os
 import sys
@@ -24,12 +24,14 @@ from utilities import dictParse
 # 緩和係数のコントロール
 # クーラン数から時間ステップのコントロール
 # matplotlibを使っている他のスクリプトの見直し
+# rmObjects.pyでplotRunner.pyが作るグラフのファイル→計算.pyが作るグラフのファイル
 
 plt.rcParams['figure.figsize'] = (4.8, 3.6)
 
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
 pat_relax = re.compile('// DECREASED [0-9][0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
+relaxationFactor_lower_limit = 0.3
 
 def handler(signum, frame):
     termination_process()
@@ -48,20 +50,7 @@ def terminate():
         shutil.move('0_bak', '0')
     rmObjects.removeInessentials()
 
-def get_relaxation_factor(param):
-    # 指定された変数が equations と fields のどちらにあるか判定する
-    for cat in ('equations', 'fields'):
-        try:
-            # 実行して値が返ってくればそのカテゴリに属する
-            r = float(subprocess.check_output(['foamDictionary', 'system/fvSolution',
-                '-entry', f'relaxationFactors.{cat}.{param}', '-value'],
-                stderr = subprocess.DEVNULL, text = True))
-            return cat, r
-        except subprocess.CalledProcessError:
-            continue
-    return None, None
-
-def plot_runner(application, latest_time):
+def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_limit = 0.3):
     # グラフの初期設定
     plt.ion() # インタラクティブモードON
     line_styles = ['-', '--', '-.']
@@ -154,11 +143,14 @@ def plot_runner(application, latest_time):
 
     def monitor():
         for data_key in plot_data:
+            message = ''
             for k in plot_data[data_key]:
                 l = len(plot_data[data_key][k])
                 if l != iteration:
-                    print(f"\niteration = {iteration}, len(['{data_key}']['{k}']) = {l}\n")
+                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
                 plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
+            if len(message) > 0:
+                print(f'\n{message}')
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
@@ -168,6 +160,9 @@ def plot_runner(application, latest_time):
     res_decay_eval = 0.001 # これよりも残差が大きい時に残差減少率を評価する
     res_decay_freq = 10 # 残差減少率評価頻度
     crit_res_decay_rate = 0.0 # これよりも残差減少率が小さければ，緩和係数を下げる
+    reached_relax_lower_limit = False # 全てのパラメータで緩和係数の最小値に達しているか
+
+    succeed = True # 無事に終了できたときにTrueを返すフラグ
 
     try:
         with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
@@ -187,8 +182,6 @@ def plot_runner(application, latest_time):
                 text = True, # 出力を文字列として扱う
                 bufsize = 1 # Python側でも行単位でバッファリング
             )
-
-            success = True # 無事に終了できたときにTrueを返すフラグ
 
             # iter(process.stdout.readline, '') は readline() を
             # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
@@ -219,6 +212,7 @@ def plot_runner(application, latest_time):
                     if line.startswith('Time = '):
                         if iteration > 0 and iteration%res_decay_freq == 0:
                             U_decreased = False
+                            reached_relax_lower_limit = True
                             for k, v in plot_data['residual'].items():
                                 if len(v) < res_decay_freq:
                                     continue
@@ -231,12 +225,14 @@ def plot_runner(application, latest_time):
                                     continue
                                 if k in ('Ux', 'Uy', 'Uz'):
                                     if not U_decreased:
-                                        decrease_relaxationFactors_in_fvSolution(
-                                            param_name = 'U', decrement = 0.01, lower_limit = 0.3)
+                                        if not decrease_relaxationFactors_in_fvSolution(
+                                            param_name = 'U', decrement = relax_decrement, lower_limit = relax_lower_limit):
+                                            reached_relax_lower_limit = False
                                         U_decreased = True
                                 else:
-                                    decrease_relaxationFactors_in_fvSolution(
-                                        param_name = k, decrement = 0.01, lower_limit = 0.3)
+                                    if not decrease_relaxationFactors_in_fvSolution(
+                                        param_name = k, decrement = relax_decrement, lower_limit = relax_lower_limit):
+                                        reached_relax_lower_limit = False
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
                         for k in plot_data['residual']:
@@ -244,7 +240,7 @@ def plot_runner(application, latest_time):
                         new_time['continuity'] = new_time['Courant'] = True
                     continue
                 elif 'Foam::sigFpe::sigHandler(int)' in line:
-                    success = False # 発散したら無事な終了ではない
+                    succeed = False # 発散したら無事な終了ではない
                     continue
 
                 s = pat.search(line)
@@ -297,7 +293,7 @@ def plot_runner(application, latest_time):
         monitor()
         plt.ioff()
 
-    return success
+    return succeed, reached_relax_lower_limit, plot_data['residual'].keys()
 
 def reset_relaxationFactors_in_fvSolution():
     def reset_relaxationFactors_in(path):
@@ -334,10 +330,10 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.join(path, 'fvSolution')
         if os.path.islink(fvSolution_path):
-            return False # decreased
-        cat, value = misc.getRelaxationFactor(param_name)
+            return False # not reached lower limit
+        cat, value = misc.getRelaxationFactor(param_name, fvSolution_path)
         if cat is None or value <= lower_limit:
-            return False # decreased
+            return True # reached lower limit
 
         # appendEntries.intoFvSolution()を実行していることを想定
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
@@ -361,16 +357,15 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
 
         with open(fvSolution_path, 'w') as f:
             f.write(dictParse.normalize(string = fvSolution.file_string())[0])
-        return True # decreased
+        return False # not reached lower limit
 
-    decreased = False
+    reached_lower_limit = False
     if os.path.isdir('system'):
-        if change_relaxationFactors_in('system'):
-            decreased = True
+        reached_lower_limit = change_relaxationFactors_in('system'):
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         if change_relaxationFactors_in(d):
-            decreased = True
-    return decreased
+            reached_lower_limit = True
+    return reached_lower_limit
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -527,6 +522,27 @@ if __name__ == '__main__':
                     shutil.move('0_bak', '0')
                 sys.exit(1)
 
-    plot_runner(misc.getApplication(), latest_time)
+    application = misc.getApplication()
+    while True:
+        succeed, reached_relax_lower_limit, param_names = plot_runner(
+            application = application,
+            latest_time = misc.latestTime(),
+            relax_decrement = 0.01,
+            relax_lower_limit = relaxationFactor_lower_limit)
+        if succeed:
+            break
+        elif not reached_relax_lower_limit:
+            for k in param_names:
+                if k in ('Uy', 'Uz'):
+                    continue
+                decrease_relaxationFactors_in_fvSolution(
+                    param_name = 'U' if k == 'Ux' else k, decrement = 0.1, lower_limit = relaxationFactor_lower_limit)
+            rmObjects.removeLogPlotPngs()
+            os.remove(f'{application}.log')
+        else:
+            print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．以下を検討して下さい：\n'
+                ' (1) 境界条件が適切かを確認する．\n'
+                ' (2) system/fvSchemesやsystem/fvSolutionを発散しにくいも設定に変える．\n'
+                ' (3) メッシュを作り直す，')
 
     terminate()
