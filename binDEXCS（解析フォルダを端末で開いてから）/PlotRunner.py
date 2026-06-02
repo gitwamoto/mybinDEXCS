@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 7:15:51 PM
+# 2026/6/2 8:35:11 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -177,7 +177,6 @@ def plot_runner(application, start_time, relax_decrement = 0.01, relax_lower_lim
     res_decay_eval = 0.001 # これよりも残差が大きい時に残差減少率を評価する
     res_decay_freq = 10 # 残差減少率評価頻度
     crit_res_decay_rate = 0.0 # これよりも残差減少率が小さければ，緩和係数を下げる
-    reached_relax_lower_limit = False # 全てのパラメータで緩和係数の最小値に達しているか
 
     succeed = True # 無事に終了できたときにTrueを返すフラグ
     time = '0'
@@ -231,25 +230,22 @@ def plot_runner(application, start_time, relax_decrement = 0.01, relax_lower_lim
                     if line.startswith('Time = '):
                         if iteration > 0 and iteration%res_decay_freq == 0:
                             U_decreased = False
-                            reached_relax_lower_limit = True
                             for k, v in plot_data['residual'].items():
                                 if len(v) < res_decay_freq:
-                                    reached_relax_lower_limit = False
                                     continue
                                 v = np.array(v[-res_decay_freq:])
                                 if np.mean(v) < res_decay_eval:
-                                    reached_relax_lower_limit = False
                                     continue
                                 # log10(res) = a*iteration + b, decay_rate = -a
                                 if -np.polyfit(np.arange(res_decay_freq), np.log10(v), 1)[0] > crit_res_decay_rate:
-                                    reached_relax_lower_limit = False
                                     continue
-                                if k in ('Ux', 'Uy', 'Uz') and U_decreased:
-                                    continue
-                                reached_relax_lower_limit &= decrease_relaxationFactors_in_fvSolution(
-                                    param_name = 'U' if k in ('Ux', 'Uy', 'Uz') else k,
-                                    decrement = relax_decrement, lower_limit = relax_lower_limit)
                                 if k in ('Ux', 'Uy', 'Uz'):
+                                    k = 'U'
+                                    if U_decreased:
+                                        continue
+                                decrease_relaxationFactors_in_fvSolution(
+                                    param_name = k, decrement = relax_decrement, lower_limit = relax_lower_limit)
+                                if k == 'U':
                                     U_decreased = True
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
@@ -313,7 +309,7 @@ def plot_runner(application, start_time, relax_decrement = 0.01, relax_lower_lim
         plt.ioff()
         plt.close('all')
 
-    return succeed, reached_relax_lower_limit, plot_data['residual'].keys()
+    return succeed, plot_data['residual'].keys()
 
 def reset_relaxationFactors_in_fvSolution():
     def reset_relaxationFactors_in(path):
@@ -350,10 +346,10 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.join(path, 'fvSolution')
         if os.path.islink(fvSolution_path):
-            return -1 # link
+            return
         cat, value = misc.getRelaxationFactor(param_name, fvSolution_path)
         if cat is None or value <= lower_limit:
-            return 1 # reached lower limit
+            return
 
         # appendEntries.intoFvSolution()を実行していることを想定
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
@@ -377,15 +373,28 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
 
         with open(fvSolution_path, 'w') as f:
             f.write(dictParse.normalize(string = fvSolution.file_string())[0])
-        return 0 # not reached lower limit
 
-    reached_lower_limit = True
     if os.path.isdir('system'):
-        reached_lower_limit &= not change_relaxationFactors_in('system') == 0
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        reached_lower_limit &= not change_relaxationFactors_in(d) == 0
+        change_relaxationFactors_in('system')
+    for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
+        change_relaxationFactors_in(r)
 
-    return reached_lower_limit
+def getRelaxationFactors(param_names):
+    relax_factors = []
+    for k in param_names:
+        if k in ('Uy', 'Uz'):
+            continue
+        elif k == 'Ux':
+            k = 'U'
+        if os.path.isdir('system'):
+            value = misc.getRelaxationFactor(k, os.path.join('system', 'fvSolution'))[1]
+            if value is not None:
+                relax_factors.append({'param': k, 'value': value})
+        for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
+            value = misc.getRelaxationFactor(k, os.path.join(r, 'fvSolution'))[1]
+            if value is not None:
+                relax_factors.append({'region': os.path.basename(r), 'param': k, 'value': value})
+    return relax_factors
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -576,19 +585,23 @@ if __name__ == '__main__':
 
     application = misc.getApplication()
     succeed = True
-    param_names = []
+    relax_factors = []
     while True:
         start_time = misc.latestTime()
-        succeed, reached_relax_lower_limit, param_names = plot_runner(
+        succeed, param_names = plot_runner(
             application = application,
             start_time = start_time,
             relax_decrement = 0.01,
             relax_lower_limit = relaxationFactor_lower_limit)
+        relax_factors = getRelaxationFactors(param_names)
+        max_relax_factor = 1.0
+        if len(relax_factors) > 0:
+            max_relax_factor = max([i['value'] for i in relax_factors])
         if domains != 1:
             recosntructPar()
-        if succeed or not decrease_relaxation_factors:
+        if succeed:
             break
-        elif reached_relax_lower_limit:
+        elif max_relax_factor <= relaxationFactor_lower_limit:
             if float(start_time) != 0.0:
                 for d in glob.iglob(f'processor*{os.sep}'):
                     shutil.rmtree(os.path.join(d, start_time))
@@ -599,7 +612,9 @@ if __name__ == '__main__':
             for k in param_names:
                 if k in ('Uy', 'Uz'):
                     continue
-                decrease_relaxationFactors_in_fvSolution(param_name = 'U' if k == 'Ux' else k,
+                elif k == 'Ux':
+                    k = 'U'
+                decrease_relaxationFactors_in_fvSolution(param_name = k,
                     decrement = 0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
@@ -611,19 +626,11 @@ if __name__ == '__main__':
         print('\n計算が無事に終了しました．')
         if decrease_relaxation_factors:
             print('緩和係数（relaxationFactors）は以下になりました：')
-            for k in param_names:
-                if k in ('Uy', 'Uz'):
-                    continue
-                if os.path.isdir('system'):
-                    p = os.path.join('system', 'fvSolution')
-                    value = misc.getRelaxationFactor(k, p)[1]
-                    if value is not None:
-                        print(f'  [{p}ファイル] {k} {value};')
-                for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-                    p = os.path.join(d, 'fvSolution')
-                    value = misc.getRelaxationFactor(k, p)[1]
-                    if value is not None:
-                        print(f'  [{p}ファイル] {k} {value};')
+            for i in relax_factors:
+                if 'region' in i:
+                    print(f'  {i["param"]} ({i["region"]}): {i["value"]}')
+                else:
+                    print(f'  {i["param"]}: {i["value"]}')
     else:
         if decrease_relaxation_factors:
             print('\n(ERROR) 緩和係数（relaxationFactors）を下限の'
