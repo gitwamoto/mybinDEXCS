@@ -43,7 +43,7 @@ def removeProcessorDirs(option = '', path = os.curdir):
     noZero, noLatest = 'noZero' in option, 'noLatest' in option
     pat = re.compile(r'(?:\./)?processor([0-9]+)/$')
     if not noLatest and not noZero:
-        for p in glob.iglob(os.path.join(path, 'processor[0-9]*/')):
+        for p in glob.iglob(os.path.join(path, f'processor[0-9]*{os.sep}')):
             if pat.match(p):
                 shutil.rmtree(p)
     else:
@@ -54,15 +54,18 @@ def removeProcessorDirs(option = '', path = os.curdir):
         if noLatest and latest_time == 0.0:
             noZero = False
         pdirs = []
-        for p in glob.iglob(os.path.join(path, 'processor[0-9]*/')):
+        for p in glob.iglob(os.path.join(path, f'processor[0-9]*{os.sep}')):
             s = pat.match(p)
             if s is not None:
                 pdirs.append(int(s.group(1)))
         pdirs.sort()
-        s = ('0秒' if noZero else '') + ('と' if noZero and noLatest else '') + (f'{latest_time}秒' if noLatest else '')
+        exception = (('0秒' if noZero else '') + ('と' if noZero and noLatest else '') +
+            (f'{latest_time}秒' if noLatest else ''))
+        if len(exception) > 0:
+            exception += '以外の'
         for p in pdirs:
             p = os.path.join(path, f'processor{p}')
-            print(f'{p}から{s}以外の結果を消去中...')
+            print(f'{p}から{exception}結果を消去中...')
             for t in glob.iglob(os.path.join(p, f'*{os.sep}')):
                 try:
                     ft = float(os.path.basename(os.path.dirname(t)))
