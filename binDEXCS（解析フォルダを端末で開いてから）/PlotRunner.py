@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 1:29:04 PM
+# 2026/6/2 5:40:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
 # -N -> 非インタラクティブモードで実行
 # -d -> 0秒以外のフォルダがある場合，それらを消す．つまり0秒から計算をやり直す
+# -e -> 残差が落ちにくい時に緩和係数を小さくする
+# -f -> system/controlDictに書かれているfunctionsを全て計算中に実行するように，controlDictを書き変える
 # -p -> paraFoamを実行する
 # -r domains -> 計算領域をdomains個に分割して並列計算を行う．1だと普通の計算
 
@@ -32,7 +34,6 @@ from utilities import rmObjects
 from utilities import dictParse
 
 # To do:
-# 緩和係数のコントロール
 # クーラン数から時間ステップのコントロール
 # matplotlibを使っている他のスクリプトの見直し
 # rmObjects.pyでplotRunner.pyが作るグラフのファイル→計算.pyが作るグラフのファイル
@@ -45,23 +46,27 @@ pat_relax = re.compile('// DECREASED [0-9][0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9] 
 relaxationFactor_lower_limit = 0.3
 
 def handler(signum, frame):
-    terminate()
+    if domains != 1:
+        recosntructPar()
+        rmObjects.removeProcessorDirs('noLatest')
+    restore_zero_folder()
     sys.exit(1)
 
-def terminate():
-    if domains != 1:
-        command = 'reconstructPar -newTimes -noFunctionObjects'
-        if os.path.exists(regionProperties_path):
-            command += ' -allRegions'
-        subprocess.call(command, shell = True)
-        rmObjects.removeProcessorDirs('noLatest')
+def recosntructPar():
+    command = 'reconstructPar -newTimes -noFunctionObjects'
+    if os.path.exists(regionProperties_path):
+        command += ' -allRegions'
+    subprocess.call(command, shell = True)
+    print()
+
+def restore_zero_folder():
     if os.path.isdir('0_bak'):
         if os.path.isdir('0'):
             shutil.rmtree('0')
         shutil.move('0_bak', '0')
     rmObjects.removeInessentials()
 
-def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_limit = 0.3):
+def plot_runner(application, start_time, relax_decrement = 0.01, relax_lower_limit = 0.3):
     # グラフの初期設定
     plt.ion() # インタラクティブモードON
     line_styles = ['-', '--', '-.']
@@ -115,12 +120,12 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
             set_subplot(data_key = 'Courant', xlabel = 'iteration', ylabel= 'Courant number',
                 window_title = 'iteration histories of Courant numbers', logscale = True)
 
-    latest_time = float(latest_time)
+    start_time = float(start_time)
     history_path = f'{application}_history.txt'
     history_title_prefix = '# iteration\ttime [s]'
     iteration = 0
     if os.path.isfile(history_path):
-        if latest_time == 0.0:
+        if start_time == 0.0:
             os.remove(history_path)
         else:
             old_history_path = f'{application}_old_history.txt'
@@ -144,9 +149,9 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
                     if l_data_ord == len(cols) - 2:
                         for (data_key, k), v in zip(data_ord, cols[2:]):
                             plot_data[data_key][k].append(float(v))
-                    if float(cols[1]) > latest_time:
-                        break
                     iteration = int(cols[0])
+                    if float(cols[1]) > start_time:
+                        break
                     f_out.write(line)
             os.remove(old_history_path)
     iteration_start = iteration + 1
@@ -161,7 +166,8 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
                     message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
                 plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
             if len(message) > 0:
-                print(f'\n{message}')
+                sys.stdout.write(f'\n{message}\n')
+                sys.stdout.flush() # リアルタイム反映のため
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
@@ -227,13 +233,17 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
                             reached_relax_lower_limit = True
                             for k, v in plot_data['residual'].items():
                                 if len(v) < res_decay_freq:
+                                    reached_relax_lower_limit = False
                                     continue
                                 v = np.array(v[-res_decay_freq:])
                                 if np.mean(v) < res_decay_eval:
+                                    reached_relax_lower_limit = False
                                     continue
                                 # log10(res) = a*iteration + b, decay_rate = -a
-                                if (-np.polyfit(np.arange(res_decay_freq), np.log10(v), 1)[0] > crit_res_decay_rate
-                                    or k in ('Ux', 'Uy', 'Uz') and U_decreased):
+                                if -np.polyfit(np.arange(res_decay_freq), np.log10(v), 1)[0] > crit_res_decay_rate:
+                                    reached_relax_lower_limit = False
+                                    continue
+                                if k in ('Ux', 'Uy', 'Uz') and U_decreased:
                                     continue
                                 reached_relax_lower_limit &= decrease_relaxationFactors_in_fvSolution(
                                     param_name = 'U' if k in ('Ux', 'Uy', 'Uz') else k,
@@ -371,10 +381,9 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
     reached_lower_limit = True
     if os.path.isdir('system'):
         reached_lower_limit &= not (change_relaxationFactors_in('system') == 0)
-        print(f'\n\nparam_name = {param_name}, reached_lower_limit = {reached_lower_limit}\n')
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reached_lower_limit &= not (change_relaxationFactors_in(d) == 0)
-        print(f'\n\nparam_name = {param_name}, reached_lower_limit = {reached_lower_limit}\n')
+
     return reached_lower_limit
 
 if __name__ == '__main__':
@@ -386,6 +395,8 @@ if __name__ == '__main__':
     else:
         interactive = False
         delete_folders_except_for_zero = False
+        enable_all_function_objects = False
+        decrease_relaxation_factors = False
         exec_paraFoam = False
         i = 1
         while i < len(sys.argv):
@@ -393,6 +404,10 @@ if __name__ == '__main__':
                 pass
             elif sys.argv[i] == '-d':
                 delete_folders_except_for_zero = True
+            elif sys.argv[i] == '-e':
+                decrease_relaxationFactors = True
+            elif sys.argv[i] == '-f':
+                enable_all_function_objects = True
             elif sys.argv[i] == '-p':
                 exec_paraFoam = True
             elif sys.argv[i] == '-r':
@@ -438,11 +453,8 @@ if __name__ == '__main__':
     reset_relaxationFactors_in_fvSolution()
 
     if os.path.isdir('processor0'):
-        command = 'reconstructPar -newTimes -noFunctionObjects'
-        if os.path.exists(regionProperties_path):
-            command += ' -allRegions'
-        subprocess.call(command, shell = True)
-        print()
+        recosntructPar()
+        rmObjects.removeProcessorDirs('noLatest')
     latest_time = misc.latestTime()
     if latest_time is None:
         print('エラー: 結果フォルダがありません．')
@@ -489,6 +501,25 @@ if __name__ == '__main__':
     for f in ('potentialFoam.log', 'potentialFoam.logfile'):
         if os.path.isfile(f):
             os.remove(f)
+
+    enable_function_list, disable_function_list = misc.controlDictFunctionsList()
+    if len(enable_function_list) + len(disable_function_list) > 0:
+        print(f'{controlDict_path}ファイルのfunctionsで')
+        if len(enable_function_list) > 0:
+            print('  実行されるものは' + ', '.join(enable_function_list))
+        if len(disable_function_list) > 0:
+            print('  実行されないものは' + ', '.join(disable_function_list))
+        print('です．')
+        if interactive:
+            enable_all_function_objects = True if input(
+                f'全てを実行するように{controlDict_path}ファイルを書き換えますか？'
+                ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+            decrease_relaxation_factors = True if input(
+                f'計算が発散した場合，{fvSolution_path}ファイルのrelaxationFactorsを小さくして計算を続けますか？'
+                ' (y/n) > ').strip().lower() == 'y' else False
+
+    if not enable_all_function_objects:
+        misc.setEnabledInControlDictFunctions(enabled = False)
 
     if domains != 1:
         should_rm_processor_dirs = False
@@ -542,29 +573,42 @@ if __name__ == '__main__':
     application = misc.getApplication()
     succeed = True
     while True:
+        start_time = misc.latestTime()
         succeed, reached_relax_lower_limit, param_names = plot_runner(
             application = application,
-            latest_time = misc.latestTime(),
+            start_time = start_time,
             relax_decrement = 0.01,
             relax_lower_limit = relaxationFactor_lower_limit)
-        if succeed or reached_relax_lower_limit:
+        if domains != 1:
+            recosntructPar()
+        if succeed or not decrease_relaxation_factors:
             break
+        elif reached_relax_lower_limit:
+            if float(start_time) != 0.0:
+                for d in glob.iglob(f'processor*{os.sep}'):
+                    shutil.rmtree(os.path.join(d, start_time))
+                shutil.rmtree(start_time)
+            else:
+                break
         else:
             for k in param_names:
                 if k in ('Uy', 'Uz'):
                     continue
-                decrease_relaxationFactors_in_fvSolution(
-                    param_name = 'U' if k == 'Ux' else k, decrement = 0.05, lower_limit = relaxationFactor_lower_limit)
+                decrease_relaxationFactors_in_fvSolution(param_name = 'U' if k == 'Ux' else k,
+                    decrement = 0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
 
-    terminate()
+    rmObjects.removeProcessorDirs('noLatest')
+    restore_zero_folder()
 
     if not succeed:
-        print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．以下を検討して下さい：\n'
-            ' (1) 境界条件が適切かを確認する．\n'
-            ' (2) system/fvSchemesやsystem/fvSolutionを発散しにくいも設定に変える．\n'
-            ' (3) メッシュを作り直す．')
+        if decrease_relaxation_factors:
+            print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．')
+        else:
+            print('\n(ERROR) 計算が発散しました．：\n')
+        print('「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) '
+            'の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．')
 
     if interactive:
         exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
