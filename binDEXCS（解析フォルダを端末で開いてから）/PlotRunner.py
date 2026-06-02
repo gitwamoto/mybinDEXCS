@@ -232,19 +232,14 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
                                 if np.mean(v) < res_decay_eval:
                                     continue
                                 # log10(res) = a*iteration + b, decay_rate = -a
-                                res_decay_rate = -np.polyfit(np.arange(res_decay_freq), np.log10(v), 1)[0]
-                                if res_decay_rate > crit_res_decay_rate:
+                                if (-np.polyfit(np.arange(res_decay_freq), np.log10(v), 1)[0] > crit_res_decay_rate
+                                    or k in ('Ux', 'Uy', 'Uz') and U_decreased):
                                     continue
+                                reached_relax_lower_limit &= decrease_relaxationFactors_in_fvSolution(
+                                    param_name = 'U' if k in ('Ux', 'Uy', 'Uz') else k,
+                                    decrement = relax_decrement, lower_limit = relax_lower_limit)
                                 if k in ('Ux', 'Uy', 'Uz'):
-                                    if not U_decreased:
-                                        if not decrease_relaxationFactors_in_fvSolution(param_name = 'U',
-                                            decrement = relax_decrement, lower_limit = relax_lower_limit):
-                                            reached_relax_lower_limit = False
-                                        U_decreased = True
-                                else:
-                                    if not decrease_relaxationFactors_in_fvSolution(param_name = k,
-                                        decrement = relax_decrement, lower_limit = relax_lower_limit):
-                                        reached_relax_lower_limit = False
+                                    U_decreased = True
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
                         for k in plot_data['residual']:
@@ -375,11 +370,11 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
 
     reached_lower_limit = True
     if os.path.isdir('system'):
-        if change_relaxationFactors_in('system') == 0:
-            reached_lower_limit = False
+        reached_lower_limit &= not (change_relaxationFactors_in('system') == 0)
+        print(f'\n\nparam_name = {param_name}, reached_lower_limit = {reached_lower_limit}\n')
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if change_relaxationFactors_in(d) == 0:
-            reached_lower_limit = False
+        reached_lower_limit &= not (change_relaxationFactors_in(d) == 0)
+        print(f'\n\nparam_name = {param_name}, reached_lower_limit = {reached_lower_limit}\n')
     return reached_lower_limit
 
 if __name__ == '__main__':
@@ -554,7 +549,7 @@ if __name__ == '__main__':
             relax_lower_limit = relaxationFactor_lower_limit)
         if succeed or reached_relax_lower_limit:
             break
-        elif not reached_relax_lower_limit:
+        elif:
             for k in param_names:
                 if k in ('Uy', 'Uz'):
                     continue
