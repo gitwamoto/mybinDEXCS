@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 5:40:09 PM
+# 2026/6/2 5:44:42 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -465,7 +465,7 @@ if __name__ == '__main__':
         sys.exit(1)
     if float(latest_time) != 0.0:
         if interactive:
-            delete_folders_except_for_zero = True if input('0秒以外のフォルダがあります．'
+            delete_folders_except_for_zero = True if input('\n0秒以外のフォルダがあります．'
                 '消して0秒からやり直しますか？ (y/n) > ').strip().lower() == 'y' else False
         if delete_folders_except_for_zero:
             subprocess.call('foamListTimes -rm -noZero', shell = True)
@@ -488,7 +488,7 @@ if __name__ == '__main__':
     if interactive:
         while True:
             try:
-                domains = max(int(input('計算領域を何個に分割して並列計算しますか？ '
+                domains = max(int(input('\n計算領域を何個に分割して並列計算しますか？ '
                     f'({threads}個まで, 1だと普通の計算) > ').strip()), 1)
                 break
             except ValueError:
@@ -504,7 +504,7 @@ if __name__ == '__main__':
 
     enable_function_list, disable_function_list = misc.controlDictFunctionsList()
     if len(enable_function_list) + len(disable_function_list) > 0:
-        print(f'{controlDict_path}ファイルのfunctionsで')
+        print(f'\n{controlDict_path}ファイルのfunctionsで')
         if len(enable_function_list) > 0:
             print('  実行されるものは' + ', '.join(enable_function_list))
         if len(disable_function_list) > 0:
@@ -515,7 +515,7 @@ if __name__ == '__main__':
                 f'全てを実行するように{controlDict_path}ファイルを書き換えますか？'
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
             decrease_relaxation_factors = True if input(
-                f'計算が発散した場合，{fvSolution_path}ファイルのrelaxationFactorsを小さくして計算を続けますか？'
+                f'\n残差が落ちにくい時に，{fvSolution_path}ファイルのrelaxationFactorsを小さくしますか？'
                 ' (y/n) > ').strip().lower() == 'y' else False
 
     if not enable_all_function_objects:
