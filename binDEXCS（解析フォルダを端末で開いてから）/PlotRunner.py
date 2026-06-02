@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 12:23:36 PM
+# 2026/6/2 1:29:04 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -237,13 +237,13 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
                                     continue
                                 if k in ('Ux', 'Uy', 'Uz'):
                                     if not U_decreased:
-                                        if decrease_relaxationFactors_in_fvSolution(param_name = 'U',
-                                            decrement = relax_decrement, lower_limit = relax_lower_limit) == 0:
+                                        if not decrease_relaxationFactors_in_fvSolution(param_name = 'U',
+                                            decrement = relax_decrement, lower_limit = relax_lower_limit):
                                             reached_relax_lower_limit = False
                                         U_decreased = True
                                 else:
-                                    if decrease_relaxationFactors_in_fvSolution(param_name = k,
-                                        decrement = relax_decrement, lower_limit = relax_lower_limit) == 0:
+                                    if not decrease_relaxationFactors_in_fvSolution(param_name = k,
+                                        decrement = relax_decrement, lower_limit = relax_lower_limit):
                                         reached_relax_lower_limit = False
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
@@ -373,12 +373,13 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
             f.write(dictParse.normalize(string = fvSolution.file_string())[0])
         return 0 # not reached lower limit
 
-    reached_lower_limit = False
+    reached_lower_limit = True
     if os.path.isdir('system'):
-        reached_lower_limit = change_relaxationFactors_in('system')
+        if change_relaxationFactors_in('system') == 0:
+            reached_lower_limit = False
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if change_relaxationFactors_in(d):
-            reached_lower_limit = True
+        if change_relaxationFactors_in(d) == 0:
+            reached_lower_limit = False
     return reached_lower_limit
 
 if __name__ == '__main__':
@@ -551,7 +552,7 @@ if __name__ == '__main__':
             latest_time = misc.latestTime(),
             relax_decrement = 0.01,
             relax_lower_limit = relaxationFactor_lower_limit)
-        if succeed:
+        if succeed or reached_relax_lower_limit:
             break
         elif not reached_relax_lower_limit:
             for k in param_names:
@@ -561,12 +562,6 @@ if __name__ == '__main__':
                     param_name = 'U' if k == 'Ux' else k, decrement = 0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
-        else:
-            print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．以下を検討して下さい：\n'
-                ' (1) 境界条件が適切かを確認する．\n'
-                ' (2) system/fvSchemesやsystem/fvSolutionを発散しにくいも設定に変える．\n'
-                ' (3) メッシュを作り直す，')
-            break
 
     terminate()
 
@@ -575,4 +570,11 @@ if __name__ == '__main__':
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()
+
+    if not succeed:
+        print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．以下を検討して下さい：\n'
+            ' (1) 境界条件が適切かを確認する．\n'
+            ' (2) system/fvSchemesやsystem/fvSolutionを発散しにくいも設定に変える．\n'
+            ' (3) メッシュを作り直す，')
+
     sys.exit(0 if succeed else 1)
