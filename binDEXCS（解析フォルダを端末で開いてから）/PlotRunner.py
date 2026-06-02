@@ -565,16 +565,15 @@ if __name__ == '__main__':
 
     terminate()
 
+    if not succeed:
+        print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．以下を検討して下さい：\n'
+            ' (1) 境界条件が適切かを確認する．\n'
+            ' (2) system/fvSchemesやsystem/fvSolutionを発散しにくいも設定に変える．\n'
+            ' (3) メッシュを作り直す．')
+
     if interactive:
         exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
     misc.execParaFoam(touch_only = not exec_paraFoam)
 
     rmObjects.removeInessentials()
-
-    if not succeed:
-        print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．以下を検討して下さい：\n'
-            ' (1) 境界条件が適切かを確認する．\n'
-            ' (2) system/fvSchemesやsystem/fvSolutionを発散しにくいも設定に変える．\n'
-            ' (3) メッシュを作り直す，')
-
     sys.exit(0 if succeed else 1)
