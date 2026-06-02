@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 5:48:25 PM
+# 2026/6/2 6:42:46 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -381,9 +381,9 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
 
     reached_lower_limit = True
     if os.path.isdir('system'):
-        reached_lower_limit &= not (change_relaxationFactors_in('system') == 0)
+        reached_lower_limit &= not change_relaxationFactors_in('system') == 0
     for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        reached_lower_limit &= not (change_relaxationFactors_in(d) == 0)
+        reached_lower_limit &= not change_relaxationFactors_in(d) == 0
 
     return reached_lower_limit
 
@@ -451,7 +451,6 @@ if __name__ == '__main__':
             shutil.rmtree('0_bak')
 
     shutil.copytree('0', '0_bak')
-    reset_relaxationFactors_in_fvSolution()
 
     if os.path.isdir('processor0'):
         recosntructPar()
@@ -507,20 +506,23 @@ if __name__ == '__main__':
     if len(enable_function_list) + len(disable_function_list) > 0:
         print(f'\n{controlDict_path}ファイルのfunctionsで')
         if len(enable_function_list) > 0:
-            print('  実行されるものは' + ', '.join(enable_function_list))
+            print('  実行されるものは\n    ' + ', '.join(enable_function_list))
         if len(disable_function_list) > 0:
-            print('  実行されないものは' + ', '.join(disable_function_list))
+            print('  実行されないものは\n    ' + ', '.join(disable_function_list))
         print('です．')
         if interactive:
             enable_all_function_objects = True if input(
                 f'全てを実行するように{controlDict_path}ファイルを書き換えますか？'
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
             decrease_relaxation_factors = True if input(
-                f'\n残差が落ちにくい時に，{fvSolution_path}ファイルのrelaxationFactorsを小さくしますか？'
-                ' (y/n) > ').strip().lower() == 'y' else False
+                f'\n残差が落ちにくい時に，{fvSolution_path}ファイルの緩和係数'
+                '（relaxationFactors）を小さくしますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if not enable_all_function_objects:
         misc.setEnabledInControlDictFunctions(enabled = False)
+
+    if decrease_relaxation_factors:
+        reset_relaxationFactors_in_fvSolution()
 
     if domains != 1:
         should_rm_processor_dirs = False
@@ -574,6 +576,7 @@ if __name__ == '__main__':
 
     application = misc.getApplication()
     succeed = True
+    param_names = []
     while True:
         start_time = misc.latestTime()
         succeed, reached_relax_lower_limit, param_names = plot_runner(
@@ -604,9 +607,27 @@ if __name__ == '__main__':
     rmObjects.removeProcessorDirs('noLatest')
     restore_zero_folder()
 
-    if not succeed:
+    if succeed:
+        print('\n計算が無事に終了しました．')
         if decrease_relaxation_factors:
-            print(f'\n(ERROR) 緩和係数を下限の{relaxationFactor_lower_limit}まで下げても計算が発散します．')
+            print('緩和係数（relaxationFactors）は以下になりました：')
+            for k in param_names:
+                if k in ('Uy', 'Uz'):
+                    continue
+                if os.path.isdir('system'):
+                    p = os.path.join('system', 'fvSolution')
+                    value = misc.getRelaxationFactor(param_name, p)[1]
+                    if value is not None:
+                        print(f'  [{p}ファイル] {k} {value};')
+                for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
+                    p = os.path.join(d, 'fvSolution')
+                    value = misc.getRelaxationFactor(param_name, p)[1]
+                    if value is not None:
+                        print(f'  [{p}ファイル] {k} {value};')
+    else:
+        if decrease_relaxation_factors:
+            print('\n(ERROR) 緩和係数（relaxationFactors）を下限の'
+                f'{relaxationFactor_lower_limit}まで下げても計算が発散します．')
         else:
             print('\n(ERROR) 計算が発散しました．：\n')
         print('「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) '
