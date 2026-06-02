@@ -549,7 +549,7 @@ if __name__ == '__main__':
             relax_lower_limit = relaxationFactor_lower_limit)
         if succeed or reached_relax_lower_limit:
             break
-        elif:
+        else:
             for k in param_names:
                 if k in ('Uy', 'Uz'):
                     continue
