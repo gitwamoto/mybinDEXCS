@@ -2,7 +2,18 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 8:28:45 AM
+# 2026/6/2 12:23:36 PM
+
+# ---- オプション ----
+# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
+# -N -> 非インタラクティブモードで実行
+# -d -> 0秒以外のフォルダがある場合，それらを消す．つまり0秒から計算をやり直す
+# -p -> paraFoamを実行する
+# -r domains -> 計算領域をdomains個に分割して並列計算を行う．1だと普通の計算
+
+# ---- 戻り値 ----
+# 0: 正常終了
+# 1: 発散で終了
 
 import os
 import sys
@@ -226,13 +237,13 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
                                     continue
                                 if k in ('Ux', 'Uy', 'Uz'):
                                     if not U_decreased:
-                                        if not decrease_relaxationFactors_in_fvSolution(
-                                            param_name = 'U', decrement = relax_decrement, lower_limit = relax_lower_limit):
+                                        if decrease_relaxationFactors_in_fvSolution(param_name = 'U',
+                                            decrement = relax_decrement, lower_limit = relax_lower_limit) == 0:
                                             reached_relax_lower_limit = False
                                         U_decreased = True
                                 else:
-                                    if not decrease_relaxationFactors_in_fvSolution(
-                                        param_name = k, decrement = relax_decrement, lower_limit = relax_lower_limit):
+                                    if decrease_relaxationFactors_in_fvSolution(param_name = k,
+                                        decrement = relax_decrement, lower_limit = relax_lower_limit) == 0:
                                         reached_relax_lower_limit = False
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
@@ -291,8 +302,10 @@ def plot_runner(application, latest_time, relax_decrement = 0.01, relax_lower_li
     finally:
         if process.poll() is None:
             process.wait()
-        monitor()
+        if iteration > 1:
+            monitor()
         plt.ioff()
+        plt.close('all')
 
     return succeed, reached_relax_lower_limit, plot_data['residual'].keys()
 
@@ -331,10 +344,10 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.join(path, 'fvSolution')
         if os.path.islink(fvSolution_path):
-            return False # not reached lower limit
+            return -1 # link
         cat, value = misc.getRelaxationFactor(param_name, fvSolution_path)
         if cat is None or value <= lower_limit:
-            return True # reached lower limit
+            return 1 # reached lower limit
 
         # appendEntries.intoFvSolution()を実行していることを想定
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
@@ -358,7 +371,7 @@ def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower
 
         with open(fvSolution_path, 'w') as f:
             f.write(dictParse.normalize(string = fvSolution.file_string())[0])
-        return False # not reached lower limit
+        return 0 # not reached lower limit
 
     reached_lower_limit = False
     if os.path.isdir('system'):
@@ -377,9 +390,16 @@ if __name__ == '__main__':
     else:
         interactive = False
         delete_folders_except_for_zero = False
+        exec_paraFoam = False
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-r':
+            if sys.argv[i] == '-N': # Non-interactive
+                pass
+            elif sys.argv[i] == '-d':
+                delete_folders_except_for_zero = True
+            elif sys.argv[i] == '-p':
+                exec_paraFoam = True
+            elif sys.argv[i] == '-r':
                 i += 1
                 domains = max(int(sys.argv[i]), 1)
             i += 1
@@ -524,6 +544,7 @@ if __name__ == '__main__':
                 sys.exit(1)
 
     application = misc.getApplication()
+    succeed = True
     while True:
         succeed, reached_relax_lower_limit, param_names = plot_runner(
             application = application,
@@ -537,7 +558,7 @@ if __name__ == '__main__':
                 if k in ('Uy', 'Uz'):
                     continue
                 decrease_relaxationFactors_in_fvSolution(
-                    param_name = 'U' if k == 'Ux' else k, decrement = 0.1, lower_limit = relaxationFactor_lower_limit)
+                    param_name = 'U' if k == 'Ux' else k, decrement = 0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
         else:
@@ -545,5 +566,13 @@ if __name__ == '__main__':
                 ' (1) 境界条件が適切かを確認する．\n'
                 ' (2) system/fvSchemesやsystem/fvSolutionを発散しにくいも設定に変える．\n'
                 ' (3) メッシュを作り直す，')
+            break
 
     terminate()
+
+    if interactive:
+        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
+    misc.execParaFoam(touch_only = not exec_paraFoam)
+
+    rmObjects.removeInessentials()
+    sys.exit(0 if succeed else 1)
