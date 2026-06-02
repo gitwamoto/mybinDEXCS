@@ -422,10 +422,12 @@ if __name__ == '__main__':
             print('  実行されないものは' + ', '.join(disable_function_list))
         print('です．')
         if interactive:
-            enable_all_function_objects = True if input(f'全てを実行するように{controlDict_path}を書き換えますか？'
+            enable_all_function_objects = True if input(
+                f'全てを実行するように{controlDict_path}を書き換えますか？'
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
-            decrease_relaxationFactors_after_fpe = True if input(f'計算が発散した場合，{fvSolution_path}ファイルの'
-                'relaxationFactorsを小さくして計算を続けますか？ (y/n) > ').strip().lower() == 'y' else False
+            decrease_relaxationFactors_after_fpe = True if input(
+                f'計算が発散した場合，{fvSolution_path}ファイルのrelaxationFactorsを小さくして計算を続けますか？'
+                ' (y/n) > ').strip().lower() == 'y' else False
 
     if not enable_all_function_objects:
         misc.setEnabledInControlDictFunctions(enabled = False)
