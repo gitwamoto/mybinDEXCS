@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:34:28 PM
+# 2026/6/2 8:58:10 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -169,8 +169,8 @@ def reset_relaxationFactors_in_fvSolution():
 
     if os.path.isdir('system'):
         reset_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        reset_relaxationFactors_in(d)
+    for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
+        reset_relaxationFactors_in(r)
 
 def change_relaxationFactors_in_fvSolution(exponent):
     def change_relaxationFactors_in(path):

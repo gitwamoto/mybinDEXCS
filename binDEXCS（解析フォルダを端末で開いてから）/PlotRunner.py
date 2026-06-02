@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 8:35:11 PM
+# 2026/6/2 8:58:02 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -312,10 +312,14 @@ def plot_runner(application, start_time, relax_decrement = 0.01, relax_lower_lim
     return succeed, plot_data['residual'].keys()
 
 def reset_relaxationFactors_in_fvSolution():
+    processed = []
     def reset_relaxationFactors_in(path):
-        fvSolution_path = os.path.join(path, 'fvSolution')
+        fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution')）
         if os.path.islink(fvSolution_path):
-            return
+            fvSolution_path = os.path.realpath(fvSolution_path)
+            if fvSolution_path in processed:
+                return
+        processed.append(fvSolution_path)
 
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
         relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
@@ -339,14 +343,19 @@ def reset_relaxationFactors_in_fvSolution():
 
     if os.path.isdir('system'):
         reset_relaxationFactors_in('system')
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        reset_relaxationFactors_in(d)
+    for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
+        reset_relaxationFactors_in(r)
 
 def decrease_relaxationFactors_in_fvSolution(param_name, decrement = 0.01, lower_limit = 0.3):
+    processed = []
     def change_relaxationFactors_in(path):
-        fvSolution_path = os.path.join(path, 'fvSolution')
+        fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution')）
         if os.path.islink(fvSolution_path):
-            return
+            fvSolution_path = os.path.realpath(fvSolution_path)
+            if fvSolution_path in processed:
+                return
+        processed.append(fvSolution_path)
+
         cat, value = misc.getRelaxationFactor(param_name, fvSolution_path)
         if cat is None or value <= lower_limit:
             return

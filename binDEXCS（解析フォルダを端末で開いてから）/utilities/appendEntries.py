@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:31:01 PM
+# 2026/6/2 8:58:06 PM
 
 import os
 import sys
@@ -14,13 +14,16 @@ if os.path.dirname(__file__) not in sys.path:
 import dictParse
 
 def intoFvSolution():
+    processed = []
     def intoFvSolutionIn(path):
-        fvSolution_path = os.path.join(path, 'fvSolution')
+        fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution')）
         if os.path.islink(fvSolution_path):
-            return
+            fvSolution_path = os.path.realpath(fvSolution_path)
+            if fvSolution_path in processed:
+                return
+        processed.append(fvSolution_path)
         os.chmod(fvSolution_path, 0o0666)
         dictParse.normalize(file_name = fvSolution_path)
-
         fvSolution = dictParse.DictParser(file_name = fvSolution_path)
 
         solvers = fvSolution.find_element([{'type': 'block', 'key': 'solvers'}])['element']
@@ -225,17 +228,20 @@ def intoFvSolution():
 
     if os.path.isdir('system'):
         intoFvSolutionIn('system')
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        intoFvSolutionIn(d)
+    for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
+        intoFvSolutionIn(r)
 
 def intoFvSchemes():
+    processed = []
     def intoFvSchemesIn(path):
-        fvSchemes_path = os.path.join(path, 'fvSchemes')
+        fvSchemes_path = os.path.abspath(os.path.join(path, 'fvSchemes'))
         if os.path.islink(fvSchemes_path):
-            return
+            fvSchemes_path = os.path.realpath(fvSchemes_path)
+            if fvSchemes_path in processed:
+                return
+        processed.append(fvSchemes_path)
         os.chmod(fvSchemes_path, 0o0666)
         dictParse.normalize(file_name = fvSchemes_path)
-
         fvSchemes = dictParse.DictParser(file_name = fvSchemes_path)
 
         # divSchemes, laplacianSchemes, wallDist
@@ -270,14 +276,13 @@ def intoFvSchemes():
 
     if os.path.isdir('system'):
         intoFvSchemesIn('system')
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        intoFvSchemesIn(d)
+    for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
+        intoFvSchemesIn(r)
 
 def intoControlDict():
     controlDict_path = os.path.join('system', 'controlDict')
     os.chmod(controlDict_path, 0o0666)
     dictParse.normalize(file_name = controlDict_path)
-
     controlDict = dictParse.DictParser(file_name = controlDict_path)
 
     startFrom = controlDict.find_element([{'type': 'dictionary', 'key': 'startFrom'},
