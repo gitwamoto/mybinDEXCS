@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 6:42:46 PM
+# 2026/6/2 7:15:51 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -616,12 +616,12 @@ if __name__ == '__main__':
                     continue
                 if os.path.isdir('system'):
                     p = os.path.join('system', 'fvSolution')
-                    value = misc.getRelaxationFactor(param_name, p)[1]
+                    value = misc.getRelaxationFactor(k, p)[1]
                     if value is not None:
                         print(f'  [{p}ファイル] {k} {value};')
                 for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
                     p = os.path.join(d, 'fvSolution')
-                    value = misc.getRelaxationFactor(param_name, p)[1]
+                    value = misc.getRelaxationFactor(k, p)[1]
                     if value is not None:
                         print(f'  [{p}ファイル] {k} {value};')
     else:
