@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # PlotRunner.py
 # by Yukiharu Iwamoto
-# 2026/6/2 5:44:42 PM
+# 2026/6/2 5:48:25 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -56,8 +56,8 @@ def recosntructPar():
     command = 'reconstructPar -newTimes -noFunctionObjects'
     if os.path.exists(regionProperties_path):
         command += ' -allRegions'
-    subprocess.call(command, shell = True)
     print()
+    subprocess.call(command, shell = True)
 
 def restore_zero_folder():
     if os.path.isdir('0_bak'):
@@ -193,6 +193,7 @@ def plot_runner(application, start_time, relax_decrement = 0.01, relax_lower_lim
             command.append(application)
             if domains > 1:
                 command.append('-parallel')
+            print()
             process = subprocess.Popen( # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
                 command,
                 stdout = subprocess.PIPE,
@@ -562,6 +563,7 @@ if __name__ == '__main__':
             command = 'decomposePar -latestTime -noFunctionObjects'
             if os.path.exists(regionProperties_path):
                 command += ' -allRegions'
+            print()
             if subprocess.call(command, shell = True) != 0:
                 print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
                 if os.path.isdir('0_bak'):
