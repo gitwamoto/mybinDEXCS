@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/6/2 8:25:04 AM
+# 2026/6/3 8:54:53 PM
 
 import glob
 import os
