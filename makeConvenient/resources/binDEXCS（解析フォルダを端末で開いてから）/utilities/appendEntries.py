@@ -16,7 +16,7 @@ import dictParse
 def intoFvSolution():
     processed = []
     def intoFvSolutionIn(path):
-        fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution')）
+        fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution'))
         if os.path.islink(fvSolution_path):
             fvSolution_path = os.path.realpath(fvSolution_path)
             if fvSolution_path in processed:
