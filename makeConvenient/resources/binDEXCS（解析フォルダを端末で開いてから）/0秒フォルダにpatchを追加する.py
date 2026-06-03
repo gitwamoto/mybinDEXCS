@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:27:00 PM
+# 2026/6/2 1:20:43 PM
 
 # ---- オプションはない ----
 
@@ -54,7 +54,7 @@ def append_patches(src, dst):
                     c = ('/*\n'
                         '初期値の例\n'
                         '_k_init\t〇〇; // kの初期値 [m^2/s^2]\n'
-                        '_L\t〇〇; 代表長さ [m]\n'
+                        '_L\t〇〇; // 代表長さ [m]\n'
                         '_L_mixing\t〇〇; // 乱流渦の代表的な混合距離 [m]\n'
                         '// 内部流: #calc "0.07*$_L" | 外部流: #calc "0.1*$_L"〜#calc "0.01*$_L"\n')
                     if f_base == 'epsilon':

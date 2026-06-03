@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:31:10 PM
+# 2026/6/3 8:54:53 PM
 
 import glob
 import os
@@ -107,9 +107,23 @@ def setTimeBeginEnd(action):
     noZero = False if input('0秒のデータを含めますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else True
     return time_begin, time_end, noZero
 
-def getApplication():
-    return subprocess.check_output('foamDictionary -entry application -value system/controlDict',
-        shell = True, encoding = 'UTF-8').rstrip()
+def getApplication(path = os.curdir):
+    return subprocess.check_output(
+        ['foamDictionary', '-entry', 'application', '-value', os.path.join(path, 'system', 'controlDict')],
+        encoding = 'UTF-8').strip() # リスト形式でコマンドを呼ぶ場合は引数にshell = Trueは必要ない
+
+def getRelaxationFactor(param_name, fvSolution_path = None):
+    if fvSolution_path is None:
+        fvSolution_path = os.path.join(os.curdir, 'system', 'fvSolution')
+    for cat in ['equations', 'fields']:
+        try:
+            return (cat,
+                float(subprocess.check_output(
+                    ['foamDictionary', '-entry', f'relaxationFactors.{cat}.{param_name}', '-value',
+                    fvSolution_path], stderr = subprocess.DEVNULL, encoding = 'UTF-8')))
+        except subprocess.CalledProcessError:
+            continue
+    return None, None
 
 def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func = None, region = None, solver = True):
     if solver:
