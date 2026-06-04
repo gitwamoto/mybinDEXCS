@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/3 8:54:47 PM
+# 2026/6/4 12:42:34 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -278,7 +278,8 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                     k = 'U'
                                     if U_changed:
                                         continue
-                                change_relaxationFactors_in_fvSolution(param_name = k, remark = time,
+                                change_relaxationFactors_in_fvSolution(
+                                    param_name = k, remark = f'time = {time}',
                                     delta = s*relax_delta, lower_limit = relax_lower_limit)
                                 if k == 'U':
                                     U_changed = True
