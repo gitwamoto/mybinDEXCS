@@ -609,6 +609,7 @@ if __name__ == '__main__':
             start_time = start_time,
             relax_delta = 0.01,
             relax_lower_limit = relaxationFactor_lower_limit)
+        relax_factors = getRelaxationFactors(param_names)
         if domains != 1 and os.path.isdir('processor0'):
             recosntructPar()
 
@@ -620,8 +621,6 @@ if __name__ == '__main__':
             decomposePar()
             continue
 
-        relax_factors = getRelaxationFactors(param_names)
-        print(relax_factors)
         max_relax_factor = 1.0
         if len(relax_factors) > 0:
             max_relax_factor = max([i['value'] for i in relax_factors])
