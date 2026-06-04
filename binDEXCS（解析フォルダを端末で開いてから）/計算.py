@@ -74,18 +74,18 @@ def decomposePar():
     command = 'decomposePar -latestTime -noFunctionObjects'
     if os.path.exists(regionProperties_path):
         command += ' -allRegions'
-    print()
     if subprocess.call(command, shell = True) != 0:
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         restore_zero_folder()
         sys.exit(1)
+    print()
 
 def recosntructPar():
     command = 'reconstructPar -newTimes -noFunctionObjects'
     if os.path.exists(regionProperties_path):
         command += ' -allRegions'
-    print()
     subprocess.call(command, shell = True)
+    print()
 
 def restore_zero_folder():
     if os.path.isdir('0_bak'):
@@ -570,7 +570,7 @@ if __name__ == '__main__':
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
             change_relaxation_factors = True if input(
                 f'\n残差が落ちにくい時に，{fvSolution_path}ファイルの緩和係数'
-                '（relaxationFactors）を小さくしますか？ (y/n) > ').strip().lower() == 'y' else False
+                '（relaxationFactors）を変化させますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if enable_all_function_objects:
         misc.setEnabledInControlDictFunctions(enabled = True)
@@ -621,6 +621,7 @@ if __name__ == '__main__':
             continue
 
         relax_factors = getRelaxationFactors(param_names)
+        print(relax_factors)
         max_relax_factor = 1.0
         if len(relax_factors) > 0:
             max_relax_factor = max([i['value'] for i in relax_factors])
