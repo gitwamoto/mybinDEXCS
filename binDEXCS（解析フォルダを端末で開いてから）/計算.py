@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/4 12:42:34 PM
+# 2026/6/4 4:46:59 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -600,8 +600,6 @@ if __name__ == '__main__':
             decomposePar()
 
     application = misc.getApplication()
-    result = 'success'
-    relax_factors = []
     while True:
         start_time = misc.latestTime()
         result, param_names = plot_runner(
