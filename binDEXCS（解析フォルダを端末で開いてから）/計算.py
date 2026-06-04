@@ -278,8 +278,8 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                     k = 'U'
                                     if U_changed:
                                         continue
-                                change_relaxationFactors_in_fvSolution(
-                                    param_name = k, delta = s*relax_delta, lower_limit = relax_lower_limit)
+                                change_relaxationFactors_in_fvSolution(param_name = k, remark = time,
+                                    delta = s*relax_delta, lower_limit = relax_lower_limit)
                                 if k == 'U':
                                     U_changed = True
                         iteration += 1  # ここから新しいiteration回目の繰り返し
@@ -347,7 +347,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     return result, plot_data['residual'].keys()
 
 def reset_relaxationFactors_in_fvSolution():
-    pat = re.compile('// CHANGED [0-9][0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
+    pat = re.compile('// .+, [0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
     processed = []
     def reset_relaxationFactors_in(path):
         fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution'))
@@ -382,7 +382,7 @@ def reset_relaxationFactors_in_fvSolution():
     for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(r)
 
-def change_relaxationFactors_in_fvSolution(param_name, delta = -0.01, lower_limit = 0.3):
+def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lower_limit = 0.3):
     processed = []
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution'))
@@ -407,7 +407,7 @@ def change_relaxationFactors_in_fvSolution(param_name, delta = -0.01, lower_limi
         block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
             '\n'
             f'{param_name}\t{new_value};'
-            f' // CHANGED {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
+            f' // {remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
             '\n')['value']
         block.set_blank_line(number_of_blank_lines = 0)
 
@@ -637,7 +637,7 @@ if __name__ == '__main__':
                     continue
                 elif k == 'Ux':
                     k = 'U'
-                change_relaxationFactors_in_fvSolution(param_name = k,
+                change_relaxationFactors_in_fvSolution(param_name = k, remark = 'restart',
                     delta = -0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
