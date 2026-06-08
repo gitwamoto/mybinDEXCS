@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/3 8:54:47 PM
+# 2026/6/4 4:46:59 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -74,18 +74,18 @@ def decomposePar():
     command = 'decomposePar -latestTime -noFunctionObjects'
     if os.path.exists(regionProperties_path):
         command += ' -allRegions'
-    print()
     if subprocess.call(command, shell = True) != 0:
         print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
         restore_zero_folder()
         sys.exit(1)
+    print()
 
 def recosntructPar():
     command = 'reconstructPar -newTimes -noFunctionObjects'
     if os.path.exists(regionProperties_path):
         command += ' -allRegions'
-    print()
     subprocess.call(command, shell = True)
+    print()
 
 def restore_zero_folder():
     if os.path.isdir('0_bak'):
@@ -99,15 +99,101 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     plt.ion() # インタラクティブモードON
     line_styles = ['-', '--', '-.']
 
+    # 出力の例
+    # << simpleFoam >>
+    # Time = 1
+    #
+    # smoothSolver:  Solving for Ux, Initial residual = 1, Final residual = 0.031923, No Iterations 2
+    # ...
+    # time step continuity errors : sum local = 5.59162e-05, global = -8.44928e-07, cumulative = -8.44928e-07
+    # smoothSolver:  Solving for epsilon, Initial residual = 0.120126, Final residual = 0.00622115, No Iterations 3
+    # ...
+    # ExecutionTime = 3.87 s  ClockTime = 4 s
+    #
+    # << pisoFoam >>
+    # Time = 0.005
+    # 
+    # Courant Number mean: 0 max: 0
+    # smoothSolver:  Solving for Ux, Initial residual = 1, Final residual = 1.1324e-06, No Iterations 5
+    # ...
+    # GAMG:  Solving for p, Initial residual = 1, Final residual = 0.0378382, No Iterations 2
+    # ...
+    # time step continuity errors : sum local = 2.15891e-10, global = -4.29423e-21, cumulative = -3.63249e-21
+    # smoothSolver:  Solving for epsilon, Initial residual = 0.0108884, Final residual = 7.58625e-07, No Iterations 3
+    # ...
+    # ExecutionTime = 0.01 s  ClockTime = 0 s
+    #
+    # << chtMultiRegionSimpleFoam >>
+    # Time = 1
+    # 
+    # 
+    # Solving for fluid region air
+    # DILUPBiCGStab:  Solving for Ux, Initial residual = 1, Final residual = 0.00867447, No Iterations 1
+    # ...
+    # Min/max T:300 300.018
+    # GAMG:  Solving for p_rgh, Initial residual = 1, Final residual = 0.00834252, No Iterations 12
+    # time step continuity errors : sum local = 0.0425249, global = -0.00394851, cumulative = -0.00394851
+    # Min/max rho:1.17074 1.17081
+    # DILUPBiCGStab:  Solving for epsilon, Initial residual = 0.0396654, Final residual = 0.000135803, No Iterations 1
+    # ...
+    # 
+    # Solving for fluid region porous
+    # DILUPBiCGStab:  Solving for Ux, Initial residual = 1, Final residual = 0.0058807, No Iterations 1
+    # ...
+    # Min/max T:349.984 400
+    # GAMG:  Solving for p_rgh, Initial residual = 0.999996, Final residual = 0.00637825, No Iterations 9
+    # time step continuity errors : sum local = 0.00103378, global = 0.000459295, cumulative = -0.00348922
+    # Min/max rho:1000 1000
+    # ExecutionTime = 19.74 s  ClockTime = 19 s
+    #
+    # << chtMultiRegionFoam >>
+    # Region: bottomWater Courant Number mean: 0.00017208904 max: 0.00082499996
+    # ...
+    # deltaT = 0.001200048
+    # # Region: ...からdeltaT = ...までの表示，なぜか最初のイタレーションだけ2回出る．
+    # Time = 0.00120005
+    # 
+    # 
+    # Solving for fluid region bottomWater
+    # diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+    # ...
+    # Min/max T:300 300
+    # GAMG:  Solving for p_rgh, Initial residual = 0.82697398, Final residual = 0.0020761791, No Iterations 3
+    # ...
+    # time step continuity errors (bottomWater): sum local = 3.6798664e-12, global = -6.7095022e-13, cumulative = -7.9347451e-07
+    # 
+    # Solving for fluid region topAir
+    # diagonal:  Solving for rho, Initial residual = 0, Final residual = 0, No Iterations 0
+    # ...
+    # Min/max T:300 300
+    # GAMG:  Solving for p_rgh, Initial residual = 0.87372342, Final residual = 0.0068026541, No Iterations 2
+    # ...
+    # time step continuity errors (topAir): sum local = 7.8740942e-12, global = -6.6329409e-12, cumulative = 2.228493e-06
+    # 
+    # Solving for solid region heater
+    # DICPCG:  Solving for h, Initial residual = 1, Final residual = 3.0205594e-07, No Iterations 1
+    # Min/max T:300 500
+    # 
+    # Solving for solid region leftSolid
+    # DICPCG:  Solving for h, Initial residual = 1, Final residual = 2.4555091e-08, No Iterations 2
+    # Min/max T:300 300
+    # 
+    # Solving for solid region rightSolid
+    # DICPCG:  Solving for h, Initial residual = 1, Final residual = 2.4599615e-08, No Iterations 2
+    # Min/max T:300 300
+    # ExecutionTime = 0.02 s  ClockTime = 0 s
+
     pat = re.compile(
         # 残差
-        r'Solving for (?P<parameter>[a-zA-Z0-9_.]+), Initial residual = [0-9.e+\-]+, '
+        r': +Solving for +(?P<parameter>[^ ,]+), Initial residual = [0-9.e+\-]+, '
         r'Final residual = (?P<final_residual>[\d.e+\-]+)' '|'
         # 連続の式の誤差
-        r'continuity errors : sum local = (?P<continuity_local>[0-9.e+\-]+), '
+        r'^time step continuity errors *(?:[^ :]*): sum local = (?P<continuity_local>[0-9.e+\-]+), '
         r'global = (?P<continuity_global>[0-9.e+\-]+)' '|'
         # クーラン数
-        r'Courant Number mean: (?P<Courant_mean>[0-9.e+\-]+) max: (?P<Courant_max>[0-9.e+\-]+)'
+        r'^Courant Number mean: (?P<Courant_mean>[0-9.e+\-]+) max: (?P<Courant_max>[0-9.e+\-]+)' '|'
+        # 領域
+        r'^Solving for \S+ region (?<region>\S)'
     )
     plot_data = {
         'residual': {}, # {'U': [...], 'p': [...], ...}
@@ -215,6 +301,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
 
     result = 'success' # 無事に終了できたときにTrueを返すフラグ
     time = '0'
+    region = None
 
     try:
         with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
@@ -279,7 +366,8 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                     if U_changed:
                                         continue
                                 change_relaxationFactors_in_fvSolution(
-                                    param_name = k, delta = s*relax_delta, lower_limit = relax_lower_limit)
+                                    param_name = k, remark = f'time = {time}',
+                                    delta = s*relax_delta, lower_limit = relax_lower_limit)
                                 if k == 'U':
                                     U_changed = True
                         iteration += 1  # ここから新しいiteration回目の繰り返し
@@ -347,7 +435,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     return result, plot_data['residual'].keys()
 
 def reset_relaxationFactors_in_fvSolution():
-    pat = re.compile('// CHANGED [0-9][0-9][0-9][0-9]/[0-9][0-9]/[0-9][0-9] [0-9][0-9]:[0-9][0-9]:[0-9][0-9]')
+    pat = re.compile('// .+, [0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
     processed = []
     def reset_relaxationFactors_in(path):
         fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution'))
@@ -382,7 +470,7 @@ def reset_relaxationFactors_in_fvSolution():
     for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(r)
 
-def change_relaxationFactors_in_fvSolution(param_name, delta = -0.01, lower_limit = 0.3):
+def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lower_limit = 0.3):
     processed = []
     def change_relaxationFactors_in(path):
         fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution'))
@@ -407,7 +495,7 @@ def change_relaxationFactors_in_fvSolution(param_name, delta = -0.01, lower_limi
         block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
             '\n'
             f'{param_name}\t{new_value};'
-            f' // CHANGED {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
+            f' // {remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
             '\n')['value']
         block.set_blank_line(number_of_blank_lines = 0)
 
@@ -569,7 +657,7 @@ if __name__ == '__main__':
                 ' (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
             change_relaxation_factors = True if input(
                 f'\n残差が落ちにくい時に，{fvSolution_path}ファイルの緩和係数'
-                '（relaxationFactors）を小さくしますか？ (y/n) > ').strip().lower() == 'y' else False
+                '（relaxationFactors）を変化させますか？ (y/n) > ').strip().lower() == 'y' else False
 
     if enable_all_function_objects:
         misc.setEnabledInControlDictFunctions(enabled = True)
@@ -599,8 +687,6 @@ if __name__ == '__main__':
             decomposePar()
 
     application = misc.getApplication()
-    result = 'success'
-    relax_factors = []
     while True:
         start_time = misc.latestTime()
         result, param_names = plot_runner(
@@ -608,6 +694,7 @@ if __name__ == '__main__':
             start_time = start_time,
             relax_delta = 0.01,
             relax_lower_limit = relaxationFactor_lower_limit)
+        relax_factors = getRelaxationFactors(param_names)
         if domains != 1 and os.path.isdir('processor0'):
             recosntructPar()
 
@@ -619,7 +706,6 @@ if __name__ == '__main__':
             decomposePar()
             continue
 
-        relax_factors = getRelaxationFactors(param_names)
         max_relax_factor = 1.0
         if len(relax_factors) > 0:
             max_relax_factor = max([i['value'] for i in relax_factors])
@@ -637,7 +723,7 @@ if __name__ == '__main__':
                     continue
                 elif k == 'Ux':
                     k = 'U'
-                change_relaxationFactors_in_fvSolution(param_name = k,
+                change_relaxationFactors_in_fvSolution(param_name = k, remark = 'restart',
                     delta = -0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
