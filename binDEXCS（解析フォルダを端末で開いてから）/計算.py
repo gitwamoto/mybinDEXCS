@@ -190,8 +190,12 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         # 連続の式の誤差
         r'^time step continuity errors *(?:[^ :]*): sum local = (?P<continuity_local>[0-9.e+\-]+), '
         r'global = (?P<continuity_global>[0-9.e+\-]+)' '|'
-        # クーラン数
-        r'^Courant Number mean: (?P<Courant_mean>[0-9.e+\-]+) max: (?P<Courant_max>[0-9.e+\-]+)' '|'
+        # クーラン数，1未満が理想
+        r'^(?:Region: (?P<Courant_region>\S+) )?'
+        r'Courant Number mean: (?P<Courant_mean>[0-9.e+\-]+) max: (?P<Courant_max>[0-9.e+\-]+)' '|'
+        # 拡散数，0.5未満が理想
+        r'^Region: (?P<Diffusion_region>\S+) '
+        r'Diffusion Number mean: (?P<Diffusion_mean>[0-9.e+\-]+) max: (?P<Diffusion_max>[0-9.e+\-]+)' '|'
         # 領域
         r'^Solving for \S+ region (?<region>\S)'
     )
@@ -232,6 +236,9 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         if 'Courant' in plot_data:
             set_subplot(data_key = 'Courant', xlabel = 'iteration', ylabel= 'Courant number',
                 window_title = 'iteration histories of Courant numbers', logscale = True)
+        if 'Diffusion' in plot_data:
+            set_subplot(data_key = 'Diffusion', xlabel = 'iteration', ylabel= 'Diffusion number',
+                window_title = 'iteration histories of Diffusion numbers', logscale = True)
 
     start_time = float(start_time)
     history_path = f'{application}_history.txt'
@@ -373,7 +380,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                         time = line[7:].strip()
                         for k in plot_data['residual']:
                             new_time['residual'][k] = True
-                        new_time['continuity'][''] = new_time['Courant'][''] = True
+                        new_time['continuity'][''] = True
                     continue
                 elif 'Foam::sigFpe::sigHandler(int)' in line:
                     result = 'floating point error' # 発散
@@ -398,7 +405,6 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     glob = abs(float(s.group('continuity_global')))
                     if iteration == 1:
                         plot_data['continuity'] = {'sum local': [], 'abs global': []}
-                        new_time['continuity'][''] = True
                     if new_time['continuity']['']:
                         plot_data['continuity']['sum local'].append(loc) # データの追加
                         plot_data['continuity']['abs global'].append(glob)
@@ -407,18 +413,30 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                         plot_data['continuity']['sum local'][-1] = loc # データの更新
                         plot_data['continuity']['abs global'][-1] = glob
                 elif s.lastgroup == 'Courant_max':
-                    mn = float(s.group('Courant_mean'))
-                    mx = float(s.group('Courant_max'))
+                    mean_value = float(s.group('Courant_mean'))
+                    max_value = float(s.group('Courant_max'))
+                    region = s.group('Courant_region')
+                    mean_key = 'mean'
+                    max_key = 'max'
+                    if region is not None:
+                        mean_key += f' ({region})'
+                        max_key += f' ({region})'
                     if iteration == 1:
-                        plot_data['Courant'] = {'mean': [], 'max': []}
-                        new_time['Courant'] = {'': True}
-                    if new_time['Courant']['']:
-                        plot_data['Courant']['mean'].append(mn) # データの追加
-                        plot_data['Courant']['max'].append(mx)
-                        new_time['Courant'][''] = False
-                    else:
-                        plot_data['Courant']['mean'][-1] = mn # データの更新
-                        plot_data['Courant']['max'][-1] = mx
+                        plot_data.setdefault('Courant', {}).update(mean_key: [], max_key: [])
+                    # データの追加，Courant numberは1時間ステップで1回しか出てこない
+                    plot_data['Courant'][mean_key].append(mean_value)
+                    plot_data['Courant'][max_key].append(max_value)
+                elif s.lastgroup == 'Diffusion_max':
+                    mean_value = float(s.group('Diffusion_max'))
+                    max_value = float(s.group('Diffusion_mean'))
+                    region = s.group('Diffusion_region')
+                    mean_key = f'mean ({region})'
+                    max_key = f'max ({region})'
+                    if iteration == 1:
+                        plot_data.setdefault('Diffusion', {}).update(mean_key: [], max_key: [])
+                    # データの追加，Courant numberは1時間ステップで1回しか出てこない
+                    plot_data['Diffusion'][mean_key].append(mean_value)
+                    plot_data['Diffusion'][max_key].append(max_value)
 
             process.stdout.close()
 
