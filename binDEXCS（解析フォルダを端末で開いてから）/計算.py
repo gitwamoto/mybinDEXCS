@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/10 12:05:07 AM
+# 2026/6/10 12:15:03 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -277,15 +277,17 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
 
     def monitor():
         for data_key in plot_data:
-            message = ''
+#            message = ''
             for k in plot_data[data_key]:
-                l = len(plot_data[data_key][k])
-                if l != iteration:
-                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
-                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
-            if len(message) > 0:
-                sys.stdout.write(f'\n{message}\n')
-                sys.stdout.flush() # リアルタイム反映のため
+#                l = len(plot_data[data_key][k])
+#                if l != iteration:
+#                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
+#                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
+                plt_line2d[data_key][k].set_data(
+                    range(1, len(plot_data[data_key][k]) + 1), plot_data[data_key][k]) # 線を更新
+#            if len(message) > 0:
+#                sys.stdout.write(f'\n{message}\n')
+#                sys.stdout.flush() # リアルタイム反映のため
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
@@ -351,7 +353,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                         f_history.write(f'{iteration}\t{time}')
                         for data_key in plot_data:
                             for k in plot_data[data_key]:
-                                f_history.write(f'\t{plot_data[data_key][k][-1]}')
+                                f_history.write(f'\t{plot_data[data_key][k][iteration - 1]}')
                         f_history.write('\n')
                         f_history.flush() # リアルタイム反映のため
                         if iteration%plot_freq == 0:
