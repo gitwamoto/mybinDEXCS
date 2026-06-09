@@ -100,7 +100,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     line_styles = ['-', '--', '-.']
 
     # 出力の例
-    # << simpleFoam >>
+    # #################### simpleFoam ####################
     # Time = 1
     #
     # smoothSolver:  Solving for Ux, Initial residual = 1, Final residual = 0.031923, No Iterations 2
@@ -110,7 +110,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     # ...
     # ExecutionTime = 3.87 s  ClockTime = 4 s
     #
-    # << pisoFoam >>
+    # #################### pisoFoam ####################
     # Time = 0.005
     # 
     # Courant Number mean: 0 max: 0
@@ -123,7 +123,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     # ...
     # ExecutionTime = 0.01 s  ClockTime = 0 s
     #
-    # << chtMultiRegionSimpleFoam >>
+    # #################### chtMultiRegionSimpleFoam ####################
     # Time = 1
     # 
     # 
@@ -146,7 +146,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     # Min/max rho:1000 1000
     # ExecutionTime = 19.74 s  ClockTime = 19 s
     #
-    # << chtMultiRegionFoam >>
+    # #################### chtMultiRegionFoam ####################
     # Region: bottomWater Courant Number mean: 0.00017208904 max: 0.00082499996
     # ...
     # deltaT = 0.001200048
@@ -197,15 +197,14 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     )
     plot_data = {
         'residual': {}, # {'U': [...], 'p': [...], ...}
-        'continuity': {'sum local': [], 'abs global': []}
+        'continuity': {} # {'sum local': [], 'abs global': []}
     }
     plt_fig = {}
     plt_ax = {}
     plt_line2d = {}
     new_time = { # 時間ステップが更新したか？
         'residual': {}, # {'U': True, 'p': True, ...}
-        'continuity': True,
-        'Courant': True
+        'continuity': {}, # {'': True} ***''は単一領域の時
     }
 
     def set_subplot(data_key, xlabel, ylabel, window_title, logscale = True):
@@ -374,7 +373,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                         time = line[7:].strip()
                         for k in plot_data['residual']:
                             new_time['residual'][k] = True
-                        new_time['continuity'] = new_time['Courant'] = True
+                        new_time['continuity'][''] = new_time['Courant'][''] = True
                     continue
                 elif 'Foam::sigFpe::sigHandler(int)' in line:
                     result = 'floating point error' # 発散
@@ -397,23 +396,26 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                 elif s.lastgroup == 'continuity_global':
                     loc = float(s.group('continuity_local'))
                     glob = abs(float(s.group('continuity_global')))
-                    if new_time['continuity']:
+                    if iteration == 1:
+                        plot_data['continuity'] = {'sum local': [], 'abs global': []}
+                        new_time['continuity'][''] = True
+                    if new_time['continuity']['']:
                         plot_data['continuity']['sum local'].append(loc) # データの追加
                         plot_data['continuity']['abs global'].append(glob)
-                        new_time['continuity'] = False
+                        new_time['continuity'][''] = False
                     else:
                         plot_data['continuity']['sum local'][-1] = loc # データの更新
                         plot_data['continuity']['abs global'][-1] = glob
                 elif s.lastgroup == 'Courant_max':
                     mn = float(s.group('Courant_mean'))
                     mx = float(s.group('Courant_max'))
-                    if iteration == iteration_start:
+                    if iteration == 1:
                         plot_data['Courant'] = {'mean': [], 'max': []}
-                        new_time['Courant'] = True
-                    if new_time['Courant']:
+                        new_time['Courant'] = {'': True}
+                    if new_time['Courant']['']:
                         plot_data['Courant']['mean'].append(mn) # データの追加
                         plot_data['Courant']['max'].append(mx)
-                        new_time['Courant'] = False
+                        new_time['Courant'][''] = False
                     else:
                         plot_data['Courant']['mean'][-1] = mn # データの更新
                         plot_data['Courant']['max'][-1] = mx
