@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/4 4:46:59 PM
+# 2026/6/10 10:23:56 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -100,7 +100,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     line_styles = ['-', '--', '-.']
 
     # 出力の例
-    # << simpleFoam >>
+    # #################### simpleFoam ####################
     # Time = 1
     #
     # smoothSolver:  Solving for Ux, Initial residual = 1, Final residual = 0.031923, No Iterations 2
@@ -110,7 +110,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     # ...
     # ExecutionTime = 3.87 s  ClockTime = 4 s
     #
-    # << pisoFoam >>
+    # #################### pisoFoam ####################
     # Time = 0.005
     # 
     # Courant Number mean: 0 max: 0
@@ -123,7 +123,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     # ...
     # ExecutionTime = 0.01 s  ClockTime = 0 s
     #
-    # << chtMultiRegionSimpleFoam >>
+    # #################### chtMultiRegionSimpleFoam ####################
     # Time = 1
     # 
     # 
@@ -146,8 +146,10 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     # Min/max rho:1000 1000
     # ExecutionTime = 19.74 s  ClockTime = 19 s
     #
-    # << chtMultiRegionFoam >>
+    # #################### chtMultiRegionFoam ####################
     # Region: bottomWater Courant Number mean: 0.00017208904 max: 0.00082499996
+    # Region: topAir Courant Number mean: 0.015 max: 0.015000002
+    # Region: heater Diffusion Number mean: 0.00036111112 max: 0.0020000002
     # ...
     # deltaT = 0.001200048
     # # Region: ...からdeltaT = ...までの表示，なぜか最初のイタレーションだけ2回出る．
@@ -190,23 +192,22 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         # 連続の式の誤差
         r'^time step continuity errors *(?:[^ :]*): sum local = (?P<continuity_local>[0-9.e+\-]+), '
         r'global = (?P<continuity_global>[0-9.e+\-]+)' '|'
-        # クーラン数
-        r'^Courant Number mean: (?P<Courant_mean>[0-9.e+\-]+) max: (?P<Courant_max>[0-9.e+\-]+)' '|'
+        # クーラン数，1未満が理想
+        r'^(?:Region: (?P<Courant_region>\S+) )?'
+        r'Courant Number mean: (?P<Courant_mean>[0-9.e+\-]+) max: (?P<Courant_max>[0-9.e+\-]+)' '|'
+        # 拡散数，0.5未満が理想
+        r'^Region: (?P<Diffusion_region>\S+) '
+        r'Diffusion Number mean: (?P<Diffusion_mean>[0-9.e+\-]+) max: (?P<Diffusion_max>[0-9.e+\-]+)' '|'
         # 領域
         r'^Solving for \S+ region (?<region>\S)'
     )
     plot_data = {
         'residual': {}, # {'U': [...], 'p': [...], ...}
-        'continuity': {'sum local': [], 'abs global': []}
+        'continuity': {} # {'sum local': [], 'abs global': []}
     }
     plt_fig = {}
     plt_ax = {}
     plt_line2d = {}
-    new_time = { # 時間ステップが更新したか？
-        'residual': {}, # {'U': True, 'p': True, ...}
-        'continuity': True,
-        'Courant': True
-    }
 
     def set_subplot(data_key, xlabel, ylabel, window_title, logscale = True):
         fig, ax = plt.subplots()
@@ -233,6 +234,9 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         if 'Courant' in plot_data:
             set_subplot(data_key = 'Courant', xlabel = 'iteration', ylabel= 'Courant number',
                 window_title = 'iteration histories of Courant numbers', logscale = True)
+        if 'Diffusion' in plot_data:
+            set_subplot(data_key = 'Diffusion', xlabel = 'iteration', ylabel= 'Diffusion number',
+                window_title = 'iteration histories of Diffusion numbers', logscale = True)
 
     start_time = float(start_time)
     history_path = f'{application}_history.txt'
@@ -273,15 +277,17 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
 
     def monitor():
         for data_key in plot_data:
-            message = ''
+#            message = ''
             for k in plot_data[data_key]:
-                l = len(plot_data[data_key][k])
-                if l != iteration:
-                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
-                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
-            if len(message) > 0:
-                sys.stdout.write(f'\n{message}\n')
-                sys.stdout.flush() # リアルタイム反映のため
+#                l = len(plot_data[data_key][k])
+#                if l != iteration:
+#                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
+#                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
+                plt_line2d[data_key][k].set_data(
+                    range(1, len(plot_data[data_key][k]) + 1), plot_data[data_key][k]) # 線を更新
+#            if len(message) > 0:
+#                sys.stdout.write(f'\n{message}\n')
+#                sys.stdout.flush() # リアルタイム反映のため
             plt_ax[data_key].relim() # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw() # 新しいデータを画面に描く
@@ -347,7 +353,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                         f_history.write(f'{iteration}\t{time}')
                         for data_key in plot_data:
                             for k in plot_data[data_key]:
-                                f_history.write(f'\t{plot_data[data_key][k][-1]}')
+                                f_history.write(f'\t{plot_data[data_key][k][iteration - 1]}')
                         f_history.write('\n')
                         f_history.flush() # リアルタイム反映のため
                         if iteration%plot_freq == 0:
@@ -362,9 +368,9 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                 if s == 0.0:
                                     continue
                                 if k in ('Ux', 'Uy', 'Uz'):
-                                    k = 'U'
                                     if U_changed:
                                         continue
+                                    k = 'U'
                                 change_relaxationFactors_in_fvSolution(
                                     param_name = k, remark = f'time = {time}',
                                     delta = s*relax_delta, lower_limit = relax_lower_limit)
@@ -372,9 +378,6 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                     U_changed = True
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
-                        for k in plot_data['residual']:
-                            new_time['residual'][k] = True
-                        new_time['continuity'] = new_time['Courant'] = True
                     continue
                 elif 'Foam::sigFpe::sigHandler(int)' in line:
                     result = 'floating point error' # 発散
@@ -385,38 +388,67 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     continue
                 if s.lastgroup == 'final_residual':
                     par = s.group('parameter')
+                    if region is not None:
+                        par += f' ({region})'
+                        par += f' ({region})'
                     res = float(s.group('final_residual'))
                     if iteration == 1 and par not in plot_data['residual']: # 初回発見時に辞書を自動構築
                         plot_data['residual'][par] = []
-                        new_time['residual'][par] = True
-                    if new_time['residual'][par]:
+                    if len(plot_data['residual'][par]) < iteration:
                         plot_data['residual'][par].append(res) # データの追加
-                        new_time['residual'][par] = False
                     else:
                         plot_data['residual'][par][-1] = res # データの更新
                 elif s.lastgroup == 'continuity_global':
-                    loc = float(s.group('continuity_local'))
-                    glob = abs(float(s.group('continuity_global')))
-                    if new_time['continuity']:
-                        plot_data['continuity']['sum local'].append(loc) # データの追加
-                        plot_data['continuity']['abs global'].append(glob)
-                        new_time['continuity'] = False
+                    loc_value = float(s.group('continuity_local'))
+                    glob_balue = abs(float(s.group('continuity_global')))
+                    loc_key = 'sum local'
+                    glob_key = 'abs global'
+                    if region is not None:
+                        loc_key += f' ({region})'
+                        globl_key += f' ({region})'
+                    if iteration == 1:
+                        plot_data['continuity'] = {loc_key: [], glob_key: []}
+                    if len(plot_data['continuity'][loc_key]) < iteration:
+                        plot_data['continuity'][loc_key].append(loc_value) # データの追加
+                        plot_data['continuity'][glob_key].append(glob_balue)
                     else:
-                        plot_data['continuity']['sum local'][-1] = loc # データの更新
-                        plot_data['continuity']['abs global'][-1] = glob
+                        plot_data['continuity'][loc_key][-1] = loc_value # データの更新
+                        plot_data['continuity'][glob_key][-1] = glob_balue
                 elif s.lastgroup == 'Courant_max':
-                    mn = float(s.group('Courant_mean'))
-                    mx = float(s.group('Courant_max'))
-                    if iteration == iteration_start:
-                        plot_data['Courant'] = {'mean': [], 'max': []}
-                        new_time['Courant'] = True
-                    if new_time['Courant']:
-                        plot_data['Courant']['mean'].append(mn) # データの追加
-                        plot_data['Courant']['max'].append(mx)
-                        new_time['Courant'] = False
+                    mean_value = float(s.group('Courant_mean'))
+                    max_value = float(s.group('Courant_max'))
+                    region = s.group('Courant_region')
+                    mean_key = 'mean'
+                    max_key = 'max'
+                    iteration2 = iteration
+                    if region is not None:
+                        mean_key += f' ({region})'
+                        max_key += f' ({region})'
+                        iteration2 += 1
+                    if iteration2 == 1:
+                        plot_data.setdefault('Courant', {}).update(mean_key: [], max_key: [])
+                    if len(plot_data['Courant'][mean_key]) < iteration2:
+                        plot_data['Courant'][mean_key].append(mean_value)
+                        plot_data['Courant'][max_key].append(max_value)
                     else:
-                        plot_data['Courant']['mean'][-1] = mn # データの更新
-                        plot_data['Courant']['max'][-1] = mx
+                        plot_data['Courant'][mean_key][-1] = mean_value
+                        plot_data['Courant'][max_key][-1] = max_value
+                elif s.lastgroup == 'Diffusion_max':
+                    mean_value = float(s.group('Diffusion_max'))
+                    max_value = float(s.group('Diffusion_mean'))
+                    region = s.group('Diffusion_region')
+                    mean_key = f'mean ({region})'
+                    max_key = f'max ({region})'
+                    if iteration == 0:
+                        plot_data.setdefault('Diffusion', {}).update(mean_key: [], max_key: [])
+                    if len(plot_data['Diffusion'][mean_key]) < iteration + 1:
+                        plot_data['Diffusion'][mean_key].append(mean_value)
+                        plot_data['Diffusion'][max_key].append(max_value)
+                    else:
+                        plot_data['Diffusion'][mean_key][-1] = mean_value
+                        plot_data['Diffusion'][max_key][-1] = max_value
+                elif s.lastgroup == 'region':
+                    region = s.group('region')
 
             process.stdout.close()
 
