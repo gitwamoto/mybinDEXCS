@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/10 12:15:03 AM
+# 2026/6/10 10:23:56 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -368,9 +368,9 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                 if s == 0.0:
                                     continue
                                 if k in ('Ux', 'Uy', 'Uz'):
-                                    k = 'U'
                                     if U_changed:
                                         continue
+                                    k = 'U'
                                 change_relaxationFactors_in_fvSolution(
                                     param_name = k, remark = f'time = {time}',
                                     delta = s*relax_delta, lower_limit = relax_lower_limit)
@@ -388,6 +388,9 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     continue
                 if s.lastgroup == 'final_residual':
                     par = s.group('parameter')
+                    if region is not None:
+                        par += f' ({region})'
+                        par += f' ({region})'
                     res = float(s.group('final_residual'))
                     if iteration == 1 and par not in plot_data['residual']: # 初回発見時に辞書を自動構築
                         plot_data['residual'][par] = []
@@ -396,16 +399,21 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     else:
                         plot_data['residual'][par][-1] = res # データの更新
                 elif s.lastgroup == 'continuity_global':
-                    loc = float(s.group('continuity_local'))
-                    glob = abs(float(s.group('continuity_global')))
+                    loc_value = float(s.group('continuity_local'))
+                    glob_balue = abs(float(s.group('continuity_global')))
+                    loc_key = 'sum local'
+                    glob_key = 'abs global'
+                    if region is not None:
+                        loc_key += f' ({region})'
+                        globl_key += f' ({region})'
                     if iteration == 1:
-                        plot_data['continuity'] = {'sum local': [], 'abs global': []}
-                    if len(plot_data['continuity']['sum local']) < iteration:
-                        plot_data['continuity']['sum local'].append(loc) # データの追加
-                        plot_data['continuity']['abs global'].append(glob)
+                        plot_data['continuity'] = {loc_key: [], glob_key: []}
+                    if len(plot_data['continuity'][loc_key]) < iteration:
+                        plot_data['continuity'][loc_key].append(loc_value) # データの追加
+                        plot_data['continuity'][glob_key].append(glob_balue)
                     else:
-                        plot_data['continuity']['sum local'][-1] = loc # データの更新
-                        plot_data['continuity']['abs global'][-1] = glob
+                        plot_data['continuity'][loc_key][-1] = loc_value # データの更新
+                        plot_data['continuity'][glob_key][-1] = glob_balue
                 elif s.lastgroup == 'Courant_max':
                     mean_value = float(s.group('Courant_mean'))
                     max_value = float(s.group('Courant_max'))
@@ -439,6 +447,8 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     else:
                         plot_data['Diffusion'][mean_key][-1] = mean_value
                         plot_data['Diffusion'][max_key][-1] = max_value
+                elif s.lastgroup == 'region':
+                    region = s.group('region')
 
             process.stdout.close()
 
