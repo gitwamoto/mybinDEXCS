@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/11 12:03:16 PM
+# 2026/6/11 12:38:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -365,6 +365,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     if line.startswith('Time = '):
                         if iteration > 0 and iteration%res_eval_freq == 0:
                             U_changed = False
+                            processed = []
                             for k, v in plot_data['residual'].items():
                                 if len(v) < res_eval_freq:
                                     continue
@@ -375,8 +376,8 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                     if U_changed:
                                         continue
                                     k = 'U'
-                                change_relaxationFactors_in_fvSolution(
-                                    param_name = k, remark = f'time = {time}',
+                                processed = change_relaxationFactors_in_fvSolution(
+                                    param_name = k, remark = f'time = {time}', processed = processed,
                                     delta = s*relax_delta, lower_limit = relax_lower_limit)
                                 if k == 'U':
                                     U_changed = True
@@ -468,7 +469,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         plt.ioff()
         plt.close('all')
 
-    return result, plot_data['residual'].keys()
+    return result, plot_data
 
 def reset_relaxationFactors_in_fvSolution():
     pat = re.compile('// .+, [0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
@@ -506,7 +507,7 @@ def reset_relaxationFactors_in_fvSolution():
     for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(r)
 
-def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lower_limit = 0.3):
+def change_relaxationFactors_in_fvSolution(param_name, remark, processed, delta = -0.01, lower_limit = 0.3):
     s = re.search(r'(?P<parameter>\S+)( \((?P<region>[^)]+)\))?', param_name)
     if s['region'] is None:
         fvSolution_path = os.path.abspath(os.path.join('system', 'fvSolution'))
@@ -515,25 +516,21 @@ def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lo
     if os.path.islink(fvSolution_path):
         fvSolution_path = os.path.realpath(fvSolution_path)
         if fvSolution_path in processed:
-            return
+            return processed
+        processed.append(fvSolution_path)
 
     cat, value = misc.getRelaxationFactor(param_name, fvSolution_path)
     if cat is None:
-        return
+        return processed
     new_value = min(1.0, max(lower_limit, value + delta))
     if value == new_value:
-        return
+        return processed
 
     # appendEntries.intoFvSolution()を実行していることを想定
     fvSolution = dictParse.DictParser(file_name = fvSolution_path)
     relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
     block = relaxationFactors.find_element([{'type': 'block', 'key': f'{cat}'}])['element']
     block_end = block.find_element([{'type': 'block_end'}], reverse = True)
-    i = block.find_element(
-        [{'type': 'dictionary', 'key': param_name}], start = block_end['index'], reverse = True)['element']
-    comment = i.find_element([{'type': 'line_comment'}], reverse = True)['element']
-    if comment is not None and comment['value'].startswith(f'// {remark}, '):
-        return
     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
         '\n'
         f'{param_name}\t{new_value};'
@@ -543,6 +540,8 @@ def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lo
 
     with open(fvSolution_path, 'w') as f:
         f.write(dictParse.normalize(string = fvSolution.file_string())[0])
+
+    return processed
 
 def getRelaxationFactors(param_names):
     pat = re.compile(r'(?P<parameter>\S+)( \((?P<region>[^)]+)\))?')
@@ -729,11 +728,12 @@ if __name__ == '__main__':
     application = misc.getApplication()
     while True:
         start_time = misc.latestTime()
-        result, param_names = plot_runner(
+        result, plot_data = plot_runner(
             application = application,
             start_time = start_time,
             relax_delta = 0.01,
             relax_lower_limit = relaxationFactor_lower_limit)
+        param_names = plot_data['residual'].keys()
         relax_factors = getRelaxationFactors(param_names)
         if domains != 1 and os.path.isdir('processor0'):
             recosntructPar()
@@ -758,18 +758,27 @@ if __name__ == '__main__':
             else:
                 break
         else:
+            processed = []
             for k in param_names:
                 if k in ('Uy', 'Uz'):
                     continue
                 elif k == 'Ux':
                     k = 'U'
-                change_relaxationFactors_in_fvSolution(param_name = k, remark = 'restart',
+                processed = change_relaxationFactors_in_fvSolution(
+                    param_name = k, remark = 'restart', processed = processed,
                     delta = -0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
 
     rmObjects.removeProcessorDirs('noLatest')
     restore_zero_folder()
+
+    cont_max = max([v[-1] for k, v in param_names['continuity'].items if k.startswith('sum local')])
+    res_max = max([v[-1] for v in param_names['residual'].values()])
+    print('\n最後の計算における\n'
+        f'  連続の式の局所誤差の最大値は{cont_max}\n'
+        f'  残差の最大値は{res_max}\n'
+        'でした')
 
     if result == 'success':
         print('\n計算が無事に終了しました．')
