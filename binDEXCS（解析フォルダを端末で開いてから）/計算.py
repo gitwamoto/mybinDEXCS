@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/11 4:29:30 PM
+# 2026/6/11 7:47:07 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -49,7 +49,7 @@ pat_residual = re.compile(r'(?P<parameter>\S+)( \((?P<region>[^)]+)\))?')
 pat_remark = re.compile('// .+, [0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
 
 def remark_string(remark):
-    return f'{remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
+    return f'// {remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
 
 def handler(signum, frame):
     if domains != 1:
@@ -534,8 +534,7 @@ def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lo
         return
     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
         '\n'
-        f'{param_name}\t{new_value};'
-        f' // {remark}\n')['value']
+        f'{param_name}\t{new_value}; // {remark}\n')['value']
     block.set_blank_line(number_of_blank_lines = 0)
 
     with open(fvSolution_path, 'w') as f:
@@ -730,8 +729,7 @@ if __name__ == '__main__':
             start_time = start_time,
             relax_delta = 0.01,
             relax_lower_limit = relaxationFactor_lower_limit)
-        param_names = plot_data['residual'].keys()
-        relax_factors = getRelaxationFactors(param_names)
+        relax_factors = getRelaxationFactors(plot_data['residual'].keys())
         if domains != 1 and os.path.isdir('processor0'):
             recosntructPar()
 
@@ -751,12 +749,12 @@ if __name__ == '__main__':
             if float(start_time) != 0.0:
                 for d in glob.iglob(f'processor*{os.sep}'):
                     shutil.rmtree(os.path.join(d, start_time))
-                shutil.rmtree(start_time)
+                shutil.rmtree(start_time) # ひとつ前の記録時間に戻ってリスタート
             else:
                 break
         else:
             remark = remark_string('restart')
-            for k in param_names:
+            for k in plot_data['residual'].keys():
                 change_relaxationFactors_in_fvSolution(param_name = k, remark = remark,
                     delta = -0.05, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
@@ -765,12 +763,12 @@ if __name__ == '__main__':
     rmObjects.removeProcessorDirs('noLatest')
     restore_zero_folder()
 
-    cont_max = max([v[-1] for k, v in param_names['continuity'].items() if k.startswith('sum local')])
-    res_max = max([v[-1] for v in param_names['residual'].values()])
+    cont_max = max([v[-1] for k, v in plot_data['continuity'].items() if k.startswith('sum local')])
+    res_max = max([v[-1] for v in plot_data['residual'].values()])
     print('\n最後の計算における\n'
         f'  連続の式の局所誤差の最大値は{cont_max}\n'
         f'  残差の最大値は{res_max}\n'
-        'でした')
+        'でした．')
 
     if result == 'success':
         print('\n計算が無事に終了しました．')
