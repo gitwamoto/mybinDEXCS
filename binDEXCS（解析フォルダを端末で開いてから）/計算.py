@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/11 12:38:41 PM
+# 2026/6/11 4:29:30 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -765,7 +765,7 @@ if __name__ == '__main__':
     rmObjects.removeProcessorDirs('noLatest')
     restore_zero_folder()
 
-    cont_max = max([v[-1] for k, v in param_names['continuity'].items if k.startswith('sum local')])
+    cont_max = max([v[-1] for k, v in param_names['continuity'].items() if k.startswith('sum local')])
     res_max = max([v[-1] for v in param_names['residual'].values()])
     print('\n最後の計算における\n'
         f'  連続の式の局所誤差の最大値は{cont_max}\n'
