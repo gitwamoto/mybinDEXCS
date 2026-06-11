@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/11 10:27:53 AM
+# 2026/6/11 12:03:16 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -28,6 +28,7 @@ import filecmp
 from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects
@@ -38,7 +39,7 @@ from utilities import dictParse
 # マルチリージョン対応
 # matplotlibを使っている他のスクリプトの見直し
 
-plt.rcParams['figure.figsize'] = (4.8, 3.6)
+#plt.rcParams['figure.figsize'] = (6.0, 3.6) # (width, height), デフォルト値は環境によりますが、多くの場合は (6.4, 4.8) です。
 
 relaxationFactor_lower_limit = 0.3
 domains = 1
@@ -210,7 +211,8 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     plt_line2d = {}
 
     def set_subplot(data_key, xlabel, ylabel, window_title, logscale = True):
-        fig, ax = plt.subplots()
+        ncol = math.ceil(len(plot_data[data_key])/16.0)
+        fig, ax = plt.subplots(figsize = (4.8 + ncol*1.2, 3.6)) # (width, height)
         ax.set_xlabel(xlabel, fontsize = 12)
         ax.set_ylabel(ylabel, fontsize = 12)
         if logscale:
@@ -222,7 +224,9 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         fig.canvas.manager.set_window_title(window_title)
         plt_line2d[data_key] = {k: ax.plot([], [], linestyle = line_styles[i%len(line_styles)], label = k)[0]
             for i, k in enumerate(plot_data[data_key])}
-        ax.legend(loc = 'best') # ax.plotを呼び出した後
+#        ax.legend(loc = 'best') # ax.plotを呼び出した後
+        ax.legend(bbox_to_anchor = (1.02, 1), loc = 'upper left', borderaxespad = 0, ncol = ncol)
+        fig.tight_layout()
         plt_fig[data_key] = fig
         plt_ax[data_key] = ax
 
@@ -503,57 +507,61 @@ def reset_relaxationFactors_in_fvSolution():
         reset_relaxationFactors_in(r)
 
 def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lower_limit = 0.3):
-    processed = []
-    def change_relaxationFactors_in(path):
-        fvSolution_path = os.path.abspath(os.path.join(path, 'fvSolution'))
-        if os.path.islink(fvSolution_path):
-            fvSolution_path = os.path.realpath(fvSolution_path)
-            if fvSolution_path in processed:
-                return
-        processed.append(fvSolution_path)
-
-        cat, value = misc.getRelaxationFactor(param_name, fvSolution_path)
-        if cat is None:
-            return
-        new_value = min(1.0, max(lower_limit, value + delta))
-        if value == new_value:
+    s = re.search(r'(?P<parameter>\S+)( \((?P<region>[^)]+)\))?', param_name)
+    if s['region'] is None:
+        fvSolution_path = os.path.abspath(os.path.join('system', 'fvSolution'))
+    else:
+        fvSolution_path = os.path.abspath(os.path.join('system', s['region'], 'fvSolution'))
+    if os.path.islink(fvSolution_path):
+        fvSolution_path = os.path.realpath(fvSolution_path)
+        if fvSolution_path in processed:
             return
 
-        # appendEntries.intoFvSolution()を実行していることを想定
-        fvSolution = dictParse.DictParser(file_name = fvSolution_path)
-        relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
-        block = relaxationFactors.find_element([{'type': 'block', 'key': f'{cat}'}])['element']
-        block_end = block.find_element([{'type': 'block_end'}], reverse = True)
-        block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
-            '\n'
-            f'{param_name}\t{new_value};'
-            f' // {remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
-            '\n')['value']
-        block.set_blank_line(number_of_blank_lines = 0)
+    cat, value = misc.getRelaxationFactor(param_name, fvSolution_path)
+    if cat is None:
+        return
+    new_value = min(1.0, max(lower_limit, value + delta))
+    if value == new_value:
+        return
 
-        with open(fvSolution_path, 'w') as f:
-            f.write(dictParse.normalize(string = fvSolution.file_string())[0])
+    # appendEntries.intoFvSolution()を実行していることを想定
+    fvSolution = dictParse.DictParser(file_name = fvSolution_path)
+    relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
+    block = relaxationFactors.find_element([{'type': 'block', 'key': f'{cat}'}])['element']
+    block_end = block.find_element([{'type': 'block_end'}], reverse = True)
+    i = block.find_element(
+        [{'type': 'dictionary', 'key': param_name}], start = block_end['index'], reverse = True)['element']
+    comment = i.find_element([{'type': 'line_comment'}], reverse = True)['element']
+    if comment is not None and comment['value'].startswith(f'// {remark}, '):
+        return
+    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
+        '\n'
+        f'{param_name}\t{new_value};'
+        f' // {remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
+        '\n')['value']
+    block.set_blank_line(number_of_blank_lines = 0)
 
-    if os.path.isdir('system'):
-        change_relaxationFactors_in('system')
-    for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        change_relaxationFactors_in(r)
+    with open(fvSolution_path, 'w') as f:
+        f.write(dictParse.normalize(string = fvSolution.file_string())[0])
 
 def getRelaxationFactors(param_names):
+    pat = re.compile(r'(?P<parameter>\S+)( \((?P<region>[^)]+)\))?')
     relax_factors = []
     for k in param_names:
-        if k in ('Uy', 'Uz'):
+        s = pat.search(k)
+        if s['region'] is None:
+            fvSolution_path = os.path.abspath(os.path.join('system', 'fvSolution'))
+        else:
+            fvSolution_path = os.path.abspath(os.path.join('system', s['region'], 'fvSolution'))
+        p = s['parameter']
+        if p in ('Uy', 'Uz'):
             continue
-        elif k == 'Ux':
-            k = 'U'
-        if os.path.isdir('system'):
-            value = misc.getRelaxationFactor(k, os.path.join('system', 'fvSolution'))[1]
-            if value is not None:
-                relax_factors.append({'param': k, 'value': value})
-        for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
-            value = misc.getRelaxationFactor(k, os.path.join(r, 'fvSolution'))[1]
-            if value is not None:
-                relax_factors.append({'region': os.path.basename(r), 'param': k, 'value': value})
+        elif p == 'Ux':
+            p = 'U'
+            k = k.replace('Ux', 'U')
+        value = misc.getRelaxationFactor(p, fvSolution_path)[1]
+        if value is not None:
+            relax_factors.append({'param': k, 'value': value})
     return relax_factors
 
 if __name__ == '__main__':
@@ -768,10 +776,7 @@ if __name__ == '__main__':
         if change_relaxation_factors:
             print('最終的な緩和係数（relaxationFactors）は以下になりました：')
             for i in relax_factors:
-                if 'region' in i:
-                    print(f'  {i["param"]} ({i["region"]}): {i["value"]}')
-                else:
-                    print(f'  {i["param"]}: {i["value"]}')
+                print(f'  {i["param"]}: {i["value"]}')
     else:
         if change_relaxation_factors:
             print('\n(ERROR) 緩和係数（relaxationFactors）を下限の'
