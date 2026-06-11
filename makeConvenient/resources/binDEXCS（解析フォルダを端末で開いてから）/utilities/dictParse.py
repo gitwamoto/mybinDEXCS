@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/5/27 12:07:16 PM
+# 2026/6/11 11:38:32 AM
 
 import sys
 import os
@@ -498,7 +498,7 @@ if __name__ == '__main__':
         parser = DictParser(file_name = sys.argv[1])
     except:
         print(sys.exc_info())
-    
+
 #    print(parser.structure_string())
     for element in parser.find_all_elements(
         [{'type': 'block|dictionary'}]):
