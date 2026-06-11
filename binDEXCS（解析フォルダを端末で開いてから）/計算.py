@@ -199,7 +199,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         r'^Region: (?P<Diffusion_region>\S+) '
         r'Diffusion Number mean: (?P<Diffusion_mean>[0-9.e+\-]+) max: (?P<Diffusion_max>[0-9.e+\-]+)' '|'
         # 領域
-        r'^Solving for \S+ region (?<region>\S)'
+        r'^Solving for \S+ region (?P<region>\S+)'
     )
     plot_data = {
         'residual': {}, # {'U': [...], 'p': [...], ...}
@@ -405,7 +405,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     glob_key = 'abs global'
                     if region is not None:
                         loc_key += f' ({region})'
-                        globl_key += f' ({region})'
+                        glob_key += f' ({region})'
                     if iteration == 1:
                         plot_data['continuity'] = {loc_key: [], glob_key: []}
                     if len(plot_data['continuity'][loc_key]) < iteration:
@@ -426,7 +426,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                         max_key += f' ({region})'
                         iteration2 += 1
                     if iteration2 == 1:
-                        plot_data.setdefault('Courant', {}).update(mean_key: [], max_key: [])
+                        plot_data.setdefault('Courant', {}).update({mean_key: [], max_key: []})
                     if len(plot_data['Courant'][mean_key]) < iteration2:
                         plot_data['Courant'][mean_key].append(mean_value)
                         plot_data['Courant'][max_key].append(max_value)
@@ -440,7 +440,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     mean_key = f'mean ({region})'
                     max_key = f'max ({region})'
                     if iteration == 0:
-                        plot_data.setdefault('Diffusion', {}).update(mean_key: [], max_key: [])
+                        plot_data.setdefault('Diffusion', {}).update({mean_key: [], max_key: []})
                     if len(plot_data['Diffusion'][mean_key]) < iteration + 1:
                         plot_data['Diffusion'][mean_key].append(mean_value)
                         plot_data['Diffusion'][max_key].append(max_value)
