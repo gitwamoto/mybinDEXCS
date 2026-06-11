@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/10 10:23:56 AM
+# 2026/6/11 10:27:53 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -267,9 +267,9 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                     if l_data_ord == len(cols) - 2:
                         for (data_key, k), v in zip(data_ord, cols[2:]):
                             plot_data[data_key][k].append(float(v))
-                    iteration = int(cols[0])
                     if float(cols[1]) > start_time:
                         break
+                    iteration = int(cols[0])
                     f_out.write(line)
             os.remove(old_history_path)
     iteration_start = iteration + 1
