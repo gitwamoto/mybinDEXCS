@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/5/20 2:42:05 PM
+# 2026/6/12 7:09:38 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -12,6 +12,7 @@ import tempfile
 import Mesh
 import re
 import sys
+import subprocess
 
 binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 if binDEXCS_path not in sys.path:
@@ -442,7 +443,7 @@ class MyController:
     def actionOnOpenButton(self):
         case_dir_path = self.MeshFrame.caseDirST.text()
         if os.path.isdir(case_dir_path):
-            os.system("xdg-open '" + case_dir_path + "'")
+            subprocess.run(['xdg-open', case_dir_path])
 
     def actionOnExportButton(self):
         if not os.path.isdir(self.MeshFrame.caseDirST.text()):
@@ -462,12 +463,14 @@ class MyController:
         case_dir_path = self.MeshFrame.caseDirST.text()
         # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
         if not os.path.isdir(os.path.join(case_dir_path, 'constant')):
-            os.system('rsync -a ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'constant') + ' ' +
-                case_dir_path + ' --exclude polyMesh')
+            subprocess.run(['rsync', '-a', os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'constant'),
+                case_dir_path, '--exclude', 'polyMesh'])
         if not os.path.isdir(os.path.join(case_dir_path, 'system')):
-            os.system('cp -r ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'system') + ' ' + case_dir_path)
+            shutil.copytree(os.path.join(MyController.SOLVER_PATH_TEMPLATE, 'system'),
+                os.path.join(case_dir_path, 'system'))
         if not os.path.isdir(os.path.join(case_dir_path, '0')):
-            os.system('cp -r ' + os.path.join(MyController.SOLVER_PATH_TEMPLATE, '0') + ' ' + case_dir_path)
+            shutil.copytree(os.path.join(MyController.SOLVER_PATH_TEMPLATE, '0'),
+                os.path.join(case_dir_path, '0'))
         triSurface = os.path.join(case_dir_path, 'constant', 'triSurface')
         if os.path.isdir(triSurface):
             shutil.rmtree(triSurface)
@@ -479,15 +482,16 @@ class MyController:
             shutil.rmtree(extendedFeatureEdgeMesh)
         elif os.path.isfile(extendedFeatureEdgeMesh):
             os.remove(extendedFeatureEdgeMesh)
-        stl_file_name = os.path.join(triSurface, re.sub('^([0-9])', r'_\1', os.path.basename(case_dir_path)) + '.stl')
+        stl_file_name = os.path.join(triSurface,
+            re.sub('^([0-9])', r'_\1', f'{os.path.basename(case_dir_path)}.stl'))
         box = self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_name)
         self.model.makeSurfaceFeatureExtractDict(case_dir_path = case_dir_path,
             surface_file_name = stl_file_name, feature_angle = self.MeshFrame.featureAngleCRL.text())
         cwd = os.getcwd()
         os.chdir(case_dir_path)
-        command = '. ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' + 'surfaceFeatureExtract'
-        if os.system(command) != 0:
-            QtGui.QMessageBox.critical(None, 'Error', command + ' was not succeed.', QtGui.QMessageBox.Close)
+        command = f'. \'{MyController.BASHRC_PATH_4_OPENFOAM}\' && surfaceFeatureExtract'
+        if subprocess.run(command, shell = True).returncode != 0:
+            QtGui.QMessageBox.critical(None, 'Error', f'{command} was not succeed.', QtGui.QMessageBox.Close)
             os.chdir(cwd)
             return
         os.chdir(cwd)
@@ -522,8 +526,10 @@ class MyController:
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
             os.chdir(case_dir_path)
-            os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-                os.path.join(binDEXCS_path, 'snappyHexMeshを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
+            subprocess.run(['gnome-terminal', '--', 'bash', '-c',
+                f'. \'{MyController.BASHRC_PATH_4_OPENFOAM}\' && '
+                f'\'{os.path.join(binDEXCS_path, "snappyHexMeshを実行.py")}\'; exec bash'])
+                # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnExtrudeMeshButton(self):
@@ -532,8 +538,10 @@ class MyController:
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
             os.chdir(self.MeshFrame.caseDirST.text())
-            os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-                os.path.join(binDEXCS_path, '2次元メッシュに.py') + '; exec bash"') # exec bashで画面が消えなくなる
+            subprocess.run(['gnome-terminal', '--', 'bash', '-c',
+                f'. \'{MyController.BASHRC_PATH_4_OPENFOAM}\' && '
+                f'\'{os.path.join(binDEXCS_path, "2次元メッシュに.py")}\'; exec bash'])
+                # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnImproveMeshQualityButton(self):
@@ -542,8 +550,10 @@ class MyController:
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
             os.chdir(self.MeshFrame.caseDirST.text())
-            os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-                os.path.join(binDEXCS_path, 'improveMeshQualityを実行.py') + '; exec bash"') # exec bashで画面が消えなくなる
+            subprocess.run(['gnome-terminal', '--', 'bash', '-c',
+                f'. \'{MyController.BASHRC_PATH_4_OPENFOAM}\' && '
+                f'\'{os.path.join(binDEXCS_path, "improveMeshQualityを実行.py")}\'; exec bash'])
+                # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnFlattenPatchButton(self):
@@ -552,8 +562,10 @@ class MyController:
             QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
             cwd = os.getcwd()
             os.chdir(self.MeshFrame.caseDirST.text())
-            os.system('gnome-terminal -- bash -c ' + '". ' + MyController.BASHRC_PATH_4_OPENFOAM + ' && ' +
-                os.path.join(binDEXCS_path, 'patchを平面に.py') + '; exec bash"') # exec bashで画面が消えなくなる
+            subprocess.run(['gnome-terminal', '--', 'bash', '-c',
+                f'. \'{MyController.BASHRC_PATH_4_OPENFOAM}\' && '
+                f'\'{os.path.join(binDEXCS_path, "patchを平面に.py")}\'; exec bash'])
+                # exec bashで画面が消えなくなる
             os.chdir(cwd)
 
     def actionOnLoadButton(self):
@@ -580,7 +592,7 @@ class MyController:
         if QtGui.QMessageBox.question(None, 'Edit',
             'The file system/snappyHexMeshDict last exported/saved will be edited.\n' +
             'Really edit?', QtGui.QMessageBox.Yes, QtGui.QMessageBox.No) == QtGui.QMessageBox.Yes:
-            os.system('gedit ' + meshDict_path)
+            subprocess.run(['gedit', meshDict_path])
 
 class MyModel:
     @staticmethod
