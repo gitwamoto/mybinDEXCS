@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/11 7:47:07 PM
+# 2026/6/12 9:52:21 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -41,15 +41,17 @@ from utilities import dictParse
 
 #plt.rcParams['figure.figsize'] = (6.0, 3.6) # (width, height), デフォルト値は環境によりますが、多くの場合は (6.4, 4.8) です。
 
-relaxationFactor_lower_limit = 0.3
+relaxationFactor_lower_limit = 0.3 # 緩和係数の下限値
+relaxationFactor_delta_usual = 0.01 # 通常時における緩和係数の変化量の絶対値
+relaxationFactor_delta_restart = 0.05 # 通常時における緩和係数の変化量の絶対値
 domains = 1
 regionProperties_path = os.path.join('constant', 'regionProperties')
 decomposeParDict_path = os.path.join('system', 'decomposeParDict')
 pat_residual = re.compile(r'(?P<parameter>\S+)( \((?P<region>[^)]+)\))?')
-pat_remark = re.compile('// .+, [0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}')
+pat_remark = re.compile('// .+, [0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{6})?')
 
 def remark_string(remark):
-    return f'// {remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}' # YYYY/mm/dd HH:MM:SS
+    return f'// {remark}, {datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")}' # YYYY/mm/dd HH:MM:SS.ffffff
 
 def handler(signum, frame):
     if domains != 1:
@@ -376,7 +378,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
                                 s = relax_delta_sign(v[-res_eval_freq:])
                                 if s == 0.0:
                                     continue
-                                change_relaxationFactors_in_fvSolution(param_name = k, remark = remark,
+                                change_relaxationFactor_in_fvSolution(param_name = k, remark = remark,
                                     delta = s*relax_delta, lower_limit = relax_lower_limit)
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
@@ -460,7 +462,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
 
     finally:
         if process.poll() is None:
-            process.wait()
+            process.wait() # リターンコードを返すが，今回は必要ないので受け止めない
         if iteration > 1:
             monitor()
         plt.ioff()
@@ -503,7 +505,7 @@ def reset_relaxationFactors_in_fvSolution():
     for r in glob.iglob(os.path.join('system', f'*{os.sep}')):
         reset_relaxationFactors_in(r)
 
-def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lower_limit = 0.3):
+def change_relaxationFactor_in_fvSolution(param_name, remark, delta = -0.01, lower_limit = 0.3):
     s = pat_residual.search(param_name)
     if s['region'] is None:
         fvSolution_path = os.path.join('system', 'fvSolution')
@@ -527,14 +529,16 @@ def change_relaxationFactors_in_fvSolution(param_name, remark, delta = -0.01, lo
     relaxationFactors = fvSolution.find_element([{'type': 'block', 'key': 'relaxationFactors'}])['element']
     block = relaxationFactors.find_element([{'type': 'block', 'key': f'{cat}'}])['element']
     block_end = block.find_element([{'type': 'block_end'}], reverse = True)
-    i = block.find_element([{'type': 'dictionary', 'key': param_name}],
-        start = block_end['index'], reverse = True)['element']
+    i = block.find_element(
+        [{'type': 'dictionary', 'key': param_name}], start = block_end['index'], reverse = True)['element']
     comment = i.find_element([{'type': 'line_comment'}], reverse = True)['element']
     if comment is not None and comment['value'].endswith(remark):
         return
+    if not remark.startswith('// '):
+        remark = f'// {remark}'
     block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
         '\n'
-        f'{param_name}\t{new_value}; // {remark}\n')['value']
+        f'{param_name}\t{new_value}; {remark}\n')['value']
     block.set_blank_line(number_of_blank_lines = 0)
 
     with open(fvSolution_path, 'w') as f:
@@ -553,7 +557,7 @@ def getRelaxationFactors(param_names):
             continue
         elif p == 'Ux':
             p = 'U'
-            k = k.replace('Ux', 'U')
+            k = k.replace('Ux', 'U', 1)
         value = misc.getRelaxationFactor(p, fvSolution_path)[1]
         if value is not None:
             relax_factors.append({'param': k, 'value': value})
@@ -727,7 +731,7 @@ if __name__ == '__main__':
         result, plot_data = plot_runner(
             application = application,
             start_time = start_time,
-            relax_delta = 0.01,
+            relax_delta = relaxationFactor_delta_usual,
             relax_lower_limit = relaxationFactor_lower_limit)
         relax_factors = getRelaxationFactors(plot_data['residual'].keys())
         if domains != 1 and os.path.isdir('processor0'):
@@ -755,8 +759,8 @@ if __name__ == '__main__':
         else:
             remark = remark_string('restart')
             for k in plot_data['residual'].keys():
-                change_relaxationFactors_in_fvSolution(param_name = k, remark = remark,
-                    delta = -0.05, lower_limit = relaxationFactor_lower_limit)
+                change_relaxationFactor_in_fvSolution(param_name = k, remark = remark,
+                    delta = -relaxationFactor_delta_restart, lower_limit = relaxationFactor_lower_limit)
             rmObjects.removeLogPlotPngs()
             os.remove(f'{application}.log')
 
