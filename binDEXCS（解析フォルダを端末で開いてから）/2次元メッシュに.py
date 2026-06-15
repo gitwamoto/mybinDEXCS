@@ -135,14 +135,14 @@ if __name__ == '__main__':
         os.mkdir('system')
     makeExtrudeMeshDict(z_front - z_back, front_name, back_name, wedge)
 
-    command = f"transformPoints -translate '(0 0 {-z_front})'"
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    r = subprocess.run(['transformPoints', '-translate', f'(0 0 {-z_front})'])
+    if r.returncode != 0:
+        print(f"エラー: transformPoints -translate '(0 0 {-z_front})'で失敗しました．よく分かる人に相談して下さい．")
         sys.exit(1)
 
-    command = 'extrudeMesh'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    r = subprocess.run(['extrudeMesh'])
+    if r.returncode != 0:
+        print('エラー: extrudeMeshで失敗しました．よく分かる人に相談して下さい．')
         sys.exit(1)
 
     if converted_millimeter_into_meter:

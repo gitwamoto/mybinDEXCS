@@ -321,28 +321,29 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     region = None
 
     try:
+        command_args =  ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
+        if domains > 1:
+            command_args.extend(['mpirun', '-np', f'{domains}'])
+            # -u (unbuffered) は、mpirun に対して「出力をバッファリングせずにすぐ吐き出せ」と指示します
+        command_args.append(application)
+        if domains > 1:
+            command_args.append('-parallel')
+        print()
+        process = subprocess.Popen( # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
+            command_args,
+            stdout = subprocess.PIPE,
+            stderr = subprocess.STDOUT,
+            text = True, # 出力を文字列として扱う
+            bufsize = 1 # Python側でも行単位でバッファリング
+        )
+
         with open(f'{application}.log', 'w') as f_log, open(history_path, 'a') as f_history:
             f_history.write(f'# {application} {datetime.now().strftime("%Y/%m/%d %H:%M:%S")}\n') # YYYY/mm/dd HH:MM:SS
-
-            # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
-            command =  ['stdbuf', '-oL']
-            if domains > 1:
-                command.extend(['mpirun', '-np', f'{domains}'])
-            command.append(application)
-            if domains > 1:
-                command.append('-parallel')
-            print()
-            process = subprocess.Popen( # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
-                command,
-                stdout = subprocess.PIPE,
-                stderr = subprocess.STDOUT,
-                text = True, # 出力を文字列として扱う
-                bufsize = 1 # Python側でも行単位でバッファリング
-            )
-
             # iter(process.stdout.readline, '') は readline() を
             # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
             for line in iter(process.stdout.readline, ''):
+                if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
+                    continue
                 sys.stdout.write(line) # 端末へそのまま表示
                 sys.stdout.flush() # リアルタイム反映のため
                 f_log.write(line) # ログをファイル保存
@@ -457,12 +458,14 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
             process.stdout.close()
 
     except:
+        print()
         print(sys.exc_info())
         process.terminate()
 
     finally:
-        if process.poll() is None:
-            process.wait() # リターンコードを返すが，今回は必要ないので受け止めない
+        if process.poll() is None: # 子プロセスが終了しているかどうかを調べます
+            process.wait() # 子プロセスが終了するまで待ちます
+            # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
         if iteration > 1:
             monitor()
         plt.ioff()

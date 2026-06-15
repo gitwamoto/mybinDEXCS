@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒以外のフォルダを消す.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:29:07 PM
+# 2026/6/15 2:33:10 PM
 
 import os
 import signal
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    subprocess.call('foamListTimes -rm -noZero', shell = True)
+    subprocess.run(['foamListTimes', '-rm', '-noZero'])
     rmObjects.removeProcessorDirs()
     for d in ('dynamicCode', 'logs'):
         if os.path.isdir(d):
