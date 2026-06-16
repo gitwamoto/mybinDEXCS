@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 # blockMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/4/10 9:54:14 PM
+# 2026/6/16 9:48:02 AM
 
 import sys
 import signal
-import subprocess
 from utilities import misc
 from utilities import rmObjects
 
@@ -14,9 +13,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    command = 'blockMesh'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if misc.execCommand(['blockMesh'])[1] != 0:
         sys.exit(1)
 
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
