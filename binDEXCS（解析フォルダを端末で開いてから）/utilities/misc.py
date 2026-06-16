@@ -8,6 +8,7 @@ import glob
 import os
 import sys
 import re
+import math
 import subprocess
 import numpy as np
 # このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
@@ -433,6 +434,15 @@ def controlDictFunctionsList(path = os.curdir):
     disable_function_list.extend(
         dictParse.re_findall_in_comments(r'//\s*!!DISABLED!!\s*#includeFunc\s+([^;]+);', string))
     return enable_function_list, disable_function_list
+
+def appropriate_tick(xmin, xmax, n):
+    tmp = abs(xmax - xmin)/(n + 0.01)
+    tick = 10.0**math.floor(math.log10(tmp))
+    tmp /= tick # 1 <= tmp < 10
+    for i in (1.0, 2.0, 2.5, 5.0):
+        if tmp < i:
+            return i*tick
+    return 10.0*tick
 
 if __name__ == '__main__':
     print('firstTime = ' + firstTime())
