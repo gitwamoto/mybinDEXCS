@@ -6,7 +6,6 @@
 
 import os
 import signal
-import subprocess
 import shutil
 import glob
 from utilities import misc
@@ -16,7 +15,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    subprocess.run(['foamListTimes', '-rm', '-noZero'])
+    misc.execCommand(['foamListTimes', '-rm', '-noZero'])
     rmObjects.removeProcessorDirs()
     for d in ('dynamicCode', 'logs'):
         if os.path.isdir(d):
