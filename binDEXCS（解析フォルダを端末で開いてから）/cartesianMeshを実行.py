@@ -155,19 +155,16 @@ if __name__ == '__main__':
                 '}\n'
                 f'numberOfSubdomains\t{domains};\n'
                 'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-        command = 'preparePar -noFunctionObjects'
-        r = subprocess.call(command, shell = True)
-        if r == 0:
-            command = f'mpirun -np {domains} {cfMesh} -parallel -noFunctionObjects | tee {cfMesh}.log'
-            r = subprocess.call(command, shell = True)
-        if r == 0:
-            command = 'reconstructParMesh -constant -mergeTol 1.0e-06 -noFunctionObjects'
-            r = subprocess.call(command, shell = True)
+        succeed = (misc.execCommand(['preparePar', '-noFunctionObjects'])[1] == 0 and
+            misc.execCommand(['mpirun', '-np', f'{domains}',
+                cfMesh, '-parallel', '-noFunctionObjects'], f'{cfMesh}.log')[1] == 0) and
+            # -constantは，constantディレクトリ内のファイルも再構築する．
+            misc.execCommand(['reconstructParMesh', '-constant', '-mergeTol', '1.0e-06',
+                '-noFunctionObjects'])[1] == 0)
         rmObjects.removeProcessorDirs()
         if os.path.isfile(decomposeParDict_bak_path):
             os.rename(decomposeParDict_bak_path, decomposeParDict_path)
-        if r != 0:
-            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+        if not succeed:
             sys.exit(1)
     else:
         command = f'{cfMesh} -noFunctionObjects | tee {cfMesh}.log'
