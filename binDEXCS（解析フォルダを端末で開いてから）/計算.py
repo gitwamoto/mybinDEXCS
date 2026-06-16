@@ -225,8 +225,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
             ax.set_yscale('log')
         ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
         ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
-#        ax.set_xmargin(0)
-#        ax.set_ymargin(0)
+        ax.margins(0)
         fig.canvas.manager.set_window_title(window_title)
         plt_line2d[data_key] = {k: ax.plot([], [], linestyle = line_styles[i%len(line_styles)], label = k)[0]
             for i, k in enumerate(plot_data[data_key])}
