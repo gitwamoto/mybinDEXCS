@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/16 8:17:22 PM
+# 2026/6/16 9:46:59 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -587,7 +587,7 @@ if __name__ == '__main__':
             elif sys.argv[i] == '-p':
                 exec_paraFoam = True
             elif sys.argv[i] == '-r':
-                change_relaxationFactors = True
+                change_relaxation_factors = True
             i += 1
 
     controlDict_path = os.path.join('system', 'controlDict')
