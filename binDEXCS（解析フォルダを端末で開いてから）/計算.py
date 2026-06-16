@@ -319,6 +319,7 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
     region = None
 
     try:
+        print()
         command_args =  ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
         if domains > 1:
             command_args.extend(['mpirun', '-np', f'{domains}'])
@@ -326,7 +327,6 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
         command_args.append(application)
         if domains > 1:
             command_args.append('-parallel')
-        print()
         process = subprocess.Popen( # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
             command_args,
             stdout = subprocess.PIPE,
