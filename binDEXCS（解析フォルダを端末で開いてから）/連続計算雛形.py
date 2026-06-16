@@ -76,7 +76,7 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        misc.execCommand([os.path.join(binDEXCS_path, '計算.py', '-r', f'{regions}', '-e', '-d'])
+        misc.execCommand([os.path.join(binDEXCS_path, '計算.py'), '-r', f'{regions}', '-e', '-d'])
         # '-e', '-d'のオプションの意味は，計算.pyの上の方に書いてある．
 
     # 正確な計算
@@ -105,5 +105,5 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        misc.execCommand([os.path.join(binDEXCS_path, '計算.py', '-r', f'{regions}', '-e'])
+        misc.execCommand([os.path.join(binDEXCS_path, '計算.py'), '-r', f'{regions}', '-e'])
         # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．

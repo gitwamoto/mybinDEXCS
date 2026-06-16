@@ -60,7 +60,7 @@ def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter 
     n = 0
     if type(file_name_or_lines_list) is str:
         for line_rr in open(file_name_or_lines_list, 'r'):
-            line_rr = line.strip()
+            line_rr = line_rr.strip()
             if line_rr.startswith('#'):
                 continue
             n += 1

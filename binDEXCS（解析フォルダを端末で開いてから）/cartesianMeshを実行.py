@@ -156,7 +156,7 @@ if __name__ == '__main__':
                 'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
         succeed = (misc.execCommand(['preparePar', '-noFunctionObjects'])[1] == 0 and
             misc.execCommand(['mpirun', '-np', f'{domains}',
-                cfMesh, '-parallel', '-noFunctionObjects'], f'{cfMesh}.log')[1] == 0) and
+                cfMesh, '-parallel', '-noFunctionObjects'], f'{cfMesh}.log')[1] == 0 and
             # -constantは，constantディレクトリ内のファイルも再構築する．
             misc.execCommand(['reconstructParMesh', '-constant', '-mergeTol', '1.0e-06',
                 '-noFunctionObjects'])[1] == 0)
