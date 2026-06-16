@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 他の結果からコピー.py
 # by Yukiharu Iwamoto
-# 2026/6/16 2:38:37 PM
+# 2026/6/16 3:46:22 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     if interactive:
         source_path = input('コピー元となる解析フォルダのパスを入力して下さい． > ').strip()
 
-    if misc.execCommand(['mapFields', '-consistent', '-sourceTime', 'latestTime', source_path], shell = True)[1] != 0:
+    if misc.execCommand(['mapFields', '-consistent', '-sourceTime', 'latestTime', source_path])[1] != 0:
         sys.exit(1)
 
     if interactive:
