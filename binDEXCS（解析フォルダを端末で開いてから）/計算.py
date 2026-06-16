@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/16 2:47:51 PM
+# 2026/6/16 8:17:22 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -36,8 +36,6 @@ from utilities import dictParse
 
 # To do:
 # クーラン数から時間ステップのコントロール
-# マルチリージョン対応
-# matplotlibを使っている他のスクリプトの見直し
 
 #plt.rcParams['figure.figsize'] = (6.0, 3.6) # (width, height), デフォルト値は環境によりますが、多くの場合は (6.4, 4.8) です。
 
@@ -225,7 +223,6 @@ def plot_runner(application, start_time, relax_delta = 0.01, relax_lower_limit =
             ax.set_yscale('log')
         ax.tick_params(axis = 'both', direction = 'in', which = 'both', top = True, right = True)
         ax.grid(True, which = 'both', linestyle = '--', alpha = 0.5) # グリッドの追加（見やすさ向上のため）
-        ax.margins(0)
         fig.canvas.manager.set_window_title(window_title)
         plt_line2d[data_key] = {k: ax.plot([], [], linestyle = line_styles[i%len(line_styles)], label = k)[0]
             for i, k in enumerate(plot_data[data_key])}
