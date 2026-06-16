@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/6/15 8:07:20 PM
+# 2026/6/16 7:29:04 PM
 
 import glob
 import os
@@ -32,33 +32,42 @@ def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
     print(f'\033]2;{path} - {os.path.basename(file)}\007')
 
 def execCommand(command_args, log_file_path = None):
+    print()
+    if len(command_args) > 2 and command_args[0] != 'stdbuf' and command_args[1] != '-oL':
+        command_args[:0] += ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
+    process = subprocess.Popen(
+        command_args,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+        text = True, # 出力を文字列として扱う
+        bufsize = 1 # Python側でも行単位でバッファリング
+    )
+    warning = False
     if log_file_path is None:
-        process = subprocess.run(command_args)
+        for line in iter(process.stdout.readline, ''):
+            if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
+                continue
+            if line.startswith('-> FOAM Warning :'):
+                warning = True
+            sys.stdout.write(line) # 端末へそのまま表示
+            sys.stdout.flush() # リアルタイム反映のため
     else:
-        if len(command_args) > 2 and command_args[0] != 'stdbuf' and command_args[1] != '-oL':
-            command_args[:0] += ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
-        print()
-        process = subprocess.Popen(
-            command_args, 
-            stdout = subprocess.PIPE, 
-            stderr = subprocess.STDOUT,
-            text = True, # 出力を文字列として扱う
-            bufsize = 1 # Python側でも行単位でバッファリング
-        )
         with open(log_file_path, 'w') as f_log:
             for line in iter(process.stdout.readline, ''):
                 if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
                     continue
+                if line.startswith('-> FOAM Warning :'):
+                    warning = True
                 sys.stdout.write(line) # 端末へそのまま表示
                 sys.stdout.flush() # リアルタイム反映のため
                 f_log.write(line) # ログをファイル保存
                 f_log.flush() # リアルタイム反映のため
-        if process.poll() is None: # 子プロセスが終了しているかどうかを調べます
-            process.wait() # 子プロセスが終了するまで待ちます
-            # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
-    command = [f"'{i}'" if ' ' in i else i for i in process.args]
-    if process.returncode != 0:
-        print(f'\nエラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if process.poll() is None: # 子プロセスが終了しているかどうかを調べます
+        process.wait() # 子プロセスが終了するまで待ちます
+        # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
+    command = ' '.join([f"'{i}'" if ' ' in i else i for i in process.args])
+    if process.returncode != 0 and not warning:
+        print(f'\nエラー: {command}で失敗しました（リターンコード: {process.returncode}）．よく分かる人に相談して下さい．')
     return command, process.returncode
 
 def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
