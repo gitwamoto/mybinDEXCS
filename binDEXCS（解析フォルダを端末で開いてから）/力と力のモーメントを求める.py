@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/6/16 2:40:20 PM
+# 2026/6/16 8:16:58 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -26,15 +26,6 @@ from utilities import rmObjects
 from utilities import dictParse
 binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(binDEXCS_path)
-
-def appropriate_tick(xmin, xmax, n):
-    tmp = abs(xmax - xmin)/(n + 0.01)
-    tick = 10.0**math.floor(math.log10(tmp))
-    tmp /= tick # 1 <= tmp < 10
-    for i in (1.0, 2.0, 2.5, 5.0):
-        if tmp < i:
-            return i*tick
-    return 10.0*tick
 
 def handler(signum, frame):
     misc.setEnabledInControlDictFunctions(enabled = False)
@@ -167,7 +158,7 @@ if __name__ == '__main__':
             f.write(forces_dir + '\n')
 
     for forces_dir in forces_dir_list:
-        force_dat = moment_dat = None
+        force_dat_path = moment_dat_path = None
         pdir = os.path.join('postProcessing', forces_dir)
         # postProcessing/forces_dir/0/
         for d in glob.iglob(os.path.join(pdir, f'*{os.sep}')):
@@ -175,13 +166,13 @@ if __name__ == '__main__':
                 float(os.path.basename(os.path.dirname(d)))
                 shutil.move(os.path.join(d, 'force.dat'), pdir)
                 shutil.move(os.path.join(d, 'moment.dat'), pdir)
-                force_dat = os.path.join(pdir, 'force.dat')
-                moment_dat = os.path.join(pdir, 'moment.dat')
+                force_dat_path = os.path.join(pdir, 'force.dat')
+                moment_dat_path = os.path.join(pdir, 'moment.dat')
                 shutil.rmtree(d)
                 break
             except:
                 pass
-        if force_dat is None or moment_dat is None:
+        if force_dat_path is None or moment_dat_path is None:
             continue
         t_min = float('inf')
         t_max = -t_min
@@ -191,48 +182,45 @@ if __name__ == '__main__':
         Fx_list = []
         Fy_list = []
         Fz_list = []
-        forces_tab_txt = os.path.join(pdir, forces_dir + '_tab.txt')
-        with open(force_dat, 'r') as ff:
-            with open(moment_dat, 'r') as fm:
-                with open(forces_tab_txt, 'w') as fw:
-                    while True:
-                        linef = ff.readline()
-                        linem = fm.readline()
-                        if not linef:
-                            break
-                        if re.match('#\\s*Time\\s+', linef):
-                            fw.write('#Time\tFx\tFy\tFz\tTx\tTy\tTz\n')
-                        elif linef[0] == '#':
-                            fw.write(re.sub('\\s+(?!$)', '\t', re.sub('[()]', '',
-                                re.sub('^#\\s+', '#', linef))).rstrip() + '\n')
-                        else:
-                            linef = re.sub('[()]', '', linef).split()
-                            t = float(linef[0])
-                            t_max = max(t_max, t)
-                            t_min = min(t_min, t)
-                            Fx = float(linef[1])
-                            Fy = float(linef[2])
-                            Fz = float(linef[3])
-                            F_max = max(F_max, Fx, Fy, Fz)
-                            F_min = min(F_min, Fx, Fy, Fz)
-                            linem = re.sub('[()]', '', linem).split()
-                            t_list.append(t)
-                            Fx_list.append(Fx)
-                            Fy_list.append(Fy)
-                            Fz_list.append(Fz)
-                            fw.write(f'{t:g}\t{Fx:g}\t{Fy:g}\t{Fz:g}\t'
-                                f'{float(linem[1]):g}\t{float(linem[2]):g}\t{float(linem[3]):g}\n')
+        forces_tab_txt_path = os.path.join(pdir, f'{forces_dir}_tab.txt')
+        with open(force_dat_path, 'r') as ff, open(moment_dat_path, 'r') as fm, open(forces_tab_txt_path, 'w') as fw:
+            while True:
+                linef = ff.readline()
+                linem = fm.readline()
+                if not linef:
+                    break
+                if re.match('#\\s*Time\\s+', linef):
+                    fw.write('#Time\tFx\tFy\tFz\tTx\tTy\tTz\n')
+                elif linef[0] == '#':
+                    fw.write(re.sub('\\s+(?!$)', '\t', re.sub('[()]', '', re.sub('^#\\s+', '#', linef))).rstrip() + '\n')
+                else:
+                    linef = re.sub('[()]', '', linef).split()
+                    t = float(linef[0])
+                    t_max = max(t_max, t)
+                    t_min = min(t_min, t)
+                    Fx = float(linef[1])
+                    Fy = float(linef[2])
+                    Fz = float(linef[3])
+                    F_max = max(F_max, Fx, Fy, Fz)
+                    F_min = min(F_min, Fx, Fy, Fz)
+                    linem = re.sub('[()]', '', linem).split()
+                    t_list.append(t)
+                    Fx_list.append(Fx)
+                    Fy_list.append(Fy)
+                    Fz_list.append(Fz)
+                    fw.write(f'{t:g}\t{Fx:g}\t{Fy:g}\t{Fz:g}\t'
+                        f'{float(linem[1]):g}\t{float(linem[2]):g}\t{float(linem[3]):g}\n')
         plt.plot(t_list, Fx_list, label = 'Fx')
         plt.plot(t_list, Fy_list, label = 'Fy')
         plt.plot(t_list, Fz_list, label = 'Fz')
         plt.xlabel('time [s]', fontsize = 16)
         plt.ylabel('forces', fontsize = 16)
-        tick = appropriate_tick(t_min, t_max, 5)
+        tick = misc.appropriate_tick(t_min, t_max, 5)
         t_max = tick*math.ceil(t_max/tick - 0.01)
         t_min = tick*math.floor(t_min/tick + 0.01)
         plt.xlim(t_min, t_max)
         plt.xticks([t_min + i*tick for i in range(int((t_max - t_min)/tick + 1.1))])
-        tick = appropriate_tick(F_min, F_max, 5)
+        tick = misc.appropriate_tick(F_min, F_max, 5)
         F_max = tick*math.ceil(F_max/tick - 0.01)
         F_min = tick*math.floor(F_min/tick + 0.01)
         plt.ylim(F_min, F_max)
@@ -241,10 +229,10 @@ if __name__ == '__main__':
         plt.tick_params(length = 10, which = 'major')
         plt.tick_params(length = 5, which = 'minor')
         plt.legend(loc = 'best', prop = {'size': 16}, framealpha = 0.2)
-        forces_png = os.path.join(pdir, forces_dir + '.png')
-        plt.savefig(forces_png)
+        forces_png_path = os.path.join(pdir, f'{forces_dir}.png')
+        plt.savefig(forces_png_path)
         plt.clf()
-        misc.execCommand(['xdg-open', forces_png])
-        print(f'\nグラフは{forces_png}, 結果は{forces_tab_txt}に保存しました．')
+        misc.execCommand(['xdg-open', forces_png_path])
+        print(f'\nグラフは{forces_png_path}, 結果は{forces_tab_txt_path}に保存しました．')
 
     rmObjects.removeInessentials()
