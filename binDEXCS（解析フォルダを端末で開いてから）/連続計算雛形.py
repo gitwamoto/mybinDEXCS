@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/6/16 2:43:54 PM
+# 2026/6/16 9:52:16 PM
 
 import os
 import signal
@@ -21,7 +21,7 @@ from utilities import ofpolymesh
 from utilities import rmObjects
 from utilities import setComment
 
-regions = 32 # 分割領域
+domains = 32 # 分割領域
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
@@ -54,7 +54,6 @@ if __name__ == '__main__':
         if os.path.isdir('dynamicCode'): # どうせ作り直すので，dynamicCodeフォルダを削除
             shutil.rmtree('dynamicCode')
 
-        # ----- 従来のならし計算を使う場合 -----
         with open('setting.txt', 'r') as f:
             lines = f.readlines()
         os.rename('setting.txt', 'setting_bak.txt')
@@ -76,14 +75,20 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        misc.execCommand([os.path.join(binDEXCS_path, '計算.py'), '-r', f'{regions}', '-e', '-d'])
-        # '-e', '-d'のオプションの意味は，計算.pyの上の方に書いてある．
+        misc.execCommand([os.path.join(binDEXCS_path, '計算.py'), '-d', f'{domains}', '-0', '-r'])
+        # ---- 計算.pyのオプション ----
+        # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
+        # -N -> 非インタラクティブモードで実行
+        # -0 -> 0秒以外のフォルダがある場合，それらを消す．つまり0秒から計算をやり直す
+        # -d domains -> 計算領域をdomains個に分割して並列計算を行う．1だと普通の計算
+        # -f -> system/controlDictに書かれているfunctionsを全て計算中に実行するように，controlDictを書き変える
+        # -p -> paraFoamを実行する
+        # -r -> 残差が落ちにくい時に緩和係数を変化させる
 
     # 正確な計算
     for d in ('elbow_vane01_10', 'elbow_vane02_10', 'elbow_vane03_10', 'elbow_wovane'):
         os.chdir(os.path.join(dir_name, d))
 
-        # ----- 従来のならし計算を使う場合 -----
         with open('setting.txt', 'r') as f:
             lines = f.readlines()
         os.rename('setting.txt', 'setting_bak.txt')
@@ -105,5 +110,12 @@ if __name__ == '__main__':
         with open(fvSolution, 'w') as f:
             f.writelines(lines)
 
-        misc.execCommand([os.path.join(binDEXCS_path, '計算.py'), '-r', f'{regions}', '-e'])
-        # ' -e'のオプションの意味は，並列計算.pyの上の方に書いてある．
+        misc.execCommand([os.path.join(binDEXCS_path, '計算.py'), '-d', f'{domains}', '-r'])
+        # ---- 計算.pyのオプション ----
+        # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
+        # -N -> 非インタラクティブモードで実行
+        # -0 -> 0秒以外のフォルダがある場合，それらを消す．つまり0秒から計算をやり直す
+        # -d domains -> 計算領域をdomains個に分割して並列計算を行う．1だと普通の計算
+        # -f -> system/controlDictに書かれているfunctionsを全て計算中に実行するように，controlDictを書き変える
+        # -p -> paraFoamを実行する
+        # -r -> 残差が落ちにくい時に緩和係数を変化させる
