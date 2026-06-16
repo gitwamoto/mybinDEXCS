@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/6/16 7:29:04 PM
+# 2026/6/16 7:35:04 PM
 
 import glob
 import os
@@ -33,8 +33,7 @@ def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
 
 def execCommand(command_args, log_file_path = None):
     print()
-    if len(command_args) > 2 and command_args[0] != 'stdbuf' and command_args[1] != '-oL':
-        command_args[:0] += ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
+    command_args[:0] += ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
     process = subprocess.Popen(
         command_args,
         stdout = subprocess.PIPE,
@@ -47,7 +46,7 @@ def execCommand(command_args, log_file_path = None):
         for line in iter(process.stdout.readline, ''):
             if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
                 continue
-            if line.startswith('-> FOAM Warning :'):
+            if line.startswith('--> FOAM Warning :'):
                 warning = True
             sys.stdout.write(line) # 端末へそのまま表示
             sys.stdout.flush() # リアルタイム反映のため
@@ -56,7 +55,7 @@ def execCommand(command_args, log_file_path = None):
             for line in iter(process.stdout.readline, ''):
                 if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
                     continue
-                if line.startswith('-> FOAM Warning :'):
+                if line.startswith('--> FOAM Warning :'):
                     warning = True
                 sys.stdout.write(line) # 端末へそのまま表示
                 sys.stdout.flush() # リアルタイム反映のため
@@ -65,7 +64,7 @@ def execCommand(command_args, log_file_path = None):
     if process.poll() is None: # 子プロセスが終了しているかどうかを調べます
         process.wait() # 子プロセスが終了するまで待ちます
         # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
-    command = ' '.join([f"'{i}'" if ' ' in i else i for i in process.args])
+    command = ' '.join([f"'{i}'" if ' ' in i else i for i in process.args[2:]])
     if process.returncode != 0 and not warning:
         print(f'\nエラー: {command}で失敗しました（リターンコード: {process.returncode}）．よく分かる人に相談して下さい．')
     return command, process.returncode
