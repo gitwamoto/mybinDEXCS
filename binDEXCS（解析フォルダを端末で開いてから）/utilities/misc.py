@@ -67,6 +67,7 @@ def execCommand(command_args, log_file_path = None):
     command = ' '.join([f"'{i}'" if ' ' in i else i for i in process.args[2:]])
     if process.returncode != 0 and not warning:
         print(f'\nエラー: {command}で失敗しました（リターンコード: {process.returncode}）．よく分かる人に相談して下さい．')
+    print()
     return command, process.returncode
 
 def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
