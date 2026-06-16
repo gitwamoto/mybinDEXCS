@@ -21,7 +21,6 @@
 import os
 import sys
 import signal
-import subprocess
 import shutil
 import glob
 from utilities import misc
@@ -294,9 +293,7 @@ if __name__ == '__main__':
         with open(snappyHexMeshDict_path, 'w') as f:
             f.write(dictParse.normalize(string = snappyHexMeshDict.file_string())[0])
 
-    command = 'blockMesh'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if misc.execCommand(['blockMesh'])[1] != 0:
         sys.exit(1)
     if two_dimensional:
         os.rename(blockMeshDict_path, blockMeshDict_path + '_2D') # can overwrite
@@ -320,24 +317,18 @@ if __name__ == '__main__':
                 '}\n'
                 f'numberOfSubdomains\t{domains};\n'
                 'method\tscotch;\n') # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-        command = 'decomposePar -noZero -noFunctionObjects'
-        r = subprocess.call(command, shell = True)
-        if r == 0:
-            command = f'mpirun -np {domains} snappyHexMesh -parallel -overwrite | tee snappyHexMesh.log'
-            r = subprocess.call(command, shell = True)
-        if r == 0:
-            command = 'reconstructParMesh -constant -mergeTol 1.0e-06 -noFunctionObjects'
-            r = subprocess.call(command, shell = True)
+        succeed = (misc.execCommand(['decomposePar', '-noZero', '-noFunctionObjects'])[1] == 0 and
+            misc.execCommand(['mpirun', '-np', f'{domains}',
+                'snappyHexMesh', '-parallel', '-overwrite'], 'snappyHexMesh.log')[1] == 0 and
+            # -constantは，constantディレクトリ内のファイルも再構築する．
+            misc.execCommand(['reconstructParMesh', '-constant', '-mergeTol', '1.0e-06',
+                '-noFunctionObjects'])[1] == 0)
         rmObjects.removeProcessorDirs()
         if os.path.isfile(decomposeParDict_bak_path):
             os.rename(decomposeParDict_bak_path, decomposeParDict_path)
-        if r != 0:
-            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+        if not succeed:
             sys.exit(1)
-    else:
-        command = 'snappyHexMesh -overwrite | tee snappyHexMesh.log'
-        if subprocess.call(command, shell = True) != 0:
-            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    elif misc.execCommand(['snappyHexMesh', '-overwrite'], 'snappyHexMesh.log')[1] != 0:
             sys.exit(1)
 
     if two_dimensional:
@@ -359,12 +350,10 @@ if __name__ == '__main__':
     misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
     if two_dimensional:
-        command = 'flattenMesh'
-        if subprocess.call(command, shell = True) != 0:
-            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+        if misc.execCommand(['flattenMesh'])[1] != 0:
             sys.exit(1)
-        subprocess.call(os.path.join(os.path.dirname(os.path.abspath(__file__)), '2次元メッシュに.py') +
-            f' -f {front_name} -b {back_name} -s', shell = True)
+        misc.execCommand([os.path.join(os.path.dirname(os.path.abspath(__file__)), '2次元メッシュに.py'),
+            '-f', front_name, '-b', back_name, '-s'])
 
     regionProperties_path = os.path.join('constant', 'regionProperties')
     if snappyHexMeshDict.find_element([{'type': 'block', 'key': 'castellatedMeshControls'},
@@ -375,8 +364,7 @@ if __name__ == '__main__':
                 shutil.rmtree(i)
         if os.path.isdir('0'):
             shutil.move('0', '0_bak')
-        command = 'splitMeshRegions -cellZones -overwrite' 
-        if subprocess.call(command, shell = True) != 0:
+        if misc.execCommand(['splitMeshRegions', '-cellZones', '-overwrite'])[1] != 0:
             # 0/
             # +-- regionA/
             # |   +-- cellToregion
@@ -384,7 +372,6 @@ if __name__ == '__main__':
             # |   +-- cellToregion
             # :
             # +-- cellToregion
-            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
             sys.exit(1)
         regions = sorted([os.path.basename(os.path.dirname(i))
             for i in glob.iglob(os.path.join('constant', f'*{os.sep}')) if os.path.isdir(i + 'polyMesh')])

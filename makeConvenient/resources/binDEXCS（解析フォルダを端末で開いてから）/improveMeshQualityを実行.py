@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:44:42 AM
+# 2026/6/16 2:11:02 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -14,7 +14,6 @@ import os
 import sys
 import shutil
 import signal
-import subprocess
 import numpy as np
 from struct import pack
 from utilities import misc
@@ -81,9 +80,7 @@ if __name__ == '__main__':
                 f.write(')\n')
             f.write(s[pf:])
 
-    command = 'improveMeshQuality -noFunctionObjects'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if misc.execCommand(['improveMeshQuality', '-noFunctionObjects'])[1] != 0:
         sys.exit(1)
 
     if converted_millimeter_into_meter:

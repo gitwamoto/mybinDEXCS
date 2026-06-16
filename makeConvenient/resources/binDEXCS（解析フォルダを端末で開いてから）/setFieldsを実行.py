@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # setFieldsを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:47:22 AM
+# 2026/6/16 2:15:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -10,7 +10,6 @@
 
 import sys
 import signal
-import subprocess
 import os
 import shutil
 from utilities import misc
@@ -79,7 +78,7 @@ if __name__ == '__main__':
         print(f'\n\033[3;4;5m{setFieldsDict_path}ファイルにテンプレートを追加して，texteditwx.pyで開いています．')
         print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
         print('書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-        subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} setFieldsDict_path', shell = True)
+        misc.execCommand([os.path.join(binDEXCS_path, 'texteditwx.py'), setFieldsDict_path])
 
     setFieldsDict = dictParse.DictParser(file_name = setFieldsDict_path)
 
@@ -101,9 +100,7 @@ if __name__ == '__main__':
         else:
             shutil.copy(i, i_orig)
 
-    command = 'setFields -noFunctionObjects'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+    if misc.execCommand(['setFields', '-noFunctionObjects'])[1] != 0:
         sys.exit(1)
 
     print('setFieldsで書き換えられる前のファイルは，末尾に.origをつけた名前でバックアップされています．')

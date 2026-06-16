@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/6/3 8:54:53 PM
+# 2026/6/16 7:35:04 PM
 
 import glob
 import os
 import sys
 import re
+import math
 import subprocess
 import numpy as np
 # このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
@@ -31,10 +32,49 @@ def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
     # https://joppot.info/2013/12/17/235, http://tldp.org/HOWTO/Xterm-Title-3.html
     print(f'\033]2;{path} - {os.path.basename(file)}\007')
 
+def execCommand(command_args, log_file_path = None):
+    print()
+    command_args[:0] += ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
+    process = subprocess.Popen(
+        command_args,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+        text = True, # 出力を文字列として扱う
+        bufsize = 1 # Python側でも行単位でバッファリング
+    )
+    warning = False
+    if log_file_path is None:
+        for line in iter(process.stdout.readline, ''):
+            if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
+                continue
+            if line.startswith('--> FOAM Warning :'):
+                warning = True
+            sys.stdout.write(line) # 端末へそのまま表示
+            sys.stdout.flush() # リアルタイム反映のため
+    else:
+        with open(log_file_path, 'w') as f_log:
+            for line in iter(process.stdout.readline, ''):
+                if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
+                    continue
+                if line.startswith('--> FOAM Warning :'):
+                    warning = True
+                sys.stdout.write(line) # 端末へそのまま表示
+                sys.stdout.flush() # リアルタイム反映のため
+                f_log.write(line) # ログをファイル保存
+                f_log.flush() # リアルタイム反映のため
+    if process.poll() is None: # 子プロセスが終了しているかどうかを調べます
+        process.wait() # 子プロセスが終了するまで待ちます
+        # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
+    command = ' '.join([f"'{i}'" if ' ' in i else i for i in process.args[2:]])
+    if process.returncode != 0 and not warning:
+        print(f'\nエラー: {command}で失敗しました（リターンコード: {process.returncode}）．よく分かる人に相談して下さい．')
+    print()
+    return command, process.returncode
+
 def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
     for f in glob.iglob('*.OpenFOAM' if dexcs_version == '2019' else '*.foam'):
         os.remove(f)
-    subprocess.call('paraFoam -touch-all', shell = True)
+    execCommand(['paraFoam', '-touch-all'])
     # Usage: paraFoam [OPTION] [--] [PARAVIEW_OPTION]
     # options:
     #   -block            Use blockMesh reader (.blockMesh extension)
@@ -52,7 +92,7 @@ def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
             os.remove(f)
     if not touch_only:
         setParaViewAmbientDiffuse(ambient, diffuse)
-        subprocess.call('paraFoam', shell = True)
+        execCommand(['paraFoam'])
     setParaViewAmbientDiffuse(ambient, diffuse)
 
 def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0):
@@ -69,11 +109,10 @@ def execCheckMesh():
     for f in ('checkMesh.log', 'checkMesh.logfile'):
         if os.path.isfile(f):
             os.remove(f)
-    command = 'checkMesh -noFunctionObjects | tee checkMesh.log'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    command, returncode = execCommand(['checkMesh', '-noFunctionObjects'], 'checkMesh.log')
+    if returncode != 0:
         sys.exit(1)
-    print(f'{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m')
+    print(f'\n{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m')
 
 def setTimeBeginEnd(action):
     first_time = float(firstTime())
@@ -126,28 +165,25 @@ def getRelaxationFactor(param_name, fvSolution_path = None):
     return None, None
 
 def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func = None, region = None, solver = True):
-    if solver:
-        command = getApplication() + ' -postProcess'
-    else:
-        command = 'postProcess'
+    command_args = [getApplication(), '-postProcess'] if solver else ['postProcess']
     if func is not None:
-        command += f' -func "{func}"'
+        command_args.extend(['-func', func])
     if region is not None:
-        command += f' -region {region}'
+        command_args.extend(['-region', region])
     if noZero:
-        command += ' -noZero'
+        command_args.append('-noZero')
     if time_begin.lower().startswith('l') or time_end.lower().startswith('l'):
-        command += ' -latestTime'
+        command_args.append('-latestTime')
     elif float(time_begin) != float('-inf') or float(time_end) != float('inf'):
-        command += " -time '"
+        time_range = ''
         if float(time_begin) != float('-inf'):
-            command += time_begin
-        command += ':'
+            time_range += time_begin
+        time_range += ':'
         if float(time_end) != float('inf'):
-            command += time_end
-        command += "'"
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+            time_range += time_end
+        command_args.extend(['-time', time_range])
+    command, returncode = execCommand(command_args)
+    if returncode != 0:
         sys.exit(1)
     if func is None:
         setEnabledInControlDictFunctions(enabled = False)
@@ -178,13 +214,11 @@ def removePatchesHavingNoFaces():
             '}\n'
             'pointSync\tfalse;\n'
             'patches\t();\n')
-    command = 'createPatch -overwrite'
-    r = subprocess.call(command, shell = True)
+    returncode = execCommand(['createPatch', '-overwrite'])[1]
     os.remove(createPatchDict)
     if os.path.isfile(createPatchDict_bak):
         os.rename(createPatchDict_bak, createPatchDict)
-    if r != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if returncode != 0:
         sys.exit(1)
     if converted_millimeter_into_meter:
         writeCommentInBoundary('converted millimeter into meter')
@@ -199,9 +233,7 @@ def writeConvertedMillimeterIntoMeter():
     writeCommentInBoundary('converted millimeter into meter')
 
 def convertMillimeterIntoMeter():
-    command = 'transformPoints -scale 0.001'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if execCommand(['transformPoints', '-scale', '0.001'])[1] != 0:
         sys.exit(1)
     writeConvertedMillimeterIntoMeter()
     print('長さの単位をミリメートルからメートルに変換しました．')
@@ -217,9 +249,7 @@ def writeRenumberMeshWasDone():
 
 def renumberMesh():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
-    command = 'renumberMesh -overwrite'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if execCommand(['renumberMesh', '-overwrite'])[1] != 0:
         sys.exit(1)
     writeRenumberMeshWasDone()
     if converted_millimeter_into_meter:
@@ -242,11 +272,11 @@ def bounding_box_of_calculation_range(points_path):
     return n, tuple((p_min[i], p_max[i]) for i in range(3))
 
 def texteditwx_works_well():
-    if subprocess.call(os.path.join(binDEXCS_path, 'texteditwx.py') + ' -h',
-        stdout = open('/dev/null', 'w'), shell = True) != 0:
-        print('texteditwx.pyでエラーが発生しました．おそらく必要なモジュールがないためです．端末で')
-        print('sudo apt install -y python-pexpect python-pyperclip')
-        print('を行ってからもう一度やり直して下さい．')
+    process = subprocess.run([os.path.join(binDEXCS_path, 'texteditwx.py'), '-h'])
+    if process.returncode != 0:
+        print('\ntexteditwx.pyでエラーが発生しました．おそらく必要なモジュールがないためです．端末で\n'
+            'sudo apt install -y python-pexpect python-pyperclip\n'
+            'を行ってからもう一度やり直して下さい．')
         return False
     else:
         return True
@@ -404,6 +434,15 @@ def controlDictFunctionsList(path = os.curdir):
     disable_function_list.extend(
         dictParse.re_findall_in_comments(r'//\s*!!DISABLED!!\s*#includeFunc\s+([^;]+);', string))
     return enable_function_list, disable_function_list
+
+def appropriate_tick(xmin, xmax, n):
+    tmp = abs(xmax - xmin)/(n + 0.01)
+    tick = 10.0**math.floor(math.log10(tmp))
+    tmp /= tick # 1 <= tmp < 10
+    for i in (1.0, 2.0, 2.5, 5.0):
+        if tmp < i:
+            return i*tick
+    return 10.0*tick
 
 if __name__ == '__main__':
     print('firstTime = ' + firstTime())

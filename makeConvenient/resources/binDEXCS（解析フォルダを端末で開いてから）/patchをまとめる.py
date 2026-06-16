@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchをまとめる.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:46:43 AM
+# 2026/6/16 2:13:29 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -10,7 +10,6 @@
 
 import sys
 import signal
-import subprocess
 import os
 from utilities import misc
 from utilities import rmObjects
@@ -78,11 +77,9 @@ if __name__ == '__main__':
         print(f'\n\033[3;4;5m{createPatchDict_path}ファイルをtexteditwx.pyで開いています．')
         print('- 指示を読んで，必要に応じて書き換えて下さい．')
         print('- 書き換えたらtexteditwx.pyを終了して下さい．\033[m\n')
-        subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} {createPatchDict_path}', shell = True)
+        misc.execCommand([os.path.join(binDEXCS_path, 'texteditwx.py'), createPatchDict_path])
 
-    command = 'createPatch -overwrite'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if misc.execCommand(['createPatch', '-overwrite'])[1] != 0:
         sys.exit(1)
 
     rmObjects.removeInessentials()

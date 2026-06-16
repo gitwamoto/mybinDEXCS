@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 並列計算結果をまとめる.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:21:29 AM
+# 2026/6/16 2:37:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -12,7 +12,6 @@
 import os
 import signal
 import sys
-import subprocess
 from utilities import misc
 from utilities import rmObjects
 
@@ -33,10 +32,10 @@ if __name__ == '__main__':
                 exec_paraFoam = True
             i += 1
 
-    command = 'reconstructPar -newTimes -noFunctionObjects'
+    command_args = ['reconstructPar', '-newTimes', '-noFunctionObjects']
     if os.path.exists(os.path.join('constant', 'regionProperties')):
-        command += ' -allRegions'
-    subprocess.call(command, shell = True)
+        command_args.append('-allRegions')
+    misc.execCommand(command_args)
     rmObjects.removeProcessorDirs('noLatest')
 
     if interactive:
