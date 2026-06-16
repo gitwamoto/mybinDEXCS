@@ -15,7 +15,6 @@
 
 import sys
 import signal
-import subprocess
 import os
 import shutil
 from utilities import misc
@@ -157,7 +156,7 @@ def append_functions_in_controlDict(controlDict_path):
         'テンプレートを追加して，texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} {controlDict_path}', shell = True)
+    misc.execCommand([os.path.join(binDEXCS_path, 'texteditwx.py'), controlDict_path])
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/6/12 9:52:21 AM
+# 2026/6/16 2:47:51 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -79,20 +79,19 @@ def decomposePar():
                 os.remove('decomposeParDict')
             os.symlink(os.path.join(os.pardir, 'decomposeParDict'), 'decomposeParDict') # can't overwrite
             os.chdir(os.path.join(os.pardir, os.pardir))
-    command = 'decomposePar -latestTime -noFunctionObjects'
+    command_args = ['decomposePar', '-latestTime', '-noFunctionObjects']
     if os.path.exists(regionProperties_path):
-        command += ' -allRegions'
-    if subprocess.call(command, shell = True) != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+        command_args.append('-allRegions')
+    if misc.execCommand(command_args)[1] != 0:
         restore_zero_folder()
         sys.exit(1)
     print()
 
 def recosntructPar():
-    command = 'reconstructPar -newTimes -noFunctionObjects'
+    command_args = ['reconstructPar', '-newTimes', '-noFunctionObjects']
     if os.path.exists(regionProperties_path):
-        command += ' -allRegions'
-    subprocess.call(command, shell = True)
+        command_args.append('-allRegions')
+    misc.execCommand(command_args)
     print()
 
 def restore_zero_folder():
@@ -647,7 +646,7 @@ if __name__ == '__main__':
             delete_folders_except_for_zero = True if input('\n0秒以外のフォルダがあります．'
                 '消して0秒からやり直しますか？ (y/n) > ').strip().lower() == 'y' else False
         if delete_folders_except_for_zero:
-            subprocess.call('foamListTimes -rm -noZero', shell = True)
+            misc.execCommand(['foamListTimes', '-rm', '-noZero'])
             rmObjects.removeProcessorDirs()
             latest_time = '0'
         else:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 力と力のモーメントを求める.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:32:22 PM
+# 2026/6/16 2:40:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -16,7 +16,6 @@
 import math
 import sys
 import signal
-import subprocess
 import os
 import shutil
 import glob
@@ -95,7 +94,7 @@ def append_functions_in_controlDict(controlDict_path):
         'texteditwx.pyで開いています．')
     print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
     print('書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n')
-    subprocess.call(f'{os.path.join(binDEXCS_path, "texteditwx.py")} {controlDict_path}', shell = True)
+    misc.execCommand([os.path.join(binDEXCS_path, 'texteditwx.py'), controlDict_path])
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
@@ -245,7 +244,7 @@ if __name__ == '__main__':
         forces_png = os.path.join(pdir, forces_dir + '.png')
         plt.savefig(forces_png)
         plt.clf()
-        subprocess.call(f'xdg-open {forces_png}', shell = True)
+        misc.execCommand(['xdg-open', forces_png])
         print(f'\nグラフは{forces_png}, 結果は{forces_tab_txt}に保存しました．')
 
     rmObjects.removeInessentials()

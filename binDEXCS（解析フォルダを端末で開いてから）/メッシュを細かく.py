@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:49:40 AM
+# 2026/6/16 2:36:12 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -15,7 +15,6 @@
 # -zf -> z方向に細かくする
 
 import signal
-import subprocess
 import os
 import sys
 from utilities import misc
@@ -137,13 +136,11 @@ if __name__ == '__main__':
             '\t\t}\n'
             '\t}\n'
             ');\n')
-    command = 'topoSet'
-    r = subprocess.call(command, shell = True)
+    returncode = misc.execCommand(['topoSet'])[1]
     os.remove(topoSetDict_path)
     if os.path.isfile(topoSetDict_bak_path):
         os.rename(topoSetDict_bak_path, topoSetDict_path)
-    if r != 0:
-        print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
+    if returncode != 0:
         sys.exit(1)
 
     if interactive:
@@ -182,13 +179,11 @@ if __name__ == '__main__':
             'useHexTopology\tno;\n'
             'geometricCut\tyes;\n'
             'writeMesh\tno;\n')
-    command = 'refineMesh -overwrite'
-    r = subprocess.call(command, shell = True)
+    returncode = misc.execCommand(['refineMesh', '-overwrite'])[1]
     os.remove(refineMeshDict_path)
     if os.path.isfile(refineMeshDict_bak_path):
         os.rename(refineMeshDict_bak_path, refineMeshDict_path)
-    if r != 0:
-        print(f'{command}で失敗しました．よく分かる人に相談して下さい．')
+    if returncode != 0:
         sys.exit(1)
 
     if converted_millimeter_into_meter:

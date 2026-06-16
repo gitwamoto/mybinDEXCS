@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:44:32 AM
+# 2026/6/16 2:04:47 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -18,7 +18,6 @@
 import os
 import sys
 import signal
-import subprocess
 import shutil
 from utilities import misc
 from utilities import rmObjects
@@ -166,11 +165,8 @@ if __name__ == '__main__':
             os.rename(decomposeParDict_bak_path, decomposeParDict_path)
         if not succeed:
             sys.exit(1)
-    else:
-        command = f'{cfMesh} -noFunctionObjects | tee {cfMesh}.log'
-        if subprocess.call(command, shell = True) != 0:
-            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
-            sys.exit(1)
+    elif misc.execCommand([cfMesh, '-noFunctionObjects'], f'{cfMesh}.log')[1] != 0:
+        sys.exit(1)
 
     boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
     boundary = dictParse.DictParser(file_name = boundary_path)
@@ -203,11 +199,8 @@ if __name__ == '__main__':
 
     misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
-    if two_dimensional:
-        command = 'flattenMesh'
-        if subprocess.call(command, shell = True) != 0:
-            print(f'エラー: {command}で失敗しました．よく分かる人に相談して下さい．')
-            sys.exit(1)
+    if two_dimensional and misc.execCommand(['flattenMesh'])[1] != 0:
+        sys.exit(1)
     misc.execCheckMesh()
     sets = os.path.join('constant', 'polyMesh', 'sets')
     if os.path.isdir(sets):
