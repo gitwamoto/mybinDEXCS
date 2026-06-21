@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/6/12 7:09:38 PM
+# 2026/6/21 7:53:20 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -739,7 +739,7 @@ class MyModel:
                 '// 面形状の定義．すべての面はsearchableSurfaceクラスに属する．面は以下で使用する：\n'
                 '// - 面と交差するメッシュセルの細分化\n'
                 '// - 内部/外部/近傍のメッシュセルの細分化\n'
-                "// - メッシュ境界を表面にsnapさせる．\n"
+                '// - メッシュ境界を表面にsnapさせる．\n'
                 'geometry\n'
                 '{\n'
                 f'\t{surface_file_name} // in constant/triSurface\n'
