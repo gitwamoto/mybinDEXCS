@@ -1119,7 +1119,7 @@ class MyModel:
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nSmoothNormals'}, {'type': 'integer'}])['element']
             f.write('\n'
-                '\t// 境界層メッシュの追加により歪んだ内側メッシュを整える反復回数\\n'
+                '\t// 境界層メッシュの追加により歪んだ内側メッシュを整える反復回数\n'
                 f'\tnSmoothNormals\t{"3" if e is None else e["value"]};\n')
             e = dictParse.find_element(addLayersControls,
                 [{'type': 'dictionary', 'key': 'nSmoothThickness'}, {'type': 'integer'}])['element']
