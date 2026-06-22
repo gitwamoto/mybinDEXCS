@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/6/21 7:53:20 PM
+# 2026/6/22 12:25:05 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -935,8 +935,8 @@ class MyModel:
                         ' // ((distance level)), distanceはmodeがdistanceの時のみ有効\n')
                 else: # SurfaceRefine
                     f.write('\t\t\tmode\tdistance;\n'
-                        f'\t\t\tlevels\t(({i[grid.RATIO]} {i[grid.LEVEL]})); '
-                        '// ((distance1 level1) (distance2 level2) ...), '
+                        f'\t\t\tlevels\t(({i[grid.RATIO]} {i[grid.LEVEL]}));'
+                        ' // ((distance1 level1) (distance2 level2) ...), '
                         'distance1 < distance2, level1 > level2\n')
                 f.write('\t\t}\n')
             for block in dictParse.find_all_elements(castellatedMeshControls,
@@ -949,7 +949,7 @@ class MyModel:
                 '//\t\tboxExample // geometryで定義した名前\n'
                 '//\t\t{\n'
                 '//\t\t\tmode\tinside; // distance | inside | outside\n'
-                '//\t\t\tlevels\t((1.0 1)); // ((distance level)), distanceはdistanceモードの時のみ使われる．\n'
+                '//\t\t\tlevels\t((1.0 1)); // ((distance level)), distanceはmodeがdistanceの時のみ有効\n'
                 '//\t\t}\n'
                 '\t}\n'
                 '\n'
