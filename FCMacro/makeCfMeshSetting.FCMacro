@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/6/12 7:09:35 PM
+# 2026/6/22 3:48:30 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -645,9 +645,8 @@ class MyModel:
                     [{'type': 'dictionary', 'key': 'minCellSize'}, {'type': 'float|integer'}])['element']
                 if min_cell_size is not None:
                     min_cell_size = min_cell_size['value']
-            if min_cell_size is None:
-                f.write(f'{"// " if min_cell_size is None else ""}minCellSize\t'
-                    f'{"1" if min_cell_size is None else min_cell_size}; // 必須ではない．\n')
+            f.write(f'{"// " if min_cell_size is None else ""}minCellSize\t'
+                f'{"1" if min_cell_size is None else min_cell_size}; // 必須ではない．\n')
 
             f.write('\n')
             e = dictParse.find_element(meshDict, [{'type': 'dictionary', 'key': 'boundaryCellSize'},
@@ -671,7 +670,7 @@ class MyModel:
 
             e = dictParse.find_element(boundaryLayers,
                 [{'type': 'dictionary', 'key': 'optimiseLayer'}, {'type': 'integer'}])['element']
-            f.write('\t// Smoothing of boundary layers (default: 0)\n'
+            f.write('\t// 境界層の自動整形．デフォルトは0．\n'
                 f'\toptimiseLayer\t{"1" if e is None else e["element"]}; // 1 active or 0 inactive\n')
 
             for dictionary in dictParse.find_all_elements(boundaryLayers,
@@ -688,8 +687,8 @@ class MyModel:
 
             e = dictParse.find_element(optimisationParameters, [{'type': 'dictionary',
                 'key': 'featureSizeFactor'}, {'type': 'float|integer'}])['element']
-            f.write('\t\t// Ratio between the maximum boundary layer thickness and the patch size\n'
-                '\t\t// Ued to limit layer thickness in the regions dominated by curvature. (default: 0.3)\n'
+            f.write('\t\t// パッチでのメッシュの大きさに対する境界層メッシュの厚さ\n'
+                '\t\t// 曲率が強い場所での境界層厚さを制御する．デフォルトは0.3．\n'
                 f'\t\tfeatureSizeFactor\t{"0.3" if e is None else e["value"]};\n')
 
             e = dictParse.find_element(optimisationParameters, [{'type': 'dictionary',
@@ -741,7 +740,7 @@ class MyModel:
                 '}\n') # boundaryLayers
 
             f.write('\n'
-                '// keepCellsIntersectingBoundaryが1の時に有効．必須ではない．．\n'
+                '// keepCellsIntersectingBoundaryが1の時に有効．必須ではない．\n'
                 'keepCellsIntersectingPatches\n'
                 '{\n'
                 '//\t"patch.*" // accepts regex\n'
@@ -750,7 +749,7 @@ class MyModel:
                 '//\t}\n'
                 '}\n'
                 '\n'
-                '// keepCellsIntersectingBoundaryが1の時に有効．必須ではない．．\n'
+                '// keepCellsIntersectingBoundaryが1の時に有効．必須ではない．\n'
                 'removeCellsIntersectingPatches\n'
                 '{\n'
                 '//\t"patch.*" // accepts regex\n'
@@ -808,8 +807,7 @@ class MyModel:
                     c = obj.Shape.CenterOfMass
                     f.write('\t\ttype\tbox;\n'
                         f'\t\tcellSize\t{ref_thickness};\n'
-                        f'//\t\tadditionalRefinementLevels\t{ref_level}; '
-                        '// Relative to the maximum cell size\n'
+                        f'//\t\tadditionalRefinementLevels\t{ref_level}; // Relative to the maximum cell size\n'
                         f'\t\tcentre\t({c.x} {c.y} {c.z});\n'
                         f'\t\tlengthX\t{obj.Length.Value};\n'
                         f'\t\tlengthY\t{obj.Width.Value};\n'
