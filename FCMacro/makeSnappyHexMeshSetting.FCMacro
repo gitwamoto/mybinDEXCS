@@ -1196,8 +1196,8 @@ class MyModel:
                 '\t{\n')
             e = dictParse.find_element(meshQualityControls, [{'type': 'block', 'key': 'relaxed'},
                 {'type': 'dictionary', 'key': 'maxNonOrtho'}, {'type': 'float|integer'}])['element']
-            f.write('\t// 非直交の許容角度．180だと全てを許容する.\n'
-                f'\tmaxNonOrtho\t{"75" if e is None else e["value"]};\n')
+            f.write('\t\t// 非直交の許容角度．180だと全てを許容する.\n'
+                f'\t\tmaxNonOrtho\t{"75" if e is None else e["value"]};\n')
             for element in dictParse.find_all_elements(meshQualityControls,
                 [{'type': 'block', 'key': 'relaxed'},
                 {'type': 'block|dictionary', 'except key': 'maxNonOrtho'}]):
