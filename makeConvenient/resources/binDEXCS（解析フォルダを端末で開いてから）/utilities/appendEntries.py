@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/6/2 8:58:06 PM
+# 2026/7/1 2:51:46 PM
 
 import os
 import sys
@@ -73,7 +73,7 @@ def intoFvSolution():
                         '\n'
                         'Phi\n'
                         '{\n'
-                        f'\t${p.groups()};\n'
+                        f'\t${p.group()};\n'
                         '}\n')['value']
 
             solvers.set_blank_line(number_of_blank_lines = 1)
