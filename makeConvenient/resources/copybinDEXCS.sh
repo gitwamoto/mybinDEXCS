@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/4/23 7:40:37 PM
+# 2026/7/1 3:56:36 PM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -117,9 +117,9 @@ for d in /mnt/DEXCS2-6left_student /mnt/DEXCS2-6right_student; do
 	((++trial))
 done
 if [ "$trial" -eq 2 ]; then
-	[ ! -d "Desktop/$binDEXCS/utilities" ] && mkdir -p "Desktop/$binDEXCS/utilities"
-	[ ! -d "Desktop/$binDEXCS" ] && mkdir -p "Desktop/$binDEXCS"
-#		"PlotRunner.py" \ をpatchを平面に.pyの次の行に入れる予定
+	mkdir -p "Desktop/$binDEXCS"
+	rm -rf "Desktop/$binDEXCS"/*
+	mkdir -p "Desktop/$binDEXCS/utilities"
 	for f in "0_OPENFOAMメモ.pdf" \
 		"0秒フォルダにpatchを追加する.py" \
 		"0秒以外のフォルダを消す.py" \
@@ -130,7 +130,6 @@ if [ "$trial" -eq 2 ]; then
 		"improveMeshQualityを実行.py" \
 		"include文を差し込む.py" \
 		"include文を取り除く.py" \
-		"logファイルをプロット.py" \
 		"paraFoamを実行.py" \
 		"patchの面積平均または積分.py" \
 		"patchをまとめる.py" \
@@ -161,16 +160,13 @@ if [ "$trial" -eq 2 ]; then
 		"連続計算雛形.py"; do
 		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS/$f" "Desktop/$binDEXCS/$f"
 	done
-	for f in "__init__.py" \
-		"dictParse.py" \
-		"rmObjects.py" \
-		"appendEntries.py" \
+	for f in "appendEntries.py" \
 		"findMaxMin.py" \
-		"setComment.py" \
+		"rmObjects.py" \
 		"dakuten.py" \
 		"misc.py" \
-		"setFuncsInCD.py" \
-		"dictFormat.py" \
+		"setComment.py" \
+		"dictParse.py" \
 		"ofpolymesh.py"; do
 		wget_from_github_public gitwamoto mybinDEXCS main "$binDEXCS/utilities/$f" \
 			"Desktop/$binDEXCS/utilities/$f"
@@ -186,8 +182,8 @@ if [ "$trial" -eq 2 ]; then
 	wget_from_github_public gitwamoto mybinDEXCS main copybinDEXCS.sh Desktop/copybinDEXCS.sh
 	chmod +x Desktop/copybinDEXCS.sh
 
-	[ ! -d Desktop/matplotlibwx/locale/en/LC_MESSAGES ] && mkdir -p Desktop/matplotlibwx/locale/en/LC_MESSAGES
-	[ ! -d Desktop/matplotlibwx ] && mkdir -p Desktop/matplotlibwx
+	mkdir -p Desktop/matplotlibwx/locale/en/LC_MESSAGES
+	mkdir -p Desktop/matplotlibwx
 	wget_from_github_public gitwamoto matplotlibwx main matplotlibwx.py Desktop/matplotlibwx/matplotlibwx.py
 	wget_from_github_public gitwamoto matplotlibwx main README.md Desktop/matplotlibwx/README.md
 	wget_from_github_public gitwamoto matplotlibwx main locale/en/LC_MESSAGES/messages.mo \
