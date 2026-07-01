@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/6/11 11:38:32 AM
+# 2026/7/1 2:52:33 PM
 
 import sys
 import os
@@ -17,8 +17,8 @@ def normalize(file_name = None, string = None, overwrite_file = True):
         normalized_string = re.sub(u'[ \\t]+(?=\\r?\\n|$)', '', # 末尾の空白を削除
             re.sub(u'(?<=[;{}()\\[\\]][ \\t])[ \\t]+(?=\\S)', '', # セミコロン，かっこの後ろの余計なスペースを削除
             re.sub(u'(?<＝[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FFF])[,.]',
-                lambda m: unichr(ord(m.group(0)) + 0xFEE0), # 全角ひらがな，カタカナ，漢字以外に続く「．」と「，」を半角に
-            re.sub('[！-～]', lambda m: unichr(ord(m.group(0)) - 0xFEE0), # 英数字・記号を半角に変換
+                lambda m: unichr(ord(m.group()) + 0xFEE0), # 全角ひらがな，カタカナ，漢字以外に続く「．」と「，」を半角に
+            re.sub('[！-～]', lambda m: unichr(ord(m.group()) - 0xFEE0), # 英数字・記号を半角に変換
             string.decode('UTF-8').replace(u'　', u' '), # 全角スペースを半角に
             flags = re.UNICODE)))).encode('UTF-8')
         pass
@@ -26,8 +26,8 @@ def normalize(file_name = None, string = None, overwrite_file = True):
         normalized_string = re.sub(r'[ \t]+(?=\r?\n|$)', '', # 末尾の空白を削除
             re.sub(r'(?<=[;{}()\[\]][ \t])[ \t]+(?=\S)', '', # セミコロン，かっこの後ろの余計なスペースを削除
             re.sub(r'(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])[,.]',
-                lambda m: chr(ord(m.group(0)) + 0xFEE0), # 全角ひらがな，カタカナ，漢字に続く「.」と「,」を全角に
-            re.sub('[！-～]', lambda m: chr(ord(m.group(0)) - 0xFEE0), # 英数字・記号を半角に変換
+                lambda m: chr(ord(m.group()) + 0xFEE0), # 全角ひらがな，カタカナ，漢字に続く「.」と「,」を全角に
+            re.sub('[！-～]', lambda m: chr(ord(m.group()) - 0xFEE0), # 英数字・記号を半角に変換
             string.replace('　', ' ') # 全角スペースを半角に
             ))))
     changed = normalized_string != string
