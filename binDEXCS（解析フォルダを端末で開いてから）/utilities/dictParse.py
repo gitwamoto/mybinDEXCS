@@ -291,9 +291,11 @@ class DictParser(UserDict):
         # terminator = 'block_end' | 'list_end' | 'dimension_end' | 'reached'
         debug = False
         def raise_error(message, last_index):
-            raise Exception('Error in parser' +
+            s = ('Error in parser' +
                 ('' if self.file_name is None else f' (File: {os.path.basename(self.file_name)})') +
                 f': {message} | {self.string[max(last_index - 20, 0): last_index]}')
+            print(s)
+            raise Exception(s)
         # ssss -> Python string.
         # @@@@ -> Essential words, such as word, string.
         # _scn -> Nonessential words, such as whitespace, comments, linebreak, which doesn't always exist.
