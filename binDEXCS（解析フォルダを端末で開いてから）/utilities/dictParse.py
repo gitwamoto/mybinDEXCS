@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/7/1 2:52:33 PM
+# 2026/7/2 6:01:54 PM
 
 import sys
 import os
@@ -290,12 +290,13 @@ class DictParser(UserDict):
     def elements_list(self, index = 0, terminator = None, essentials_required = 0):
         # terminator = 'block_end' | 'list_end' | 'dimension_end' | 'reached'
         debug = False
-        def raise_error(message, last_index):
-            s = ('Error in parser' +
+
+        def exit_with_message(message, last_index):
+            print('Error in parser' +
                 ('' if self.file_name is None else f' (File: {os.path.basename(self.file_name)})') +
-                f': {message} | {self.string[max(last_index - 20, 0): last_index]}')
-            print(s)
-            raise Exception(s)
+                f': {message} | {self.string[max(last_index - 40, 0): last_index]}')
+            sys.exit(1)
+
         # ssss -> Python string.
         # @@@@ -> Essential words, such as word, string.
         # _scn -> Nonessential words, such as whitespace, comments, linebreak, which doesn't always exist.
@@ -397,11 +398,11 @@ class DictParser(UserDict):
                     'value': [DictParser(element = {'type': s.lastgroup, 'value': s.group()})] + v}))
             elif s.lastgroup in ('block_end', 'list_end', 'dimension_end'):
                 if s.lastgroup != terminator:
-                    raise_error(f'Inappropriate closing bracket, "{self.CLOSING_SYMBOL[terminator]}" is required.', s.end())
+                    exit_with_message(f'Inappropriate closing bracket, "{self.CLOSING_SYMBOL[terminator]}" is required.', s.end())
                 l.append(DictParser(element = {'type': s.lastgroup, 'value': s.group()}))
                 index = s.end()
             elif s.lastgroup == 'unknown':
-                raise_error(f'Unknown token "{s.group()}".', s.end())
+                exit_with_message(f'Unknown token "{s.group()}".', s.end())
             else:
                 if s.lastgroup == 'line_comment' and re.match(r'// (?:\* ?)+//$', s.group()):
                     l.append(DictParser(element = {'type': 'separator', 'value': s.group()}))
@@ -415,7 +416,7 @@ class DictParser(UserDict):
             if s.lastgroup == terminator:
                 terminator_reached = True
         if not terminator_reached and terminator is not None:
-            raise_error(f'Missing "{self.CLOSING_SYMBOL[terminator]}".', len(self.string))
+            exit_with_message(f'Missing "{self.CLOSING_SYMBOL[terminator]}".', len(self.string))
         if debug:
             print(f'    return {l}')
         return l, index
