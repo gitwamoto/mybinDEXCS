@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/7/1 2:51:46 PM
+# 2026/7/17 5:41:44 PM
 
 import os
 import sys
@@ -13,6 +13,7 @@ import re
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
 import dictParse
+import misc
 
 
 def intoFvSolution():
@@ -342,6 +343,41 @@ def intoFvSchemes():
                     block_end["parent"][block_end["index"] : block_end["index"]] = (
                         dictParse.DictParser(string=f"{k}\t{v};\n")["value"]
                     )
+
+        application = misc.getApplication()
+        ddtSchemes = misc.getDdtSchemes(fvSchemes_path)
+        if (
+            any(f in application.lower() for f in ["simplefoam", "potentialfoam"])
+            and ddtSchemes != "steadyState"
+        ):
+            # simpleFoamやpotentialFoam系の計算なのに，ddtSchemesをsteadyStateにしていない場合
+            fvSchemes.find_element(
+                [
+                    {"type": "block", "key": "ddtSchemes"},
+                    {"type": "dictionary", "key": "default"},
+                    {"except type": "ignorable"},
+                ]
+            )["element"]["value"] = "steadyState"
+            print(
+                f"!!! {application}に対して{fvSchemes_path}ファイルの"
+                f"ddtSchemesは{ddtSchemes}にはならないと思うので，steadyStateに書き換えました．"
+            )
+        elif (
+            not any(f in application.lower() for f in ["simplefoam", "potentialfoam"])
+            and ddtSchemes == "steadyState"
+        ):
+            # simpleFoamやpotentialFoam系の計算ではないのに，ddtSchemesをsteadyStateにしている場合
+            fvSchemes.find_element(
+                [
+                    {"type": "block", "key": "ddtSchemes"},
+                    {"type": "dictionary", "key": "default"},
+                    {"except type": "ignorable"},
+                ]
+            )["element"]["value"] = "Euler"
+            print(
+                f"!!! {application}に対して{fvSchemes_path}ファイルの"
+                "ddtSchemesがsteadyStateにはならないと思うので，Eulerに書き換えました．"
+            )
 
         string = dictParse.normalize(string=fvSchemes.file_string())[0]
         if fvSchemes.string != string:

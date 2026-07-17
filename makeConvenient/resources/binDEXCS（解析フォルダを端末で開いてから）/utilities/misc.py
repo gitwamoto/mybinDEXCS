@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/6/16 7:35:04 PM
+# 2026/7/17 3:55:10 PM
 
 import glob
 import os
@@ -193,6 +193,19 @@ def getApplication(path=os.curdir):
             "application",
             "-value",
             os.path.join(path, "system", "controlDict"),
+        ],
+        encoding="UTF-8",
+    ).strip()  # リスト形式でコマンドを呼ぶ場合は引数にshell = Trueは必要ない
+
+
+def ddtSchemes(fvSchemes_path=None):
+    return subprocess.check_output(
+        [
+            "foamDictionary",
+            "-entry",
+            "ddtSchemes.default",
+            "-value",
+            fvSchemes_path,
         ],
         encoding="UTF-8",
     ).strip()  # リスト形式でコマンドを呼ぶ場合は引数にshell = Trueは必要ない
