@@ -6,15 +6,16 @@
 
 import sys
 
-def find_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter = None):
+
+def find_max_min(file_name_or_lines_list, column, top_skip=0, delimiter=None):
     column -= 1  # column starts from 1, not 0!
-    v_max = -float('inf')
-    v_min = float('inf')
+    v_max = -float("inf")
+    v_min = float("inf")
     n = 0
     if type(file_name_or_lines_list) is str:
-        for line in open(file_name_or_lines_list, 'r'):
+        for line in open(file_name_or_lines_list, "r"):
             line = line.strip()
-            if line.startswith('#'):
+            if line.startswith("#"):
                 continue
             n += 1
             if n > top_skip:
@@ -31,7 +32,7 @@ def find_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter = None
     else:
         for line in file_name_or_lines_list:
             line = line.strip()
-            if not line.startswith('#'):
+            if not line.startswith("#"):
                 continue
             n += 1
             if n > top_skip:
@@ -47,7 +48,8 @@ def find_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter = None
                     pass
     return [max_line, min_line]
 
-def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter = None):
+
+def find_local_max_min(file_name_or_lines_list, column, top_skip=0, delimiter=None):
     column -= 1  # column starts from 1, not 0!
     v_ll = None
     v_l = None
@@ -59,9 +61,9 @@ def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter 
     min_list = []
     n = 0
     if type(file_name_or_lines_list) is str:
-        for line_rr in open(file_name_or_lines_list, 'r'):
+        for line_rr in open(file_name_or_lines_list, "r"):
             line_rr = line_rr.strip()
-            if line_rr.startswith('#'):
+            if line_rr.startswith("#"):
                 continue
             n += 1
             if n > top_skip:
@@ -73,16 +75,22 @@ def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter 
                         #    v_l     v_r
                         #    /         \
                         # v_ll         v_rr
-                        if (v_c > v_l and v_c > v_r and
-                            (v_ll is not None and v_l > v_ll or v_r > v_rr)):
+                        if (
+                            v_c > v_l
+                            and v_c > v_r
+                            and (v_ll is not None and v_l > v_ll or v_r > v_rr)
+                        ):
                             max_list.append(line_c)
                         # v_ll         v_rr
                         #    \         /
                         #    v_l     v_r
                         #       \   /
                         #        v_c
-                        elif (v_c < v_l and v_c < v_r and
-                            (v_ll is not None and v_l < v_ll or v_r < v_rr)):
+                        elif (
+                            v_c < v_l
+                            and v_c < v_r
+                            and (v_ll is not None and v_l < v_ll or v_r < v_rr)
+                        ):
                             min_list.append(line_c)
                     v_ll = v_l
                     v_l = v_c
@@ -95,7 +103,7 @@ def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter 
     else:
         for line in file_name_or_lines_list:
             line = line.strip()
-            if not line.startswith('#'):
+            if not line.startswith("#"):
                 continue
             n += 1
             if n > top_skip:
@@ -107,16 +115,22 @@ def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter 
                         #    v_l     v_r
                         #    /         \
                         # v_ll         v_rr
-                        if (v_c > v_l and v_c > v_r and
-                            (v_ll is not None and v_l > v_ll or v_r > v_rr)):
+                        if (
+                            v_c > v_l
+                            and v_c > v_r
+                            and (v_ll is not None and v_l > v_ll or v_r > v_rr)
+                        ):
                             max_list.append(line_c)
                         # v_ll         v_rr
                         #    \         /
                         #    v_l     v_r
                         #       \   /
                         #        v_c
-                        elif (v_c < v_l and v_c < v_r and
-                            (v_ll is not None and v_l < v_ll or v_r < v_rr)):
+                        elif (
+                            v_c < v_l
+                            and v_c < v_r
+                            and (v_ll is not None and v_l < v_ll or v_r < v_rr)
+                        ):
                             min_list.append(line_c)
                     v_ll = v_l
                     v_l = v_c
@@ -133,9 +147,12 @@ def find_local_max_min(file_name_or_lines_list, column, top_skip = 0, delimiter 
             min_list.append(line_c)
     return [max_list, min_list]
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print(f"\nUsage: {sys.argv[0]} file_name column_number [-d 'delimiter'] [-t number_of_top_skip]\n")
+        print(
+            f"\nUsage: {sys.argv[0]} file_name column_number [-d 'delimiter'] [-t number_of_top_skip]\n"
+        )
         sys.exit(0)
     file_name = sys.argv[1]
     column = int(sys.argv[2])
@@ -143,20 +160,20 @@ if __name__ == '__main__':
     top_skip = 0
     i = 1
     while i < len(sys.argv):
-        if sys.argv[i] == '-d':
+        if sys.argv[i] == "-d":
             i += 1
             delimiter = sys.argv[i]
-        elif sys.argv[i] == '-t':
+        elif sys.argv[i] == "-t":
             i += 1
             top_skip = int(sys.argv[i])
         i += 1
 
     l = find_max_min(file_name, column, top_skip, delimiter)
-    print(f'row showing max value: {l[0]}')
-    print(f'row showing min value: {l[1]}')
+    print(f"row showing max value: {l[0]}")
+    print(f"row showing min value: {l[1]}")
 
     l = find_local_max_min(file_name, column, top_skip, delimiter)
     for i in l[0]:
-        print(f'row showing local max value: {i}')
+        print(f"row showing local max value: {i}")
     for i in l[1]:
-        print(f'row showing local min value: {i}')
+        print(f"row showing local min value: {i}")

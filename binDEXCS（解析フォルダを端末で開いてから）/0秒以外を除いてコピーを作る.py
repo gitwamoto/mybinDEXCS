@@ -11,43 +11,60 @@ import shutil
 from utilities import misc
 from utilities import rmObjects
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
     i = 1
     while True:
-        cname = f'{os.getcwd()}_{i}'
+        cname = f"{os.getcwd()}_{i}"
         if not os.path.exists(cname):
             os.mkdir(cname)
             break
         else:
             i += 1
     pat = re.compile(
-        '('
-            'dynamicCode' '|'
-            'postProcessing' '|'
-            'logs' '|'
-            'processor[0-9]+' '|'
-            '0_potentialflow' '|'
-            r'log\..+' '|'
-            'PyFoam.+' '|'
-            r'.+\.('
-                'analyzed' '|'
-                'fcstd1' '|'
-                r'logfile(\.restart[0-9]+)?' '|'
-                'log' '|'
-                'fms' '|'
-                'stl' '|'
-                'png' '|'
-                'foam' '|'
-                'OpenFOAM' '|'
-                'blockMesh' '|'
-                'FCStd1'
-            ')'
-        ')$'
+        "("
+        "dynamicCode"
+        "|"
+        "postProcessing"
+        "|"
+        "logs"
+        "|"
+        "processor[0-9]+"
+        "|"
+        "0_potentialflow"
+        "|"
+        r"log\..+"
+        "|"
+        "PyFoam.+"
+        "|"
+        r".+\.("
+        "analyzed"
+        "|"
+        "fcstd1"
+        "|"
+        r"logfile(\.restart[0-9]+)?"
+        "|"
+        "log"
+        "|"
+        "fms"
+        "|"
+        "stl"
+        "|"
+        "png"
+        "|"
+        "foam"
+        "|"
+        "OpenFOAM"
+        "|"
+        "blockMesh"
+        "|"
+        "FCStd1"
+        ")"
+        ")$"
     )
-    files = ['0']
+    files = ["0"]
     for i in os.listdir(os.curdir):
         try:
             float(i)
@@ -61,6 +78,6 @@ if __name__ == '__main__':
             shutil.copy2(src, dst)
         elif os.path.isdir(src):
             shutil.copytree(src, dst)
-    print(f'{cname}にコピーを作りました．')
+    print(f"{cname}にコピーを作りました．")
 
     rmObjects.removeInessentials()

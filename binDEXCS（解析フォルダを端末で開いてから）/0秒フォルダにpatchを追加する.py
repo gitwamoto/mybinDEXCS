@@ -13,153 +13,192 @@ from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
 
+
 def append_patches(src, dst):
-    src = os.path.join(src, 'polyMesh', 'boundary')
-    os.chmod(src, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
+    src = os.path.join(src, "polyMesh", "boundary")
+    os.chmod(
+        src, 0o0666
+    )  # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
 
-    boundary = dictParse.DictParser(file_name = src)
+    boundary = dictParse.DictParser(file_name=src)
 
-    patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
-    patches.sort(key = lambda p: p['element']['key'])
+    patches = boundary.find_all_elements([{"type": "list"}, {"type": "block"}])
+    patches.sort(key=lambda p: p["element"]["key"])
 
-    for f_path in glob.iglob(os.path.join(dst, '*')):
+    for f_path in glob.iglob(os.path.join(dst, "*")):
         if not os.path.isfile(f_path):
             continue
         os.chmod(f_path, 0o0666)
         f_base = os.path.basename(f_path)
-        if f_base == 'cellToRegion':
+        if f_base == "cellToRegion":
             continue
 
-        print(f'{f_path}を処理中...')
-        parameter = dictParse.DictParser(file_name = f_path)
+        print(f"{f_path}を処理中...")
+        parameter = dictParse.DictParser(file_name=f_path)
 
-        if f_base in ('k', 'epsilon', 'omega'):
-            internalField = parameter.find_element([{'type': 'dictionary', 'key': 'internalField'}])
+        if f_base in ("k", "epsilon", "omega"):
+            internalField = parameter.find_element(
+                [{"type": "dictionary", "key": "internalField"}]
+            )
             i = parameter.find_element(
-                [{'type': 'block_comment'}], start = internalField['index'] - 1, reverse = True)
-            if i['element'] is None or '初期値の例' not in i['element']['value']:
-                if f_base == 'k':
-                    c = ('/*\n'
-                        '初期値の例\n'
-                        '<内部流/外部流/管内流の場合>\n'
-                        '_U\t〇〇; // 流速 [m/s]\n'
-                        '_k_intensity\t〇〇; // 流速にかかる係数\n'
-                        '// 低乱流: 0.001〜0.01 | 一般的な乱流: 0.01〜0.05 | 建築物まわりの流れや大気流: 0.05〜0.10\n'
+                [{"type": "block_comment"}],
+                start=internalField["index"] - 1,
+                reverse=True,
+            )
+            if i["element"] is None or "初期値の例" not in i["element"]["value"]:
+                if f_base == "k":
+                    c = (
+                        "/*\n"
+                        "初期値の例\n"
+                        "<内部流/外部流/管内流の場合>\n"
+                        "_U\t〇〇; // 流速 [m/s]\n"
+                        "_k_intensity\t〇〇; // 流速にかかる係数\n"
+                        "// 低乱流: 0.001〜0.01 | 一般的な乱流: 0.01〜0.05 | 建築物まわりの流れや大気流: 0.05〜0.10\n"
                         '_k_init\t#calc "1.5*pow($_k_intensity*$_U,2)"; // kの初期値 [m^2/s^2]\n'
-                        '<管内流の場合>\n'
-                        '_Re\t〇〇; //レイノルズ数\n'
+                        "<管内流の場合>\n"
+                        "_Re\t〇〇; //レイノルズ数\n"
                         '_k_init\t#calc "1.5*pow(0.16*pow($_Re,-0.125)*$_U,2)"; // kの初期値 [m^2/s^2]\n'
-                        '*/\n')
-                else: # epsilon, omega
-                    c = ('/*\n'
-                        '初期値の例\n'
-                        '_k_init\t〇〇; // kの初期値 [m^2/s^2]\n'
-                        '_L\t〇〇; // 代表長さ [m]\n'
-                        '_L_mixing\t〇〇; // 乱流渦の代表的な混合距離 [m]\n'
-                        '// 内部流: #calc "0.07*$_L" | 外部流: #calc "0.1*$_L"〜#calc "0.01*$_L"\n')
-                    if f_base == 'epsilon':
+                        "*/\n"
+                    )
+                else:  # epsilon, omega
+                    c = (
+                        "/*\n"
+                        "初期値の例\n"
+                        "_k_init\t〇〇; // kの初期値 [m^2/s^2]\n"
+                        "_L\t〇〇; // 代表長さ [m]\n"
+                        "_L_mixing\t〇〇; // 乱流渦の代表的な混合距離 [m]\n"
+                        '// 内部流: #calc "0.07*$_L" | 外部流: #calc "0.1*$_L"〜#calc "0.01*$_L"\n'
+                    )
+                    if f_base == "epsilon":
                         c += '_epsilon_init\t#calc "pow(0.09,0.75)*pow($_k_init,1.5)/$_L_mixing"; // epsilonの初期値 [m^2/s^3]\n'
-                    else: # omega
+                    else:  # omega
                         c += '_omega_init\t#calc "pow($_k_init,0.5)/(pow(0.09,0.25)*$_L_mixing)"; // omegaの初期値 [1/s]\n'
-                    c += '*/\n'
-                parameter['value'][
-                    internalField['index']:internalField['index']] = dictParse.DictParser(string = c)['value']
+                    c += "*/\n"
+                parameter["value"][internalField["index"] : internalField["index"]] = (
+                    dictParse.DictParser(string=c)["value"]
+                )
 
-        boundaryField = parameter.find_element([{'type': 'block', 'key': 'boundaryField'}])['element']
+        boundaryField = parameter.find_element(
+            [{"type": "block", "key": "boundaryField"}]
+        )["element"]
         if boundaryField is None:
-            linebreak_and_boundaryField = dictParse.DictParser(string =
-                '\n'
-                'boundaryField\n'
-                '{\n'
-                '}\n')['value']
-            tail_index = parameter.find_element([{'except type': 'whitespace|linebreak|separator'}],
-                reverse = True, index_not_found = len(parameter['value']) - 1)['index'] + 1
-            parameter['value'][tail_index:tail_index] = linebreak_and_boundaryField
+            linebreak_and_boundaryField = dictParse.DictParser(
+                string="\nboundaryField\n{\n}\n"
+            )["value"]
+            tail_index = (
+                parameter.find_element(
+                    [{"except type": "whitespace|linebreak|separator"}],
+                    reverse=True,
+                    index_not_found=len(parameter["value"]) - 1,
+                )["index"]
+                + 1
+            )
+            parameter["value"][tail_index:tail_index] = linebreak_and_boundaryField
             boundaryField = linebreak_and_boundaryField[1]
-        i = boundaryField.find_element([{'type': 'block_end'}], reverse = True)['index']
+        i = boundaryField.find_element([{"type": "block_end"}], reverse=True)["index"]
         boundaryField_end = boundaryField.find_element(
-            [{'type': 'linebreak'}], start = i - 1, reverse = True, index_not_found = i)['index']
+            [{"type": "linebreak"}], start=i - 1, reverse=True, index_not_found=i
+        )["index"]
 
         for p in patches:
-            p = p['element']
-            i = boundaryField.find_element([{'type': 'block', 'key': p['key']}])
-            if i['element'] is None:
+            p = p["element"]
+            i = boundaryField.find_element([{"type": "block", "key": p["key"]}])
+            if i["element"] is None:
                 v = p.find_element(
-                    [{'type': 'dictionary', 'key': 'type'}, {'except type': 'ignorable'}])['element']['value']
-                s = ('\n'
-                    f'{p["key"]}\n'
-                    '{\n'
-                    'type\t')
-                if v == 'wall':
-                    if f_base == 'U':
-                        s += ('noSlip;\n'
-                            '// U = (0 0 0)に規定\n')
-                    elif f_base == 'k':
-                        s += ('kqRWallFunction;\n'
-                            '// 高レイノルズ数型乱流モデルにおけるk, q, Rの壁面境界条件\n'
-                            '// zeroGrdientのラッパー\n'
-                            'value\t$internalField; // 実際には使わないけど必要\n')
-                    elif f_base == 'epsilon':
-                        s += ('epsilonWallFunction;\n'
-                            '// epsilonの壁面境界条件\n'
-                            'value\t$internalField; // 実際には使わないけど必要\n')
-                    elif f_base == 'omega':
-                        s += ('omegaWallFunction;\n'
-                            '// omegaの壁面境界条件\n'
-                            'value\t$internalField; // 実際には使わないけど必要\n')
-                    elif f_base == 'p':
-                        s += ('zeroGradient\n'
-                            '// こう配が0，境界での値 = セル中心での値にする．\n')
-                    elif f_base == 'nut':
-                        s += ('nutkWallFunction;\n'
-                            '// nutの壁面境界条件，標準的\n'
-                            '// yPlus = C_mu^0.25*sqrt(k)*y/nuから格子中心のyPlusを求め，\n'
-                            '// 対数則領域内に格子中心があるかどうかを判断する．\n'
-                            '// ある場合，対数速度分布から得られる壁面せん断応力\n'
-                            '// tau_w = mu*kappa*yPlus/log(E*yPlus)*(u/y)\n'
-                            '// になるように乱流粘性係数を設定する．\n'
-                            '// https://www.slideshare.net/fumiyanozaki96/openfoam-36426892\n'
-                            'value\t$internalField; // 実際には使わないけど必要\n')
+                    [
+                        {"type": "dictionary", "key": "type"},
+                        {"except type": "ignorable"},
+                    ]
+                )["element"]["value"]
+                s = f"\n{p['key']}\n{{\ntype\t"
+                if v == "wall":
+                    if f_base == "U":
+                        s += "noSlip;\n// U = (0 0 0)に規定\n"
+                    elif f_base == "k":
+                        s += (
+                            "kqRWallFunction;\n"
+                            "// 高レイノルズ数型乱流モデルにおけるk, q, Rの壁面境界条件\n"
+                            "// zeroGrdientのラッパー\n"
+                            "value\t$internalField; // 実際には使わないけど必要\n"
+                        )
+                    elif f_base == "epsilon":
+                        s += (
+                            "epsilonWallFunction;\n"
+                            "// epsilonの壁面境界条件\n"
+                            "value\t$internalField; // 実際には使わないけど必要\n"
+                        )
+                    elif f_base == "omega":
+                        s += (
+                            "omegaWallFunction;\n"
+                            "// omegaの壁面境界条件\n"
+                            "value\t$internalField; // 実際には使わないけど必要\n"
+                        )
+                    elif f_base == "p":
+                        s += (
+                            "zeroGradient\n"
+                            "// こう配が0，境界での値 = セル中心での値にする．\n"
+                        )
+                    elif f_base == "nut":
+                        s += (
+                            "nutkWallFunction;\n"
+                            "// nutの壁面境界条件，標準的\n"
+                            "// yPlus = C_mu^0.25*sqrt(k)*y/nuから格子中心のyPlusを求め，\n"
+                            "// 対数則領域内に格子中心があるかどうかを判断する．\n"
+                            "// ある場合，対数速度分布から得られる壁面せん断応力\n"
+                            "// tau_w = mu*kappa*yPlus/log(E*yPlus)*(u/y)\n"
+                            "// になるように乱流粘性係数を設定する．\n"
+                            "// https://www.slideshare.net/fumiyanozaki96/openfoam-36426892\n"
+                            "value\t$internalField; // 実際には使わないけど必要\n"
+                        )
                     else:
-                        s += 'zeroGradient;\n'
-                elif f_base == 'nut':
-                    s += ('calculated;\n'
-                        '// 他の変数から計算可能であることを表す．\n'
-                        '// 壁面でない境界におけるnutの境界条件としてよく使われる．\n'
-                        'value\t$internalField; // 実際には使わないけど必要\n')
+                        s += "zeroGradient;\n"
+                elif f_base == "nut":
+                    s += (
+                        "calculated;\n"
+                        "// 他の変数から計算可能であることを表す．\n"
+                        "// 壁面でない境界におけるnutの境界条件としてよく使われる．\n"
+                        "value\t$internalField; // 実際には使わないけど必要\n"
+                    )
                 else:
-                    s += (v if v in ('empty', 'symmetryPlane', 'symmetry', 'wedge') else 'zeroGradient') + ';\n'
-                b = dictParse.DictParser(string = f'{s}' '}\n')['value']
-                boundaryField['value'][boundaryField_end:boundaryField_end] = b
+                    s += (
+                        v
+                        if v in ("empty", "symmetryPlane", "symmetry", "wedge")
+                        else "zeroGradient"
+                    ) + ";\n"
+                b = dictParse.DictParser(string=f"{s}}}\n")["value"]
+                boundaryField["value"][boundaryField_end:boundaryField_end] = b
                 boundaryField_end += len(b)
             else:
-                p = i['parent'].pop(i['index'])
+                p = i["parent"].pop(i["index"])
                 # popで1つ引き抜くので，差し込む場所はboundaryField_end - 1にする．
-                i['parent'][boundaryField_end - 1:boundaryField_end - 1] = [
-                    dictParse.DictParser(string = '\n')['value'][0], p]
-                boundaryField_end += 1 # linebreakのぶん増える
-        boundaryField.set_blank_line(number_of_blank_lines = 1)
+                i["parent"][boundaryField_end - 1 : boundaryField_end - 1] = [
+                    dictParse.DictParser(string="\n")["value"][0],
+                    p,
+                ]
+                boundaryField_end += 1  # linebreakのぶん増える
+        boundaryField.set_blank_line(number_of_blank_lines=1)
 
-        string = dictParse.normalize(string = parameter.file_string())[0]
+        string = dictParse.normalize(string=parameter.file_string())[0]
         if parameter.string != string:
-#            os.rename(f_path, f'{f_path}_bak')
-            with open(f_path, 'w') as f:
+            #            os.rename(f_path, f'{f_path}_bak')
+            with open(f_path, "w") as f:
                 f.write(string)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
     regions = []
-    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
-        if os.path.isdir(d + 'polyMesh'):
-            regions.append(os.path.basename(d[:-len(os.sep)]))
+    for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):
+        if os.path.isdir(d + "polyMesh"):
+            regions.append(os.path.basename(d[: -len(os.sep)]))
     if len(regions) == 0:
-        append_patches(src = 'constant', dst = '0')
+        append_patches(src="constant", dst="0")
     else:
         for i in regions:
-            d = os.path.join('0', i)
+            d = os.path.join("0", i)
             if os.path.isdir(d):
-                append_patches(src = os.path.join('constant', i), dst = d)
+                append_patches(src=os.path.join("constant", i), dst=d)
 
     rmObjects.removeInessentials()

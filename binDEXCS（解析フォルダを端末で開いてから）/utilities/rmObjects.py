@@ -12,38 +12,49 @@ import sys
 import filecmp
 import misc
 
+
 def removeInessentials():
     dir_name = os.path.dirname(__file__)
-    for path in (os.curdir, dir_name, os.path.normpath(os.path.join(dir_name, os.pardir))):
+    for path in (
+        os.curdir,
+        dir_name,
+        os.path.normpath(os.path.join(dir_name, os.pardir)),
+    ):
         for curDir, dirs, files in os.walk(path):
             for name in files:
                 # .DS_Store: フォルダの表示設定（Finder用）
                 # ._filename: filename というファイルに付随する追加情報（メタデータ）
-                if re.match(r'\._.+|[._]+DS_Store', name) is not None:
+                if re.match(r"\._.+|[._]+DS_Store", name) is not None:
                     os.remove(os.path.join(curDir, name))
     try:
-        if os.path.isdir('dynamicCode'):
-            shutil.rmtree('dynamicCode')
+        if os.path.isdir("dynamicCode"):
+            shutil.rmtree("dynamicCode")
     except:
         pass
-    for d in glob.iglob('*.analyzed/'):
+    for d in glob.iglob("*.analyzed/"):
         shutil.rmtree(d)
 
+
 def removeLogPlotPngs():
-    pat = re.compile('(?:'
-        'linear|cont|bound|courant|deltaT|custom[0-9][0-9][0-9][0-9]' '|' # PyFoamPlotRunner.pyが作るグラフのファイル
-        'residualsInitial|residualsFinal|continuityErrors' '|' # logファイルをプロット.pyが作るグラフのファイル
-        'continuity|residual|Courant' # 計算.pyが作るグラフのファイル
-        r')\.png$')
-    for i in glob.iglob('*.png'):
+    pat = re.compile(
+        "(?:"
+        "linear|cont|bound|courant|deltaT|custom[0-9][0-9][0-9][0-9]"
+        "|"  # PyFoamPlotRunner.pyが作るグラフのファイル
+        "residualsInitial|residualsFinal|continuityErrors"
+        "|"  # logファイルをプロット.pyが作るグラフのファイル
+        "continuity|residual|Courant"  # 計算.pyが作るグラフのファイル
+        r")\.png$"
+    )
+    for i in glob.iglob("*.png"):
         if os.path.isfile(i) and pat.match(i):
             os.remove(i)
 
-def removeProcessorDirs(option = '', path = os.curdir):
-    noZero, noLatest = 'noZero' in option, 'noLatest' in option
-    pat = re.compile(r'(?:\./)?processor([0-9]+)/$')
+
+def removeProcessorDirs(option="", path=os.curdir):
+    noZero, noLatest = "noZero" in option, "noLatest" in option
+    pat = re.compile(r"(?:\./)?processor([0-9]+)/$")
     if not noLatest and not noZero:
-        for p in glob.iglob(os.path.join(path, f'processor[0-9]*{os.sep}')):
+        for p in glob.iglob(os.path.join(path, f"processor[0-9]*{os.sep}")):
             if pat.match(p):
                 shutil.rmtree(p)
     else:
@@ -54,32 +65,38 @@ def removeProcessorDirs(option = '', path = os.curdir):
         if noLatest and latest_time == 0.0:
             noZero = False
         pdirs = []
-        for p in glob.iglob(os.path.join(path, f'processor[0-9]*{os.sep}')):
+        for p in glob.iglob(os.path.join(path, f"processor[0-9]*{os.sep}")):
             s = pat.match(p)
             if s is not None:
                 pdirs.append(int(s.group(1)))
         pdirs.sort()
-        exception = (('0秒' if noZero else '') + ('と' if noZero and noLatest else '') +
-            (f'{latest_time}秒' if noLatest else ''))
+        exception = (
+            ("0秒" if noZero else "")
+            + ("と" if noZero and noLatest else "")
+            + (f"{latest_time}秒" if noLatest else "")
+        )
         if len(exception) > 0:
-            exception += '以外の'
+            exception += "以外の"
         for p in pdirs:
-            p = os.path.join(path, f'processor{p}')
-            print(f'{p}から{exception}結果を消去中...')
-            for t in glob.iglob(os.path.join(p, f'*{os.sep}')):
+            p = os.path.join(path, f"processor{p}")
+            print(f"{p}から{exception}結果を消去中...")
+            for t in glob.iglob(os.path.join(p, f"*{os.sep}")):
                 try:
                     ft = float(os.path.basename(os.path.dirname(t)))
-                    if (ft < latest_time if noLatest else True) and (ft > 0.0 if noZero else True):
+                    if (ft < latest_time if noLatest else True) and (
+                        ft > 0.0 if noZero else True
+                    ):
                         shutil.rmtree(t)
                 except:
                     pass
 
-def removeResultDirsWoZeroAndLatest(path = os.curdir):
+
+def removeResultDirsWoZeroAndLatest(path=os.curdir):
     latest_time = misc.latestTime(path)
     if latest_time is None:
         return
     latest_time = float(latest_time)
-    for t in glob.iglob(os.path.join(path, f'*{os.sep}')):
+    for t in glob.iglob(os.path.join(path, f"*{os.sep}")):
         try:
             ft = float(os.path.basename(os.path.dirname(t)))
             if ft != 0.0 and ft < latest_time:
@@ -87,18 +104,28 @@ def removeResultDirsWoZeroAndLatest(path = os.curdir):
         except:
             pass
 
-def removeResultDirsWithTimeGreaterThan(time, path = os.curdir):
+
+def removeResultDirsWithTimeGreaterThan(time, path=os.curdir):
     time = float(time)
-    for t in glob.iglob(os.path.join(path, f'*{os.sep}')):
+    for t in glob.iglob(os.path.join(path, f"*{os.sep}")):
         try:
             if float(os.path.basename(os.path.dirname(t))) > time:
                 shutil.rmtree(t)
         except:
             pass
 
-def removeDirsAndFilesWithName(dirs = None, files = None, path = os.curdir):
-    dirs = [t for t in (dirs if isinstance(dirs, (tuple, list)) else (dirs,)) if t is not None]
-    files = [t for t in (files if isinstance(files, (tuple, list)) else (files,)) if t is not None]
+
+def removeDirsAndFilesWithName(dirs=None, files=None, path=os.curdir):
+    dirs = [
+        t
+        for t in (dirs if isinstance(dirs, (tuple, list)) else (dirs,))
+        if t is not None
+    ]
+    files = [
+        t
+        for t in (files if isinstance(files, (tuple, list)) else (files,))
+        if t is not None
+    ]
     for obj in os.listdir(path):
         pathobj = os.path.join(path, obj)
         if os.path.isdir(pathobj):
@@ -118,9 +145,18 @@ def removeDirsAndFilesWithName(dirs = None, files = None, path = os.curdir):
                     except:
                         pass
 
-def removeDirsAndFilesWithNameRecursively(dirs = None, files = None, path = os.curdir):
-    dirs = [t for t in (dirs if isinstance(dirs, (tuple, list)) else (dirs,)) if t is not None]
-    files = [t for t in (files if isinstance(files, (tuple, list)) else (files,)) if t is not None]
+
+def removeDirsAndFilesWithNameRecursively(dirs=None, files=None, path=os.curdir):
+    dirs = [
+        t
+        for t in (dirs if isinstance(dirs, (tuple, list)) else (dirs,))
+        if t is not None
+    ]
+    files = [
+        t
+        for t in (files if isinstance(files, (tuple, list)) else (files,))
+        if t is not None
+    ]
     for dirpath, dirnames, filenames in os.walk(path):
         for obj in dirnames:
             for p in dirs:
@@ -139,19 +175,25 @@ def removeDirsAndFilesWithNameRecursively(dirs = None, files = None, path = os.c
                     except:
                         pass
 
-def remove0_bakRecursively(path = os.curdir):
+
+def remove0_bakRecursively(path=os.curdir):
     for dirpath, dirnames, filenames in os.walk(path):
-        if '0_bak' not in dirnames or '0' not in dirnames:
+        if "0_bak" not in dirnames or "0" not in dirnames:
             continue
-        d0_bak = os.path.join(dirpath, '0_bak')
-        d0 = os.path.join(dirpath, '0')
+        d0_bak = os.path.join(dirpath, "0_bak")
+        d0 = os.path.join(dirpath, "0")
         dcmp = filecmp.dircmp(d0_bak, d0)
-        if len(dcmp.left_only) == 0 and len(dcmp.right_only) == 0 and len(dcmp.diff_files) == 0:
+        if (
+            len(dcmp.left_only) == 0
+            and len(dcmp.right_only) == 0
+            and len(dcmp.diff_files) == 0
+        ):
             shutil.rmtree(d0_bak)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     path = os.curdir if len(sys.argv) == 1 else sys.argv[1]
-    removeProcessorDirs('noLatest', path)
+    removeProcessorDirs("noLatest", path)
 #    removeResultDirsWithTimeGreaterThan(path)
 #    removeInessentials(path)
 #    removeResultDirsWoZeroAndLatest(path)

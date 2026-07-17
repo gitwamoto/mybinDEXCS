@@ -24,71 +24,92 @@ import matplotlib.pyplot as plt
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
-binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+
+binDEXCS_path = os.path.expanduser(
+    "~/Desktop/binDEXCS（解析フォルダを端末で開いてから）"
+)  # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(binDEXCS_path)
 
+
 def handler(signum, frame):
-    misc.setEnabledInControlDictFunctions(enabled = False)
+    misc.setEnabledInControlDictFunctions(enabled=False)
     rmObjects.removeInessentials()
     sys.exit(1)
 
+
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = dictParse.DictParser(file_name = controlDict_path)
-    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+    controlDict = dictParse.DictParser(file_name=controlDict_path)
+    functions = controlDict.find_element([{"type": "block", "key": "functions"}])[
+        "element"
+    ]
     if functions is None:
-        linebreak_and_functions = dictParse.DictParser(string =
-            '\n'
-            '\n'
-            'functions\n'
-            '{\n'
-            '}')['value']
-        tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(controlDict['value']) - 1)['index'] + 1
-        controlDict['value'][tail_index:tail_index] = linebreak_and_functions
+        linebreak_and_functions = dictParse.DictParser(string="\n\nfunctions\n{\n}")[
+            "value"
+        ]
+        tail_index = (
+            controlDict.find_element(
+                [{"except type": "whitespace|linebreak|separator"}],
+                reverse=True,
+                index_not_found=len(controlDict["value"]) - 1,
+            )["index"]
+            + 1
+        )
+        controlDict["value"][tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
-    block_end = functions.find_element([{'type': 'block_end'}], reverse = True)
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
-        os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-            [{'type': 'list'}, {'type': 'block'}])])
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
-        '\n'
-        '\t// patchにかかる力を求める．\n'
-        '\t// 少なくともpatches(B)は修正する必要がある．\n'
-        '\t// 複数の条件に対して求めたい場合，\n'
-        '\t// forces\n'
-        '\t// {\n'
-        '\t//     ...\n'
-        '\t// }\n'
-        '\t// の部分をコピーして使えば良い．\n'
-        '\tforces // <- (A) postProcessingフォルダ内に作られるフォルダの名前，他と重複してはいけない！\n'
-        '\t{\n'
-        '\t\ttype\tforces;\n'
+    block_end = functions.find_element([{"type": "block_end"}], reverse=True)
+    patches = " ".join(
+        [
+            i["element"]["key"]
+            for i in dictParse.DictParser(
+                file_name=os.path.join("constant", "polyMesh", "boundary")
+            ).find_all_elements([{"type": "list"}, {"type": "block"}])
+        ]
+    )
+    block_end["parent"][block_end["index"] : block_end["index"]] = dictParse.DictParser(
+        string="\n"
+        "\t// patchにかかる力を求める．\n"
+        "\t// 少なくともpatches(B)は修正する必要がある．\n"
+        "\t// 複数の条件に対して求めたい場合，\n"
+        "\t// forces\n"
+        "\t// {\n"
+        "\t//     ...\n"
+        "\t// }\n"
+        "\t// の部分をコピーして使えば良い．\n"
+        "\tforces // <- (A) postProcessingフォルダ内に作られるフォルダの名前，他と重複してはいけない！\n"
+        "\t{\n"
+        "\t\ttype\tforces;\n"
         '\t\tlibs\t("libforces.so");\n'
-        '\t\tenabled\tyes; // yesで実行\n'
-        f'\t\tpatches\t({patches}); // <- (B) 複数のpatchを指定すると，それらにまとめてかかる力を求める．\n'
-        '\t\trho\trhoInf; // 非圧縮性流体の場合のみ使用\n'
-        '\t\trhoInf\t1; // 非圧縮性流体の場合，この密度がかけられて力の単位N（ニュートン）になる．\n'
-        '\t\tlog\tyes;\n'
-        '\t\twriteControl\ttimeStep;\n'
-        '\t\twriteInterval\t1;\n'
-        '\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n'
-        '\t}')['value']
-    functions.set_blank_line(number_of_blank_lines = 1)
+        "\t\tenabled\tyes; // yesで実行\n"
+        f"\t\tpatches\t({patches}); // <- (B) 複数のpatchを指定すると，それらにまとめてかかる力を求める．\n"
+        "\t\trho\trhoInf; // 非圧縮性流体の場合のみ使用\n"
+        "\t\trhoInf\t1; // 非圧縮性流体の場合，この密度がかけられて力の単位N（ニュートン）になる．\n"
+        "\t\tlog\tyes;\n"
+        "\t\twriteControl\ttimeStep;\n"
+        "\t\twriteInterval\t1;\n"
+        "\t\tCofR\t(0 0 0); // モーメントを求める中心の(x y z)座標\n"
+        "\t}"
+    )["value"]
+    functions.set_blank_line(number_of_blank_lines=1)
 
-    string = dictParse.normalize(string = controlDict.file_string())[0]
-    os.rename(controlDict_path, f'{controlDict_path}_bak')
-    with open(controlDict_path, 'w') as f:
+    string = dictParse.normalize(string=controlDict.file_string())[0]
+    os.rename(controlDict_path, f"{controlDict_path}_bak")
+    with open(controlDict_path, "w") as f:
         f.write(string)
 
-    print(f'\n\033[3;4;5m{controlDict_path}ファイルのfunctionsにforcesに関するテンプレートを追加して，'
-        'texteditwx.pyで開いています．')
-    print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
-    print('書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n')
-    misc.execCommand([os.path.join(binDEXCS_path, 'texteditwx.py'), controlDict_path])
+    print(
+        f"\n\033[3;4;5m{controlDict_path}ファイルのfunctionsにforcesに関するテンプレートを追加して，"
+        "texteditwx.pyで開いています．"
+    )
+    print(
+        "説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．"
+    )
+    print("書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n")
+    misc.execCommand([os.path.join(binDEXCS_path, "texteditwx.py"), controlDict_path])
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handler)  # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
     if not misc.texteditwx_works_well():
         exit(1)
@@ -98,83 +119,104 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = False
-        forces_is_written = True # <- 書き込めていないと非インタラクティブにできるわけがない
-        time_begin, time_end, noZero = '-inf', 'inf', True
+        forces_is_written = (
+            True  # <- 書き込めていないと非インタラクティブにできるわけがない
+        )
+        time_begin, time_end, noZero = "-inf", "inf", True
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-N': # Non-interactive
+            if sys.argv[i] == "-N":  # Non-interactive
                 pass
-            elif sys.argv[i] == '-b':
+            elif sys.argv[i] == "-b":
                 i += 1
                 time_begin = sys.argv[i]
-            elif sys.argv[i] == '-e':
+            elif sys.argv[i] == "-e":
                 i += 1
                 time_end = sys.argv[i]
-            elif sys.argv[i] == '-0':
+            elif sys.argv[i] == "-0":
                 noZero = False
-            elif sys.argv[i] == '-j':
+            elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
             i += 1
 
-    controlDict_path = os.path.join('system', 'controlDict')
+    controlDict_path = os.path.join("system", "controlDict")
     if not os.path.isfile(controlDict_path):
-        print(f'エラー: {controlDict_path}ファイルがありません．')
+        print(f"エラー: {controlDict_path}ファイルがありません．")
         sys.exit(1)
 
-    forces_related_folders_txt = os.path.join('postProcessing', '_forces_related_folders.txt')
-    if os.path.isdir('postProcessing') and os.path.isfile(forces_related_folders_txt):
-        for line in open(forces_related_folders_txt, 'r'):
-            tmp = os.path.join('postProcessing', line.rstrip())
+    forces_related_folders_txt = os.path.join(
+        "postProcessing", "_forces_related_folders.txt"
+    )
+    if os.path.isdir("postProcessing") and os.path.isfile(forces_related_folders_txt):
+        for line in open(forces_related_folders_txt, "r"):
+            tmp = os.path.join("postProcessing", line.rstrip())
             if os.path.isdir(tmp):
                 shutil.rmtree(tmp)
         os.remove(forces_related_folders_txt)
     if just_delete_previous_files:
-        sys.exit(0) # 正常終了
+        sys.exit(0)  # 正常終了
 
-    misc.setEnabledInControlDictFunctions(enabled = False)
-    misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'forces')
+    misc.setEnabledInControlDictFunctions(enabled=False)
+    misc.setEnabledInControlDictFunctions(enabled=True, type_name="forces")
     if interactive:
-        forces_is_written = True if input(f'{controlDict_path}ファイルの内容を確認して下さい．'
-            'functionsにforcesに関する指示が書き込まれていますか？ (y/n) > ').strip().lower() == 'y' else False
+        forces_is_written = (
+            True
+            if input(
+                f"{controlDict_path}ファイルの内容を確認して下さい．"
+                "functionsにforcesに関する指示が書き込まれていますか？ (y/n) > "
+            )
+            .strip()
+            .lower()
+            == "y"
+            else False
+        )
         if not forces_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = dictParse.DictParser(file_name = controlDict_path)
-    types = controlDict.find_all_elements([{'type': 'block', 'key': 'functions'}, {'type': 'block'},
-        {'type': 'dictionary', 'key': 'type'}])
-    forces_dir_list = [i['parent']['key'] for i in types
-        if i['element'].find_element([{'type': 'word'}])['element'] == 'forces']
+    controlDict = dictParse.DictParser(file_name=controlDict_path)
+    types = controlDict.find_all_elements(
+        [
+            {"type": "block", "key": "functions"},
+            {"type": "block"},
+            {"type": "dictionary", "key": "type"},
+        ]
+    )
+    forces_dir_list = [
+        i["parent"]["key"]
+        for i in types
+        if i["element"].find_element([{"type": "word"}])["element"] == "forces"
+    ]
     if len(forces_dir_list) == 0:
-        print(f'エラー: {controlDict_path}ファイルでforcesに関する指示がありません．')
+        print(f"エラー: {controlDict_path}ファイルでforcesに関する指示がありません．")
         sys.exit(1)
 
     if interactive:
-        time_begin, time_end, noZero = misc.setTimeBeginEnd('力の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd("力の計算")
     # https://develop.openfoam.com/Development/openfoam/-/tree/maintenance-v1906/src/functionObjects/forces/forces
     misc.execPostProcess(time_begin, time_end, noZero)
 
-    with open(forces_related_folders_txt, 'w') as f:
+    with open(forces_related_folders_txt, "w") as f:
         for forces_dir in forces_dir_list:
-            f.write(forces_dir + '\n')
+            f.write(forces_dir + "\n")
 
     for forces_dir in forces_dir_list:
         force_dat_path = moment_dat_path = None
-        pdir = os.path.join('postProcessing', forces_dir)
+        pdir = os.path.join("postProcessing", forces_dir)
         # postProcessing/forces_dir/0/
-        for d in glob.iglob(os.path.join(pdir, f'*{os.sep}')):
+        for d in glob.iglob(os.path.join(pdir, f"*{os.sep}")):
             try:
                 float(os.path.basename(os.path.dirname(d)))
-                shutil.move(os.path.join(d, 'force.dat'), pdir)
-                shutil.move(os.path.join(d, 'moment.dat'), pdir)
-                force_dat_path = os.path.join(pdir, 'force.dat')
-                moment_dat_path = os.path.join(pdir, 'moment.dat')
+                shutil.move(os.path.join(d, "force.dat"), pdir)
+                shutil.move(os.path.join(d, "moment.dat"), pdir)
+                force_dat_path = os.path.join(pdir, "force.dat")
+                moment_dat_path = os.path.join(pdir, "moment.dat")
                 shutil.rmtree(d)
                 break
             except:
                 pass
         if force_dat_path is None or moment_dat_path is None:
             continue
-        t_min = float('inf')
+        t_min = float("inf")
         t_max = -t_min
         F_min = t_min
         F_max = t_max
@@ -182,19 +224,30 @@ if __name__ == '__main__':
         Fx_list = []
         Fy_list = []
         Fz_list = []
-        forces_tab_txt_path = os.path.join(pdir, f'{forces_dir}_tab.txt')
-        with open(force_dat_path, 'r') as ff, open(moment_dat_path, 'r') as fm, open(forces_tab_txt_path, 'w') as fw:
+        forces_tab_txt_path = os.path.join(pdir, f"{forces_dir}_tab.txt")
+        with (
+            open(force_dat_path, "r") as ff,
+            open(moment_dat_path, "r") as fm,
+            open(forces_tab_txt_path, "w") as fw,
+        ):
             while True:
                 linef = ff.readline()
                 linem = fm.readline()
                 if not linef:
                     break
-                if re.match('#\\s*Time\\s+', linef):
-                    fw.write('#Time\tFx\tFy\tFz\tTx\tTy\tTz\n')
-                elif linef[0] == '#':
-                    fw.write(re.sub('\\s+(?!$)', '\t', re.sub('[()]', '', re.sub('^#\\s+', '#', linef))).rstrip() + '\n')
+                if re.match("#\\s*Time\\s+", linef):
+                    fw.write("#Time\tFx\tFy\tFz\tTx\tTy\tTz\n")
+                elif linef[0] == "#":
+                    fw.write(
+                        re.sub(
+                            "\\s+(?!$)",
+                            "\t",
+                            re.sub("[()]", "", re.sub("^#\\s+", "#", linef)),
+                        ).rstrip()
+                        + "\n"
+                    )
                 else:
-                    linef = re.sub('[()]', '', linef).split()
+                    linef = re.sub("[()]", "", linef).split()
                     t = float(linef[0])
                     t_max = max(t_max, t)
                     t_min = min(t_min, t)
@@ -203,36 +256,40 @@ if __name__ == '__main__':
                     Fz = float(linef[3])
                     F_max = max(F_max, Fx, Fy, Fz)
                     F_min = min(F_min, Fx, Fy, Fz)
-                    linem = re.sub('[()]', '', linem).split()
+                    linem = re.sub("[()]", "", linem).split()
                     t_list.append(t)
                     Fx_list.append(Fx)
                     Fy_list.append(Fy)
                     Fz_list.append(Fz)
-                    fw.write(f'{t:g}\t{Fx:g}\t{Fy:g}\t{Fz:g}\t'
-                        f'{float(linem[1]):g}\t{float(linem[2]):g}\t{float(linem[3]):g}\n')
-        plt.plot(t_list, Fx_list, label = 'Fx')
-        plt.plot(t_list, Fy_list, label = 'Fy')
-        plt.plot(t_list, Fz_list, label = 'Fz')
-        plt.xlabel('time [s]', fontsize = 16)
-        plt.ylabel('forces', fontsize = 16)
+                    fw.write(
+                        f"{t:g}\t{Fx:g}\t{Fy:g}\t{Fz:g}\t"
+                        f"{float(linem[1]):g}\t{float(linem[2]):g}\t{float(linem[3]):g}\n"
+                    )
+        plt.plot(t_list, Fx_list, label="Fx")
+        plt.plot(t_list, Fy_list, label="Fy")
+        plt.plot(t_list, Fz_list, label="Fz")
+        plt.xlabel("time [s]", fontsize=16)
+        plt.ylabel("forces", fontsize=16)
         tick = misc.appropriate_tick(t_min, t_max, 5)
-        t_max = tick*math.ceil(t_max/tick - 0.01)
-        t_min = tick*math.floor(t_min/tick + 0.01)
+        t_max = tick * math.ceil(t_max / tick - 0.01)
+        t_min = tick * math.floor(t_min / tick + 0.01)
         plt.xlim(t_min, t_max)
-        plt.xticks([t_min + i*tick for i in range(int((t_max - t_min)/tick + 1.1))])
+        plt.xticks([t_min + i * tick for i in range(int((t_max - t_min) / tick + 1.1))])
         tick = misc.appropriate_tick(F_min, F_max, 5)
-        F_max = tick*math.ceil(F_max/tick - 0.01)
-        F_min = tick*math.floor(F_min/tick + 0.01)
+        F_max = tick * math.ceil(F_max / tick - 0.01)
+        F_min = tick * math.floor(F_min / tick + 0.01)
         plt.ylim(F_min, F_max)
-        plt.yticks([F_min + i*tick for i in range(int((F_max - F_min)/tick + 1.1))])
-        plt.tick_params(which = 'both', direction = 'in', labelsize = 14)
-        plt.tick_params(length = 10, which = 'major')
-        plt.tick_params(length = 5, which = 'minor')
-        plt.legend(loc = 'best', prop = {'size': 16}, framealpha = 0.2)
-        forces_png_path = os.path.join(pdir, f'{forces_dir}.png')
+        plt.yticks([F_min + i * tick for i in range(int((F_max - F_min) / tick + 1.1))])
+        plt.tick_params(which="both", direction="in", labelsize=14)
+        plt.tick_params(length=10, which="major")
+        plt.tick_params(length=5, which="minor")
+        plt.legend(loc="best", prop={"size": 16}, framealpha=0.2)
+        forces_png_path = os.path.join(pdir, f"{forces_dir}.png")
         plt.savefig(forces_png_path)
         plt.clf()
-        misc.execCommand(['xdg-open', forces_png_path])
-        print(f'\nグラフは{forces_png_path}, 結果は{forces_tab_txt_path}に保存しました．')
+        misc.execCommand(["xdg-open", forces_png_path])
+        print(
+            f"\nグラフは{forces_png_path}, 結果は{forces_tab_txt_path}に保存しました．"
+        )
 
     rmObjects.removeInessentials()

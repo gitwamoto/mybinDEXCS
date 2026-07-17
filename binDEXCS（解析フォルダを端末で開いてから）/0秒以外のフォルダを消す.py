@@ -11,18 +11,25 @@ import glob
 from utilities import misc
 from utilities import rmObjects
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    misc.execCommand(['foamListTimes', '-rm', '-noZero'])
+    misc.execCommand(["foamListTimes", "-rm", "-noZero"])
     rmObjects.removeProcessorDirs()
-    for d in ('dynamicCode', 'logs'):
+    for d in ("dynamicCode", "logs"):
         if os.path.isdir(d):
             shutil.rmtree(d)
-    for d in glob.iglob(f'*.analyzed{os.sep}'):
+    for d in glob.iglob(f"*.analyzed{os.sep}"):
         shutil.rmtree(d)
-    for i in ('PyFoam*', '*.logfile', '*.logfile.restart*', '*.log', 'log.*', '*_history.txt'):
+    for i in (
+        "PyFoam*",
+        "*.logfile",
+        "*.logfile.restart*",
+        "*.log",
+        "log.*",
+        "*_history.txt",
+    ):
         for f in glob.iglob(i):
             os.remove(f)
     rmObjects.removeLogPlotPngs()

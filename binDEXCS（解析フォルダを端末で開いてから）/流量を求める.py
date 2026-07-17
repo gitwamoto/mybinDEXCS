@@ -23,12 +23,14 @@ from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
 
+
 def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handler)  # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
 
     just_delete_previous_files = False
@@ -37,43 +39,51 @@ if __name__ == '__main__':
     else:
         interactive = False
         patch_list = []
-        time_begin, time_end, noZero = '-inf', 'inf', True
+        time_begin, time_end, noZero = "-inf", "inf", True
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-b':
+            if sys.argv[i] == "-b":
                 i += 1
                 time_begin = sys.argv[i]
-            elif sys.argv[i] == '-e':
+            elif sys.argv[i] == "-e":
                 i += 1
                 time_end = sys.argv[i]
-            elif sys.argv[i] == '-0':
+            elif sys.argv[i] == "-0":
                 noZero = False
-            elif sys.argv[i] == '-p':
+            elif sys.argv[i] == "-p":
                 i += 1
-                patch_list = [j.strip() for j in sys.argv[i].split(',')]
-            elif sys.argv[i] == '-j':
+                patch_list = [j.strip() for j in sys.argv[i].split(",")]
+            elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
             i += 1
 
-    if os.path.isdir('postProcessing'):
-        for d in glob.iglob(os.path.join('postProcessing', f'flowRatePatch(*{os.sep}')):
+    if os.path.isdir("postProcessing"):
+        for d in glob.iglob(os.path.join("postProcessing", f"flowRatePatch(*{os.sep}")):
             shutil.rmtree(d)
     if just_delete_previous_files:
-        sys.exit(0) # 正常終了
+        sys.exit(0)  # 正常終了
 
     if interactive:
         patch_list = input(
-            'どのパッチに対して流量を計算しますか？ ' +
-            ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
-                os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-                    [{'type': 'list'}, {'type': 'block'}])]) +
-            ' の中からスペース区切りで指定して下さい． > ').split()
-        time_begin, time_end, noZero = misc.setTimeBeginEnd('流量計算')
+            "どのパッチに対して流量を計算しますか？ "
+            + " ".join(
+                [
+                    i["element"]["key"]
+                    for i in dictParse.DictParser(
+                        file_name=os.path.join("constant", "polyMesh", "boundary")
+                    ).find_all_elements([{"type": "list"}, {"type": "block"}])
+                ]
+            )
+            + " の中からスペース区切りで指定して下さい． > "
+        ).split()
+        time_begin, time_end, noZero = misc.setTimeBeginEnd("流量計算")
 
     for i in patch_list:
         # http://penguinitis.g1.xrea.com/study/OpenFOAM/proc_results.html
-        misc.execPostProcess(time_begin, time_end, noZero, func = 'flowRatePatch(name=' + i + ')')
+        misc.execPostProcess(
+            time_begin, time_end, noZero, func="flowRatePatch(name=" + i + ")"
+        )
 
-    print('\n結果はpostProcessingフォルダに保存されています．')
+    print("\n結果はpostProcessingフォルダに保存されています．")
 
     rmObjects.removeInessentials()

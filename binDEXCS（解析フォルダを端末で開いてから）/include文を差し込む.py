@@ -17,79 +17,96 @@ from utilities import appendEntries
 from utilities import rmObjects
 from utilities import dictParse
 
+
 def append_include_sentence(dir_name, include_file_name):
     if not os.path.isdir(dir_name):
         return
     include_file_name = os.path.relpath(include_file_name, dir_name)
-    for f in glob.iglob(os.path.join(dir_name, '*')):
+    for f in glob.iglob(os.path.join(dir_name, "*")):
         if not os.path.isfile(f):
             continue
         os.chmod(f, 0o0666)
-        if os.path.basename(f) == 'cellToRegion':
+        if os.path.basename(f) == "cellToRegion":
             continue
-        print(f'{f}を処理中...')
-        parser = dictParse.DictParser(file_name = f)
+        print(f"{f}を処理中...")
+        parser = dictParse.DictParser(file_name=f)
         inserted = False
-        for i in reversed(parser.find_all_elements([{'type': 'directive', 'key': '#include'}])):
-            n = i['element'].find_element([{'type': 'string'}])['element']['value'].strip('"')
+        for i in reversed(
+            parser.find_all_elements([{"type": "directive", "key": "#include"}])
+        ):
+            n = (
+                i["element"]
+                .find_element([{"type": "string"}])["element"]["value"]
+                .strip('"')
+            )
             if n == include_file_name:
                 inserted = True
                 break
         if inserted:
             continue
-        i = parser.find_element([{'type': 'block_comment'}])
-        if i['element'] is not None and '-*- C++ -*-' in i['element']['value']:
-            i = i['index'] + 1
+        i = parser.find_element([{"type": "block_comment"}])
+        if i["element"] is not None and "-*- C++ -*-" in i["element"]["value"]:
+            i = i["index"] + 1
         else:
             i = 0
-        i = parser.find_element([{'type': 'block', 'key': 'FoamFile'}],
-            start = i, index_not_found = i - 1)['index'] + 1
+        i = (
+            parser.find_element(
+                [{"type": "block", "key": "FoamFile"}], start=i, index_not_found=i - 1
+            )["index"]
+            + 1
+        )
         head_index = parser.find_element(
-            [{'except type': 'whitespace|linebreak|separator'}], start = i)['index']
-        parser['value'][head_index:head_index] = dictParse.DictParser(string = 
-            f'#include "{include_file_name}"\n' +
-            '\n')['value']
-        string = dictParse.normalize(string = parser.file_string())[0]
-#        os.rename(f, f'{f}_bak')
-        with open(f, 'w') as fp:
+            [{"except type": "whitespace|linebreak|separator"}], start=i
+        )["index"]
+        parser["value"][head_index:head_index] = dictParse.DictParser(
+            string=f'#include "{include_file_name}"\n' + "\n"
+        )["value"]
+        string = dictParse.normalize(string=parser.file_string())[0]
+        #        os.rename(f, f'{f}_bak')
+        with open(f, "w") as fp:
             fp.write(string)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    print('\n!!! 他のファイルと同様に，includeファイルの中でも行の終わりには ； が必要です． !!!\n')
+    print(
+        "\n!!! 他のファイルと同様に，includeファイルの中でも行の終わりには ； が必要です． !!!\n"
+    )
 
     if len(sys.argv) == 1:
-        include_file = input('差し込みたいincludeファイルの名前を教えて下さい． > ').strip()
+        include_file = input(
+            "差し込みたいincludeファイルの名前を教えて下さい． > "
+        ).strip()
     else:
         include_file = None
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-f':
+            if sys.argv[i] == "-f":
                 i += 1
                 include_file = sys.argv[i]
             i += 1
     if include_file is None:
-        print('エラー: includeファイルが指定されていません．')
+        print("エラー: includeファイルが指定されていません．")
         sys.exit(1)
 
     if not os.path.isfile(include_file):
-        with open(include_file, 'w') as f:
+        with open(include_file, "w") as f:
             pass
 
-    append_include_sentence(dir_name = '0', include_file_name = include_file)
-    append_include_sentence(dir_name = 'constant', include_file_name = include_file)
-    append_include_sentence(dir_name = 'system', include_file_name = include_file)
+    append_include_sentence(dir_name="0", include_file_name=include_file)
+    append_include_sentence(dir_name="constant", include_file_name=include_file)
+    append_include_sentence(dir_name="system", include_file_name=include_file)
 
-    for d in glob.iglob(os.path.join('0', f'*{os.sep}')):
-        append_include_sentence(dir_name = d, include_file_name = include_file)
-    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
-        if os.path.isdir(os.path.join(d, 'polyMesh')):
-            append_include_sentence(dir_name = d, include_file_name = include_file)
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if os.path.isfile(os.path.join(d, 'fvSolution')):
-            append_include_sentence(dir_name = d, include_file_name = include_file)
+    for d in glob.iglob(os.path.join("0", f"*{os.sep}")):
+        append_include_sentence(dir_name=d, include_file_name=include_file)
+    for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):
+        if os.path.isdir(os.path.join(d, "polyMesh")):
+            append_include_sentence(dir_name=d, include_file_name=include_file)
+    for d in glob.iglob(os.path.join("system", f"*{os.sep}")):
+        if os.path.isfile(os.path.join(d, "fvSolution")):
+            append_include_sentence(dir_name=d, include_file_name=include_file)
 
     appendEntries.intoFvSolution()
 

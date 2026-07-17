@@ -25,12 +25,14 @@ from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
 
+
 def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handler)  # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
 
     just_delete_previous_files = False
@@ -40,60 +42,100 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = False
-        time_begin, time_end, noZero = '-inf', 'inf', True
+        time_begin, time_end, noZero = "-inf", "inf", True
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-a':
-                average = [sys.argv[i + 1].split(), ','.join(sys.argv[i + 2].split())]
+            if sys.argv[i] == "-a":
+                average = [sys.argv[i + 1].split(), ",".join(sys.argv[i + 2].split())]
                 i += 2
-            elif sys.argv[i] == '-b':
+            elif sys.argv[i] == "-b":
                 i += 1
                 time_begin = sys.argv[i]
-            elif sys.argv[i] == '-e':
+            elif sys.argv[i] == "-e":
                 i += 1
                 time_end = sys.argv[i]
-            elif sys.argv[i] == '-0':
+            elif sys.argv[i] == "-0":
                 noZero = False
-            elif sys.argv[i] == '-i':
-                integrate = [sys.argv[i + 1].split(), ','.join(sys.argv[i + 2].split())]
+            elif sys.argv[i] == "-i":
+                integrate = [sys.argv[i + 1].split(), ",".join(sys.argv[i + 2].split())]
                 i += 2
-            elif sys.argv[i] == '-j':
+            elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
             i += 1
 
-    if os.path.isdir('postProcessing'):
-        for d in glob.iglob(os.path.join('postProcessing', f'patch*{os.sep}')):
+    if os.path.isdir("postProcessing"):
+        for d in glob.iglob(os.path.join("postProcessing", f"patch*{os.sep}")):
             p = os.path.basename(os.path.dirname(d))
-            if p.startswith('patchAverage(') or p.startswith('patchIntegrate('):
+            if p.startswith("patchAverage(") or p.startswith("patchIntegrate("):
                 shutil.rmtree(d)
     if just_delete_previous_files:
-        sys.exit(0) # 正常終了
+        sys.exit(0)  # 正常終了
 
     if interactive:
-        patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
-            os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-                [{'type': 'list'}, {'type': 'block'}])])
-        fields = ' '.join(misc.volFieldList(misc.latestTime()))
-        ans = True if input('面積平均を行いますか？ (y/n) > ').strip().lower() == 'y' else False
+        patches = " ".join(
+            [
+                i["element"]["key"]
+                for i in dictParse.DictParser(
+                    file_name=os.path.join("constant", "polyMesh", "boundary")
+                ).find_all_elements([{"type": "list"}, {"type": "block"}])
+            ]
+        )
+        fields = " ".join(misc.volFieldList(misc.latestTime()))
+        ans = (
+            True
+            if input("面積平均を行いますか？ (y/n) > ").strip().lower() == "y"
+            else False
+        )
         if ans:
-            average = [input('どのパッチに対して面積平均しますか？'
-                f' {patches} の中からスペース区切りで指定して下さい． > ').split()]
-            average.append(','.join(input('どのパラメータを面積平均しますか？ '
-                f' {fields} の中からスペース区切りで指定して下さい． > ').split()))
-        ans = True if input('面積積分を行いますか？ (y/n) > ').strip().lower() == 'y' else False
+            average = [
+                input(
+                    "どのパッチに対して面積平均しますか？"
+                    f" {patches} の中からスペース区切りで指定して下さい． > "
+                ).split()
+            ]
+            average.append(
+                ",".join(
+                    input(
+                        "どのパラメータを面積平均しますか？ "
+                        f" {fields} の中からスペース区切りで指定して下さい． > "
+                    ).split()
+                )
+            )
+        ans = (
+            True
+            if input("面積積分を行いますか？ (y/n) > ").strip().lower() == "y"
+            else False
+        )
         if ans:
-            integrate = [input('どのパッチに対して面積積分しますか？'
-                f' {patches} の中からスペース区切りで指定して下さい． > ').split()]
-            integrate.append(','.join(input('どのパラメータを面積積分しますか？'
-                f' {fields} の中からスペース区切りで指定して下さい． > ').split()))
-        time_begin, time_end, noZero = misc.setTimeBeginEnd('面積平均または面積積分')
+            integrate = [
+                input(
+                    "どのパッチに対して面積積分しますか？"
+                    f" {patches} の中からスペース区切りで指定して下さい． > "
+                ).split()
+            ]
+            integrate.append(
+                ",".join(
+                    input(
+                        "どのパラメータを面積積分しますか？"
+                        f" {fields} の中からスペース区切りで指定して下さい． > "
+                    ).split()
+                )
+            )
+        time_begin, time_end, noZero = misc.setTimeBeginEnd("面積平均または面積積分")
 
     # http://penguinitis.g1.xrea.com/study/OpenFOAM/proc_results.html
     for i in average[0]:
-        misc.execPostProcess(time_begin, time_end, noZero, func = f'patchAverage(name={i},{average[1]})')
+        misc.execPostProcess(
+            time_begin, time_end, noZero, func=f"patchAverage(name={i},{average[1]})"
+        )
     for i in integrate[0]:
-        misc.execPostProcess(time_begin, time_end, noZero, func = f'patchIntegrate(name={i},{integrate[1]})')
+        misc.execPostProcess(
+            time_begin,
+            time_end,
+            noZero,
+            func=f"patchIntegrate(name={i},{integrate[1]})",
+        )
 
-    print('\n結果はpostProcessingフォルダに保存されています．')
+    print("\n結果はpostProcessingフォルダに保存されています．")
 
     rmObjects.removeInessentials()

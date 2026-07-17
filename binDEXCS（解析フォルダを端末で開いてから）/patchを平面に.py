@@ -22,7 +22,7 @@ from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
 
-#def flatten(points):
+# def flatten(points):
 #    def inverse_power_method(A, eps = 1.0e-10):
 #        # A.r = lambda*r
 #        # A^^(-1).r = 1/lambda*r
@@ -56,57 +56,69 @@ from utilities import dictParse
 #    # k = n[0]*(points[0] - gc[0]) + n[1]*(points[1] - gc[1]) + n[2]*(points[2] - gc[2])
 #    return points - np.dot(x, n).reshape(-1, 1)*n
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
     if len(sys.argv) == 1:
         interactive = True
     else:
         interactive = exec_paraFoam = scaleMesh_0p001 = False
-        patch_type = ''
+        patch_type = ""
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-n':
+            if sys.argv[i] == "-n":
                 i += 1
                 patch_name = sys.argv[i]
-            elif sys.argv[i] == '-p':
+            elif sys.argv[i] == "-p":
                 exec_paraFoam = True
-            elif sys.argv[i] == '-s':
+            elif sys.argv[i] == "-s":
                 scaleMesh_0p001 = True
-            elif sys.argv[i] == '-t':
+            elif sys.argv[i] == "-t":
                 i += 1
                 patch_type = sys.argv[i]
-            elif sys.argv[i] in ('-x', '-y', '-z'):
-                coordinate = 0 if sys.argv[i] == '-x' else (1 if sys.argv[i] == '-y' else 2)
+            elif sys.argv[i] in ("-x", "-y", "-z"):
+                coordinate = (
+                    0 if sys.argv[i] == "-x" else (1 if sys.argv[i] == "-y" else 2)
+                )
                 i += 1
                 value = float(sys.argv[i])
             i += 1
 
-    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    faces_path = os.path.join('constant', 'polyMesh', 'faces')
-    points_path = os.path.join('constant', 'polyMesh', 'points')
+    boundary_path = os.path.join("constant", "polyMesh", "boundary")
+    faces_path = os.path.join("constant", "polyMesh", "faces")
+    points_path = os.path.join("constant", "polyMesh", "points")
     for i in (boundary_path, faces_path, points_path):
         if not os.path.isfile(i):
-            print(f'エラー: {i}ファイルがありません．')
+            print(f"エラー: {i}ファイルがありません．")
             sys.exit(1)
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
-    print('x, y, z座標をある値に固定することでpatchを平面にします．')
+    print("x, y, z座標をある値に固定することでpatchを平面にします．")
 
-    boundary = dictParse.DictParser(file_name = boundary_path)
-    patches = boundary.find_all_elements([{'type': 'list'}, {'type': 'block'}])
+    boundary = dictParse.DictParser(file_name=boundary_path)
+    patches = boundary.find_all_elements([{"type": "list"}, {"type": "block"}])
     if interactive:
         while True:
-            patch_name = input(' '.join([i['element']['key'] for i in patches]) +
-                ' の中から平面にしたいpatchの名前を1つ入力して下さい． > ').strip()
-            patch = next((i['element'] for i in patches if i['element']['key'] == patch_name), None)
+            patch_name = input(
+                " ".join([i["element"]["key"] for i in patches])
+                + " の中から平面にしたいpatchの名前を1つ入力して下さい． > "
+            ).strip()
+            patch = next(
+                (i["element"] for i in patches if i["element"]["key"] == patch_name),
+                None,
+            )
             if patch is not None:
                 break
-        ans = input('座標=値の形式で座標と値を決めて下さい．(例: x=0.0) > ').strip().lower().split('=')
+        ans = (
+            input("座標=値の形式で座標と値を決めて下さい．(例: x=0.0) > ")
+            .strip()
+            .lower()
+            .split("=")
+        )
         while True:
             coordinate = ans[0].strip()
-            coordinate = 0 if coordinate == 'x' else (1 if coordinate == 'y' else 2)
+            coordinate = 0 if coordinate == "x" else (1 if coordinate == "y" else 2)
             try:
                 value = float(ans[1])
                 break
@@ -114,106 +126,136 @@ if __name__ == '__main__':
                 pass
 
     nFaces = startFace = -1
-    patch = next((i['element'] for i in patches if i['element']['key'] == patch_name), None)
+    patch = next(
+        (i["element"] for i in patches if i["element"]["key"] == patch_name), None
+    )
     if patch is None:
-        print(f'エラー: {patch_name}という名前のpatchはありません．')
+        print(f"エラー: {patch_name}という名前のpatchはありません．")
         sys.exit(1)
     patch_type_value = patch.find_element(
-        [{'type': 'dictionary', 'key': 'type'}, {'type': 'string'}])['element']
+        [{"type": "dictionary", "key": "type"}, {"type": "string"}]
+    )["element"]
     if interactive:
         print(f"{patch_name}のtypeは{patch_type_value['value']}です．")
         while True:
-            patch_type = input('typeを変更する場合は empty , symmetryPlane , wedge のうちのどれか，'
-                '変更しない場合はEnterのみを入力して下さい． > ').strip()
-            if patch_type in ('empty', 'symmetryPlane', 'wedge'):
+            patch_type = input(
+                "typeを変更する場合は empty , symmetryPlane , wedge のうちのどれか，"
+                "変更しない場合はEnterのみを入力して下さい． > "
+            ).strip()
+            if patch_type in ("empty", "symmetryPlane", "wedge"):
                 break
-    patch_type_value['value'] = patch_type
-    nFaces = int(patch.find_element(
-        [{'type': 'dictionary', 'key': 'nFaces'}, {'type': 'integer'}])['element']['value'])
-    startFace = int(patch.find_element(
-        [{'type': 'dictionary', 'key': 'startFace'}, {'type': 'integer'}])['element']['value'])
-    string = dictParse.normalize(string = boundary.file_string())[0]
+    patch_type_value["value"] = patch_type
+    nFaces = int(
+        patch.find_element(
+            [{"type": "dictionary", "key": "nFaces"}, {"type": "integer"}]
+        )["element"]["value"]
+    )
+    startFace = int(
+        patch.find_element(
+            [{"type": "dictionary", "key": "startFace"}, {"type": "integer"}]
+        )["element"]["value"]
+    )
+    string = dictParse.normalize(string=boundary.file_string())[0]
     if boundary.string != string:
-#        os.rename(boundary_path, f'{boundary_path}_bak')
-        with open(boundary_path, 'w') as f:
+        #        os.rename(boundary_path, f'{boundary_path}_bak')
+        with open(boundary_path, "w") as f:
             f.write(string)
 
-    with open(faces_path, 'r') as f:
+    with open(faces_path, "r") as f:
         s = f.read()
-    ph = s.find('(') + 1
-    pf = s.rfind(')')
-    n = int(s[s[:ph - 2].rfind('\n') + 1:ph - 1])
+    ph = s.find("(") + 1
+    pf = s.rfind(")")
+    n = int(s[s[: ph - 2].rfind("\n") + 1 : ph - 1])
     faces_data = []
-    if 'binary' in s:
-        if 'faceCompactList' in s:
-            pr = ph + 4*n
-            faces_ranges = np.fromstring(s[ph:pr], dtype = '<u4')
-            pl = pr + s[pr:].find(')') + 1
-            pr = pl + s[pl:].find('(')
+    if "binary" in s:
+        if "faceCompactList" in s:
+            pr = ph + 4 * n
+            faces_ranges = np.fromstring(s[ph:pr], dtype="<u4")
+            pl = pr + s[pr:].find(")") + 1
+            pr = pl + s[pl:].find("(")
             n = int(s[pl:pr])
             pl = pr + 1
-            pr = pl + 4*n
-            points_indices = np.fromstring(s[pl:pr], dtype = '<u4')
+            pr = pl + 4 * n
+            points_indices = np.fromstring(s[pl:pr], dtype="<u4")
             for i in range(faces_ranges.shape[0] - 1):
-                faces_data.append(points_indices[faces_ranges[i]:faces_ranges[i + 1]])
-        else: # faceList
+                faces_data.append(points_indices[faces_ranges[i] : faces_ranges[i + 1]])
+        else:  # faceList
             pr = ph - 1
             for i in range(n):
                 pl = pr + 1
-                pr = pl + s[pl:].find('(')
+                pr = pl + s[pl:].find("(")
                 n = int(s[pl:pr])
                 pl = pr + 1
-                pr = pl + 4*n
-                faces_data.append(np.fromstring(s[pl:pr], dtype = '<u4'))
+                pr = pl + 4 * n
+                faces_data.append(np.fromstring(s[pl:pr], dtype="<u4"))
     else:
-        points_indices = [i[i.find('(') + 1:] for i in s[ph:pf].split(')')]
-        if points_indices[-1] == '':
+        points_indices = [i[i.find("(") + 1 :] for i in s[ph:pf].split(")")]
+        if points_indices[-1] == "":
             del points_indices[-1]
         for i in points_indices:
-            faces_data.append(np.fromstring(i, dtype = 'u4', sep = ' '))
-    faces_data = list(set([j for i in faces_data[startFace:startFace + nFaces] for j in i]))
+            faces_data.append(np.fromstring(i, dtype="u4", sep=" "))
+    faces_data = list(
+        set([j for i in faces_data[startFace : startFace + nFaces] for j in i])
+    )
 
-    with open(points_path, 'r') as f:
+    with open(points_path, "r") as f:
         s = f.read()
-    ph = s.find('(') + 1
-    pf = s.rfind(')')
-    n = int(s[s[:ph - 2].rfind('\n') + 1:ph - 1])
-    if 'binary' in s:
-        points_data = np.fromstring(s[ph:ph + 8*3*n], dtype = '<d').reshape(-1, 3)
+    ph = s.find("(") + 1
+    pf = s.rfind(")")
+    n = int(s[s[: ph - 2].rfind("\n") + 1 : ph - 1])
+    if "binary" in s:
+        points_data = np.fromstring(s[ph : ph + 8 * 3 * n], dtype="<d").reshape(-1, 3)
         points_data[faces_data, coordinate] = value
-#        points_data[faces_data] = flatten(points_data[faces_data])
-#        os.rename(points_path, f'{points_path}_bak')
-        with open(points_path, 'wb') as f: # can overwrite
+        #        points_data[faces_data] = flatten(points_data[faces_data])
+        #        os.rename(points_path, f'{points_path}_bak')
+        with open(points_path, "wb") as f:  # can overwrite
             f.write(s[:ph])
-            points_data.astype('<d').tofile(f)
+            points_data.astype("<d").tofile(f)
             f.write(s[pf:])
     else:
-        if s[ph] == '\n':
+        if s[ph] == "\n":
             ph += 1
-        points_data = np.fromstring(s[ph:pf].replace('(', '').replace(')', ''), dtype = 'd', sep = ' ').reshape(-1, 3)
+        points_data = np.fromstring(
+            s[ph:pf].replace("(", "").replace(")", ""), dtype="d", sep=" "
+        ).reshape(-1, 3)
         points_data[faces_data, coordinate] = value
-#        points_data[faces_data] = flatten(points_data[faces_data])
-#        os.rename(points_path, f'{points_path}_bak')
-        with open(points_path, 'w') as f: # can overwrite
+        #        points_data[faces_data] = flatten(points_data[faces_data])
+        #        os.rename(points_path, f'{points_path}_bak')
+        with open(points_path, "w") as f:  # can overwrite
             f.write(s[:ph])
             for i in points_data:
-                f.write(f'({i[0]} {i[1]} {i[2]})\n')
+                f.write(f"({i[0]} {i[1]} {i[2]})\n")
             f.write(s[pf:])
 
     if not converted_millimeter_into_meter:
         if interactive:
             box = misc.bounding_box_of_calculation_range(points_path)[1]
-            print(f'元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]},'
-                f' {box[1][0]} <= y <= {box[1][1]}, {box[2][0]} <= z <= {box[2][1]}です．')
-            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？'
-                ' (y/n, yだと1/1000倍してメートルに直します．) > ').strip().lower() == 'y' else False
+            print(
+                f"元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]},"
+                f" {box[1][0]} <= y <= {box[1][1]}, {box[2][0]} <= z <= {box[2][1]}です．"
+            )
+            scaleMesh_0p001 = (
+                True
+                if input(
+                    "この長さの単位はミリメートルですか？"
+                    " (y/n, yだと1/1000倍してメートルに直します．) > "
+                )
+                .strip()
+                .lower()
+                == "y"
+                else False
+            )
         if scaleMesh_0p001:
             misc.convertMillimeterIntoMeter()
-    misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
+    misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
 
     if interactive:
-        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
+        exec_paraFoam = (
+            True
+            if input("\nparaFoamを実行しますか？ (y/n) > ").strip().lower() == "y"
+            else False
+        )
+    misc.execParaFoam(touch_only=not exec_paraFoam, ambient=0.0, diffuse=1.0)
 
     rmObjects.removeInessentials()

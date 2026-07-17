@@ -15,8 +15,8 @@ import sys
 from utilities import misc
 from utilities import rmObjects
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
     if len(sys.argv) == 1:
@@ -26,23 +26,27 @@ if __name__ == '__main__':
         exec_paraFoam = False
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-N': # Non-interactive
+            if sys.argv[i] == "-N":  # Non-interactive
                 pass
-            elif sys.argv[i] == '-p':
+            elif sys.argv[i] == "-p":
                 exec_paraFoam = True
             i += 1
 
-    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
+    boundary_path = os.path.join("constant", "polyMesh", "boundary")
     if not os.path.isfile(boundary_path):
-        print(f'エラー: {boundary_path}ファイルがありません．')
+        print(f"エラー: {boundary_path}ファイルがありません．")
         sys.exit(1)
     if misc.isConvertedMillimeterIntoMeter():
-        print('長さの単位はすでにメートルです．')
+        print("長さの単位はすでにメートルです．")
     else:
         misc.convertMillimeterIntoMeter()
 
     if interactive:
-        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
+        exec_paraFoam = (
+            True
+            if input("\nparaFoamを実行しますか？ (y/n) > ").strip().lower() == "y"
+            else False
+        )
+    misc.execParaFoam(touch_only=not exec_paraFoam, ambient=0.0, diffuse=1.0)
 
     rmObjects.removeInessentials()

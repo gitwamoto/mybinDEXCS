@@ -22,12 +22,14 @@ import shutil
 from utilities import misc
 from utilities import rmObjects
 
+
 def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handler)  # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
 
     just_delete_previous_files = False
@@ -36,64 +38,74 @@ if __name__ == '__main__':
     else:
         interactive = False
         exec_paraFoam = False
-        time_begin = '-inf'
-        time_end = 'inf'
+        time_begin = "-inf"
+        time_end = "inf"
         noZero = True
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-N': # Non-interactive
+            if sys.argv[i] == "-N":  # Non-interactive
                 pass
-            elif sys.argv[i] == '-b':
+            elif sys.argv[i] == "-b":
                 i += 1
                 time_begin = sys.argv[i]
-            elif sys.argv[i] == '-e':
+            elif sys.argv[i] == "-e":
                 i += 1
                 time_end = sys.argv[i]
-            elif sys.argv[i] == '-0':
+            elif sys.argv[i] == "-0":
                 noZero = False
-            elif sys.argv[i] == '-j':
+            elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
-            elif sys.argv[i] == '-p':
+            elif sys.argv[i] == "-p":
                 exec_paraFoam = True
             i += 1
 
     regions = []
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if os.path.isfile(os.path.join(d, 'fvSolution')):
+    for d in glob.iglob(os.path.join("system", f"*{os.sep}")):
+        if os.path.isfile(os.path.join(d, "fvSolution")):
             regions.append(os.path.basename(os.path.dirname(d)))
-    for d in glob.iglob(f'*{os.sep}'):
+    for d in glob.iglob(f"*{os.sep}"):
         try:
             float(os.path.dirname(d))
-            f = os.path.join(d, 'wallShearStress')
+            f = os.path.join(d, "wallShearStress")
             if os.path.isfile(f):
                 os.remove(f)
             for r in regions:
-                f = os.path.join(d, r, 'wallShearStress')
+                f = os.path.join(d, r, "wallShearStress")
                 if os.path.isfile(f):
                     os.remove(f)
         except:
             pass
-    d = os.path.join('postProcessing', 'wallShearStress')
+    d = os.path.join("postProcessing", "wallShearStress")
     if os.path.isdir(d):
         shutil.rmtree(d)
     if just_delete_previous_files:
-        sys.exit(0) # 正常終了
+        sys.exit(0)  # 正常終了
 
-    print('壁面せん断応力wallShearStressを求めます．ただし，非圧縮性流体の場合はwallShearStressは壁面せん断応力/密度に相当します．')
+    print(
+        "壁面せん断応力wallShearStressを求めます．ただし，非圧縮性流体の場合はwallShearStressは壁面せん断応力/密度に相当します．"
+    )
     if interactive:
-        time_begin, time_end, noZero = misc.setTimeBeginEnd('壁面せん断応力の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd("壁面せん断応力の計算")
     # hhttps://www.openfoam.com/documentation/guides/latest/doc/guide-fos-field-wallShearStress.html
     # Example by using the postProcess utility: <solver> -postProcess -func wallShearStress
     if len(regions) == 0:
-        misc.execPostProcess(time_begin, time_end, noZero, func = 'wallShearStress')
+        misc.execPostProcess(time_begin, time_end, noZero, func="wallShearStress")
     else:
         for r in regions:
-            misc.execPostProcess(time_begin, time_end, noZero, func = 'wallShearStress', region = r)
+            misc.execPostProcess(
+                time_begin, time_end, noZero, func="wallShearStress", region=r
+            )
 
-    print('\n結果は各時間のフォルダに書き出され，さらにpostProcessingフォルダにまとめが保存されます．')
+    print(
+        "\n結果は各時間のフォルダに書き出され，さらにpostProcessingフォルダにまとめが保存されます．"
+    )
 
     if interactive:
-        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam)
+        exec_paraFoam = (
+            True
+            if input("\nparaFoamを実行しますか？ (y/n) > ").strip().lower() == "y"
+            else False
+        )
+    misc.execParaFoam(touch_only=not exec_paraFoam)
 
     rmObjects.removeInessentials()

@@ -11,70 +11,85 @@ import re
 import math
 import subprocess
 import numpy as np
+
 # このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
 if os.path.dirname(__file__) not in sys.path:
     sys.path.append(os.path.dirname(__file__))
 import dictParse
 
-binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+binDEXCS_path = os.path.expanduser(
+    "~/Desktop/binDEXCS（解析フォルダを端末で開いてから）"
+)  # dakuten.py -j -f <path> で濁点を結合しておく
 
-if os.path.exists('/opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc'):
-    dexcs_version = '2019'
-elif os.path.exists('/usr/lib/openfoam/openfoam2106/etc/bashrc'):
-    dexcs_version = '2021'
+if os.path.exists("/opt/OpenFOAM/OpenFOAM-v1906/etc/bashrc"):
+    dexcs_version = "2019"
+elif os.path.exists("/usr/lib/openfoam/openfoam2106/etc/bashrc"):
+    dexcs_version = "2021"
 else:
     dexcs_version = None
 assert dexcs_version is not None
 
-def showDirForPresentAnalysis(file = __file__, path = os.getcwd()):
-    # https://qiita.com/PruneMazui/items/8a023347772620025ad6
-    print(f'\033[7;1m----- 現在の解析フォルダは {path} です． -----\033[m')
-    # https://joppot.info/2013/12/17/235, http://tldp.org/HOWTO/Xterm-Title-3.html
-    print(f'\033]2;{path} - {os.path.basename(file)}\007')
 
-def execCommand(command_args, log_file_path = None):
+def showDirForPresentAnalysis(file=__file__, path=os.getcwd()):
+    # https://qiita.com/PruneMazui/items/8a023347772620025ad6
+    print(f"\033[7;1m----- 現在の解析フォルダは {path} です． -----\033[m")
+    # https://joppot.info/2013/12/17/235, http://tldp.org/HOWTO/Xterm-Title-3.html
+    print(f"\033]2;{path} - {os.path.basename(file)}\007")
+
+
+def execCommand(command_args, log_file_path=None):
     print()
-    command_args[:0] += ['stdbuf', '-oL'] # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
+    command_args[:0] += [
+        "stdbuf",
+        "-oL",
+    ]  # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
     process = subprocess.Popen(
         command_args,
-        stdout = subprocess.PIPE,
-        stderr = subprocess.STDOUT,
-        text = True, # 出力を文字列として扱う
-        bufsize = 1 # Python側でも行単位でバッファリング
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,  # 出力を文字列として扱う
+        bufsize=1,  # Python側でも行単位でバッファリング
     )
     warning = False
     if log_file_path is None:
-        for line in iter(process.stdout.readline, ''):
-            if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
+        for line in iter(process.stdout.readline, ""):
+            if line.startswith("Using #calc at ") or line.startswith(
+                "Using #codeStream with "
+            ):
                 continue
-            if line.startswith('--> FOAM Warning :'):
+            if line.startswith("--> FOAM Warning :"):
                 warning = True
-            sys.stdout.write(line) # 端末へそのまま表示
-            sys.stdout.flush() # リアルタイム反映のため
+            sys.stdout.write(line)  # 端末へそのまま表示
+            sys.stdout.flush()  # リアルタイム反映のため
     else:
-        with open(log_file_path, 'w') as f_log:
-            for line in iter(process.stdout.readline, ''):
-                if line.startswith('Using #calc at ') or line.startswith('Using #codeStream with '):
+        with open(log_file_path, "w") as f_log:
+            for line in iter(process.stdout.readline, ""):
+                if line.startswith("Using #calc at ") or line.startswith(
+                    "Using #codeStream with "
+                ):
                     continue
-                if line.startswith('--> FOAM Warning :'):
+                if line.startswith("--> FOAM Warning :"):
                     warning = True
-                sys.stdout.write(line) # 端末へそのまま表示
-                sys.stdout.flush() # リアルタイム反映のため
-                f_log.write(line) # ログをファイル保存
-                f_log.flush() # リアルタイム反映のため
-    if process.poll() is None: # 子プロセスが終了しているかどうかを調べます
-        process.wait() # 子プロセスが終了するまで待ちます
+                sys.stdout.write(line)  # 端末へそのまま表示
+                sys.stdout.flush()  # リアルタイム反映のため
+                f_log.write(line)  # ログをファイル保存
+                f_log.flush()  # リアルタイム反映のため
+    if process.poll() is None:  # 子プロセスが終了しているかどうかを調べます
+        process.wait()  # 子プロセスが終了するまで待ちます
         # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
-    command = ' '.join([f"'{i}'" if ' ' in i else i for i in process.args[2:]])
+    command = " ".join([f"'{i}'" if " " in i else i for i in process.args[2:]])
     if process.returncode != 0 and not warning:
-        print(f'\nエラー: {command}で失敗しました（リターンコード: {process.returncode}）．よく分かる人に相談して下さい．')
+        print(
+            f"\nエラー: {command}で失敗しました（リターンコード: {process.returncode}）．よく分かる人に相談して下さい．"
+        )
     print()
     return command, process.returncode
 
-def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
-    for f in glob.iglob('*.OpenFOAM' if dexcs_version == '2019' else '*.foam'):
+
+def execParaFoam(touch_only=False, ambient=1.0, diffuse=0.0):
+    for f in glob.iglob("*.OpenFOAM" if dexcs_version == "2019" else "*.foam"):
         os.remove(f)
-    execCommand(['paraFoam', '-touch-all'])
+    execCommand(["paraFoam", "-touch-all"])
     # Usage: paraFoam [OPTION] [--] [PARAVIEW_OPTION]
     # options:
     #   -block            Use blockMesh reader (.blockMesh extension)
@@ -87,44 +102,58 @@ def execParaFoam(touch_only = False, ambient = 1.0, diffuse = 0.0):
     #   --help            Display ParaView help
     #   -help             Display short help and exit
     #   -help-full        Display full help and exit
-    for p in ('*.blockMesh', '*.foam' if dexcs_version == '2019' else '*.OpenFOAM'):
+    for p in ("*.blockMesh", "*.foam" if dexcs_version == "2019" else "*.OpenFOAM"):
         for f in glob.iglob(p):
             os.remove(f)
     if not touch_only:
         setParaViewAmbientDiffuse(ambient, diffuse)
-        execCommand(['paraFoam'])
+        execCommand(["paraFoam"])
     setParaViewAmbientDiffuse(ambient, diffuse)
 
-def setParaViewAmbientDiffuse(ambient = 1.0, diffuse = 0.0):
-    paraview_json_home = os.path.expanduser('~/.config/ParaView/ParaView-UserSettings.json')
-    with open(paraview_json_home, 'r') as f:
+
+def setParaViewAmbientDiffuse(ambient=1.0, diffuse=0.0):
+    paraview_json_home = os.path.expanduser(
+        "~/.config/ParaView/ParaView-UserSettings.json"
+    )
+    with open(paraview_json_home, "r") as f:
         s = f.read()
-    t = re.sub(r'"Ambient"\s*:\s*[0-9.]+', f'"Ambient" : {ambient}',
-            re.sub(r'"Diffuse"\s*:\s*[0-9.]+', f'"Diffuse" : {diffuse}', s))
+    t = re.sub(
+        r'"Ambient"\s*:\s*[0-9.]+',
+        f'"Ambient" : {ambient}',
+        re.sub(r'"Diffuse"\s*:\s*[0-9.]+', f'"Diffuse" : {diffuse}', s),
+    )
     if s != t:
-        with open(paraview_json_home, 'w') as f:
+        with open(paraview_json_home, "w") as f:
             f.write(t)
 
+
 def execCheckMesh():
-    for f in ('checkMesh.log', 'checkMesh.logfile'):
+    for f in ("checkMesh.log", "checkMesh.logfile"):
         if os.path.isfile(f):
             os.remove(f)
-    command, returncode = execCommand(['checkMesh', '-noFunctionObjects'], 'checkMesh.log')
+    command, returncode = execCommand(
+        ["checkMesh", "-noFunctionObjects"], "checkMesh.log"
+    )
     if returncode != 0:
         sys.exit(1)
-    print(f'\n{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m')
+    print(
+        f"\n{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m"
+    )
+
 
 def setTimeBeginEnd(action):
     first_time = float(firstTime())
     latest_time = float(latestTime())
     while True:
-        time_begin = input(f'{action}を開始する時間を入力して下さい． '
-            f'({first_time} ~ {latest_time} または l (= {latest_time}), Enterのみ: {first_time}) > ').strip()
-        if time_begin == '':
-            time_begin = '-inf'
+        time_begin = input(
+            f"{action}を開始する時間を入力して下さい． "
+            f"({first_time} ~ {latest_time} または l (= {latest_time}), Enterのみ: {first_time}) > "
+        ).strip()
+        if time_begin == "":
+            time_begin = "-inf"
             break
-        elif time_begin.lower().startswith('l'):
-            time_begin = 'latestTime'
+        elif time_begin.lower().startswith("l"):
+            time_begin = "latestTime"
             break
         else:
             try:
@@ -133,9 +162,11 @@ def setTimeBeginEnd(action):
             except ValueError:
                 pass
     while True:
-        time_end = input(f'{action}を終了する時間を入力して下さい． (Enterのみ: {latest_time}) > ').strip()
-        if time_end == '':
-            time_end = 'inf'
+        time_end = input(
+            f"{action}を終了する時間を入力して下さい． (Enterのみ: {latest_time}) > "
+        ).strip()
+        if time_end == "":
+            time_end = "inf"
             break
         else:
             try:
@@ -143,214 +174,275 @@ def setTimeBeginEnd(action):
                 break
             except ValueError:
                 pass
-    noZero = False if input('0秒のデータを含めますか？ (y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else True
+    noZero = (
+        False
+        if input("0秒のデータを含めますか？ (y/n, 多くの場合nのはず) > ")
+        .strip()
+        .lower()
+        == "y"
+        else True
+    )
     return time_begin, time_end, noZero
 
-def getApplication(path = os.curdir):
-    return subprocess.check_output(
-        ['foamDictionary', '-entry', 'application', '-value', os.path.join(path, 'system', 'controlDict')],
-        encoding = 'UTF-8').strip() # リスト形式でコマンドを呼ぶ場合は引数にshell = Trueは必要ない
 
-def getRelaxationFactor(param_name, fvSolution_path = None):
+def getApplication(path=os.curdir):
+    return subprocess.check_output(
+        [
+            "foamDictionary",
+            "-entry",
+            "application",
+            "-value",
+            os.path.join(path, "system", "controlDict"),
+        ],
+        encoding="UTF-8",
+    ).strip()  # リスト形式でコマンドを呼ぶ場合は引数にshell = Trueは必要ない
+
+
+def getRelaxationFactor(param_name, fvSolution_path=None):
     if fvSolution_path is None:
-        fvSolution_path = os.path.join(os.curdir, 'system', 'fvSolution')
-    for cat in ['equations', 'fields']:
+        fvSolution_path = os.path.join(os.curdir, "system", "fvSolution")
+    for cat in ["equations", "fields"]:
         try:
-            return (cat,
-                float(subprocess.check_output(
-                    ['foamDictionary', '-entry', f'relaxationFactors.{cat}.{param_name}', '-value',
-                    fvSolution_path], stderr = subprocess.DEVNULL, encoding = 'UTF-8')))
+            return (
+                cat,
+                float(
+                    subprocess.check_output(
+                        [
+                            "foamDictionary",
+                            "-entry",
+                            f"relaxationFactors.{cat}.{param_name}",
+                            "-value",
+                            fvSolution_path,
+                        ],
+                        stderr=subprocess.DEVNULL,
+                        encoding="UTF-8",
+                    )
+                ),
+            )
         except subprocess.CalledProcessError:
             continue
     return None, None
 
-def execPostProcess(time_begin = '-inf', time_end = 'inf', noZero = True, func = None, region = None, solver = True):
-    command_args = [getApplication(), '-postProcess'] if solver else ['postProcess']
+
+def execPostProcess(
+    time_begin="-inf", time_end="inf", noZero=True, func=None, region=None, solver=True
+):
+    command_args = [getApplication(), "-postProcess"] if solver else ["postProcess"]
     if func is not None:
-        command_args.extend(['-func', func])
+        command_args.extend(["-func", func])
     if region is not None:
-        command_args.extend(['-region', region])
+        command_args.extend(["-region", region])
     if noZero:
-        command_args.append('-noZero')
-    if time_begin.lower().startswith('l') or time_end.lower().startswith('l'):
-        command_args.append('-latestTime')
-    elif float(time_begin) != float('-inf') or float(time_end) != float('inf'):
-        time_range = ''
-        if float(time_begin) != float('-inf'):
+        command_args.append("-noZero")
+    if time_begin.lower().startswith("l") or time_end.lower().startswith("l"):
+        command_args.append("-latestTime")
+    elif float(time_begin) != float("-inf") or float(time_end) != float("inf"):
+        time_range = ""
+        if float(time_begin) != float("-inf"):
             time_range += time_begin
-        time_range += ':'
-        if float(time_end) != float('inf'):
+        time_range += ":"
+        if float(time_end) != float("inf"):
             time_range += time_end
-        command_args.extend(['-time', time_range])
+        command_args.extend(["-time", time_range])
     command, returncode = execCommand(command_args)
     if returncode != 0:
         sys.exit(1)
     if func is None:
-        setEnabledInControlDictFunctions(enabled = False)
+        setEnabledInControlDictFunctions(enabled=False)
     return command
 
+
 def writeCommentInBoundary(comment):
-    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    boundary = dictParse.DictParser(file_name = boundary_path)
-    i = boundary.find_element([{'type': 'list'}])['index']
-    boundary['value'][i:i] = dictParse.DictParser(string = f'// {comment}\n\n')['value']
-    with open(boundary_path, 'w') as f:
-        f.write(dictParse.normalize(string = boundary.file_string())[0])
+    boundary_path = os.path.join("constant", "polyMesh", "boundary")
+    boundary = dictParse.DictParser(file_name=boundary_path)
+    i = boundary.find_element([{"type": "list"}])["index"]
+    boundary["value"][i:i] = dictParse.DictParser(string=f"// {comment}\n\n")["value"]
+    with open(boundary_path, "w") as f:
+        f.write(dictParse.normalize(string=boundary.file_string())[0])
+
 
 def removePatchesHavingNoFaces():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
-    createPatchDict = os.path.join('system', 'createPatchDict')
-    createPatchDict_bak = f'{createPatchDict}_bak'
+    createPatchDict = os.path.join("system", "createPatchDict")
+    createPatchDict_bak = f"{createPatchDict}_bak"
     if os.path.isfile(createPatchDict):
         os.rename(createPatchDict, createPatchDict_bak)
-    with open(createPatchDict, 'w') as f:
-        f.write('FoamFile\n'
-            '{\n'
-            '\tversion\t2.0;\n'
-            '\tformat\tascii;\n'
-            '\tclass\tdictionary;\n'
+    with open(createPatchDict, "w") as f:
+        f.write(
+            "FoamFile\n"
+            "{\n"
+            "\tversion\t2.0;\n"
+            "\tformat\tascii;\n"
+            "\tclass\tdictionary;\n"
             '\tlocation\t"system";\n'
-            '\tobject\tcreatePatchDict;\n'
-            '}\n'
-            'pointSync\tfalse;\n'
-            'patches\t();\n')
-    returncode = execCommand(['createPatch', '-overwrite'])[1]
+            "\tobject\tcreatePatchDict;\n"
+            "}\n"
+            "pointSync\tfalse;\n"
+            "patches\t();\n"
+        )
+    returncode = execCommand(["createPatch", "-overwrite"])[1]
     os.remove(createPatchDict)
     if os.path.isfile(createPatchDict_bak):
         os.rename(createPatchDict_bak, createPatchDict)
     if returncode != 0:
         sys.exit(1)
     if converted_millimeter_into_meter:
-        writeCommentInBoundary('converted millimeter into meter')
+        writeCommentInBoundary("converted millimeter into meter")
+
 
 def isConvertedMillimeterIntoMeter():
-    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    with open(boundary_path, 'r') as f:
+    boundary_path = os.path.join("constant", "polyMesh", "boundary")
+    with open(boundary_path, "r") as f:
         s = f.read()
-    return s.find('// converted millimeter into meter') != -1
+    return s.find("// converted millimeter into meter") != -1
+
 
 def writeConvertedMillimeterIntoMeter():
-    writeCommentInBoundary('converted millimeter into meter')
+    writeCommentInBoundary("converted millimeter into meter")
+
 
 def convertMillimeterIntoMeter():
-    if execCommand(['transformPoints', '-scale', '0.001'])[1] != 0:
+    if execCommand(["transformPoints", "-scale", "0.001"])[1] != 0:
         sys.exit(1)
     writeConvertedMillimeterIntoMeter()
-    print('長さの単位をミリメートルからメートルに変換しました．')
+    print("長さの単位をミリメートルからメートルに変換しました．")
+
 
 def isRenumberMeshDone():
-    boundary_path = os.path.join('constant', 'polyMesh', 'boundary')
-    with open(boundary_path, 'r') as f:
+    boundary_path = os.path.join("constant", "polyMesh", "boundary")
+    with open(boundary_path, "r") as f:
         s = f.read()
-    return s.find('// renumberMesh was done') != -1
+    return s.find("// renumberMesh was done") != -1
+
 
 def writeRenumberMeshWasDone():
-    writeCommentInBoundary('renumberMesh was done')
+    writeCommentInBoundary("renumberMesh was done")
+
 
 def renumberMesh():
     converted_millimeter_into_meter = isConvertedMillimeterIntoMeter()
-    if execCommand(['renumberMesh', '-overwrite'])[1] != 0:
+    if execCommand(["renumberMesh", "-overwrite"])[1] != 0:
         sys.exit(1)
     writeRenumberMeshWasDone()
     if converted_millimeter_into_meter:
         writeConvertedMillimeterIntoMeter()
 
+
 def bounding_box_of_calculation_range(points_path):
-    with open(points_path, 'r') as f:
+    with open(points_path, "r") as f:
         s = f.read()
-    ph = s.find('(') + 1
-    pf = s.rfind(')')
-    n = int(s[s[:ph - 2].rfind('\n') + 1:ph - 1])
-    if 'binary' in s:
-        points_data = np.fromstring(s[ph:ph + 8*3*n], dtype = '<d').reshape(-1, 3)
+    ph = s.find("(") + 1
+    pf = s.rfind(")")
+    n = int(s[s[: ph - 2].rfind("\n") + 1 : ph - 1])
+    if "binary" in s:
+        points_data = np.fromstring(s[ph : ph + 8 * 3 * n], dtype="<d").reshape(-1, 3)
     else:
-        if s[ph] == '\n':
+        if s[ph] == "\n":
             ph += 1
-        points_data = np.fromstring(s[ph:pf].replace('(', '').replace(')', ''), dtype = 'd', sep = ' ').reshape(-1, 3)
-        p_min = np.min(points_data, axis = 0)
-        p_max = np.max(points_data, axis = 0)
+        points_data = np.fromstring(
+            s[ph:pf].replace("(", "").replace(")", ""), dtype="d", sep=" "
+        ).reshape(-1, 3)
+        p_min = np.min(points_data, axis=0)
+        p_max = np.max(points_data, axis=0)
     return n, tuple((p_min[i], p_max[i]) for i in range(3))
 
+
 def texteditwx_works_well():
-    process = subprocess.run([os.path.join(binDEXCS_path, 'texteditwx.py'), '-h'])
+    process = subprocess.run([os.path.join(binDEXCS_path, "texteditwx.py"), "-h"])
     if process.returncode != 0:
-        print('\ntexteditwx.pyでエラーが発生しました．おそらく必要なモジュールがないためです．端末で\n'
-            'sudo apt install -y python-pexpect python-pyperclip\n'
-            'を行ってからもう一度やり直して下さい．')
+        print(
+            "\ntexteditwx.pyでエラーが発生しました．おそらく必要なモジュールがないためです．端末で\n"
+            "sudo apt install -y python-pexpect python-pyperclip\n"
+            "を行ってからもう一度やり直して下さい．"
+        )
         return False
     else:
         return True
 
+
 def correctLocation():
     def correctLocationIn(file_name):
-        os.chmod(file_name, 0o0666) # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
-        parser = dictParse.DictParser(file_name = file_name)
-        FoamFile = parser.find_element([{'type': 'block', 'key': 'FoamFile'}])['element']
+        os.chmod(
+            file_name, 0o0666
+        )  # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
+        parser = dictParse.DictParser(file_name=file_name)
+        FoamFile = parser.find_element([{"type": "block", "key": "FoamFile"}])[
+            "element"
+        ]
         if FoamFile is None:
             return
-        location = FoamFile.find_element([{'type': 'dictionary', 'key': 'location'}])['element']
+        location = FoamFile.find_element([{"type": "dictionary", "key": "location"}])[
+            "element"
+        ]
         if location is not None:
-            i = location.find_element([{'except type': 'ignorable'}])
-            i['parent'][i['index']:i['index'] + 1] = dictParse.DictParser(string =
-                '"' + os.path.dirname(file_name) + '"')['value']
-        string = dictParse.normalize(string = parser.file_string())[0]
+            i = location.find_element([{"except type": "ignorable"}])
+            i["parent"][i["index"] : i["index"] + 1] = dictParse.DictParser(
+                string='"' + os.path.dirname(file_name) + '"'
+            )["value"]
+        string = dictParse.normalize(string=parser.file_string())[0]
         if parser.string != string:
-#            os.rename(file_name, f'{file_name}_bak')
-            with open(file_name, 'w') as f:
+            #            os.rename(file_name, f'{file_name}_bak')
+            with open(file_name, "w") as f:
                 f.write(string)
 
-    for d in ('0', 'constant', 'system'):
+    for d in ("0", "constant", "system"):
         if os.path.isdir(d):
-            for f in glob.iglob(os.path.join(d, '*')):
+            for f in glob.iglob(os.path.join(d, "*")):
                 if os.path.isfile(f):
                     correctLocationIn(f)
-    for d in glob.iglob(os.path.join('0', f'*{os.sep}')):
-        for f in glob.iglob(os.path.join(d, '*')):
+    for d in glob.iglob(os.path.join("0", f"*{os.sep}")):
+        for f in glob.iglob(os.path.join(d, "*")):
             if os.path.isfile(f):
                 correctLocationIn(f)
-    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
-        if os.path.isdir(os.path.join(d, 'polyMesh')):
-            for f in glob.iglob(os.path.join(d, '*')):
+    for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):
+        if os.path.isdir(os.path.join(d, "polyMesh")):
+            for f in glob.iglob(os.path.join(d, "*")):
                 if os.path.isfile(f):
                     correctLocationIn(f)
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if os.path.isfile(os.path.join(d, 'fvSolution')):
-            for f in glob.iglob(os.path.join(d, '*')):
+    for d in glob.iglob(os.path.join("system", f"*{os.sep}")):
+        if os.path.isfile(os.path.join(d, "fvSolution")):
+            for f in glob.iglob(os.path.join(d, "*")):
                 if os.path.isfile(f):
                     correctLocationIn(f)
+
 
 def cpu_count():
     if sys.version_info.major <= 2:
         import multiprocessing
+
         return multiprocessing.cpu_count()
     else:
         return len(os.sched_getaffinity(0))
 
-def volFieldList(path = os.curdir):
+
+def volFieldList(path=os.curdir):
     fields = []
     for i in os.listdir(path):
         tmp = os.path.join(path, i)
-        if os.path.isfile(tmp) and f'{os.sep}.' not in tmp:
+        if os.path.isfile(tmp) and f"{os.sep}." not in tmp:
             vol_field = False
-            for line in open(tmp, 'r'):
-                if 'volScalarField' in line or 'volVectorField' in line:
+            for line in open(tmp, "r"):
+                if "volScalarField" in line or "volVectorField" in line:
                     vol_field = True
                     break
-                elif 'surfaceScalarField' in line or 'surfaceVectorField' in line:
+                elif "surfaceScalarField" in line or "surfaceVectorField" in line:
                     break
             if vol_field:
                 fields.append(i)
     return fields
 
-def firstTime(path = os.curdir):
+
+def firstTime(path=os.curdir):
     t = timesFolders(path)
     return None if len(t) == 0 else t[0]
 
-def latestTime(path = os.curdir):
+
+def latestTime(path=os.curdir):
     t = timesFolders(path)
     return None if len(t) == 0 else t[-1]
 
-def timesFolders(path = os.curdir):
+
+def timesFolders(path=os.curdir):
     times = []
     for i in os.listdir(path):
         if os.path.isdir(os.path.join(path, i)):
@@ -358,97 +450,139 @@ def timesFolders(path = os.curdir):
                 times.append([i, float(i)])
             except:
                 pass
-    return [i[0] for i in sorted(times, key = lambda x: x[1])]
+    return [i[0] for i in sorted(times, key=lambda x: x[1])]
 
-def setEnabledInControlDictFunctions(enabled = True, type_name = None, path = os.curdir):
-    controlDict_path = os.path.join(path, 'system', 'controlDict')
-    controlDict = dictParse.DictParser(file_name = controlDict_path)
 
-    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+def setEnabledInControlDictFunctions(enabled=True, type_name=None, path=os.curdir):
+    controlDict_path = os.path.join(path, "system", "controlDict")
+    controlDict = dictParse.DictParser(file_name=controlDict_path)
+
+    functions = controlDict.find_element([{"type": "block", "key": "functions"}])[
+        "element"
+    ]
     if functions is None:
         return
-    yesno = 'yes' if enabled else 'no'
-    for f in functions.find_all_elements([{'type': 'block'}]):
-        f = f['element']
-        t = f.find_element([{'type': 'dictionary', 'key': 'type'}])
-        if t['element'] is None:
-            print(f'エラー: {controlDict_path}ファイルのfunctionsで，typeがない項目があります．')
+    yesno = "yes" if enabled else "no"
+    for f in functions.find_all_elements([{"type": "block"}]):
+        f = f["element"]
+        t = f.find_element([{"type": "dictionary", "key": "type"}])
+        if t["element"] is None:
+            print(
+                f"エラー: {controlDict_path}ファイルのfunctionsで，typeがない項目があります．"
+            )
             sys.exit(1)
-        if type_name is not None and t['element'].find_element(
-            [{'type': 'word', 'value': type_name}])['element'] is None:
+        if (
+            type_name is not None
+            and t["element"].find_element([{"type": "word", "value": type_name}])[
+                "element"
+            ]
+            is None
+        ):
             continue
-        e = f.find_element([{'type': 'dictionary', 'key': 'enabled'}])['element']
+        e = f.find_element([{"type": "dictionary", "key": "enabled"}])["element"]
         if e is None:
-            i = f.find_element([{'type': 'dictionary', 'except key': 'libs'}],
-                start = t['index'] + 1, index_not_found = t['index'])['index'] + 1
-            f['value'][i:i] = dictParse.DictParser(string = '\n'
-                f'enabled\t{yesno}; yesで実行\n')['value']
+            i = (
+                f.find_element(
+                    [{"type": "dictionary", "except key": "libs"}],
+                    start=t["index"] + 1,
+                    index_not_found=t["index"],
+                )["index"]
+                + 1
+            )
+            f["value"][i:i] = dictParse.DictParser(
+                string=f"\nenabled\t{yesno}; yesで実行\n"
+            )["value"]
         else:
-            e['value'][e.find_element([{'type': 'word'}])['index']] = dictParse.DictParser(string = yesno)
+            e["value"][e.find_element([{"type": "word"}])["index"]] = (
+                dictParse.DictParser(string=yesno)
+            )
 
-    string = dictParse.normalize(string = controlDict.file_string())[0]
+    string = dictParse.normalize(string=controlDict.file_string())[0]
     if type_name is None:
         if enabled:
             string = dictParse.re_sub_in_comments(
-                r'//[ \t]*!!DISABLED!![ \t]*(#includeFunc)(?=[ \t])', r'\1', string)
+                r"//[ \t]*!!DISABLED!![ \t]*(#includeFunc)(?=[ \t])", r"\1", string
+            )
         else:
             string = dictParse.re_sub_except_comments(
-                r'(?<!\S)(#includeFunc)(?=[ \t])', r'// !!DISABLED!! \1', string)
+                r"(?<!\S)(#includeFunc)(?=[ \t])", r"// !!DISABLED!! \1", string
+            )
     else:
         if enabled:
             string = dictParse.re_sub_in_comments(
-                f'//[ \\t]*!!DISABLED!![ \\t]*(#includeFunc[ \\t]+{type_name})', r'\1', string)
+                f"//[ \\t]*!!DISABLED!![ \\t]*(#includeFunc[ \\t]+{type_name})",
+                r"\1",
+                string,
+            )
         else:
             string = dictParse.re_sub_except_comments(
-                f'(?<!\\S)(#includeFunc[ \\t]+{type_name})', r'// !!DISABLED!! \1', string)
+                f"(?<!\\S)(#includeFunc[ \\t]+{type_name})",
+                r"// !!DISABLED!! \1",
+                string,
+            )
     if controlDict.string != string:
-#        os.rename(controlDict_path, f'{controlDict_path}_bak')
-        with open(controlDict_path, 'w') as f:
+        #        os.rename(controlDict_path, f'{controlDict_path}_bak')
+        with open(controlDict_path, "w") as f:
             f.write(string)
 
-def controlDictFunctionsList(path = os.curdir):
-    controlDict_path = os.path.join(path, 'system', 'controlDict')
-    controlDict = dictParse.DictParser(file_name = controlDict_path)
+
+def controlDictFunctionsList(path=os.curdir):
+    controlDict_path = os.path.join(path, "system", "controlDict")
+    controlDict = dictParse.DictParser(file_name=controlDict_path)
 
     enable_function_list = []
     disable_function_list = []
-    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+    functions = controlDict.find_element([{"type": "block", "key": "functions"}])[
+        "element"
+    ]
     if functions is None:
         return enable_function_list, disable_function_list
-    for f in functions.find_all_elements([{'type': 'block'}]):
-        f = f['element']
-        t = f.find_element([{'type': 'dictionary', 'key': 'type'}])['element']
+    for f in functions.find_all_elements([{"type": "block"}]):
+        f = f["element"]
+        t = f.find_element([{"type": "dictionary", "key": "type"}])["element"]
         if t is None:
-            print(f'エラー: {controlDict_path}ファイルのfunctionsで，typeがない項目があります．')
+            print(
+                f"エラー: {controlDict_path}ファイルのfunctionsで，typeがない項目があります．"
+            )
             sys.exit(1)
-        type_name = t.find_element([{'type': 'word'}])['element']['value']
-        e = f.find_element([{'type': 'dictionary', 'key': 'enabled'}])['element']
-        if (e is None or e.find_element([{'type': 'word'}])['element']['value'] in ('yes', 'true', 'on')):
+        type_name = t.find_element([{"type": "word"}])["element"]["value"]
+        e = f.find_element([{"type": "dictionary", "key": "enabled"}])["element"]
+        if e is None or e.find_element([{"type": "word"}])["element"]["value"] in (
+            "yes",
+            "true",
+            "on",
+        ):
             enable_function_list.append(type_name)
         else:
             disable_function_list.append(type_name)
 
-    string = dictParse.normalize(string = controlDict.file_string())[0]
+    string = dictParse.normalize(string=controlDict.file_string())[0]
     enable_function_list.extend(
-        dictParse.re_findall_except_comments(r'(?<!\S)#includeFunc\s+([^;]+);', string))
+        dictParse.re_findall_except_comments(r"(?<!\S)#includeFunc\s+([^;]+);", string)
+    )
     disable_function_list.extend(
-        dictParse.re_findall_in_comments(r'//\s*!!DISABLED!!\s*#includeFunc\s+([^;]+);', string))
+        dictParse.re_findall_in_comments(
+            r"//\s*!!DISABLED!!\s*#includeFunc\s+([^;]+);", string
+        )
+    )
     return enable_function_list, disable_function_list
 
+
 def appropriate_tick(xmin, xmax, n):
-    tmp = abs(xmax - xmin)/(n + 0.01)
-    tick = 10.0**math.floor(math.log10(tmp))
-    tmp /= tick # 1 <= tmp < 10
+    tmp = abs(xmax - xmin) / (n + 0.01)
+    tick = 10.0 ** math.floor(math.log10(tmp))
+    tmp /= tick  # 1 <= tmp < 10
     for i in (1.0, 2.0, 2.5, 5.0):
         if tmp < i:
-            return i*tick
-    return 10.0*tick
+            return i * tick
+    return 10.0 * tick
 
-if __name__ == '__main__':
-    print('firstTime = ' + firstTime())
-    print('latestTime = ' + latestTime())
 
-if __name__ == '__main__':
-#    showDirForPresentAnalysis()
-#    execParaFoam()
+if __name__ == "__main__":
+    print("firstTime = " + firstTime())
+    print("latestTime = " + latestTime())
+
+if __name__ == "__main__":
+    #    showDirForPresentAnalysis()
+    #    execParaFoam()
     texteditwx_works_well()

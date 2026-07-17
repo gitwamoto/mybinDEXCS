@@ -14,31 +14,33 @@ from utilities import appendEntries
 from utilities import rmObjects
 from utilities import dictParse
 
+
 def indent(dir_name):
-    for i in glob.iglob(os.path.join(dir_name, '*')):
+    for i in glob.iglob(os.path.join(dir_name, "*")):
         if os.path.isfile(i):
-            print(f'{i}を処理中...')
-            parser = dictParse.DictParser(file_name = i)
-            string = dictParse.normalize(string = parser.file_string())[0]
+            print(f"{i}を処理中...")
+            parser = dictParse.DictParser(file_name=i)
+            string = dictParse.normalize(string=parser.file_string())[0]
             if parser.string != string:
-#               os.rename(i, f'{i}_bak')
-                with open(i, 'w') as f:
+                #               os.rename(i, f'{i}_bak')
+                with open(i, "w") as f:
                     f.write(string)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    indent('0')
-    indent('constant')
-    indent('system')
-    for i in glob.iglob(os.path.join('0', f'*{os.sep}')):
+    indent("0")
+    indent("constant")
+    indent("system")
+    for i in glob.iglob(os.path.join("0", f"*{os.sep}")):
         indent(i)
-    for i in glob.iglob(os.path.join('constant', f'*{os.sep}')):
-        if os.path.isdir(os.path.join(i, 'polyMesh')):
+    for i in glob.iglob(os.path.join("constant", f"*{os.sep}")):
+        if os.path.isdir(os.path.join(i, "polyMesh")):
             indent(i)
-    for i in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if os.path.isfile(os.path.join(i, 'fvSolution')):
+    for i in glob.iglob(os.path.join("system", f"*{os.sep}")):
+        if os.path.isfile(os.path.join(i, "fvSolution")):
             indent(i)
 
     appendEntries.intoFvSolution()

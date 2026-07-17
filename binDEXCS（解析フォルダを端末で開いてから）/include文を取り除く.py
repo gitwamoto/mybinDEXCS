@@ -18,68 +18,107 @@ from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
 
+
 def remove_include_sentence(dir_name, include_file_name, ignore_path):
     if not os.path.isdir(dir_name):
         return
-    include_file_name = (re.sub(r'^(?:\.\./)+', '', include_file_name) if ignore_path
-        else os.path.relpath(include_file_name, dir_name))
-    for f in glob.iglob(os.path.join(dir_name, '*')):
+    include_file_name = (
+        re.sub(r"^(?:\.\./)+", "", include_file_name)
+        if ignore_path
+        else os.path.relpath(include_file_name, dir_name)
+    )
+    for f in glob.iglob(os.path.join(dir_name, "*")):
         if not os.path.isfile(f):
             continue
             os.chmod(f, 0o0666)
-        if os.path.basename(f) == 'cellToRegion':
+        if os.path.basename(f) == "cellToRegion":
             continue
-        print(f'{f}を処理中...')
-        parser = dictParse.DictParser(file_name = f)
-        for i in reversed(parser.find_all_elements([{'type': 'directive', 'key': '#include'}])):
-            n = i['element'].find_element([{'type': 'string'}])['element']['value'].strip('"')
+        print(f"{f}を処理中...")
+        parser = dictParse.DictParser(file_name=f)
+        for i in reversed(
+            parser.find_all_elements([{"type": "directive", "key": "#include"}])
+        ):
+            n = (
+                i["element"]
+                .find_element([{"type": "string"}])["element"]["value"]
+                .strip('"')
+            )
             if ignore_path:
-                n = re.sub(r'^(?:\.\./)+', '', n)
+                n = re.sub(r"^(?:\.\./)+", "", n)
             if n == include_file_name:
-                del i['parent'][i['index']:
-                    dictParse.find_element(i['parent'], [{'except type': 'whitespace|linebreak'}],
-                        start = i['index'] + 1, index_not_found = i['index'] + 1)['index']]
-        string = dictParse.normalize(string = parser.file_string())[0]
+                del i["parent"][
+                    i["index"] : dictParse.find_element(
+                        i["parent"],
+                        [{"except type": "whitespace|linebreak"}],
+                        start=i["index"] + 1,
+                        index_not_found=i["index"] + 1,
+                    )["index"]
+                ]
+        string = dictParse.normalize(string=parser.file_string())[0]
         if parser.string != string:
-#            os.rename(f, f'{f}_bak')
-            with open(f, 'w') as fp:
+            #            os.rename(f, f'{f}_bak')
+            with open(f, "w") as fp:
                 fp.write(string)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
     if len(sys.argv) == 1:
-        include_file = input('取り除きたいincludeファイルの名前を教えて下さい． > ').strip()
-        ignore_path = True if input('パスが一致していなくても，'
-            'ファイル名が同じならば取り除きますか？ (y/n) > ').strip().lower() == 'y' else False
+        include_file = input(
+            "取り除きたいincludeファイルの名前を教えて下さい． > "
+        ).strip()
+        ignore_path = (
+            True
+            if input(
+                "パスが一致していなくても，"
+                "ファイル名が同じならば取り除きますか？ (y/n) > "
+            )
+            .strip()
+            .lower()
+            == "y"
+            else False
+        )
     else:
         include_file = None
         ignore_path = False
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-f':
+            if sys.argv[i] == "-f":
                 i += 1
                 include_file = sys.argv[i]
-            elif sys.argv[i] == '-p':
+            elif sys.argv[i] == "-p":
                 ignore_path = True
             i += 1
     if include_file is None:
-        print('エラー: includeファイルが指定されていません．')
+        print("エラー: includeファイルが指定されていません．")
         sys.exit(1)
 
-    remove_include_sentence(dir_name = '0', include_file_name = include_file, ignore_path = ignore_path)
-    remove_include_sentence(dir_name = 'constant', include_file_name = include_file, ignore_path = ignore_path)
-    remove_include_sentence(dir_name = 'system', include_file_name = include_file, ignore_path = ignore_path)
+    remove_include_sentence(
+        dir_name="0", include_file_name=include_file, ignore_path=ignore_path
+    )
+    remove_include_sentence(
+        dir_name="constant", include_file_name=include_file, ignore_path=ignore_path
+    )
+    remove_include_sentence(
+        dir_name="system", include_file_name=include_file, ignore_path=ignore_path
+    )
 
-    for d in glob.iglob(os.path.join('0', f'*{os.sep}')):
-        remove_include_sentence(dir_name = d, include_file_name = include_file, ignore_path = ignore_path)
-    for d in glob.iglob(os.path.join('constant', f'*{os.sep}')):
-        if os.path.isdir(os.path.join(d, 'polyMesh')):
-            remove_include_sentence(dir_name = d, include_file_name = include_file, ignore_path = ignore_path)
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if os.path.isfile(os.path.join(d, 'fvSolution')):
-            remove_include_sentence(dir_name = d, include_file_name = include_file, ignore_path = ignore_path)
+    for d in glob.iglob(os.path.join("0", f"*{os.sep}")):
+        remove_include_sentence(
+            dir_name=d, include_file_name=include_file, ignore_path=ignore_path
+        )
+    for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):
+        if os.path.isdir(os.path.join(d, "polyMesh")):
+            remove_include_sentence(
+                dir_name=d, include_file_name=include_file, ignore_path=ignore_path
+            )
+    for d in glob.iglob(os.path.join("system", f"*{os.sep}")):
+        if os.path.isfile(os.path.join(d, "fvSolution")):
+            remove_include_sentence(
+                dir_name=d, include_file_name=include_file, ignore_path=ignore_path
+            )
 
     rmObjects.removeInessentials()
     misc.correctLocation()

@@ -21,47 +21,55 @@ from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
 
-def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
-    with open(os.path.join('system', 'extrudeMeshDict'), 'w') as f:
-        f.write('FoamFile\n'
-            '{\n'
-            '\tversion\t2.0;\n'
-            '\tformat\tascii;\n'
-            '\tclass\tdictionary;\n'
-            '\tlocation\t"system";\n'
-            '\tobject\textrudeMeshDict;\n'
-            '}\n'
-            'constructFrom\tpatch;\n'
-            'sourceCase\t".";\n'
-            f'sourcePatches\t({front_name});\n'
-            f'exposedPatchName\t{back_name};\n'
-            'flipNormals\tfalse;\n')
-        if wedge: # wedge境界
-            f.write('extrudeModel\twedge;\n'
-                'nLayers\t1;\n'
-                'expansionRatio\t1.0;\n'
-                'sectorCoeffs\n'
-                '{\n'
-                '\taxisPt\t(0 0 0);\n'
-                '\taxis\t(1 0 0);\n'
-                '\tangle\t2;\t// [degrees]\n'
-                '}\n'
-                'mergeFaces\tfalse;\n'
-                'mergeTol\t1.0e-10;\n')
-            print('wedgeのくさび角は2度に設定しています．')
-        else: # empty境界
-            f.write('extrudeModel\tlinearNormal;\n'
-                'nLayers\t1;\n'
-                'expansionRatio\t1.0;\n'
-                'linearNormalCoeffs\n'
-                '{\n'
-                f'\tthickness\t{z_thickness};\n'
-                '}\n'
-                'mergeFaces\tfalse;\n'
-                'mergeTol\t0;\n')
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, signal.SIG_DFL) # Ctrl+Cで終了
+def makeExtrudeMeshDict(z_thickness, front_name, back_name, wedge):
+    with open(os.path.join("system", "extrudeMeshDict"), "w") as f:
+        f.write(
+            "FoamFile\n"
+            "{\n"
+            "\tversion\t2.0;\n"
+            "\tformat\tascii;\n"
+            "\tclass\tdictionary;\n"
+            '\tlocation\t"system";\n'
+            "\tobject\textrudeMeshDict;\n"
+            "}\n"
+            "constructFrom\tpatch;\n"
+            'sourceCase\t".";\n'
+            f"sourcePatches\t({front_name});\n"
+            f"exposedPatchName\t{back_name};\n"
+            "flipNormals\tfalse;\n"
+        )
+        if wedge:  # wedge境界
+            f.write(
+                "extrudeModel\twedge;\n"
+                "nLayers\t1;\n"
+                "expansionRatio\t1.0;\n"
+                "sectorCoeffs\n"
+                "{\n"
+                "\taxisPt\t(0 0 0);\n"
+                "\taxis\t(1 0 0);\n"
+                "\tangle\t2;\t// [degrees]\n"
+                "}\n"
+                "mergeFaces\tfalse;\n"
+                "mergeTol\t1.0e-10;\n"
+            )
+            print("wedgeのくさび角は2度に設定しています．")
+        else:  # empty境界
+            f.write(
+                "extrudeModel\tlinearNormal;\n"
+                "nLayers\t1;\n"
+                "expansionRatio\t1.0;\n"
+                "linearNormalCoeffs\n"
+                "{\n"
+                f"\tthickness\t{z_thickness};\n"
+                "}\n"
+                "mergeFaces\tfalse;\n"
+                "mergeTol\t0;\n"
+            )
+
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
     if len(sys.argv) == 1:
@@ -71,71 +79,99 @@ if __name__ == '__main__':
         exec_paraFoam = False
         scaleMesh_0p001 = False
         wedge = False
-        front_name = 'front'
-        back_name = 'back'
+        front_name = "front"
+        back_name = "back"
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-N': # Non-interactive
+            if sys.argv[i] == "-N":  # Non-interactive
                 pass
-            elif sys.argv[i] == '-b':
+            elif sys.argv[i] == "-b":
                 i += 1
                 back_name = sys.argv[i]
-            elif sys.argv[i] == '-f':
+            elif sys.argv[i] == "-f":
                 i += 1
                 front_name = sys.argv[i]
-            elif sys.argv[i] == '-p':
+            elif sys.argv[i] == "-p":
                 exec_paraFoam = True
-            elif sys.argv[i] == '-s':
+            elif sys.argv[i] == "-s":
                 scaleMesh_0p001 = True
-            elif sys.argv[i] == '-w':
+            elif sys.argv[i] == "-w":
                 wedge = True
             i += 1
 
-    boundary = os.path.join('constant', 'polyMesh', 'boundary')
+    boundary = os.path.join("constant", "polyMesh", "boundary")
     if not os.path.isfile(boundary):
-        print(f'エラー: {boundary}ファイルがありません．')
+        print(f"エラー: {boundary}ファイルがありません．")
         sys.exit(1)
-    if os.path.isdir('dynamicCode'):
-        shutil.rmtree('dynamicCode')
+    if os.path.isdir("dynamicCode"):
+        shutil.rmtree("dynamicCode")
     converted_millimeter_into_meter = misc.isConvertedMillimeterIntoMeter()
 
-    print('xy平面に平行なpatchを押し出して2次元メッシュまたはwedge境界を作ります．')
+    print("xy平面に平行なpatchを押し出して2次元メッシュまたはwedge境界を作ります．")
 
-    bouding_box = misc.bounding_box_of_calculation_range(os.path.join('constant', 'polyMesh', 'points'))[1]
+    bouding_box = misc.bounding_box_of_calculation_range(
+        os.path.join("constant", "polyMesh", "points")
+    )[1]
     z_back, z_front = bouding_box[2]
 
     if interactive:
-        patches = [i['element']['key'] for i in dictParse.DictParser(file_name =
-            os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-                [{'type': 'list'}, {'type': 'block'}])]
-        space_delimited_patches = ' '.join(patches)
-        sys.stdout.write(f'2次元メッシュに使う(z = {z_front}にある)patchの名前を教えて下さい．'
-            f' ( {space_delimited_patches} の中から選択')
-        if 'front' in patches:
-            front_name = input(', Enterのみ: front) > ').strip() or 'front'
+        patches = [
+            i["element"]["key"]
+            for i in dictParse.DictParser(
+                file_name=os.path.join("constant", "polyMesh", "boundary")
+            ).find_all_elements([{"type": "list"}, {"type": "block"}])
+        ]
+        space_delimited_patches = " ".join(patches)
+        sys.stdout.write(
+            f"2次元メッシュに使う(z = {z_front}にある)patchの名前を教えて下さい．"
+            f" ( {space_delimited_patches} の中から選択"
+        )
+        if "front" in patches:
+            front_name = input(", Enterのみ: front) > ").strip() or "front"
         else:
-            front_name = input(') > ').strip()
-        sys.stdout.write('押し出したpatchの裏側にあるpatchの名前を決めて下さい．'
-            f' ( {space_delimited_patches} の中から選択')
-        if 'back' in patches:
-            back_name = input(', Enterのみ: back) > ').strip() or 'back'
+            front_name = input(") > ").strip()
+        sys.stdout.write(
+            "押し出したpatchの裏側にあるpatchの名前を決めて下さい．"
+            f" ( {space_delimited_patches} の中から選択"
+        )
+        if "back" in patches:
+            back_name = input(", Enterのみ: back) > ").strip() or "back"
         else:
-            back_name = input(') > ').strip()
-        wedge = True if input('wedge (くさび) 境界にしますか？ '
-            '(y/n, 多くの場合nのはず) > ').strip().lower() == 'y' else False
+            back_name = input(") > ").strip()
+        wedge = (
+            True
+            if input("wedge (くさび) 境界にしますか？ (y/n, 多くの場合nのはず) > ")
+            .strip()
+            .lower()
+            == "y"
+            else False
+        )
         if not converted_millimeter_into_meter:
-            print(f'元のメッシュの範囲は{bouding_box[0][0]} <= x <= {bouding_box[0][1]},'
-                f' {bouding_box[1][0]} <= y <= {bouding_box[1][1]},'
-                f' {bouding_box[2][0]} <= z <= {bouding_box[2][1]}です．')
-            scaleMesh_0p001 = True if input('この長さの単位はミリメートルですか？'
-                ' (y/n, yだと0.001倍してメートルに直します．) > ').strip().lower() == 'y' else False
+            print(
+                f"元のメッシュの範囲は{bouding_box[0][0]} <= x <= {bouding_box[0][1]},"
+                f" {bouding_box[1][0]} <= y <= {bouding_box[1][1]},"
+                f" {bouding_box[2][0]} <= z <= {bouding_box[2][1]}です．"
+            )
+            scaleMesh_0p001 = (
+                True
+                if input(
+                    "この長さの単位はミリメートルですか？"
+                    " (y/n, yだと0.001倍してメートルに直します．) > "
+                )
+                .strip()
+                .lower()
+                == "y"
+                else False
+            )
 
-    if not os.path.isdir('system'):
-        os.mkdir('system')
+    if not os.path.isdir("system"):
+        os.mkdir("system")
     makeExtrudeMeshDict(z_front - z_back, front_name, back_name, wedge)
 
-    if (misc.execCommand(['transformPoints', '-translate', f'(0 0 {-z_front})'])[1] != 0 or
-        misc.execCommand(['extrudeMesh'])[1] != 0):
+    if (
+        misc.execCommand(["transformPoints", "-translate", f"(0 0 {-z_front})"])[1] != 0
+        or misc.execCommand(["extrudeMesh"])[1] != 0
+    ):
         sys.exit(1)
 
     if converted_millimeter_into_meter:
@@ -143,14 +179,18 @@ if __name__ == '__main__':
     elif scaleMesh_0p001:
         misc.convertMillimeterIntoMeter()
 
-    misc.removePatchesHavingNoFaces() # フェイスを1つも含まないパッチを取り除く
+    misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
-    sets = os.path.join('constant', 'polyMesh', 'sets')
+    sets = os.path.join("constant", "polyMesh", "sets")
     if os.path.isdir(sets):
         shutil.rmtree(sets)
 
     if interactive:
-        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam, ambient = 0.0, diffuse = 1.0)
+        exec_paraFoam = (
+            True
+            if input("\nparaFoamを実行しますか？ (y/n) > ").strip().lower() == "y"
+            else False
+        )
+    misc.execParaFoam(touch_only=not exec_paraFoam, ambient=0.0, diffuse=1.0)
 
     rmObjects.removeInessentials()

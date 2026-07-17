@@ -20,146 +20,167 @@ import shutil
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
-binDEXCS_path = os.path.expanduser('~/Desktop/binDEXCS（解析フォルダを端末で開いてから）') # dakuten.py -j -f <path> で濁点を結合しておく
+
+binDEXCS_path = os.path.expanduser(
+    "~/Desktop/binDEXCS（解析フォルダを端末で開いてから）"
+)  # dakuten.py -j -f <path> で濁点を結合しておく
 sys.path.append(binDEXCS_path)
 
+
 def handler(signum, frame):
-    misc.setEnabledInControlDictFunctions(enabled = False)
+    misc.setEnabledInControlDictFunctions(enabled=False)
     rmObjects.removeInessentials()
     sys.exit(1)
 
+
 def append_functions_in_controlDict(controlDict_path):
-    controlDict = dictParse.DictParser(file_name = controlDict_path)
-    functions = controlDict.find_element([{'type': 'block', 'key': 'functions'}])['element']
+    controlDict = dictParse.DictParser(file_name=controlDict_path)
+    functions = controlDict.find_element([{"type": "block", "key": "functions"}])[
+        "element"
+    ]
     if functions is None:
-        linebreak_and_functions = dictParse.DictParser(string =
-            '\n'
-            '\n'
-            'functions\n'
-            '{\n'
-            '}')['value']
-        tail_index = controlDict.find_element([{'except type': 'whitespace|linebreak|separator'}],
-            reverse = True, index_not_found = len(controlDict['value']) - 1)['index'] + 1
-        controlDict['value'][tail_index:tail_index] = linebreak_and_functions
+        linebreak_and_functions = dictParse.DictParser(string="\n\nfunctions\n{\n}")[
+            "value"
+        ]
+        tail_index = (
+            controlDict.find_element(
+                [{"except type": "whitespace|linebreak|separator"}],
+                reverse=True,
+                index_not_found=len(controlDict["value"]) - 1,
+            )["index"]
+            + 1
+        )
+        controlDict["value"][tail_index:tail_index] = linebreak_and_functions
         functions = linebreak_and_functions[-1]
 
-    fields = ' '.join(misc.volFieldList(misc.latestTime()))
-    patches = ' '.join([i['element']['key'] for i in dictParse.DictParser(file_name =
-        os.path.join('constant', 'polyMesh', 'boundary')).find_all_elements(
-            [{'type': 'list'}, {'type': 'block'}])])
+    fields = " ".join(misc.volFieldList(misc.latestTime()))
+    patches = " ".join(
+        [
+            i["element"]["key"]
+            for i in dictParse.DictParser(
+                file_name=os.path.join("constant", "polyMesh", "boundary")
+            ).find_all_elements([{"type": "list"}, {"type": "block"}])
+        ]
+    )
 
-    block_end = functions.find_element([{'type': 'block_end'}], reverse = True)
-    block_end['parent'][block_end['index']:block_end['index']] = dictParse.DictParser(string =
-        '\n'
-        '\tsetSampling // postProcessingフォルダ内に作られるフォルダの名前\n'
-        '\t{\n'
-        '\t\ttype\tsets; // 直線や点からデータを抽出\n'
+    block_end = functions.find_element([{"type": "block_end"}], reverse=True)
+    block_end["parent"][block_end["index"] : block_end["index"]] = dictParse.DictParser(
+        string="\n"
+        "\tsetSampling // postProcessingフォルダ内に作られるフォルダの名前\n"
+        "\t{\n"
+        "\t\ttype\tsets; // 直線や点からデータを抽出\n"
         '\t\tlibs\t("libsampling.so");\n'
-        '\t\tenabled\tyes; // yesで実行\n'
-        '\t\tsetFormat\traw;\n'
-        '\t\tinterpolationScheme\tcellPoint;\n'
-        f'\t\tfields\t({fields}); // 抽出したいパラメータ\n'
-        '\t\tsets\n'
-        '\t\t(\n'
-        '\t\t\t// 直線上に等間隔に配置された点からデータを抽出する．\n'
-        '\t\t\t// 直線がいちど計算領域外に飛び出すと，そこで抽出をやめてしまうので，計算領域外をまたぐ直線の場合は2直線に分ける．\n'
-        '\t\t\t// 少なくとも直線の始点(B)，終点(C)，直線上に配置する点の数(D)は修正する必要がある．\n'
-        '\t\t\t// 複数の条件に対して抽出したい場合，\n'
-        '\t\t\t// line\n'
-        '\t\t\t// {\n'
-        '\t\t\t//     ...\n'
-        '\t\t\t// }\n'
-        '\t\t\t// の部分をコピーして使えば良い．\n'
-        '\t\t\tline // <- (A) ファイル名につく文字列，他と重複してはいけない！\n'
-        '\t\t\t{\n'
-        '\t\t\t\ttype\tuniform;\n'
-        '\t\t\t\taxis\txyz;\n'
-        '\t\t\t\tstart\t(0.1 0.2 0.3); // <- (B) 始点の(x y z)座標\n'
-        '\t\t\t\tend\t(0.4 0.5 0.6); // <- (C) 終点の(x y z)座標\n'
-        '\t\t\t\tnPoints\t10; // <- (D) 直線上に配置する点の数\n'
-        '\t\t\t}\n'
-        '\n'
-        '\t\t\t// 任意の点からデータをデータを抽出する．\n'
-        '\t\t\t// 少なくとも点の座標(B)は修正する必要がある．\n'
-        '\t\t\tpoints // <- (A) ファイル名につく文字列，他と重複してはいけない！\n'
-        '\t\t\t{\n'
-        '\t\t\t\ttype\tcloud;\n'
-        '\t\t\t\taxis\txyz;\n'
-        '\t\t\t\tpoints\t((0.1 0.2 0.3) (0.4 0.5 0.6)); // <- (B) 点の(x y z)座標，複数の点を書くこともできる．\n'
-        '\t\t\t}\n'
-        '\t\t);\n'
-        '\t}\n'
-        '\n'
-        '\tsurfaceSampling // postProcessingフォルダ内に作られるフォルダの名前\n'
-        '\t{\n'
-        '\t\ttype\tsurfaces;\n'
+        "\t\tenabled\tyes; // yesで実行\n"
+        "\t\tsetFormat\traw;\n"
+        "\t\tinterpolationScheme\tcellPoint;\n"
+        f"\t\tfields\t({fields}); // 抽出したいパラメータ\n"
+        "\t\tsets\n"
+        "\t\t(\n"
+        "\t\t\t// 直線上に等間隔に配置された点からデータを抽出する．\n"
+        "\t\t\t// 直線がいちど計算領域外に飛び出すと，そこで抽出をやめてしまうので，計算領域外をまたぐ直線の場合は2直線に分ける．\n"
+        "\t\t\t// 少なくとも直線の始点(B)，終点(C)，直線上に配置する点の数(D)は修正する必要がある．\n"
+        "\t\t\t// 複数の条件に対して抽出したい場合，\n"
+        "\t\t\t// line\n"
+        "\t\t\t// {\n"
+        "\t\t\t//     ...\n"
+        "\t\t\t// }\n"
+        "\t\t\t// の部分をコピーして使えば良い．\n"
+        "\t\t\tline // <- (A) ファイル名につく文字列，他と重複してはいけない！\n"
+        "\t\t\t{\n"
+        "\t\t\t\ttype\tuniform;\n"
+        "\t\t\t\taxis\txyz;\n"
+        "\t\t\t\tstart\t(0.1 0.2 0.3); // <- (B) 始点の(x y z)座標\n"
+        "\t\t\t\tend\t(0.4 0.5 0.6); // <- (C) 終点の(x y z)座標\n"
+        "\t\t\t\tnPoints\t10; // <- (D) 直線上に配置する点の数\n"
+        "\t\t\t}\n"
+        "\n"
+        "\t\t\t// 任意の点からデータをデータを抽出する．\n"
+        "\t\t\t// 少なくとも点の座標(B)は修正する必要がある．\n"
+        "\t\t\tpoints // <- (A) ファイル名につく文字列，他と重複してはいけない！\n"
+        "\t\t\t{\n"
+        "\t\t\t\ttype\tcloud;\n"
+        "\t\t\t\taxis\txyz;\n"
+        "\t\t\t\tpoints\t((0.1 0.2 0.3) (0.4 0.5 0.6)); // <- (B) 点の(x y z)座標，複数の点を書くこともできる．\n"
+        "\t\t\t}\n"
+        "\t\t);\n"
+        "\t}\n"
+        "\n"
+        "\tsurfaceSampling // postProcessingフォルダ内に作られるフォルダの名前\n"
+        "\t{\n"
+        "\t\ttype\tsurfaces;\n"
         '\t\tlibs\t("libsampling.so");\n'
-        '\t\tenabled\tyes /* yesで実行 */;\n'
-        '\t\tsurfaceFormat\traw;\n'
-        '\t\tinterpolationScheme\tcellPoint;\n'
-        f'\t\tfields\t({fields}) /* 抽出したいパラメータ */;\n'
-        '\t\tsurfaces\n'
-        '\t\t(\n'
-        '\t\t\t// patchからデータを抽出する．\n'
-        '\t\t\t// 少なくともpatches(B)は修正する必要がある．\n'
-        '\t\t\tpatch // <- (A) ファイル名につく文字列，他と重複してはいけない！\n'
-        '\t\t\t{\n'
-        '\t\t\t\ttype\tpatch;\n'
-        f'\t\t\t\tpatches\t({patches}); // <- (B) 複数のpatchを指定することもできる．\n'
-        '\t\t\t\tinterpolate\tno /* noだとセル中心，yesだとメッシュの交点での値を出力 */;\n'
-        '\t\t\t}\n\n'
-        '\t\t\t// patchから一定距離だけ離れた面からデータを抽出する．\n'
-        '\t\t\t// 少なくともpatches(B)と距離(C)は修正する必要がある．\n'
-        '\t\t\t// 複数の条件に対して抽出したい場合，\n'
-        '\t\t\t// patchOffset\n'
-        '\t\t\t// {\n'
-        '\t\t\t//     ...\n'
-        '\t\t\t// }\n'
-        '\t\t\t// の部分をコピーして使えば良い．\n'
-        '\t\t\tpatchOffset // <- (A) ファイル名につく文字列，他と重複してはいけない！\n'
-        '\t\t\t{\n'
-        '\t\t\t\ttype\tpatchInternalField;\n'
-        f'\t\t\t\tpatches\t({patches}); // <- (B) 複数のpatchを指定することもできる．\n'
-        '\t\t\t\tinterpolate\tno; // noだとセル中心，yesだとメッシュの交点での値を出力\n'
-        '\t\t\t\toffsetMode\tnormal;\n'
-        '\t\t\t\tdistance\t0.001; // <- (C) patchからの距離\n'
-        '\t\t\t}\n\n'
-        '\t\t\t// basePointを通ってnormalVectorに垂直な平面からデータを抽出する．\n'
-        '\t\t\t// 少なくともbasePoint(B)とnormalVector(C)は修正する必要がある．\n'
-        '\t\t\t// 複数の条件に対して抽出したい場合，\n'
-        '\t\t\t// cuttingPlane\n'
-        '\t\t\t// {\n'
-        '\t\t\t//     ...\n'
-        '\t\t\t// }\n'
-        '\t\t\t// の部分をコピーして使えば良い．\n'
-        '\t\t\tcuttingPlane // <- (A) ファイル名につく文字列，他と重複してはいけない！\n'
-        '\t\t\t{\n'
-        '\t\t\t\ttype\tcuttingPlane;\n'
-        '\t\t\t\tplaneType\tpointAndNormal;\n'
-        '\t\t\t\tpointAndNormalDict\n'
-        '\t\t\t\t{\n'
-        '\t\t\t\t\tbasePoint\t(0.0 0.0 0.0); // <- (B) 平面上の点の(x y z)座標\n'
-        '\t\t\t\t\tnormalVector\t(1.0 0.0 0.0); // <- (C) 平面の法線ベクトル(x y z)\n'
-        '\t\t\t\t}\n'
-        '\t\t\t\tinterpolate\tno;\n'
-        '\t\t\t}\n'
-        '\t\t);\n'
-        '\t}\n')['value']
-    functions.set_blank_line(number_of_blank_lines = 1)
+        "\t\tenabled\tyes /* yesで実行 */;\n"
+        "\t\tsurfaceFormat\traw;\n"
+        "\t\tinterpolationScheme\tcellPoint;\n"
+        f"\t\tfields\t({fields}) /* 抽出したいパラメータ */;\n"
+        "\t\tsurfaces\n"
+        "\t\t(\n"
+        "\t\t\t// patchからデータを抽出する．\n"
+        "\t\t\t// 少なくともpatches(B)は修正する必要がある．\n"
+        "\t\t\tpatch // <- (A) ファイル名につく文字列，他と重複してはいけない！\n"
+        "\t\t\t{\n"
+        "\t\t\t\ttype\tpatch;\n"
+        f"\t\t\t\tpatches\t({patches}); // <- (B) 複数のpatchを指定することもできる．\n"
+        "\t\t\t\tinterpolate\tno /* noだとセル中心，yesだとメッシュの交点での値を出力 */;\n"
+        "\t\t\t}\n\n"
+        "\t\t\t// patchから一定距離だけ離れた面からデータを抽出する．\n"
+        "\t\t\t// 少なくともpatches(B)と距離(C)は修正する必要がある．\n"
+        "\t\t\t// 複数の条件に対して抽出したい場合，\n"
+        "\t\t\t// patchOffset\n"
+        "\t\t\t// {\n"
+        "\t\t\t//     ...\n"
+        "\t\t\t// }\n"
+        "\t\t\t// の部分をコピーして使えば良い．\n"
+        "\t\t\tpatchOffset // <- (A) ファイル名につく文字列，他と重複してはいけない！\n"
+        "\t\t\t{\n"
+        "\t\t\t\ttype\tpatchInternalField;\n"
+        f"\t\t\t\tpatches\t({patches}); // <- (B) 複数のpatchを指定することもできる．\n"
+        "\t\t\t\tinterpolate\tno; // noだとセル中心，yesだとメッシュの交点での値を出力\n"
+        "\t\t\t\toffsetMode\tnormal;\n"
+        "\t\t\t\tdistance\t0.001; // <- (C) patchからの距離\n"
+        "\t\t\t}\n\n"
+        "\t\t\t// basePointを通ってnormalVectorに垂直な平面からデータを抽出する．\n"
+        "\t\t\t// 少なくともbasePoint(B)とnormalVector(C)は修正する必要がある．\n"
+        "\t\t\t// 複数の条件に対して抽出したい場合，\n"
+        "\t\t\t// cuttingPlane\n"
+        "\t\t\t// {\n"
+        "\t\t\t//     ...\n"
+        "\t\t\t// }\n"
+        "\t\t\t// の部分をコピーして使えば良い．\n"
+        "\t\t\tcuttingPlane // <- (A) ファイル名につく文字列，他と重複してはいけない！\n"
+        "\t\t\t{\n"
+        "\t\t\t\ttype\tcuttingPlane;\n"
+        "\t\t\t\tplaneType\tpointAndNormal;\n"
+        "\t\t\t\tpointAndNormalDict\n"
+        "\t\t\t\t{\n"
+        "\t\t\t\t\tbasePoint\t(0.0 0.0 0.0); // <- (B) 平面上の点の(x y z)座標\n"
+        "\t\t\t\t\tnormalVector\t(1.0 0.0 0.0); // <- (C) 平面の法線ベクトル(x y z)\n"
+        "\t\t\t\t}\n"
+        "\t\t\t\tinterpolate\tno;\n"
+        "\t\t\t}\n"
+        "\t\t);\n"
+        "\t}\n"
+    )["value"]
+    functions.set_blank_line(number_of_blank_lines=1)
 
-    string = dictParse.normalize(string = controlDict.file_string())[0]
-    os.rename(controlDict_path, f'{controlDict_path}_bak')
-    with open(controlDict_path, 'w') as f:
+    string = dictParse.normalize(string=controlDict.file_string())[0]
+    os.rename(controlDict_path, f"{controlDict_path}_bak")
+    with open(controlDict_path, "w") as f:
         f.write(string)
 
-    print(f'\n\033[3;4;5m{controlDict_path}ファイルのfunctionsにsetsまたはsurfacesに関する'
-        'テンプレートを追加して，texteditwx.pyで開いています．')
-    print('説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．')
-    print('書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n')
-    misc.execCommand([os.path.join(binDEXCS_path, 'texteditwx.py'), controlDict_path])
+    print(
+        f"\n\033[3;4;5m{controlDict_path}ファイルのfunctionsにsetsまたはsurfacesに関する"
+        "テンプレートを追加して，texteditwx.pyで開いています．"
+    )
+    print(
+        "説明コメントを読んで，自分が行いたいことに合わせてテンプレートを書き換えて下さい．"
+    )
+    print("書き換えたら保存して，texteditwx.pyを終了して下さい．\033[m\n")
+    misc.execCommand([os.path.join(binDEXCS_path, "texteditwx.py"), controlDict_path])
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handler)  # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
     if not misc.texteditwx_works_well():
         exit(1)
@@ -169,75 +190,100 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = False
-        sampling_is_written = True	# <- 書き込めていないと非インタラクティブにできるわけがない
-        time_begin, time_end, noZero = '-inf', 'inf', True
+        sampling_is_written = (
+            True  # <- 書き込めていないと非インタラクティブにできるわけがない
+        )
+        time_begin, time_end, noZero = "-inf", "inf", True
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-N': # Non-interactive
+            if sys.argv[i] == "-N":  # Non-interactive
                 pass
-            elif sys.argv[i] == '-b':
+            elif sys.argv[i] == "-b":
                 i += 1
                 time_begin = sys.argv[i]
-            elif sys.argv[i] == '-e':
+            elif sys.argv[i] == "-e":
                 i += 1
                 time_end = sys.argv[i]
-            elif sys.argv[i] == '-0':
+            elif sys.argv[i] == "-0":
                 noZero = False
-            elif sys.argv[i] == '-j':
+            elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
             i += 1
 
-    controlDict_path = os.path.join('system', 'controlDict')
+    controlDict_path = os.path.join("system", "controlDict")
     if not os.path.isfile(controlDict_path):
-        print(f'エラー: {controlDict_path}ファイル がありません．')
+        print(f"エラー: {controlDict_path}ファイル がありません．")
         sys.exit(1)
 
-    sampling_related_folders_txt = os.path.join('postProcessing', '_sampling_related_folders.txt')
-    if os.path.isdir('postProcessing') and os.path.isfile(sampling_related_folders_txt):
-        for line in open(sampling_related_folders_txt, 'r'):
-            tmp = os.path.join('postProcessing', line.rstrip())
+    sampling_related_folders_txt = os.path.join(
+        "postProcessing", "_sampling_related_folders.txt"
+    )
+    if os.path.isdir("postProcessing") and os.path.isfile(sampling_related_folders_txt):
+        for line in open(sampling_related_folders_txt, "r"):
+            tmp = os.path.join("postProcessing", line.rstrip())
             if os.path.isdir(tmp):
                 shutil.rmtree(tmp)
         os.remove(sampling_related_folders_txt)
     if just_delete_previous_files:
-        sys.exit(0) # 正常終了
+        sys.exit(0)  # 正常終了
 
-    misc.setEnabledInControlDictFunctions(enabled = False)
-    misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'sets')
-    misc.setEnabledInControlDictFunctions(enabled = True, type_name = 'surfaces')
+    misc.setEnabledInControlDictFunctions(enabled=False)
+    misc.setEnabledInControlDictFunctions(enabled=True, type_name="sets")
+    misc.setEnabledInControlDictFunctions(enabled=True, type_name="surfaces")
     if interactive:
-        sampling_is_written = True if input(f'{controlDict_path}ファイルの内容を確認して下さい．'
-            'functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > '
-            ).strip().lower() == 'y' else False
+        sampling_is_written = (
+            True
+            if input(
+                f"{controlDict_path}ファイルの内容を確認して下さい．"
+                "functionsにsetsまたはsurfacesに関する指示が書き込まれていますか？ (y/n) > "
+            )
+            .strip()
+            .lower()
+            == "y"
+            else False
+        )
         if not sampling_is_written:
             append_functions_in_controlDict(controlDict_path)
 
-    controlDict = dictParse.DictParser(file_name = controlDict_path)
+    controlDict = dictParse.DictParser(file_name=controlDict_path)
     sets_dir_list = []
     surface_dir_list = []
     for block in controlDict.find_all_elements(
-        [{'type': 'block', 'key': 'functions'}, {'type': 'block'}]):
-        block = block['element']
-        function_type = block.find_element([{'type': 'dictionary', 'key':'type'}])['element']
-        if function_type.find_element([{'type': 'word', 'value': 'sets'}])['element'] is not None:
-            sets_dir_list.append(block['key'])
-        elif function_type.find_element([{'type': 'word', 'value': 'surfaces'}])['element'] is not None:
-            surface_dir_list.append(block['key'])
+        [{"type": "block", "key": "functions"}, {"type": "block"}]
+    ):
+        block = block["element"]
+        function_type = block.find_element([{"type": "dictionary", "key": "type"}])[
+            "element"
+        ]
+        if (
+            function_type.find_element([{"type": "word", "value": "sets"}])["element"]
+            is not None
+        ):
+            sets_dir_list.append(block["key"])
+        elif (
+            function_type.find_element([{"type": "word", "value": "surfaces"}])[
+                "element"
+            ]
+            is not None
+        ):
+            surface_dir_list.append(block["key"])
     if len(sets_dir_list) == 0 and len(surface_dir_list) == 0:
-        print(f'エラー: {controlDict_path}ファイルでsetsまたはsurfacesに関する指示がありません．')
+        print(
+            f"エラー: {controlDict_path}ファイルでsetsまたはsurfacesに関する指示がありません．"
+        )
         sys.exit(1)
 
     if interactive:
-        time_begin, time_end, noZero = misc.setTimeBeginEnd('抽出')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd("抽出")
     # http://penguinitis.g1.xrea.com/study/OpenFOAM/sampling.html
     misc.execPostProcess(time_begin, time_end, noZero)
 
-    with open(sampling_related_folders_txt, 'w') as f:
+    with open(sampling_related_folders_txt, "w") as f:
         for sets_dir in sets_dir_list:
-            f.write(sets_dir + '\n')
+            f.write(sets_dir + "\n")
         for surface_dir in surface_dir_list:
-            f.write(surface_dir + '\n')
+            f.write(surface_dir + "\n")
 
-    print('\n結果はpostProcessingフォルダに保存されています．')
+    print("\n結果はpostProcessingフォルダに保存されています．")
 
     rmObjects.removeInessentials()

@@ -22,12 +22,14 @@ import shutil
 from utilities import misc
 from utilities import rmObjects
 
+
 def handler(signum, frame):
     rmObjects.removeInessentials()
     sys.exit(1)
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, handler) # Ctrl+Cで行う処理
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handler)  # Ctrl+Cで行う処理
     misc.showDirForPresentAnalysis(__file__)
 
     just_delete_previous_files = False
@@ -35,62 +37,70 @@ if __name__ == '__main__':
         interactive = True
     else:
         interactive = exec_paraFoam = False
-        time_begin, time_end, noZero = '-inf', 'inf', True
+        time_begin, time_end, noZero = "-inf", "inf", True
         i = 1
         while i < len(sys.argv):
-            if sys.argv[i] == '-N': # Non-interactive
+            if sys.argv[i] == "-N":  # Non-interactive
                 pass
-            elif sys.argv[i] == '-b':
+            elif sys.argv[i] == "-b":
                 i += 1
                 time_begin = sys.argv[i]
-            elif sys.argv[i] == '-e':
+            elif sys.argv[i] == "-e":
                 i += 1
                 time_end = sys.argv[i]
-            elif sys.argv[i] == '-0':
+            elif sys.argv[i] == "-0":
                 noZero = False
-            elif sys.argv[i] == '-j':
+            elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
-            elif sys.argv[i] == '-p':
+            elif sys.argv[i] == "-p":
                 exec_paraFoam = True
             i += 1
 
     regions = []
-    for d in glob.iglob(os.path.join('system', f'*{os.sep}')):
-        if os.path.isfile(os.path.join(d, 'fvSolution')):
+    for d in glob.iglob(os.path.join("system", f"*{os.sep}")):
+        if os.path.isfile(os.path.join(d, "fvSolution")):
             regions.append(os.path.basename(os.path.dirname(d)))
-    for d in glob.iglob(f'*{os.sep}'):
+    for d in glob.iglob(f"*{os.sep}"):
         try:
             float(os.path.dirname(d))
-            f = os.path.join(d, 'yPlus')
+            f = os.path.join(d, "yPlus")
             if os.path.isfile(f):
                 os.remove(f)
             for r in regions:
-                f = os.path.join(d, r, 'yPlus')
+                f = os.path.join(d, r, "yPlus")
                 if os.path.isfile(f):
                     os.remove(f)
         except:
             pass
-    d = os.path.join('postProcessing', 'yPlus')
+    d = os.path.join("postProcessing", "yPlus")
     if os.path.isdir(d):
         shutil.rmtree(d)
     if just_delete_previous_files:
-        sys.exit(0) # 正常終了
+        sys.exit(0)  # 正常終了
 
-    print('壁座標yPlus（y+ < 5で粘性底層，5 < y+ < 30で遷移層，30 < y+で乱流層に入る）を求めます．')
+    print(
+        "壁座標yPlus（y+ < 5で粘性底層，5 < y+ < 30で遷移層，30 < y+で乱流層に入る）を求めます．"
+    )
     if interactive:
-        time_begin, time_end, noZero = misc.setTimeBeginEnd('壁座標の計算')
+        time_begin, time_end, noZero = misc.setTimeBeginEnd("壁座標の計算")
     # https://www.openfoam.com/documentation/guides/latest/doc/guide-fos-field-yPlus.html
     # Example by using the postProcess utility: <solver> -postProcess -func yPlus
     if len(regions) == 0:
-        misc.execPostProcess(time_begin, time_end, noZero, func = 'yPlus')
+        misc.execPostProcess(time_begin, time_end, noZero, func="yPlus")
     else:
         for r in regions:
-            misc.execPostProcess(time_begin, time_end, noZero, func = 'yPlus', region = r)
+            misc.execPostProcess(time_begin, time_end, noZero, func="yPlus", region=r)
 
-    print('\n結果は各時間のフォルダに書き出され，さらにpostProcessingフォルダにまとめが保存されます．')
+    print(
+        "\n結果は各時間のフォルダに書き出され，さらにpostProcessingフォルダにまとめが保存されます．"
+    )
 
     if interactive:
-        exec_paraFoam = True if input('\nparaFoamを実行しますか？ (y/n) > ').strip().lower() == 'y' else False
-    misc.execParaFoam(touch_only = not exec_paraFoam)
+        exec_paraFoam = (
+            True
+            if input("\nparaFoamを実行しますか？ (y/n) > ").strip().lower() == "y"
+            else False
+        )
+    misc.execParaFoam(touch_only=not exec_paraFoam)
 
     rmObjects.removeInessentials()
