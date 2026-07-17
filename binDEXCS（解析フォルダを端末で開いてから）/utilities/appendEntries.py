@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/7/17 5:57:53 PM
+# 2026/7/17 7:35:23 PM
 
 import os
 import sys
@@ -359,8 +359,8 @@ def intoFvSchemes():
                 ]
             )["element"]["value"] = "steadyState"
             print(
-                f"\n!!! {application}に対して{fvSchemes_path}ファイルの"
-                f"ddtSchemesは{ddtSchemes}にはならないと思うので，steadyStateに書き換えました．\n"
+                f"\n\033[3;4;5m{application}に対して{fvSchemes_path}ファイルの"
+                f"ddtSchemesは{ddtSchemes}にはならないと思うので，steadyStateに書き換えました．\033[m\n"
             )
         elif (
             not any(f in application.lower() for f in ["simplefoam", "potentialfoam"])
@@ -375,8 +375,8 @@ def intoFvSchemes():
                 ]
             )["element"]["value"] = "Euler"
             print(
-                f"\n!!! {application}に対して{fvSchemes_path}ファイルの"
-                "ddtSchemesがsteadyStateにはならないと思うので，Eulerに書き換えました．\n"
+                f"\n\033[3;4;5m{application}に対して{fvSchemes_path}ファイルの"
+                "ddtSchemesがsteadyStateにはならないと思うので，Eulerに書き換えました．\033[m\n"
             )
 
         string = dictParse.normalize(string=fvSchemes.file_string())[0]
@@ -405,7 +405,7 @@ def intoControlDict():
             dictParse.DictParser(string="latestTime")["value"]
         )
         print(
-            f"\n!!! {controlDict_path}ファイルのstartFromをlatestTimeに書き換えました．\n"
+            f"\n\033[3;4;5m{controlDict_path}ファイルのstartFromをlatestTimeに書き換えました．\033[m\n"
         )
 
     deltaT_index = controlDict.find_element([{"type": "dictionary", "key": "deltaT"}])[
