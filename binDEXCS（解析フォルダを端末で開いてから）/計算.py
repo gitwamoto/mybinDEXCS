@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/17 1:54:05 PM
+# 2026/7/17 5:51:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -387,10 +387,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             bufsize=1,  # Python側でも行単位でバッファリング
         )
 
-        with (
-            open(f"{application}.log", "w") as f_log,
-            open(history_path, "a") as f_history,
-        ):
+        with open(f"{application}.log", "w") as f_log, open(history_path, "a") as f_history:
             f_history.write(
                 f"# {application} {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
             )  # YYYY/mm/dd HH:MM:SS
