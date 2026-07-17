@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/17 5:51:41 PM
+# 2026/7/17 7:35:19 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -940,14 +940,14 @@ if __name__ == "__main__":
     else:
         if change_relaxation_factors:
             print(
-                "\n(ERROR) 緩和係数（relaxationFactors）を下限の"
-                f"{relaxationFactor_lower_limit}まで下げても計算が発散します．"
+                "\n\033[3;4;5m(ERROR) 緩和係数（relaxationFactors）を下限の"
+                f"{relaxationFactor_lower_limit}まで下げても計算が発散します．\033[m"
             )
         else:
-            print("\n(ERROR) 計算が発散しました．：\n")
+            print("\n\033[3;4;5m(ERROR) 計算が発散しました．\033[m")
         print(
-            "「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) "
-            "の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．"
+            "\033[3;4;5m「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) "
+            "の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．\033[m"
         )
 
     if interactive:
