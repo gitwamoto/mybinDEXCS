@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/21 5:33:48 PM
+# 2026/7/21 8:19:43 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -179,12 +179,12 @@ class MeshFrame(QtGui.QDialog):
         feature_angle,
     ):
         if (
-            re.match(r"[\x20-\x7E]+$", case_dir_path) is None
+            re.match(r"[\x20-\x7E]+$", os.path.basename(case_dir_path)) is None
         ):  # 半角の英数字と標準的な半角記号（ASCII範囲内）のみ許可する正規表現
             QtGui.QMessageBox.critical(
                 None,
                 "動作保証外",
-                f"解析フォルダ名{case_dir_path}が全角文字を含んでいます．\n"
+                f"解析フォルダ名{os.path.basename(case_dir_path)}が全角文字を含んでいます．\n"
                 "動作が保証できません．半角文字で名前をつけ直して下さい．",
                 QtGui.QMessageBox.Close,
             )

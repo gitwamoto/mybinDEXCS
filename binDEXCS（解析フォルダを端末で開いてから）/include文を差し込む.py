@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を差し込む.py
 # by Yukiharu Iwamoto
-# 2026/7/21 5:37:12 PM
+# 2026/7/21 8:17:49 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -24,10 +24,10 @@ def append_include_sentence(dir_name, include_file_name):
         return
     include_file_name = os.path.relpath(include_file_name, dir_name)
     if (
-        re.match(r"[\x20-\x7E]+$", include_file_name) is None
+        re.match(r"[\x20-\x7E]+$", os.path.basename(include_file_name)) is None
     ):  # 半角の英数字と標準的な半角記号（ASCII範囲内）のみ許可する正規表現
         print(
-            f"\n\033[3;4;5mファイル名{include_file_name}が全角文字を含んでいます．\033[m"
+            f"\n\033[3;4;5mファイル名{os.path.basename(include_file_name)}が全角文字を含んでいます．\033[m"
             "\033[3;4;5m動作が保証できません．半角文字で名前をつけ直して下さい．\033[m"
         )
         sys.exit(1)
