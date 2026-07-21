@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/7/21 10:04:28 PM
+# 2026/7/21 10:17:11 PM
 
 import glob
 import os
@@ -309,14 +309,16 @@ def removePatchesHavingNoFaces():
             "pointSync\tfalse;\n"
             "patches\t();\n"
         )
-    returncode = execCommand(["createPatch", "-overwrite"])[1]
+    returncode = execCommand(["createPatch", "-overwrite"])[
+        1
+    ]  # ここでconstant/polyMesh/boundaryファイルが上書きされる
     os.remove(createPatchDict)
     if os.path.isfile(createPatchDict_bak):
         os.rename(createPatchDict_bak, createPatchDict)
     if returncode != 0:
         sys.exit(1)
     if converted_millimeter_into_meter:
-        writeCommentInBoundary("converted millimeter into meter")
+        writeConvertedMillimeterIntoMeter()
 
 
 def isConvertedMillimeterIntoMeter():
@@ -610,8 +612,6 @@ def appropriate_tick(xmin, xmax, n):
 if __name__ == "__main__":
     print("firstTime = " + firstTime())
     print("latestTime = " + latestTime())
-
-if __name__ == "__main__":
     #    showDirForPresentAnalysis()
     #    execParaFoam()
     texteditwx_works_well()

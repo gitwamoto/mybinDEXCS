@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # メッシュを細かく.py
 # by Yukiharu Iwamoto
-# 2026/6/16 2:36:12 PM
+# 2026/7/21 10:28:33 PM
 
 # ---- オプション ----
 # -p -> paraFoamを実行する
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         if z_fine:
             f.write(" normal")
         f.write(" );\nuseHexTopology\tno;\ngeometricCut\tyes;\nwriteMesh\tno;\n")
-    returncode = misc.execCommand(["refineMesh", "-overwrite"])[1]
+    returncode = misc.execCommand(["refineMesh", "-overwrite"])[1] # ここでconstant/polyMesh/boundaryファイルが上書きされる
     os.remove(refineMeshDict_path)
     if os.path.isfile(refineMeshDict_bak_path):
         os.rename(refineMeshDict_bak_path, refineMeshDict_path)

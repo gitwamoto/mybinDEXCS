@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/7/21 9:20:31 PM
+# 2026/7/21 10:28:38 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -170,12 +170,12 @@ if __name__ == "__main__":
     if (
         misc.execCommand(["transformPoints", "-translate", f"(0 0 {-z_front})"])[1] != 0
         or misc.execCommand(["extrudeMesh"])[1] != 0
-    ):
+    ):  # ここでconstant/polyMesh/boundaryファイルが上書きされる
         sys.exit(1)
 
-    if not interactive and not converted_millimeter_into_meter and not scaleMesh_0p001:
+    if converted_millimeter_into_meter:
         misc.writeConvertedMillimeterIntoMeter()
-    if scaleMesh_0p001:
+    elif scaleMesh_0p001:
         misc.convertMillimeterIntoMeter()
 
     misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/7/21 9:17:41 PM
+# 2026/7/21 10:28:35 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -229,7 +229,9 @@ if __name__ == "__main__":
                 f.write(f"({i[0]} {i[1]} {i[2]})\n")
             f.write(s[pf:])
 
-    if not converted_millimeter_into_meter:
+    if converted_millimeter_into_meter:
+        misc.writeConvertedMillimeterIntoMeter()
+    else:
         if interactive:
             box = misc.bounding_box_of_calculation_range(points_path)[1]
             print(
@@ -247,8 +249,6 @@ if __name__ == "__main__":
                 == "y"
                 else False
             )
-        elif not scaleMesh_0p001:
-            misc.writeConvertedMillimeterIntoMeter()
         if scaleMesh_0p001:
             misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く
