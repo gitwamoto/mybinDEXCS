@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/6/22 12:25:05 PM
+# 2026/7/21 5:22:41 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -166,6 +166,18 @@ class MeshFrame(QtGui.QDialog):
         features_level,
         feature_angle,
     ):
+        if (
+            re.match(r"[\x20-\x7E]+$", case_dir_path) is None
+        ):  # 半角の英数字と標準的な半角記号（ASCII範囲内）のみ許可する正規表現
+            QtGui.QMessageBox.critical(
+                None,
+                "動作保証外",
+                f"解析フォルダ名{case_dir_path}が全角文字を含んでいます．\n"
+                "動作が保証できません．半角文字で名前をつけ直して下さい．",
+                QtGui.QMessageBox.Close,
+            )
+            return
+
         super(MeshFrame, self).__init__(parent=None)
         self.setWindowTitle("snappyHexMesh settings from FreeCAD Model (.fcstd)")
 
@@ -484,7 +496,7 @@ class MeshFrame(QtGui.QDialog):
         QtGui.QMessageBox.warning(
             None,
             "LocationInMesh",
-            "Confirm that LocationInMesh is selected correctly!",
+            "LocationInMeshが正しく指定されているかを確認して下さい．",
             QtGui.QMessageBox.Close,
         )
 
@@ -606,8 +618,8 @@ class MyController:
         if self.doc.FileName == "":
             QtGui.QMessageBox.critical(
                 None,
-                "Error",
-                "This document has never been saved. Save the document and retry.",
+                "エラー",
+                "CADファイルが保存されていません．CADファイルを保存して下さい．",
                 QtGui.QMessageBox.Close,
             )
             return
@@ -619,8 +631,8 @@ class MyController:
                 if obj.Label != l:
                     QtGui.QMessageBox.warning(
                         None,
-                        "Prohibited object label",
-                        f"Label fixed: {l} -> {obj.Label}",
+                        "オブジェクトラベル違反",
+                        f"ラベル{l}を{obj.Label}に変更しました．",
                         QtGui.QMessageBox.Close,
                     )
         self.MeshFrame = MeshFrame(
@@ -652,8 +664,8 @@ class MyController:
         if not os.path.isdir(self.MeshFrame.caseDirST.text()):
             QtGui.QMessageBox.critical(
                 None,
-                "Error",
-                self.MeshFrame.caseDirST.text() + " is not a directory.",
+                "エラー",
+                f"{self.MeshFrame.caseDirST.text()}はフォルダではありません.",
                 QtGui.QMessageBox.Close,
             )
             return
@@ -667,8 +679,8 @@ class MyController:
         if num_of_LocationInMesh == 0:
             QtGui.QMessageBox.critical(
                 None,
-                "Error",
-                "LocationInMesh is required!\nSet LocationInMesh and try again.",
+                "エラー",
+                "LocationInMeshを指定して下さい．",
                 QtGui.QMessageBox.Close,
             )
             return
@@ -676,8 +688,8 @@ class MyController:
             num_of_LocationInMesh > 1
             and QtGui.QMessageBox.warning(
                 None,
-                "Multiple LocationInMesh",
-                f"{num_of_LocationInMesh} LocationInMesh exist. Is this correct?",
+                "LocationInMesh",
+                f"複数（{num_of_LocationInMesh}個）のLocationInMeshがあります．複数にするつもりですか？",
                 QtGui.QMessageBox.Yes,
                 QtGui.QMessageBox.No,
             )
@@ -735,7 +747,7 @@ class MyController:
         command = f". '{MyController.BASHRC_PATH_4_OPENFOAM}' && surfaceFeatureExtract"
         if subprocess.run(command, shell=True).returncode != 0:
             QtGui.QMessageBox.critical(
-                None, "Error", f"{command} was not succeed.", QtGui.QMessageBox.Close
+                None, "エラー", f"{command}が失敗しました．", QtGui.QMessageBox.Close
             )
             os.chdir(cwd)
             return
@@ -765,8 +777,8 @@ class MyController:
         )
         QtGui.QMessageBox.information(
             None,
-            "Done",
-            "File system/snappyHexMeshDict for snappyHexMesh has been created.",
+            "書き出し",
+            "snappyHexMeshの設定ファイルsystem/snappyHexMeshDictを書き出しました．",
             QtGui.QMessageBox.Close,
         )
 
@@ -777,8 +789,8 @@ class MyController:
         ):
             QtGui.QMessageBox.critical(
                 None,
-                "No snappyHexMeshDict",
-                "File system/snappyHexMeshDict doesn't exist.",
+                "ファイルエラー",
+                "system/snappyHexMeshDictファイルがありません．",
                 QtGui.QMessageBox.Close,
             )
             return
@@ -786,7 +798,7 @@ class MyController:
             QtGui.QMessageBox.question(
                 None,
                 "snappyHexMesh",
-                "Really exicute snappyHexMesh?",
+                "メッシュ生成コマンドsnappyHexMeshを実行しますか？",
                 QtGui.QMessageBox.Yes,
                 QtGui.QMessageBox.No,
             )
@@ -812,7 +824,7 @@ class MyController:
             QtGui.QMessageBox.question(
                 None,
                 "2D by extrudeMesh",
-                "Really exicute extrudeMesh to generate a two-dimensional mesh?",
+                "2次元メッシュ作成コマンドextrudeMeshを実行しますか？",
                 QtGui.QMessageBox.Yes,
                 QtGui.QMessageBox.No,
             )
@@ -838,7 +850,7 @@ class MyController:
             QtGui.QMessageBox.question(
                 None,
                 "improveMeshQuality",
-                "Really exicute improveMeshQuality?",
+                "メッシュ品質改良コマンドimproveMeshQualityを実行しますか？",
                 QtGui.QMessageBox.Yes,
                 QtGui.QMessageBox.No,
             )
@@ -864,7 +876,7 @@ class MyController:
             QtGui.QMessageBox.question(
                 None,
                 "Flatten patch",
-                "Really flatten patch?",
+                "パッチを平面にしますか？",
                 QtGui.QMessageBox.Yes,
                 QtGui.QMessageBox.No,
             )
@@ -910,17 +922,16 @@ class MyController:
         if not os.path.isfile(meshDict_path):
             QtGui.QMessageBox.critical(
                 None,
-                "No snappyHexMeshDict",
-                "File system/snappyHexMeshDict doesn't exist.",
+                "ファイルエラー",
+                "system/snappyHexMeshDictファイルがありません，",
                 QtGui.QMessageBox.Close,
             )
             return
         if (
             QtGui.QMessageBox.question(
                 None,
-                "Edit",
-                "The file system/snappyHexMeshDict last exported/saved will be edited.\n"
-                + "Really edit?",
+                "編集",
+                "system/snappyHexMeshDictファイルを編集しますか？\n",
                 QtGui.QMessageBox.Yes,
                 QtGui.QMessageBox.No,
             )
