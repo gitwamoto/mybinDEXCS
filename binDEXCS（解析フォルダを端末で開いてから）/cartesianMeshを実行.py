@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/6/16 2:04:47 PM
+# 2026/7/21 8:05:21 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -149,7 +149,7 @@ if __name__ == "__main__":
             [{"type": "dictionary", "key": "newName"}, {"type": "word"}]
         )["element"]["value"]
         t = p.find_element(
-            [{"type": "dictionary", "key": "newType"}, {"type": "word"}]
+            [{"type": "dictionary", "key": "type"}, {"type": "word"}]
         )["element"]["value"]
         patch_types[n] = t
         if t == "empty":
