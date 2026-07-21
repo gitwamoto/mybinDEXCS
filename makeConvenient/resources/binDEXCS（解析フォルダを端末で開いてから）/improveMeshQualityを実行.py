@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # improveMeshQualityを実行.py
 # by Yukiharu Iwamoto
-# 2026/6/16 2:11:02 PM
+# 2026/7/21 9:17:44 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -83,9 +83,7 @@ if __name__ == "__main__":
     if misc.execCommand(["improveMeshQuality", "-noFunctionObjects"])[1] != 0:
         sys.exit(1)
 
-    if converted_millimeter_into_meter:
-        misc.convertMillimeterIntoMeter()
-    else:
+    if not converted_millimeter_into_meter:
         if interactive:
             box = misc.bounding_box_of_calculation_range(
                 os.path.join("constant", "polyMesh", "points")
@@ -105,6 +103,8 @@ if __name__ == "__main__":
                 == "y"
                 else False
             )
+        elif not scaleMesh_0p001:
+            misc.writeConvertedMillimeterIntoMeter()
         if scaleMesh_0p001:
             misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く

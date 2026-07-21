@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchを平面に.py
 # by Yukiharu Iwamoto
-# 2026/5/14 10:46:53 AM
+# 2026/7/21 9:17:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -63,7 +63,9 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = exec_paraFoam = scaleMesh_0p001 = False
+        interactive = False
+        exec_paraFoam = False
+        scaleMesh_0p001 = False
         patch_type = ""
         i = 1
         while i < len(sys.argv):
@@ -245,6 +247,8 @@ if __name__ == "__main__":
                 == "y"
                 else False
             )
+        elif not scaleMesh_0p001:
+            misc.writeConvertedMillimeterIntoMeter()
         if scaleMesh_0p001:
             misc.convertMillimeterIntoMeter()
     misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く

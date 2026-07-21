@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/6/16 9:47:04 AM
+# 2026/7/21 9:20:31 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -109,10 +109,10 @@ if __name__ == "__main__":
 
     print("xy平面に平行なpatchを押し出して2次元メッシュまたはwedge境界を作ります．")
 
-    bouding_box = misc.bounding_box_of_calculation_range(
+    box = misc.bounding_box_of_calculation_range(
         os.path.join("constant", "polyMesh", "points")
     )[1]
-    z_back, z_front = bouding_box[2]
+    z_back, z_front = box[2]
 
     if interactive:
         patches = [
@@ -148,9 +148,8 @@ if __name__ == "__main__":
         )
         if not converted_millimeter_into_meter:
             print(
-                f"元のメッシュの範囲は{bouding_box[0][0]} <= x <= {bouding_box[0][1]},"
-                f" {bouding_box[1][0]} <= y <= {bouding_box[1][1]},"
-                f" {bouding_box[2][0]} <= z <= {bouding_box[2][1]}です．"
+                f"元のメッシュの範囲は{box[0][0]} <= x <= {box[0][1]},"
+                f" {box[1][0]} <= y <= {box[1][1]}, {box[2][0]} <= z <= {box[2][1]}です．"
             )
             scaleMesh_0p001 = (
                 True
@@ -174,9 +173,9 @@ if __name__ == "__main__":
     ):
         sys.exit(1)
 
-    if converted_millimeter_into_meter:
+    if not interactive and not converted_millimeter_into_meter and not scaleMesh_0p001:
         misc.writeConvertedMillimeterIntoMeter()
-    elif scaleMesh_0p001:
+    if scaleMesh_0p001:
         misc.convertMillimeterIntoMeter()
 
     misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く
