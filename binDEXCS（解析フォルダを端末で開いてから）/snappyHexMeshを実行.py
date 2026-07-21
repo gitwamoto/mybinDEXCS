@@ -10,13 +10,13 @@
 # -2 cartesian2DMeshで2次元メッシュを作る．empty境界はx-y平面に平行でなければならない
 # -b back_name -> 【-2オプションがある時のみ有効】(zが大きい)後側patchの名前をback_nameにする．
 #                 このオプションがない場合，backという名前になる．
+# -d domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
 # -f front_name -> 【-2オプションがある時のみ有効】(zが大きい)前側patchの名前をfront_nameにする．
 #                  このオプションがない場合，frontという名前になる．
 # -l 'fluid1 fluid2' -> 【マルチリージョン解析時のみ有効】流体側の領域名全てを'fluid1 fluid2'のように
 #                        引用符で囲んだスペース区切りで指定する．
 #                        snappyHexMeshDictのlocationsInMeshに書いた名前が領域名になる．
 # -p -> paraFoamを実行する
-# -r domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
 
 import os
 import sys
@@ -181,6 +181,9 @@ if __name__ == "__main__":
             elif sys.argv[i] == "-b":
                 i += 1
                 back_name = sys.argv[i]
+            elif sys.argv[i] == "-d":
+                i += 1
+                domains = max(int(sys.argv[i]), 1)
             elif sys.argv[i] == "-f":
                 i += 1
                 front_name = sys.argv[i]
@@ -189,9 +192,6 @@ if __name__ == "__main__":
                 fluid_regions.extend(sys.argv[i].split())
             elif sys.argv[i] == "-p":
                 exec_paraFoam = True
-            elif sys.argv[i] == "-r":
-                i += 1
-                domains = max(int(sys.argv[i]), 1)
             i += 1
 
     if not os.path.isfile(snappyHexMeshDict_path):
