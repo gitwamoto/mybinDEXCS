@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/21 5:22:44 PM
+# 2026/7/21 5:33:45 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -41,10 +41,22 @@ class FreeCadFileGrid(QtGui.QTableWidget):
 
     def __init__(self, parent, freecad_objects):
         super(FreeCadFileGrid, self).__init__(parent)
+        pat = re.compile(
+            r"[\x20-\x7E]+$"
+        )  # 半角の英数字と標準的な半角記号（ASCII範囲内）のみ許可する正規表現
         self.table = []
         for obj in freecad_objects:
             try:
                 if obj.ViewObject.Visibility and hasattr(obj, "Shape"):
+                    if pat.match(obj.Label) is None:
+                        QtGui.QMessageBox.critical(
+                            None,
+                            "動作保証外",
+                            f"ラベル{obj.Label}が全角文字を含んでいます．\n"
+                            "動作が保証できません．半角文字で名前をつけ直して下さい．",
+                            QtGui.QMessageBox.Close,
+                        )
+                        sys.exit(1)
                     self.table.append([obj.Label, None, "", False, 2, 1.2])
             except:
                 print(sys.exc_info())
@@ -174,7 +186,7 @@ class MeshFrame(QtGui.QDialog):
                 "動作が保証できません．半角文字で名前をつけ直して下さい．",
                 QtGui.QMessageBox.Close,
             )
-            return
+            sys.exit(1)
 
         super(MeshFrame, self).__init__(parent=None)
         self.setWindowTitle("cfMesh settings from FreeCAD Model (.fcstd)")
