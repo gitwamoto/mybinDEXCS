@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒以外を除いてコピーを作る.py
 # by Yukiharu Iwamoto
-# 2026/5/13 9:36:26 AM
+# 2026/7/21 4:00:45 PM
 
 import signal
 import os
@@ -62,6 +62,8 @@ if __name__ == "__main__":
         "|"
         "FCStd1"
         ")"
+        "|"
+        ".+_history.txt",
         ")$"
     )
     files = ["0"]
