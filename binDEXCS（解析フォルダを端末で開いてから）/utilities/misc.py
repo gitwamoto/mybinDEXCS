@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/7/17 5:53:53 PM
+# 2026/7/21 5:22:47 PM
 
 import glob
 import os
@@ -31,8 +31,16 @@ assert dexcs_version is not None
 
 
 def showDirForPresentAnalysis(file=__file__, path=os.getcwd()):
+    if (
+        re.match(r"[\x20-\x7E]+$", path) is None
+    ):  # 半角の英数字と標準的な半角記号（ASCII範囲内）のみ許可する正規表現
+        print(
+            f"\n\033[3;4;5m解析フォルダ名{path}が全角文字を含んでいます．\033[m"
+            "\033[3;4;5m動作が保証できません．半角文字で名前をつけ直して下さい．\033[m"
+        )
+        sys.exit(1)
     # https://qiita.com/PruneMazui/items/8a023347772620025ad6
-    print(f"\033[7;1m----- 現在の解析フォルダは {path} です． -----\033[m")
+    print(f"\033[7;1m----- 現在の解析フォルダは{path}です． -----\033[m")
     # https://joppot.info/2013/12/17/235, http://tldp.org/HOWTO/Xterm-Title-3.html
     print(f"\033]2;{path} - {os.path.basename(file)}\007")
 
