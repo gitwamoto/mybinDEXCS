@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/21 10:16:41 PM
+# 2026/7/21 10:40:38 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -397,6 +397,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 if (
                     line.startswith("Using #calc at ")
                     or line.startswith("Using #codeStream with ")
+                    or line.startswith('Creating new library in "dynamicCode/')
                     or "/dynamicCode/" in line
                     or "ln: ./lnInclude" in line
                     or ": codeStreamTemplate.C" in line
