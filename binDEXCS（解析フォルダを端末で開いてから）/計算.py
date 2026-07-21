@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/17 7:35:19 PM
+# 2026/7/21 10:04:30 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -387,15 +387,22 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             bufsize=1,  # Python側でも行単位でバッファリング
         )
 
-        with open(f"{application}.log", "w") as f_log, open(history_path, "a") as f_history:
+        with (
+            open(f"{application}.log", "w") as f_log,
+            open(history_path, "a") as f_history,
+        ):
             f_history.write(
                 f"# {application} {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
             )  # YYYY/mm/dd HH:MM:SS
             # iter(process.stdout.readline, '') は readline() を
             # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
             for line in iter(process.stdout.readline, ""):
-                if line.startswith("Using #calc at ") or line.startswith(
-                    "Using #codeStream with "
+                if (
+                    line.startswith("Using #calc at ")
+                    or line.startswith("Using #codeStream with ")
+                    or "/dynamicCode/" in line
+                    or "ln: ./lnInclude" in line
+                    or ": codeStreamTemplate.C" in line
                 ):
                     continue
                 sys.stdout.write(line)  # 端末へそのまま表示

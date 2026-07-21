@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/7/21 8:16:30 PM
+# 2026/7/21 10:04:28 PM
 
 import glob
 import os
@@ -61,8 +61,12 @@ def execCommand(command_args, log_file_path=None):
     warning = False
     if log_file_path is None:
         for line in iter(process.stdout.readline, ""):
-            if line.startswith("Using #calc at ") or line.startswith(
-                "Using #codeStream with "
+            if (
+                line.startswith("Using #calc at ")
+                or line.startswith("Using #codeStream with ")
+                or "/dynamicCode/" in line
+                or "ln: ./lnInclude" in line
+                or ": codeStreamTemplate.C" in line
             ):
                 continue
             if line.startswith("--> FOAM Warning :"):
@@ -72,8 +76,12 @@ def execCommand(command_args, log_file_path=None):
     else:
         with open(log_file_path, "w") as f_log:
             for line in iter(process.stdout.readline, ""):
-                if line.startswith("Using #calc at ") or line.startswith(
-                    "Using #codeStream with "
+                if (
+                    line.startswith("Using #calc at ")
+                    or line.startswith("Using #codeStream with ")
+                    or "/dynamicCode/" in line
+                    or "ln: ./lnInclude" in line
+                    or ": codeStreamTemplate.C" in line
                 ):
                     continue
                 if line.startswith("--> FOAM Warning :"):
