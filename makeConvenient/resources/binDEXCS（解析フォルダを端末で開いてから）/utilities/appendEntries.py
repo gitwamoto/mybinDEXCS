@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/7/17 7:35:23 PM
+# 2026/7/22 11:45:04 PM
 
 import os
 import sys
@@ -473,14 +473,13 @@ def intoControlDict():
     functions_end = functions.find_element([{"type": "block_end"}], reverse=True)[
         "index"
     ]
-    has_limitNut = False
+    limitNut = None
     # Geminiによると，simpleFoamでは時間ステップが使われていないため，クーラン数を表示する必要はないらしい．
     #    has_calcCo = has_printCoMinMax = False
-    types = functions.find_all_elements(
+    for t in functions.find_all_elements(
         [{"type": "block"}, {"type": "dictionary", "key": "type"}]
-    )
-    for t in types:
-        if not has_limitNut and (
+    ):
+        if limitNut is None and (
             t["element"].find_element([{"except type": "ignorable"}])["element"][
                 "value"
             ]
@@ -490,17 +489,17 @@ def intoControlDict():
                 [
                     {"type": "dictionary", "key": "fields"},
                     {"except type": "ignorable"},
-                    {"except type": "ignorable|list_start"},
+                    {"type": "word"},
                 ],
             )["element"]["value"]
             == "nut"
             and dictParse.find_element(
                 t["parent"],
-                [{"type": "dictionary", "key": "limit"}, {"except type": "ignorable"}],
+                [{"type": "dictionary", "key": "limit"}, {"type": "word"}],
             )["element"]["value"]
             == "max"
         ):
-            has_limitNut = True
+            limitNut = t["parent"]
 #        elif (not has_calcCo and
 #            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'CourantNo')):
 #            has_calcCo = True
@@ -511,7 +510,7 @@ def intoControlDict():
 #                )['element']['value'] == 'Co')):
 #            has_printCoMinMax = True
 
-    if not has_limitNut:
+    if limitNut is None:
         limitNut = dictParse.DictParser(
             string="\n"
             "\tlimitNut // nutの最大値を制限する\n"
@@ -522,10 +521,23 @@ def intoControlDict():
             "\t\tfields\t(nut);\n"
             "\t\tlimit\tmax; // 渦粘性の場合は上限(max)だけ抑えることが多い\n"
             "\t\tmax\t0.01;\n"
+            "\twriteControl\toutputTime;\n"
             "\t}\n"
         )["value"]
         functions["value"][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
+    elif (
+        limitNut.find_element([{"type": "dictionary", "key": "twriteControl"}])[
+            "element"
+        ]
+        is None
+    ):
+        limitNut_end = limitNut.find_element([{"type": "block_end"}], reverse=True)[
+            "index"
+        ]
+        limitNut[limitNut_end:limitNut_end] = dictParse.DictParser(
+            string="\twriteControl\toutputTime;\n"
+        )["value"]
 #    if not has_calcCo:
 #        calcCo = dictParse.DictParser(string =
 #            '\n'
@@ -569,7 +581,7 @@ def intoControlDict():
 
     string = dictParse.normalize(string=controlDict.file_string())[0]
     if controlDict.string != string:
-        #        os.rename(controlDict_path, f'{controlDict_path}_bak')
+#        os.rename(controlDict_path, f'{controlDict_path}_bak')
         with open(controlDict_path, "w") as f:
             f.write(string)
 
