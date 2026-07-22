@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/22 10:14:48 AM
+# 2026/7/22 10:18:27 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -2228,4 +2228,4 @@ if __name__ == "__main__":
     try:
         MyController()
     except Exception:
-        return
+        pass
