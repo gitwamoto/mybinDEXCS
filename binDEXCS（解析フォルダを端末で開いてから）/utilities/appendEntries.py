@@ -287,7 +287,7 @@ def intoFvSolution():
 
         string = dictParse.normalize(string=fvSolution.file_string())[0]
         if fvSolution.string != string:
-            #            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
+#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, "w") as f:
                 f.write(string)
 
@@ -331,7 +331,7 @@ def intoFvSchemes():
                     + 1
                 )
                 fvSchemes["value"][tail_index:tail_index] = linebreak_and_block
-            #                tail_index += len(linebreak_and_block)
+#                tail_index += len(linebreak_and_block)
             else:
                 if (
                     block.find_element([{"type": "dictionary", "key": k}])["element"]
@@ -349,13 +349,12 @@ def intoFvSchemes():
         if (
             any(f in application.lower() for f in ["simplefoam", "potentialfoam"])
             and ddtSchemes != "steadyState"
-        ):
-            # simpleFoamやpotentialFoam系の計算なのに，ddtSchemesをsteadyStateにしていない場合
+        ):  # simpleFoamやpotentialFoam系の計算なのに，ddtSchemesをsteadyStateにしていない場合
             fvSchemes.find_element(
                 [
                     {"type": "block", "key": "ddtSchemes"},
                     {"type": "dictionary", "key": "default"},
-                    {"except type": "ignorable"},
+                    {"type": "word"},
                 ]
             )["element"]["value"] = "steadyState"
             print(
@@ -365,13 +364,12 @@ def intoFvSchemes():
         elif (
             not any(f in application.lower() for f in ["simplefoam", "potentialfoam"])
             and ddtSchemes == "steadyState"
-        ):
-            # simpleFoamやpotentialFoam系の計算ではないのに，ddtSchemesをsteadyStateにしている場合
+        ):  # simpleFoamやpotentialFoam系の計算ではないのに，ddtSchemesをsteadyStateにしている場合
             fvSchemes.find_element(
                 [
                     {"type": "block", "key": "ddtSchemes"},
                     {"type": "dictionary", "key": "default"},
-                    {"except type": "ignorable"},
+                    {"type": "word"},
                 ]
             )["element"]["value"] = "Euler"
             print(
@@ -381,7 +379,7 @@ def intoFvSchemes():
 
         string = dictParse.normalize(string=fvSchemes.file_string())[0]
         if fvSchemes.string != string:
-            #            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
+#            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
             with open(fvSchemes_path, "w") as f:
                 f.write(string)
 
@@ -503,15 +501,15 @@ def intoControlDict():
             == "max"
         ):
             has_limitNut = True
-    #        elif (not has_calcCo and
-    #            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'CourantNo')):
-    #            has_calcCo = True
-    #        elif (not has_printCoMinMax and
-    #            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'fieldMinMax' and
-    #            dictParse.find_element(t['parent'], [{'type': 'dictionary', 'key': 'fields'},
-    #                {'except type': 'ignorable'}, {'except type': 'ignorable|list_start'}]
-    #                )['element']['value'] == 'Co')):
-    #            has_printCoMinMax = True
+#        elif (not has_calcCo and
+#            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'CourantNo')):
+#            has_calcCo = True
+#        elif (not has_printCoMinMax and
+#            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'fieldMinMax' and
+#            dictParse.find_element(t['parent'], [{'type': 'dictionary', 'key': 'fields'},
+#                {'except type': 'ignorable'}, {'except type': 'ignorable|list_start'}]
+#                )['element']['value'] == 'Co')):
+#            has_printCoMinMax = True
 
     if not has_limitNut:
         limitNut = dictParse.DictParser(
@@ -528,29 +526,29 @@ def intoControlDict():
         )["value"]
         functions["value"][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
-    #    if not has_calcCo:
-    #        calcCo = dictParse.DictParser(string =
-    #            '\n'
-    #            '\tcalcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
-    #            '\t{\n'
-    #            '\t\ttype\tCourantNo;\n'
-    #            '\t\tlibs\t(fieldFunctionObjects);\n'
-    #            '\t\tenabled\tno; // yesで実行\n'
-    #            '\t}\n')['value']
-    #        functions['value'][functions_end:functions_end] = calcCo
-    #        functions_end += len(calcCo)
-    #    if not has_printCoMinMax:
-    #        printCoMinMax = dictParse.DictParser(string =
-    #            '\n'
-    #            '\tprintCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
-    #            '\t{\n'
-    #            '\t\ttype\tfieldMinMax;\n'
-    #            '\t\tlibs\t(fieldFunctionObjects);\n'
-    #            '\t\tenabled\tno; // yesで実行\n'
-    #            '\t\tfields\t(Co);\n'
-    #            '\t}\n')['value']
-    #        functions['value'][functions_end:functions_end] = printCoMinMax
-    #        functions_end += len(printCoMinMax)
+#    if not has_calcCo:
+#        calcCo = dictParse.DictParser(string =
+#            '\n'
+#            '\tcalcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
+#            '\t{\n'
+#            '\t\ttype\tCourantNo;\n'
+#            '\t\tlibs\t(fieldFunctionObjects);\n'
+#            '\t\tenabled\tno; // yesで実行\n'
+#            '\t}\n')['value']
+#        functions['value'][functions_end:functions_end] = calcCo
+#        functions_end += len(calcCo)
+#    if not has_printCoMinMax:
+#        printCoMinMax = dictParse.DictParser(string =
+#            '\n'
+#            '\tprintCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
+#            '\t{\n'
+#            '\t\ttype\tfieldMinMax;\n'
+#            '\t\tlibs\t(fieldFunctionObjects);\n'
+#            '\t\tenabled\tno; // yesで実行\n'
+#            '\t\tfields\t(Co);\n'
+#            '\t}\n')['value']
+#        functions['value'][functions_end:functions_end] = printCoMinMax
+#        functions_end += len(printCoMinMax)
     functions.set_blank_line(number_of_blank_lines=1)
 
     runTimeModifiable = controlDict.find_element(
