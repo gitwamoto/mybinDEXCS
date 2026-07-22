@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/7/21 10:40:41 PM
+# 2026/7/22 9:43:12 PM
 
 import glob
 import os
@@ -107,7 +107,7 @@ def execCommand(command_args, log_file_path=None):
 def execParaFoam(touch_only=False, ambient=1.0, diffuse=0.0):
     for f in glob.iglob("*.OpenFOAM" if dexcs_version == "2019" else "*.foam"):
         os.remove(f)
-    execCommand(["paraFoam", "-touch-all"])
+    subprocess.run(["paraFoam", "-touch-all"])
     # Usage: paraFoam [OPTION] [--] [PARAVIEW_OPTION]
     # options:
     #   -block            Use blockMesh reader (.blockMesh extension)
@@ -125,7 +125,7 @@ def execParaFoam(touch_only=False, ambient=1.0, diffuse=0.0):
             os.remove(f)
     if not touch_only:
         setParaViewAmbientDiffuse(ambient, diffuse)
-        execCommand(["paraFoam"])
+        subprocess.run(["paraFoam"])
     setParaViewAmbientDiffuse(ambient, diffuse)
 
 
