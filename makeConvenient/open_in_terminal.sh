@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2026/4/23 7:40:40 PM
+# 2026/7/22 11:06:14 AM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -42,7 +42,8 @@ apt_installed="$(apt list --installed)"
 if [ "$dexcs_version" = "2019" ]; then
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
-		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt python-openpyxl python-requests; do
+		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt \
+			python-openpyxl python-requests; do
 			if echo "$apt_installed" | grep --quiet "$p/"; then
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
@@ -58,7 +59,7 @@ if [ "$dexcs_version" = "2019" ]; then
 	fi
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
-	for p in pexpect pyperclip chardet xlrd Pillow urllib3; do
+	for p in pexpect pyperclip chardet xlrd Pillow urllib3 pandas; do
 		if [ -e "$HOME/.local/lib/python2.7/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -74,7 +75,7 @@ if [ "$dexcs_version" = "2019" ]; then
 	fi
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
-	for p in numpy scipy matplotlib zenhan GPyOpt GPy geomdl openpyxl requests; do
+	for p in numpy scipy matplotlib zenhan GPyOpt GPy geomdl openpyxl requests optuna; do
 		if [ -e "$HOME/.local/lib/python2.7/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -90,7 +91,8 @@ if [ "$dexcs_version" = "2019" ]; then
 	# 注意: notepadqはaptにないのでsnapでインストール
 	if $imsudoer; then
 		for p in python-tk \
-			python-pexpect python-pyperclip python-chardet python-xlrd python-pil python-urllib3 \
+			python-pexpect python-pyperclip python-chardet python-xlrd python-pil \
+			python-urllib3 python-pandas \
 			libsdl2-2.0-0 libgtk-3-dev \
 			gedit-plugins wxmaxima handbrake xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p/"; then
@@ -102,7 +104,7 @@ if [ "$dexcs_version" = "2019" ]; then
 
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
-		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests; do
+		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests optuna; do
 			if [ ! -e "/usr/local/lib/python2.7/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
@@ -145,7 +147,8 @@ else # 2021
 	fi
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
-	for p in pexpect chardet xlrd Pillow urllib3 numpy scipy matplotlib openpyxl requests; do
+	for p in pexpect chardet xlrd Pillow urllib3 numpy scipy matplotlib openpyxl \
+		requests pandas; do
 		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -161,7 +164,7 @@ else # 2021
 	fi
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
-	for p in zenhan GPyOpt GPy geomdl openpyxl pyperclip; do
+	for p in zenhan GPyOpt GPy geomdl openpyxl pyperclip optuna; do
 		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -184,6 +187,7 @@ else # 2021
 			python3-numpy python3-scipy python3-matplotlib \
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
 			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
+			python3-pandas \
 			gedit-plugins wxmaxima handbrake notepadqq xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p/"; then
 				sudo apt install -y "$p"
@@ -198,7 +202,7 @@ else # 2021
 
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
-		for p in zenhan GPyOpt geomdl pyperclip; do
+		for p in zenhan GPyOpt geomdl pyperclip optuna; do
 			if [ ! -e "/usr/local/lib/python3.8/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
