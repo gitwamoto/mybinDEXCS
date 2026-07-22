@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/6/16 9:52:16 PM
+# 2026/7/22 9:08:31 PM
 
 import os
 import signal
 import sys
 import shutil
-import glob
+import subprocess
 
 binDEXCS_path = os.path.expanduser(
     "~/Desktop/binDEXCS（解析フォルダを端末で開いてから）"
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         with open(fvSolution, "w") as f:
             f.writelines(lines)
 
-        misc.execCommand(
+        subprocess.run(
             [os.path.join(binDEXCS_path, "計算.py"), "-d", f"{domains}", "-0", "-r"]
         )
         # ---- 計算.pyのオプション ----
@@ -134,7 +134,7 @@ if __name__ == "__main__":
         with open(fvSolution, "w") as f:
             f.writelines(lines)
 
-        misc.execCommand(
+        subprocess.run(
             [os.path.join(binDEXCS_path, "計算.py"), "-d", f"{domains}", "-r"]
         )
         # ---- 計算.pyのオプション ----
