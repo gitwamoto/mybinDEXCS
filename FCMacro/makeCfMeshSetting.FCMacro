@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/21 8:19:47 PM
+# 2026/7/22 9:58:31 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -47,7 +47,11 @@ class FreeCadFileGrid(QtGui.QTableWidget):
         self.table = []
         for obj in freecad_objects:
             try:
-                if obj.ViewObject.Visibility and hasattr(obj, "Shape"):
+                if (
+                    obj.ViewObject.Visibility and hasattr(obj, "Shape")
+                    and "PartDesign::" not in obj.TypeId # Bodyや押し出しなどのフィーチャーを排除
+                    and not hasattr(obj, "Role") # 軸や原点を排除
+                ):
                     if pat.match(obj.Label) is None:
                         QtGui.QMessageBox.critical(
                             None,
@@ -58,9 +62,8 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                         )
                         sys.exit(1)
                     self.table.append([obj.Label, None, "", False, 2, 1.2])
-            except:
+            except Exception:
                 print(sys.exc_info())
-                pass
         self.setRowCount(len(self.table))
         self.setColumnCount(len(self.table[0]))
         self.setHorizontalHeaderLabels(FreeCadFileGrid.COL_LABELS)
@@ -128,7 +131,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
             self.updateTable(
                 row, FreeCadFileGrid.BOUNDARY_LAYER, state == QtCore.Qt.Checked.value
             )
-        except:
+        except Exception:
             self.updateTable(
                 row, FreeCadFileGrid.BOUNDARY_LAYER, state == QtCore.Qt.Checked
             )
@@ -136,7 +139,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
     def actionOnCellChanged(self, row, col):
         try:
             self.updateTable(row, col, self.item(row, col).text())
-        except:
+        except Exception:
             self.item(row, col).setText(str(self.table[row][col]))
 
     def updateTable(self, row, col, value):
@@ -152,7 +155,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                 self.table[row][col] = float(value)
             else:
                 self.table[row][col] = value
-        except:
+        except Exception:
             raise
 
     def setCellValue(self, row, col, value):
@@ -168,7 +171,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                 )
             else:
                 self.item(row, col).setText(value)
-        except:
+        except Exception:
             pass
 
 
@@ -233,8 +236,8 @@ class MeshFrame(QtGui.QDialog):
         box_V.addWidget(self.grid)
         box_V.addWidget(
             QtGui.QLabel(
-                "*** The table above contains all the visible objects.\n"
-                + "       Object's visibility can be changed by space key after selection of the object."
+                "*** 上の表は全ての可視オブジェクトを含んでいます.\n"
+                "    可視性（Visibility）を変えるには，オブジェクトを選んだ後でスペースキーを押します．"
             )
         )
 
@@ -642,7 +645,7 @@ class MyController:
             re.sub("^([0-9])", r"_\1", f"{os.path.basename(case_dir_path)}.stl"),
         )
         self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_name)
-        fms_file_name = stl_file_name[:-3] + "fms"
+        fms_file_name = f"{stl_file_name[:-3]}fms"
         cwd = os.getcwd()
         os.chdir(case_dir_path)
         command = (
@@ -830,7 +833,7 @@ class MyModel:
                     xmax = max(xmax, obj.Shape.BoundBox.XMax)
                     ymax = max(ymax, obj.Shape.BoundBox.YMax)
                     zmax = max(zmax, obj.Shape.BoundBox.ZMax)
-            except:
+            except Exception:
                 pass
         return xmax - xmin + ymax - ymin + zmax - zmin
 
