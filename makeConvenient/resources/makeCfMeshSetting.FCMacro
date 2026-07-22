@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/22 10:18:29 AM
+# 2026/7/22 10:36:47 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -62,6 +62,8 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                         )
                         raise ValueError("zenkaku label")
                     self.table.append([obj.Label, None, "", False, 2, 1.2])
+            except ValueError:
+                raise
             except Exception:
                 print(sys.exc_info())
         self.setRowCount(len(self.table))
@@ -189,7 +191,7 @@ class MeshFrame(QtGui.QDialog):
                 "動作が保証できません．半角文字で名前をつけ直して下さい．",
                 QtGui.QMessageBox.Close,
             )
-            sys.exit(1)
+            raise ValueError("zenkaku path")
 
         super(MeshFrame, self).__init__(parent=None)
         self.setWindowTitle("cfMesh settings from FreeCAD Model (.fcstd)")
@@ -236,8 +238,8 @@ class MeshFrame(QtGui.QDialog):
         box_V.addWidget(self.grid)
         box_V.addWidget(
             QtGui.QLabel(
-                "*** 上の表は全ての可視オブジェクトを含んでいます.\n"
-                "    可視性（Visibility）を変えるには，オブジェクトを選んだ後でスペースキーを押します．"
+                "※ 上の表は全ての可視オブジェクトを含んでいます.\n"
+                "     可視性（Visibility）を切り替えるには，オブジェクトを選んだ後でスペースキーを押します．"
             )
         )
 
@@ -578,14 +580,16 @@ class MyController:
                         f"ラベル{l}を{obj.Label}に変更しました．",
                         QtGui.QMessageBox.Close,
                     )
-        self.MeshFrame = MeshFrame(
-            controller=self,
-            freecad_objects=self.doc.Objects,
-            case_dir_path=os.path.dirname(self.doc.FileName),
-            max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)
-            / 60.0,
-            feature_angle=MyController.FEATURE_ANGLE,
-        )
+        try:
+            self.MeshFrame = MeshFrame(
+                controller=self,
+                freecad_objects=self.doc.Objects,
+                case_dir_path=os.path.dirname(self.doc.FileName),
+                max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)/60.0,
+                feature_angle=MyController.FEATURE_ANGLE,
+            )
+        except Exception:
+            return
         self.MeshFrame.show()
 
     def actionOnCaseButton(self):
@@ -1711,7 +1715,4 @@ class MyModel:
 
 
 if __name__ == "__main__":
-    try:
-        MyController()
-    except Exception:
-        pass
+    MyController()
