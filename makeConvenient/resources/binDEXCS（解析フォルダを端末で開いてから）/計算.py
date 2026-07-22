@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/21 10:40:38 PM
+# 2026/7/22 3:23:30 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -41,7 +41,7 @@ from utilities import dictParse
 
 relaxationFactor_lower_limit = 0.3  # 緩和係数の下限値
 relaxationFactor_delta_usual = 0.01  # 通常時における緩和係数の変化量の絶対値
-relaxationFactor_delta_restart = 0.05  # 通常時における緩和係数の変化量の絶対値
+relaxationFactor_delta_restart = 0.05  # リスタート時における緩和係数の変化量の絶対値
 domains = 1
 regionProperties_path = os.path.join("constant", "regionProperties")
 decomposeParDict_path = os.path.join("system", "decomposeParDict")
@@ -329,18 +329,18 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
 
     def monitor():
         for data_key in plot_data:
-            #            message = ''
+#            message = ''
             for k in plot_data[data_key]:
-                #                l = len(plot_data[data_key][k])
-                #                if l != iteration:
-                #                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
-                #                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
+#                l = len(plot_data[data_key][k])
+#                if l != iteration:
+#                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
+#                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
                 plt_line2d[data_key][k].set_data(
                     range(1, len(plot_data[data_key][k]) + 1), plot_data[data_key][k]
                 )  # 線を更新
-            #            if len(message) > 0:
-            #                sys.stdout.write(f'\n{message}\n')
-            #                sys.stdout.flush() # リアルタイム反映のため
+#            if len(message) > 0:
+#                sys.stdout.write(f'\n{message}\n')
+#                sys.stdout.flush() # リアルタイム反映のため
             plt_ax[data_key].relim()  # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw()  # 新しいデータを画面に描く
