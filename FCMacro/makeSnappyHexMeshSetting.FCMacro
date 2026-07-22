@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/22 9:58:33 AM
+# 2026/7/22 10:14:48 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -60,7 +60,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                             "動作が保証できません．半角文字で名前をつけ直して下さい．",
                             QtGui.QMessageBox.Close,
                         )
-                        sys.exit(1)
+                        raise ValueError("zenkaku label")
                     self.table.append([obj.Label, None, 0, False, 2, 1.2])
             except Exception:
                 print(sys.exc_info())
@@ -2225,4 +2225,7 @@ class MyModel:
 
 
 if __name__ == "__main__":
-    MyController()
+    try:
+        MyController()
+    except Exception:
+        return
