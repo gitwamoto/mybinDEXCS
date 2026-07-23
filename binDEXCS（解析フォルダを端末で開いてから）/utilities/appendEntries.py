@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/7/22 11:45:04 PM
+# 2026/7/23 10:19:44 AM
 
 import os
 import sys
@@ -499,7 +499,7 @@ def intoControlDict():
             )["element"]["value"]
             == "max"
         ):
-            limitNut = t["parent"]
+            limitNut = t["parent"] # list
 #        elif (not has_calcCo and
 #            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'CourantNo')):
 #            has_calcCo = True
@@ -523,16 +523,16 @@ def intoControlDict():
             "\t\tmax\t0.01;\n"
             "\twriteControl\toutputTime;\n"
             "\t}\n"
-        )["value"]
+        )["value"] # list
         functions["value"][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
     elif (
-        limitNut.find_element([{"type": "dictionary", "key": "twriteControl"}])[
+        dictParse.find_element(limitNut, [{"type": "dictionary", "key": "twriteControl"}])[
             "element"
         ]
         is None
     ):
-        limitNut_end = limitNut.find_element([{"type": "block_end"}], reverse=True)[
+        limitNut_end = dictParse.find_element(limitNut, [{"type": "block_end"}], reverse=True)[
             "index"
         ]
         limitNut[limitNut_end:limitNut_end] = dictParse.DictParser(
