@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/22 10:36:47 AM
+# 2026/7/23 9:55:32 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -593,13 +593,13 @@ class MyController:
         self.MeshFrame.show()
 
     def actionOnCaseButton(self):
-        dir_name = QtGui.QFileDialog.getExistingDirectory(
+        dir_path = QtGui.QFileDialog.getExistingDirectory(
             self.MeshFrame,
             "Choose a directory.",
             os.path.expanduser(os.path.join("~", "Desktop")),
         )
-        if dir_name != "":
-            self.MeshFrame.caseDirST.setText(dir_name)
+        if dir_path != "":
+            self.MeshFrame.caseDirST.setText(dir_path)
 
     def actionOnOpenButton(self):
         case_dir_path = self.MeshFrame.caseDirST.text()
@@ -644,18 +644,18 @@ class MyController:
         elif os.path.isfile(triSurface):
             os.remove(triSurface)
         os.mkdir(triSurface)
-        stl_file_name = os.path.join(
+        stl_file_path = os.path.join(
             triSurface,
             re.sub("^([0-9])", r"_\1", f"{os.path.basename(case_dir_path)}.stl"),
         )
-        self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_name)
-        fms_file_name = f"{stl_file_name[:-3]}fms"
+        self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_path)
+        fms_file_path = f"{stl_file_path[:-3]}fms"
         cwd = os.getcwd()
         os.chdir(case_dir_path)
         command = (
             f". '{MyController.BASHRC_PATH_4_OPENFOAM}' && "
             f"surfaceFeatureEdges -angle {self.MeshFrame.featureAngleCRL.text()} "
-            f"{stl_file_name} {fms_file_name}"
+            f"{stl_file_path} {fms_file_path}"
         )
         if subprocess.run(command, shell=True).returncode != 0:
             QtGui.QMessageBox.critical(
@@ -666,7 +666,7 @@ class MyController:
         os.chdir(cwd)
         self.model.makeMeshDict(
             case_dir_path=case_dir_path,
-            surface_file_name=fms_file_name,
+            surface_file_path=fms_file_path,
             max_cell_size=self.MeshFrame.maxCellSizeCRL.text(),
             freecad_objects=self.doc.Objects,
             grid=self.MeshFrame.grid,
@@ -842,13 +842,13 @@ class MyModel:
         return xmax - xmin + ymax - ymin + zmax - zmin
 
     @staticmethod
-    def exportStl(freecad_objects, grid, file_name):
+    def exportStl(freecad_objects, grid, file_path):
         fd, tmp_stl = tempfile.mkstemp(suffix=".ast")
         os.close(fd)
         os.remove(tmp_stl)
         xmin = ymin = zmin = float("inf")
         xmax = ymax = zmax = float("-inf")
-        with open(file_name, "w") as f:
+        with open(file_path, "w") as f:
             for i in grid.table:
                 if i[grid.TYPE] in (
                     "BoxRefine",
@@ -867,7 +867,7 @@ class MyModel:
                     (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None
                 )
                 if i[grid.TYPE] == "SurfaceRefine":
-                    name = os.path.join(os.path.dirname(file_name), i[grid.OBJECT_NAME])
+                    name = os.path.join(os.path.dirname(file_path), i[grid.OBJECT_NAME])
                     Mesh.export([obj], f"{name}.ast")  # ascii format
                     os.rename(f"{name}.ast", f"{name}.stl")  # can overwrite
                 else:
@@ -909,7 +909,7 @@ class MyModel:
     @staticmethod
     def makeMeshDict(
         case_dir_path,
-        surface_file_name,
+        surface_file_path,
         max_cell_size,
         freecad_objects,
         grid,
@@ -1016,7 +1016,7 @@ class MyModel:
 
             f.write(
                 "\n"
-                f'surfaceFile\t"constant/triSurface/{os.path.basename(surface_file_name)}"; // 必須\n'
+                f'surfaceFile\t"constant/triSurface/{os.path.basename(surface_file_path)}"; // 必須\n'
             )
 
             boundaryLayers = dictParse.find_element(

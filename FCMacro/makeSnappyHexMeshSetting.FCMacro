@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/22 10:36:45 AM
+# 2026/7/23 9:55:29 AM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -666,13 +666,13 @@ class MyController:
         self.MeshFrame.show()
 
     def actionOnCaseButton(self):
-        dir_name = QtGui.QFileDialog.getExistingDirectory(
+        dir_path = QtGui.QFileDialog.getExistingDirectory(
             self.MeshFrame,
             "Choose a directory.",
             os.path.expanduser(os.path.join("~", "Desktop")),
         )
-        if dir_name != "":
-            self.MeshFrame.caseDirST.setText(dir_name)
+        if dir_path != "":
+            self.MeshFrame.caseDirST.setText(dir_path)
 
     def actionOnOpenButton(self):
         case_dir_path = self.MeshFrame.caseDirST.text()
@@ -751,14 +751,14 @@ class MyController:
             shutil.rmtree(extendedFeatureEdgeMesh)
         elif os.path.isfile(extendedFeatureEdgeMesh):
             os.remove(extendedFeatureEdgeMesh)
-        stl_file_name = os.path.join(
+        stl_file_path = os.path.join(
             triSurface,
             re.sub("^([0-9])", r"_\1", f"{os.path.basename(case_dir_path)}.stl"),
         )
-        box = self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_name)
+        box = self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_path)
         self.model.makeSurfaceFeatureExtractDict(
             case_dir_path=case_dir_path,
-            surface_file_name=stl_file_name,
+            surface_file_path=stl_file_path,
             feature_angle=self.MeshFrame.featureAngleCRL.text(),
         )
         cwd = os.getcwd()
@@ -773,7 +773,7 @@ class MyController:
         os.chdir(cwd)
         self.model.makeMeshDict(
             case_dir_path=case_dir_path,
-            surface_file_name=stl_file_name,
+            surface_file_path=stl_file_path,
             max_cell_size=self.MeshFrame.maxCellSizeCRL.text(),
             bounding_box=box,
             freecad_objects=self.doc.Objects,
@@ -978,13 +978,13 @@ class MyModel:
         return xmax - xmin + ymax - ymin + zmax - zmin
 
     @staticmethod
-    def exportStl(freecad_objects, grid, file_name):
+    def exportStl(freecad_objects, grid, file_path):
         fd, tmp_stl = tempfile.mkstemp(suffix=".ast")
         os.close(fd)
         os.remove(tmp_stl)
         xmin = ymin = zmin = float("inf")
         xmax = ymax = zmax = float("-inf")
-        with open(file_name, "w") as f:
+        with open(file_path, "w") as f:
             for i in grid.table:
                 if i[grid.TYPE] in (
                     "BoxRefine",
@@ -1004,7 +1004,7 @@ class MyModel:
                     (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None
                 )
                 if i[grid.TYPE] == "SurfaceRefine":
-                    name = os.path.join(os.path.dirname(file_name), i[grid.OBJECT_NAME])
+                    name = os.path.join(os.path.dirname(file_path), i[grid.OBJECT_NAME])
                     Mesh.export([obj], f"{name}.ast")  # ascii format
                     os.rename(f"{name}.ast", f"{name}.stl")  # can overwrite
                 else:
@@ -1044,7 +1044,7 @@ class MyModel:
         return xmin, ymin, zmin, xmax, ymax, zmax
 
     @staticmethod
-    def makeSurfaceFeatureExtractDict(case_dir_path, surface_file_name, feature_angle):
+    def makeSurfaceFeatureExtractDict(case_dir_path, surface_file_path, feature_angle):
         dict_path = os.path.join(case_dir_path, "system", "surfaceFeatureExtractDict")
         with open(dict_path, "w") as f:
             f.write(
@@ -1057,7 +1057,7 @@ class MyModel:
                 "\tobject\tsurfaceFeatureExtractDict;\n"
                 "}\n"
                 "\n"
-                f"{os.path.basename(surface_file_name)}\n"
+                f"{os.path.basename(surface_file_path)}\n"
                 "{\n"
                 "\textractionMethod\textractFromSurface;\n"
                 "\n"
@@ -1079,7 +1079,7 @@ class MyModel:
     @staticmethod
     def makeMeshDict(
         case_dir_path,
-        surface_file_name,
+        surface_file_path,
         max_cell_size,
         bounding_box,
         freecad_objects,
@@ -1142,8 +1142,8 @@ class MyModel:
             )
 
             object_names = [i[grid.OBJECT_NAME] for i in grid.table]
-            surface_file_name = os.path.basename(surface_file_name)
-            surface_file_name_wo_ext = os.path.splitext(surface_file_name)[0]
+            surface_file_path = os.path.basename(surface_file_path)
+            surface_file_path_wo_ext = os.path.splitext(surface_file_path)[0]
             f.write(
                 "\n"
                 "// 面形状の定義．すべての面はsearchableSurfaceクラスに属する．面は以下で使用する：\n"
@@ -1152,10 +1152,10 @@ class MyModel:
                 "// - メッシュ境界を表面にsnapさせる．\n"
                 "geometry\n"
                 "{\n"
-                f"\t{surface_file_name} // in constant/triSurface\n"
+                f"\t{surface_file_path} // in constant/triSurface\n"
                 "\t{\n"
                 "\t\ttype\ttriSurfaceMesh;\n"
-                f"\t\tname\t{surface_file_name_wo_ext};\n"
+                f"\t\tname\t{surface_file_path_wo_ext};\n"
                 "\t}\n"
             )
             for i in grid.table:
@@ -1209,7 +1209,7 @@ class MyModel:
             ):
                 block = block["element"]
                 if (
-                    block["key"] != surface_file_name
+                    block["key"] != surface_file_path
                     and block["key"] not in object_names
                 ):
                     f.write(f"\n\t{block.file_string(indent_level=1)}\n")
@@ -1325,7 +1325,7 @@ class MyModel:
                 "\tfeatures\n"
                 "\t(\n"
                 "\t\t{\n"
-                f'\t\t\tfile\t"{surface_file_name_wo_ext}.extendedFeatureEdgeMesh";\n'
+                f'\t\t\tfile\t"{surface_file_path_wo_ext}.extendedFeatureEdgeMesh";\n'
                 f"\t\t\tlevel\t{features_level};\n"
                 "\t\t}\n"
                 "\t);\n"
@@ -1334,7 +1334,7 @@ class MyModel:
                 "\n"
                 "\trefinementSurfaces\n"
                 "\t{\n"
-                f"\t\t{surface_file_name_wo_ext}\n"
+                f"\t\t{surface_file_path_wo_ext}\n"
                 "\t\t{\n"
             )
             f.write("\t\t\tlevel\t(0 1); // (min max)\n\t\t\tregions\n\t\t\t{\n")
@@ -1415,7 +1415,7 @@ class MyModel:
             ):
                 block = block["element"]
                 if (
-                    block["key"] != surface_file_name
+                    block["key"] != surface_file_path
                     and block["key"] not in object_names
                 ):
                     f.write(f"\n\t\t{block.file_string(indent_level=2)}\n")
@@ -1622,7 +1622,7 @@ class MyModel:
                 ):
                     continue
                 f.write(
-                    f"\t\t{surface_file_name_wo_ext}_{i[grid.OBJECT_NAME]}\n"
+                    f"\t\t{surface_file_path_wo_ext}_{i[grid.OBJECT_NAME]}\n"
                     "\t\t{\n"
                     f"\t\t\tnSurfaceLayers\t{i[grid.N_LAYERS]};\n"
                     f"\t\t\texpansionRatio\t{i[grid.RATIO]};\n"
@@ -1633,7 +1633,7 @@ class MyModel:
                         {"type": "block", "key": "layers"},
                         {
                             "type": "block",
-                            "key": f"{surface_file_name_wo_ext}_{i[grid.OBJECT_NAME]}",
+                            "key": f"{surface_file_path_wo_ext}_{i[grid.OBJECT_NAME]}",
                         },
                         {
                             "type": "block|dictionary",

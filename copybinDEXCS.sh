@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/7/22 11:06:17 AM
+# 2026/7/23 9:42:19 AM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -427,6 +427,7 @@ if [ "$dexcs_version" = "2019" ]; then
 		for p in python-tk \
 			python-pexpect python-pyperclip python-chardet python-xlrd python-pil \
 			python-urllib3 python-pandas \
+			sqlitebrowser \
 			libsdl2-2.0-0 libgtk-3-dev \
 			gedit-plugins wxmaxima handbrake xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p/"; then
@@ -522,6 +523,7 @@ else # 2021
 			python3-pyside2.qtnetwork python3-pyside2.qtwebengine python3-pyside2.qtwebenginecore \
 			python3-pyside2.qtwebenginewidgets python3-pyside2.qtwebchannel \
 			python3-pandas \
+			sqlitebrowser \
 			gedit-plugins wxmaxima handbrake notepadqq xsel; do
 			if ! echo "$apt_installed" | grep --quiet "$p/"; then
 				sudo apt install -y "$p"
