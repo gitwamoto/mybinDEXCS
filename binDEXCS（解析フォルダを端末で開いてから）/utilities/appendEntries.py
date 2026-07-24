@@ -251,9 +251,15 @@ def intoFvSolution():
                 "\t\tp\t1.0;\n"
                 "\t\tp_rgh\t1.0;\n"
                 "\t\trho\t1.0;\n"
+                '\t\t."*Final"\t1.0; // pimpleFOAMで時間精度を保つために必要\n'
                 "\t}"
             )["value"]
         else:
+            if fields.find_element([{"type": "dictionary"}, {"key": '".*Final"'}])["element"] is None:
+                fields_end = fields.find_element([{"type": "block_end"}], reverse=True)["index"]
+                fields["value"][fields_end:fields_end] = dictParse.DictParser(
+                    string='\t\t."*Final"\t1.0; // pimpleFOAMで時間精度を保つために必要\n'
+                )["value"]
             fields["value"][
                 : fields.find_element([{"type": "block_start"}])["index"]
             ] = dictParse.DictParser(
