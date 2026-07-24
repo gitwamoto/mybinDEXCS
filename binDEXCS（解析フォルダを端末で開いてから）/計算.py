@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/24 9:34:38 PM
+# 2026/7/24 9:57:11 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -37,7 +37,7 @@ from utilities import dictParse
 # plt.rcParams['figure.figsize'] = (6.0, 3.6) # (width, height), デフォルト値は環境によりますが、多くの場合は (6.4, 4.8) です。
 
 relaxationFactor_lower_limit = 0.3  # 緩和係数の下限値
-relaxationFactor_delta_usual = 0.002  # 通常時における緩和係数の変化量の絶対値
+relaxationFactor_delta_usual = 0.01  # 通常時における緩和係数の変化量の絶対値
 relaxationFactor_delta_restart = 0.05  # リスタート時における緩和係数の減量量
 domains = 1
 regionProperties_path = os.path.join("constant", "regionProperties")
@@ -344,8 +344,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             plt_fig[data_key].savefig(f"{data_key}.png")
 
     res_eval_freq = 10  # 残差評価頻度
-    res_slope_inc = -0.1  # これよりも残差のこう配が小さい時に緩和係数を増加させる
-    res_slope_dec = -0.01  # これよりも残差のこう配が大きい時に緩和係数を減少させる
+    res_slope_inc = -1.0  # これよりも残差のこう配が小さい時に緩和係数を増加させる
+    res_slope_dec = -0.1  # これよりも残差のこう配が大きい時に緩和係数を減少させる
 
     def relax_delta_sign(recent_residuals):
         recent_residuals = np.array(recent_residuals)
