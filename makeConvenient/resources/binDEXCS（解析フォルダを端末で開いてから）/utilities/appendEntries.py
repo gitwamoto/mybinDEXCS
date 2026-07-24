@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/7/23 10:19:44 AM
+# 2026/7/24 1:51:16 PM
 
 import os
 import sys
@@ -76,26 +76,34 @@ def intoFvSolution():
                     "\t*/\n"
                 )["value"]
 
-            # solvers/Phi
-            params = "|".join(
-                [
-                    i["element"]["key"].strip('"')
-                    for i in solvers.find_all_elements([{"type": "block"}])
-                ]
+            # solvers/.*Final, solvers/Phi
+            params_pat = re.compile(
+                "|".join(
+                    [
+                        i["element"]["key"].strip('"')
+                        for i in solvers.find_all_elements([{"type": "block"}])
+                    ]
+                )
             )
-            if re.search(params, "Phi") is None:
-                p = re.search(params, "p")
+            block_end = solvers.find_element([{"type": "block_end"}], reverse=True)[
+                "index"
+            ]
+            for p in ("p", "U", "k", "epsilon", "omega"):
+                if (
+                    params_pat.search(f"{p}Final") is None
+                    and params_pat.search(p) is not None
+                ):
+                    solvers["value"][block_end:block_end] = dictParse.DictParser(
+                        string=f"\n${p}Final\n{{\n\t${p};\n\trelTol\t0.0;\n}}\n"
+                    )["value"]
+            if params_pat.search("Phi") is None:
+                p = params_pat.search("p")
                 if p is None:
-                    p = re.search(params, "p_rgh")
+                    p = params_pat.search("p_rgh")
                 if p is not None:
-                    block_end = solvers.find_element(
-                        [{"type": "block_end"}], reverse=True
-                    )
-                    block_end["parent"][block_end["index"] : block_end["index"]] = (
-                        dictParse.DictParser(
-                            string=f"\nPhi\n{{\n\t${p.group()};\n}}\n"
-                        )["value"]
-                    )
+                    solvers["value"][block_end:block_end] = dictParse.DictParser(
+                        string=f"\nPhi\n{{\n\t${p.group()};\n}}\n"
+                    )["value"]
 
             solvers.set_blank_line(number_of_blank_lines=1)
 
@@ -226,68 +234,108 @@ def intoFvSolution():
 
         relaxationFactors = fvSolution.find_element(
             [{"type": "block", "key": "relaxationFactors"}]
-        )["element"]
-        if relaxationFactors is None:
-            linebreak_and_relaxationFactors = dictParse.DictParser(
-                string="\n\nrelaxationFactors\n{\n}"
-            )["value"]
-            fvSolution["value"][tail_index:tail_index] = linebreak_and_relaxationFactors
-            tail_index += len(linebreak_and_relaxationFactors)
-            relaxationFactors = linebreak_and_relaxationFactors[-1]
-        relaxationFactors_start = (
-            relaxationFactors.find_element([{"type": "block_start"}])["index"] + 1
         )
-
-        fields = relaxationFactors.find_element([{"type": "block", "key": "fields"}])[
-            "element"
-        ]
-        if fields is None:
-            relaxationFactors["value"][
-                relaxationFactors_start:relaxationFactors_start
-            ] = dictParse.DictParser(
-                string="\n"
-                "\tfields // p = p^{old} + \\alpha (p - p^{old})\n"
-                "\t{\n"
-                "\t\tp\t1.0;\n"
-                "\t\tp_rgh\t1.0;\n"
-                "\t\trho\t1.0;\n"
-                "\t}"
-            )["value"]
+        if misc.getApplication() == "pisoFoam":
+            if relaxationFactors["element"] is not None:
+                del relaxationFactors["parent"][relaxationFactors["index"]]
+                print(
+                    "\n\033[3;4;5mpisoFoamで緩和係数を使うと時間精度が保たれないので"
+                    f"{fvSolution_path}ファイルのrelaxationFactorsを削除しました．\033[m\n"
+                )
+            fvSolution.set_blank_line(number_of_blank_lines=1)
         else:
-            fields["value"][
-                : fields.find_element([{"type": "block_start"}])["index"]
-            ] = dictParse.DictParser(
-                string=" // p = p^{old} + \\alpha (p - p^{old})\n"
-            )["value"]
+            relaxationFactors = relaxationFactors["element"]
+            if relaxationFactors is None:
+                linebreak_and_relaxationFactors = dictParse.DictParser(
+                    string="\n\nrelaxationFactors\n{\n}"
+                )["value"]
+                fvSolution["value"][tail_index:tail_index] = (
+                    linebreak_and_relaxationFactors
+                )
+                tail_index += len(linebreak_and_relaxationFactors)
+                relaxationFactors = linebreak_and_relaxationFactors[-1]
+            relaxationFactors_end = relaxationFactors.find_element(
+                [{"type": "block_end"}], reverse=True
+            )["index"]
 
-        equations = relaxationFactors.find_element(
-            [{"type": "block", "key": "equations"}]
-        )["element"]
-        if equations is None:
-            relaxationFactors["value"][
-                relaxationFactors_start:relaxationFactors_start
-            ] = dictParse.DictParser(
-                string="\n"
-                "\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n"
-                "\t{\n"
-                "\t\tU\t1.0;\n"
-                "\t\tk\t1.0;\n"
-                "\t\tepsilon\t1.0;\n"
-                "\t\tomega\t1.0;\n"
-                "\t}"
-            )["value"]
-        else:
-            equations["value"][
-                : equations.find_element([{"type": "block_start"}])["index"]
-            ] = dictParse.DictParser(
-                string=" // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n"
-            )["value"]
+            equations = relaxationFactors.find_element(
+                [{"type": "block", "key": "equations"}]
+            )["element"]
+            if equations is None:
+                relaxationFactors["value"][
+                    relaxationFactors_end:relaxationFactors_end
+                ] = dictParse.DictParser(
+                    string="\tequations // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n"
+                    "\t{\n"
+                    "\t\tU\t1.0;\n"
+                    "\t\tk\t1.0;\n"
+                    "\t\tepsilon\t1.0;\n"
+                    "\t\tomega\t1.0;\n"
+                    '\t\t".*Final"\t1.0; // pimpleFOAMで時間精度を保つために必要\n'
+                    "\t}"
+                    "\n"
+                )["value"]
+            else:
+                if (
+                    equations.find_element(
+                        [{"type": "dictionary"}, {"key": '".*Final"'}]
+                    )["element"]
+                    is None
+                ):
+                    equations_end = equations.find_element(
+                        [{"type": "block_end"}], reverse=True
+                    )["index"]
+                    equations["value"][equations_end:equations_end] = (
+                        dictParse.DictParser(
+                            string='\t\t".*Final"\t1.0; // pimpleFOAMで時間精度を保つために必要\n'
+                        )["value"]
+                    )
+                equations["value"][
+                    : equations.find_element([{"type": "block_start"}])["index"]
+                ] = dictParse.DictParser(
+                    string=" // A_P/\\alpha u_P + \\sum_N A_N u_N = s + (1/\\alpha - 1) A_P u_P^{old}\n"
+                )["value"]
 
-        relaxationFactors.set_blank_line(number_of_blank_lines=0)
+            fields = relaxationFactors.find_element(
+                [{"type": "block", "key": "fields"}]
+            )["element"]
+            if fields is None:
+                relaxationFactors["value"][
+                    relaxationFactors_end:relaxationFactors_end
+                ] = dictParse.DictParser(
+                    string="\tfields // p = p^{old} + \\alpha (p - p^{old})\n"
+                    "\t{\n"
+                    "\t\tp\t1.0;\n"
+                    "\t\tp_rgh\t1.0;\n"
+                    "\t\trho\t1.0;\n"
+                    '\t\t".*Final"\t1.0; // pimpleFOAMで時間精度を保つために必要\n'
+                    "\t}"
+                    "\n"
+                )["value"]
+            else:
+                if (
+                    fields.find_element([{"type": "dictionary"}, {"key": '".*Final"'}])[
+                        "element"
+                    ]
+                    is None
+                ):
+                    fields_end = fields.find_element(
+                        [{"type": "block_end"}], reverse=True
+                    )["index"]
+                    fields["value"][fields_end:fields_end] = dictParse.DictParser(
+                        string='\t\t".*Final"\t1.0; // pimpleFOAMで時間精度を保つために必要\n'
+                    )["value"]
+                fields["value"][
+                    : fields.find_element([{"type": "block_start"}])["index"]
+                ] = dictParse.DictParser(
+                    string=" // p = p^{old} + \\alpha (p - p^{old})\n"
+                )["value"]
+
+            relaxationFactors.set_blank_line(number_of_blank_lines=0)
 
         string = dictParse.normalize(string=fvSolution.file_string())[0]
         if fvSolution.string != string:
-#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
+            #            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, "w") as f:
                 f.write(string)
 
@@ -331,7 +379,7 @@ def intoFvSchemes():
                     + 1
                 )
                 fvSchemes["value"][tail_index:tail_index] = linebreak_and_block
-#                tail_index += len(linebreak_and_block)
+            #                tail_index += len(linebreak_and_block)
             else:
                 if (
                     block.find_element([{"type": "dictionary", "key": k}])["element"]
@@ -379,7 +427,7 @@ def intoFvSchemes():
 
         string = dictParse.normalize(string=fvSchemes.file_string())[0]
         if fvSchemes.string != string:
-#            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
+            #            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
             with open(fvSchemes_path, "w") as f:
                 f.write(string)
 
@@ -499,7 +547,7 @@ def intoControlDict():
             )["element"]["value"]
             == "max"
         ):
-            limitNut = t["parent"] # list
+            limitNut = t["parent"]  # list
 #        elif (not has_calcCo and
 #            (t['element'].find_element([{'except type': 'ignorable'}])['element']['value'] == 'CourantNo')):
 #            has_calcCo = True
@@ -523,18 +571,18 @@ def intoControlDict():
             "\t\tmax\t0.01;\n"
             "\twriteControl\toutputTime;\n"
             "\t}\n"
-        )["value"] # list
+        )["value"]  # list
         functions["value"][functions_end:functions_end] = limitNut
         functions_end += len(limitNut)
     elif (
-        dictParse.find_element(limitNut, [{"type": "dictionary", "key": "twriteControl"}])[
-            "element"
-        ]
+        dictParse.find_element(
+            limitNut, [{"type": "dictionary", "key": "writeControl"}]
+        )["element"]
         is None
     ):
-        limitNut_end = dictParse.find_element(limitNut, [{"type": "block_end"}], reverse=True)[
-            "index"
-        ]
+        limitNut_end = dictParse.find_element(
+            limitNut, [{"type": "block_end"}], reverse=True
+        )["index"]
         limitNut[limitNut_end:limitNut_end] = dictParse.DictParser(
             string="\twriteControl\toutputTime;\n"
         )["value"]
@@ -581,7 +629,7 @@ def intoControlDict():
 
     string = dictParse.normalize(string=controlDict.file_string())[0]
     if controlDict.string != string:
-#        os.rename(controlDict_path, f'{controlDict_path}_bak')
+        #        os.rename(controlDict_path, f'{controlDict_path}_bak')
         with open(controlDict_path, "w") as f:
             f.write(string)
 
