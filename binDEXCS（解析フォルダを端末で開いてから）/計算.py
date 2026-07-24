@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/24 8:01:09 PM
+# 2026/7/24 9:30:55 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -242,7 +242,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             k: ax.plot([], [], linestyle=line_styles[i % len(line_styles)], label=k)[0]
             for i, k in enumerate(plot_data[data_key])
         }
-        #        ax.legend(loc = 'best') # ax.plotを呼び出した後
+#        ax.legend(loc = 'best') # ax.plotを呼び出した後
         ax.legend(
             bbox_to_anchor=(1.02, 1), loc="upper left", borderaxespad=0, ncol=ncol
         )
@@ -344,8 +344,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             plt_fig[data_key].savefig(f"{data_key}.png")
 
     res_eval_freq = 10  # 残差評価頻度
-    res_crit = 0.001  # これよりも残差が大きい，小さい時に緩和係数の増減基準を切り替える
-    res_flat = 0.01  # これよりも残差変化率の絶対値が小さければ，残差減少が鈍いと見なす
+    res_slope_inc = -0.1  # これよりも残差のこう配が小さい時に緩和係数を増加させる
+    res_slope_dec = -0.01  # これよりも残差のこう配が大きい時に緩和係数を減少させる
 
     def relax_delta_sign(recent_residuals):
         recent_residuals = np.array(recent_residuals)
@@ -353,14 +353,9 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         res_slope = np.polyfit(
             np.arange(recent_residuals.shape[0]), np.log10(recent_residuals), 1
         )[0]
-        if res_mean > res_crit:
-            return -np.heaviside(res_slope, 0.0)
-        elif abs(res_slope) < res_flat:
-            return 1.0
-        elif res_slope > res_flat:
-            return -1.0
-        else:
-            return 0.0
+        return np.heaviside(res_slope_inc - res_slope, 0.0) - np.heaviside(
+            res_slope - res_slope_dec, 0.0
+        )
 
     result = "success"  # 無事に終了できたときにTrueを返すフラグ
     time = "0"
@@ -386,7 +381,12 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             bufsize=1,  # Python側でも行単位でバッファリング
         )
 
-        with open(f"{application}.log", "w") as f_log, open(history_path, "a") as f_history:
+        # fmt: off
+        with (
+            open(f"{application}.log", "w") as f_log,
+            open(history_path, "a") as f_history
+        ):
+        # fmt: on
             f_history.write(
                 f"# {application} {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
             )  # YYYY/mm/dd HH:MM:SS
@@ -447,7 +447,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                                 )
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
-                    else: # "solution converged in" in line
+                    else:  # "solution converged in" in line
                         result = "converged"
                     continue
                 elif "Foam::sigFpe::sigHandler(int)" in line:
@@ -584,7 +584,7 @@ def reset_relaxationFactors_in_fvSolution():
 
         string = dictParse.normalize(string=fvSolution.file_string())[0]
         if fvSolution.string != string:
-            #            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
+#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, "w") as f:
                 f.write(string)
 
@@ -640,8 +640,7 @@ def change_relaxationFactor_in_fvSolution(
     block.set_blank_line(number_of_blank_lines=0)
 
     misc.atomic_write(
-        fvSolution_path,
-        dictParse.normalize(string=fvSolution.file_string())[0]
+        fvSolution_path, dictParse.normalize(string=fvSolution.file_string())[0]
     )
 
 
@@ -893,7 +892,7 @@ if __name__ == "__main__":
         if domains != 1 and os.path.isdir("processor0"):
             recosntructPar()
 
-        if result == "success" or not change_relaxation_factors:
+        if result in ("success", "converged") or not change_relaxation_factors:
             break
         elif result == "not enough slots":
             rmObjects.removeProcessorDirs()
