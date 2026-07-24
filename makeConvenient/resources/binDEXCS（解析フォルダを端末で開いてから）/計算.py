@@ -2,12 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/24 10:20:20 PM
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# 計算.py
-# by Yukiharu Iwamoto
-# 2026/7/24 10:01:31 PM
+# 2026/7/24 11:13:55 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -978,4 +973,4 @@ if __name__ == "__main__":
     misc.execParaFoam(touch_only=not exec_paraFoam)
 
     rmObjects.removeInessentials()
-    sys.exit(0 if result == "success" else 1)
+    sys.exit(0 if result in ("success", "converged") else 1)
