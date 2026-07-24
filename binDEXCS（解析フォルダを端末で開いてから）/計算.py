@@ -2,6 +2,11 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
+# 2026/7/24 10:20:20 PM
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 計算.py
+# by Yukiharu Iwamoto
 # 2026/7/24 10:01:31 PM
 
 # ---- オプション ----
@@ -428,7 +433,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                         if iteration % plot_freq == 0:
                             monitor()
                     if line.startswith("Time = "):
-                        if iteration > 0 and iteration % res_eval_freq == 0:
+                        if relax_delta != 0.0 and iteration > 0 and iteration % res_eval_freq == 0:
                             remark = remark_string(f"time = {time}")
                             for k, v in plot_data["residual"].items():
                                 if len(v) < res_eval_freq:
@@ -824,25 +829,23 @@ if __name__ == "__main__":
                 == "y"
                 else False
             )
-
-        if misc.getApplication() == "pisoFoam":
-            change_relaxation_factors = False
-        elif interactive:
-            change_relaxation_factors = (
-                True
-                if input(
-                    f"\n残差が落ちにくい時に，{fvSolution_path}ファイルの緩和係数"
-                    "（relaxationFactors）を変化させますか？ (y/n) > "
-                )
-                .strip()
-                .lower()
-                == "y"
-                else False
-            )
-
     if enable_all_function_objects:
         misc.setEnabledInControlDictFunctions(enabled=True)
 
+    if misc.getApplication() == "pisoFoam":
+        change_relaxation_factors = False
+    elif interactive:
+        change_relaxation_factors = (
+            True
+            if input(
+                f"\n残差が落ちにくい時に，{fvSolution_path}ファイルの緩和係数"
+                "（relaxationFactors）を変化させますか？ (y/n) > "
+            )
+            .strip()
+            .lower()
+            == "y"
+            else False
+        )
     if change_relaxation_factors:
         reset_relaxationFactors_in_fvSolution()
 
@@ -882,7 +885,9 @@ if __name__ == "__main__":
         result, plot_data = plot_runner(
             application=application,
             start_time=start_time,
-            relax_delta=relaxationFactor_delta_usual,
+            relax_delta=(
+                relaxationFactor_delta_usual if change_relaxation_factors else 0.0
+            ),
             relax_lower_limit=relaxationFactor_lower_limit,
         )
         relax_factors = getRelaxationFactors(plot_data["residual"].keys())
