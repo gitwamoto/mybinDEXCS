@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/22 10:09:59 PM
+# 2026/7/24 2:00:04 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -33,9 +33,6 @@ from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects
 from utilities import dictParse
-
-# To do:
-# クーラン数から時間ステップのコントロール
 
 # plt.rcParams['figure.figsize'] = (6.0, 3.6) # (width, height), デフォルト値は環境によりますが、多くの場合は (6.4, 4.8) です。
 
@@ -204,8 +201,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
 
     pat = re.compile(
         # 残差
-        r": +Solving for +(?P<parameter>[^ ,]+), Initial residual = [0-9.e+\-]+, "
-        r"Final residual = (?P<final_residual>[\d.e+\-]+)"
+        r": +Solving for +(?P<parameter>[^ ,]+), Initial residual = (?P<initial_residual>[0-9.e+\-]+), "
+        r"Final residual = (?P<final_residual>[0-9.e+\-]+)"
         "|"
         # 連続の式の誤差
         r"^time step continuity errors *(?:[^ :]*): sum local = (?P<continuity_local>[0-9.e+\-]+), "
@@ -258,8 +255,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         set_subplot(
             data_key="residual",
             xlabel="iteration",
-            ylabel="final residual",
-            window_title="iteration histories of final residuals",
+            ylabel="initial residual",
+            window_title="iteration histories of initial residuals",
             logscale=True,
         )
         set_subplot(
@@ -456,12 +453,12 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 s = pat.search(line)
                 if s is None:
                     continue
-                if s.lastgroup == "final_residual":
+                if s.lastgroup == "initial_residual":
                     par = s.group("parameter")
                     if region is not None:
                         par += f" ({region})"
                         par += f" ({region})"
-                    res = float(s.group("final_residual"))
+                    res = float(s.group("initial_residual"))
                     if (
                         iteration == 1 and par not in plot_data["residual"]
                     ):  # 初回発見時に辞書を自動構築
@@ -825,6 +822,10 @@ if __name__ == "__main__":
                 == "y"
                 else False
             )
+
+        if misc.getApplication() == "pisoFoam":
+            change_relaxation_factors = False
+        elif interactive:
             change_relaxation_factors = (
                 True
                 if input(
