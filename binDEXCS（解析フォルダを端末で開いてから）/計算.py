@@ -949,7 +949,7 @@ if __name__ == "__main__":
                 print("\n計算が収束条件を満足したので終了しました．")
             else:
                 print("\n計算が終了しましたが，収束条件を満足していません．")
-        if result == "success":
+        else:
             print("\n計算が無事に終了しました．")
         if change_relaxation_factors:
             print("最終的な緩和係数（relaxationFactors）は以下になりました：")
