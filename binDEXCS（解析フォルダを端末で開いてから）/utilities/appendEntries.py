@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # appendEntries.py
 # by Yukiharu Iwamoto
-# 2026/7/24 1:51:16 PM
+# 2026/7/24 3:52:48 PM
 
 import os
 import sys
@@ -78,23 +78,25 @@ def intoFvSolution():
 
             # solvers/.*Final, solvers/Phi
             params_pat = re.compile(
-                "|".join(
+                "("
+                + "|".join(
                     [
                         i["element"]["key"].strip('"')
                         for i in solvers.find_all_elements([{"type": "block"}])
                     ]
                 )
+                + ")(?!Final)"
             )
             block_end = solvers.find_element([{"type": "block_end"}], reverse=True)[
                 "index"
             ]
-            for p in ("p", "U", "k", "epsilon", "omega"):
+            for p in ("omega", "epsilon", "k", "U", "p"):
                 if (
                     params_pat.search(f"{p}Final") is None
                     and params_pat.search(p) is not None
                 ):
                     solvers["value"][block_end:block_end] = dictParse.DictParser(
-                        string=f"\n${p}Final\n{{\n\t${p};\n\trelTol\t0.0;\n}}\n"
+                        string=f"\n{p}Final\n{{\n\t${p};\n\trelTol\t0.0;\n}}\n"
                     )["value"]
             if params_pat.search("Phi") is None:
                 p = params_pat.search("p")
@@ -278,7 +280,7 @@ def intoFvSolution():
             else:
                 if (
                     equations.find_element(
-                        [{"type": "dictionary"}, {"key": '".*Final"'}]
+                        [{"type": "dictionary", "key": '".*Final"'}]
                     )["element"]
                     is None
                 ):
@@ -314,7 +316,7 @@ def intoFvSolution():
                 )["value"]
             else:
                 if (
-                    fields.find_element([{"type": "dictionary"}, {"key": '".*Final"'}])[
+                    fields.find_element([{"type": "dictionary", "key": '".*Final"'}])[
                         "element"
                     ]
                     is None
@@ -335,7 +337,7 @@ def intoFvSolution():
 
         string = dictParse.normalize(string=fvSolution.file_string())[0]
         if fvSolution.string != string:
-            #            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
+#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, "w") as f:
                 f.write(string)
 
@@ -379,7 +381,7 @@ def intoFvSchemes():
                     + 1
                 )
                 fvSchemes["value"][tail_index:tail_index] = linebreak_and_block
-            #                tail_index += len(linebreak_and_block)
+#                tail_index += len(linebreak_and_block)
             else:
                 if (
                     block.find_element([{"type": "dictionary", "key": k}])["element"]
@@ -427,7 +429,7 @@ def intoFvSchemes():
 
         string = dictParse.normalize(string=fvSchemes.file_string())[0]
         if fvSchemes.string != string:
-            #            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
+#            os.rename(fvSchemes_path, f'{fvSchemes_path}_bak')
             with open(fvSchemes_path, "w") as f:
                 f.write(string)
 
@@ -586,29 +588,29 @@ def intoControlDict():
         limitNut[limitNut_end:limitNut_end] = dictParse.DictParser(
             string="\twriteControl\toutputTime;\n"
         )["value"]
-#    if not has_calcCo:
-#        calcCo = dictParse.DictParser(string =
-#            '\n'
-#            '\tcalcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
-#            '\t{\n'
-#            '\t\ttype\tCourantNo;\n'
-#            '\t\tlibs\t(fieldFunctionObjects);\n'
-#            '\t\tenabled\tno; // yesで実行\n'
-#            '\t}\n')['value']
-#        functions['value'][functions_end:functions_end] = calcCo
-#        functions_end += len(calcCo)
-#    if not has_printCoMinMax:
-#        printCoMinMax = dictParse.DictParser(string =
-#            '\n'
-#            '\tprintCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
-#            '\t{\n'
-#            '\t\ttype\tfieldMinMax;\n'
-#            '\t\tlibs\t(fieldFunctionObjects);\n'
-#            '\t\tenabled\tno; // yesで実行\n'
-#            '\t\tfields\t(Co);\n'
-#            '\t}\n')['value']
-#        functions['value'][functions_end:functions_end] = printCoMinMax
-#        functions_end += len(printCoMinMax)
+    #    if not has_calcCo:
+    #        calcCo = dictParse.DictParser(string =
+    #            '\n'
+    #            '\tcalcCo // クーラン数を計算する（画面に出なくても計算はされる）\n'
+    #            '\t{\n'
+    #            '\t\ttype\tCourantNo;\n'
+    #            '\t\tlibs\t(fieldFunctionObjects);\n'
+    #            '\t\tenabled\tno; // yesで実行\n'
+    #            '\t}\n')['value']
+    #        functions['value'][functions_end:functions_end] = calcCo
+    #        functions_end += len(calcCo)
+    #    if not has_printCoMinMax:
+    #        printCoMinMax = dictParse.DictParser(string =
+    #            '\n'
+    #            '\tprintCoMinMax // クーラン数（"Co"フィールド）の値を画面表示\n'
+    #            '\t{\n'
+    #            '\t\ttype\tfieldMinMax;\n'
+    #            '\t\tlibs\t(fieldFunctionObjects);\n'
+    #            '\t\tenabled\tno; // yesで実行\n'
+    #            '\t\tfields\t(Co);\n'
+    #            '\t}\n')['value']
+    #        functions['value'][functions_end:functions_end] = printCoMinMax
+    #        functions_end += len(printCoMinMax)
     functions.set_blank_line(number_of_blank_lines=1)
 
     runTimeModifiable = controlDict.find_element(
