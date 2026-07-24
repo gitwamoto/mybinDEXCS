@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/24 2:00:04 PM
+# 2026/7/24 8:01:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -202,7 +202,6 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
     pat = re.compile(
         # 残差
         r": +Solving for +(?P<parameter>[^ ,]+), Initial residual = (?P<initial_residual>[0-9.e+\-]+), "
-        r"Final residual = (?P<final_residual>[0-9.e+\-]+)"
         "|"
         # 連続の式の誤差
         r"^time step continuity errors *(?:[^ :]*): sum local = (?P<continuity_local>[0-9.e+\-]+), "
@@ -354,11 +353,14 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         res_slope = np.polyfit(
             np.arange(recent_residuals.shape[0]), np.log10(recent_residuals), 1
         )[0]
-        s = np.heaviside(res_mean - res_crit, 0.0)
-        return -s * np.heaviside(res_slope, 0.0) + (1.0 - s) * (
-            np.heaviside(res_flat - abs(res_slope), 0.0)
-            - np.heaviside(res_slope - res_flat, 0.0)
-        )
+        if res_mean > res_crit:
+            return -np.heaviside(res_slope, 0.0)
+        elif abs(res_slope) < res_flat:
+            return 1.0
+        elif res_slope > res_flat:
+            return -1.0
+        else:
+            return 0.0
 
     result = "success"  # 無事に終了できたときにTrueを返すフラグ
     time = "0"
@@ -445,6 +447,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                                 )
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
+                    else: # "solution converged in" in line
+                        result = "converged"
                     continue
                 elif "Foam::sigFpe::sigHandler(int)" in line:
                     result = "floating point error"  # 発散
@@ -635,8 +639,10 @@ def change_relaxationFactor_in_fvSolution(
     )["value"]
     block.set_blank_line(number_of_blank_lines=0)
 
-    with open(fvSolution_path, "w") as f:
-        f.write(dictParse.normalize(string=fvSolution.file_string())[0])
+    misc.atomic_write(
+        fvSolution_path,
+        dictParse.normalize(string=fvSolution.file_string())[0]
+    )
 
 
 def getRelaxationFactors(param_names):
@@ -937,8 +943,14 @@ if __name__ == "__main__":
             "でした．"
         )
 
-    if result == "success":
-        print("\n計算が無事に終了しました．")
+    if result in ("success", "converged"):
+        if any(f in application.lower() for f in ["simplefoam", "potentialfoam"]):
+            if result == "converged":
+                print("\n計算が収束条件を満足したので終了しました．")
+            else:
+                print("\n計算が終了しましたが，収束条件を満足していません．")
+        if result == "success":
+            print("\n計算が無事に終了しました．")
         if change_relaxation_factors:
             print("最終的な緩和係数（relaxationFactors）は以下になりました：")
             for i in relax_factors:

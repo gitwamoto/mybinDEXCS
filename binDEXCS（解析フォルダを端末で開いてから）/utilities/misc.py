@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/7/22 9:43:12 PM
+# 2026/7/24 7:58:18 PM
 
 import glob
 import os
@@ -11,6 +11,7 @@ import re
 import math
 import subprocess
 import numpy as np
+import tempfile
 
 # このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
 if os.path.dirname(__file__) not in sys.path:
@@ -609,6 +610,28 @@ def appropriate_tick(xmin, xmax, n):
         if tmp < i:
             return i * tick
     return 10.0 * tick
+
+
+def atomic_write(file_path, content):
+    # 1. 同じディレクトリ内に安全な一時ファイルを作成する
+    # delete=False にすることで、withブロックを抜けてもファイルが消えずに残り、後でos.replaceできる
+    with tempfile.NamedTemporaryFile(
+        mode="w", dir=os.path.dirname(file_path), delete=False, encoding="utf-8"
+    ) as f:
+        temp_path = f.name  # これは文字列（str）
+        try:
+            # 書き込みと同期
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        except Exception:
+            # 書き込み失敗時はここでファイルを閉じてから削除する
+            f.close()
+            if os.path.exists(temp_path):
+                os.remove.unlink(temp_path)
+            raise
+    # 2. 一時ファイルを本来のファイル名にアトミックに置き換える
+    os.replace(temp_path, file_path)
 
 
 if __name__ == "__main__":
