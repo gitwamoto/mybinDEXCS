@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/6/3 8:54:59 PM
+# 2026/7/25 7:06:11 PM
 
 import os
 import glob
@@ -37,12 +37,12 @@ def removeInessentials():
 
 def removeLogPlotPngs():
     pat = re.compile(
-        "(?:"
+        "("
         "linear|cont|bound|courant|deltaT|custom[0-9][0-9][0-9][0-9]"
         "|"  # PyFoamPlotRunner.pyが作るグラフのファイル
         "residualsInitial|residualsFinal|continuityErrors"
         "|"  # logファイルをプロット.pyが作るグラフのファイル
-        "continuity|residual|Courant"  # 計算.pyが作るグラフのファイル
+        "continuity|.*residual|Courant|Diffusion"  # 計算.pyが作るグラフのファイル
         r")\.png$"
     )
     for i in glob.iglob("*.png"):
