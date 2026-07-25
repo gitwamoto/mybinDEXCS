@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/25 7:06:22 PM
+# 2026/7/25 7:52:21 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -37,7 +37,7 @@ from utilities import dictParse
 # plt.rcParams['figure.figsize'] = (6.0, 3.6) # (width, height), デフォルト値は環境によりますが、多くの場合は (6.4, 4.8) です。
 
 relaxationFactor_lower_limit = 0.3  # 緩和係数の下限値
-relaxationFactor_delta_usual = 0.005  # 通常時における緩和係数の変化量の絶対値
+relaxationFactor_delta_usual = 0.01  # 通常時における緩和係数の変化量の絶対値
 relaxationFactor_delta_restart = 0.05  # リスタート時における緩和係数の減量量
 domains = 1
 regionProperties_path = os.path.join("constant", "regionProperties")
