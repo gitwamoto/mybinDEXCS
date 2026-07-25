@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/24 11:13:55 PM
+# 2026/7/25 5:25:15 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -202,6 +202,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
     pat = re.compile(
         # 残差
         r": +Solving for +(?P<parameter>[^ ,]+), Initial residual = (?P<initial_residual>[0-9.e+\-]+), "
+        r"Final residual = (?P<final_residual>[0-9.e+\-]+)"
         "|"
         # 連続の式の誤差
         r"^time step continuity errors *(?:[^ :]*): sum local = (?P<continuity_local>[0-9.e+\-]+), "
@@ -219,12 +220,13 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         r"^Solving for \S+ region (?P<region>\S+)"
     )
     plot_data = {
-        "residual": {},  # {'U': [...], 'p': [...], ...}
+        "initial_residual": {},  # {'U': [...], 'p': [...], ...}
         "continuity": {},  # {'sum local': [], 'abs global': []}
     }
     plt_fig = {}
     plt_ax = {}
     plt_line2d = {}
+    final_residual = {}  # 緩和係数の調節基準
 
     def set_subplot(data_key, xlabel, ylabel, window_title, logscale=True):
         ncol = math.ceil(len(plot_data[data_key]) / 16.0)
@@ -252,7 +254,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
 
     def set_subplots():
         set_subplot(
-            data_key="residual",
+            data_key="initial_residual",
             xlabel="iteration",
             ylabel="initial residual",
             window_title="iteration histories of initial residuals",
@@ -344,8 +346,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             plt_fig[data_key].savefig(f"{data_key}.png")
 
     res_eval_freq = 10  # 残差評価頻度
-    res_slope_inc = -1.0  # これよりも残差のこう配が小さい時に緩和係数を増加させる
-    res_slope_dec = -0.1  # これよりも残差のこう配が大きい時に緩和係数を減少させる
+    res_crit = 0.001  # Final residualがこれよりもが大きいか小さいかで緩和係数の増減基準を切り替える
+    res_flat = 0.01  # これよりもFinal residualの絶対値が小さければ，残差減少が鈍いと見なす
 
     def relax_delta_sign(recent_residuals):
         recent_residuals = np.array(recent_residuals)
@@ -353,11 +355,16 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         res_slope = np.polyfit(
             np.arange(recent_residuals.shape[0]), np.log10(recent_residuals), 1
         )[0]
-        return np.heaviside(res_slope_inc - res_slope, 0.0) - np.heaviside(
-            res_slope - res_slope_dec, 0.0
-        )
+        if res_mean > res_crit:
+            return -np.heaviside(res_slope, 0.0)
+        elif abs(res_slope) < res_flat:
+            return 1.0
+        elif res_slope > res_flat:
+            return -1.0
+        else:
+            return 0.0
 
-    result = "success"  # 無事に終了できたときにTrueを返すフラグ
+    result = "end"  # 戻り値
     time = "0"
     region = None
 
@@ -404,10 +411,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 f_log.write(line)  # ログをファイル保存
                 f_log.flush()  # リアルタイム反映のため
 
-                if "not enough slots available in" in line:
-                    result = "not enough slots"
-
-                if line.startswith("Time = ") or "solution converged in" in line:
+                if line.startswith("Time = ") or line or line.rstrip() == "End":
                     # ここはまだ古いiteration回目の繰り返し
                     if iteration == 1:
                         set_subplots()
@@ -430,7 +434,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                     if line.startswith("Time = "):
                         if relax_delta != 0.0 and iteration > 0 and iteration % res_eval_freq == 0:
                             remark = remark_string(f"time = {time}")
-                            for k, v in plot_data["residual"].items():
+                            for k, v in final_residual.items():
                                 if len(v) < res_eval_freq:
                                     continue
                                 s = relax_delta_sign(v[-res_eval_freq:])
@@ -444,8 +448,12 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                                 )
                         iteration += 1  # ここから新しいiteration回目の繰り返し
                         time = line[7:].strip()
-                    else:  # "solution converged in" in line
-                        result = "converged"
+                    continue
+                elif "not enough slots available in" in line:
+                    result = "not enough slots"
+                    continue
+                elif "solution converged in" in line:
+                    result = "converged"
                     continue
                 elif "Foam::sigFpe::sigHandler(int)" in line:
                     result = "floating point error"  # 発散
@@ -454,20 +462,20 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 s = pat.search(line)
                 if s is None:
                     continue
-                if s.lastgroup == "initial_residual":
+                if s.lastgroup == "final_residual":
                     par = s.group("parameter")
                     if region is not None:
                         par += f" ({region})"
-                        par += f" ({region})"
                     res = float(s.group("initial_residual"))
-                    if (
-                        iteration == 1 and par not in plot_data["residual"]
-                    ):  # 初回発見時に辞書を自動構築
-                        plot_data["residual"][par] = []
-                    if len(plot_data["residual"][par]) < iteration:
-                        plot_data["residual"][par].append(res)  # データの追加
+                    if par not in plot_data["initial_residual"]:  # 初回発見時に辞書を自動構築
+                        plot_data["initial_residual"][par] = []
+                    if len(plot_data["initial_residual"][par]) < iteration:
+                        plot_data["initial_residual"][par].append(res)  # データの追加
                     else:
-                        plot_data["residual"][par][-1] = res  # データの更新
+                        plot_data["initial_residual"][par][-1] = res  # データの更新
+                    if par not in final_residual:
+                        final_residual[par] = []
+                    final_residual[par].append(res)  # データの追加
                 elif s.lastgroup == "continuity_global":
                     loc_value = float(s.group("continuity_local"))
                     glob_balue = abs(float(s.group("continuity_global")))
@@ -834,7 +842,7 @@ if __name__ == "__main__":
             True
             if input(
                 f"\n残差が落ちにくい時に，{fvSolution_path}ファイルの緩和係数"
-                "（relaxationFactors）を変化させますか？ (y/n) > "
+                "（relaxationFactors）を調節しますか？ (y/n) > "
             )
             .strip()
             .lower()
@@ -885,40 +893,40 @@ if __name__ == "__main__":
             ),
             relax_lower_limit=relaxationFactor_lower_limit,
         )
-        relax_factors = getRelaxationFactors(plot_data["residual"].keys())
+        # result = "end" | "not enough slots" | "converged" | "floating point error"
+        relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
         if domains != 1 and os.path.isdir("processor0"):
             recosntructPar()
 
-        if result in ("success", "converged") or not change_relaxation_factors:
-            break
-        elif result == "not enough slots":
+        if result == "not enough slots":
             rmObjects.removeProcessorDirs()
             domains -= 1
             decomposePar()
             continue
+        elif not change_relaxation_factors or result != "floating point error":
+            break
 
         max_relax_factor = 1.0
         if len(relax_factors) > 0:
             max_relax_factor = max([i["value"] for i in relax_factors])
-
+        s = -1.0
         if max_relax_factor <= relaxationFactor_lower_limit:
             if float(start_time) != 0.0:
                 for d in glob.iglob(f"processor*{os.sep}"):
                     shutil.rmtree(os.path.join(d, start_time))
                 shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
+                s = 1.0
             else:
                 break
-        else:
-            remark = remark_string("restart")
-            for k in plot_data["residual"].keys():
-                change_relaxationFactor_in_fvSolution(
-                    param_name=k,
-                    remark=remark,
-                    delta=-relaxationFactor_delta_restart,
-                    lower_limit=relaxationFactor_lower_limit,
-                )
-            rmObjects.removeLogPlotPngs()
-            os.remove(f"{application}.log")
+        for k in plot_data["initial_residual"].keys():
+            change_relaxationFactor_in_fvSolution(
+                param_name=k,
+                remark=remark_string("restart"),
+                delta=s * relaxationFactor_delta_restart,
+                lower_limit=relaxationFactor_lower_limit,
+            )
+        rmObjects.removeLogPlotPngs()
+        os.remove(f"{application}.log")
 
     rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
@@ -931,7 +939,7 @@ if __name__ == "__main__":
                 if k.startswith("sum local")
             ]
         )
-        res_max = max([v[-1] for v in plot_data["residual"].values()])
+        res_max = max([v[-1] for v in plot_data["initial_residual"].values()])
         print(
             "\n最後の計算における\n"
             f"  連続の式の局所誤差の最大値は{cont_max}\n"
@@ -939,14 +947,14 @@ if __name__ == "__main__":
             "でした．"
         )
 
-    if result in ("success", "converged"):
+    if result in ("end", "converged"):
         if any(f in application.lower() for f in ["simplefoam", "potentialfoam"]):
             if result == "converged":
-                print("\n計算が収束条件を満足したので終了しました．")
+                print("\n収束条件を満足して計算が終了しました．")
             else:
                 print("\n計算が終了しましたが，収束条件を満足していません．")
         else:
-            print("\n計算が無事に終了しました．")
+            print("\n計算が終了しました．")
         if change_relaxation_factors:
             print("最終的な緩和係数（relaxationFactors）は以下になりました：")
             for i in relax_factors:
@@ -973,4 +981,4 @@ if __name__ == "__main__":
     misc.execParaFoam(touch_only=not exec_paraFoam)
 
     rmObjects.removeInessentials()
-    sys.exit(0 if result in ("success", "converged") else 1)
+    sys.exit(0 if result in ("end", "converged") else 1)
