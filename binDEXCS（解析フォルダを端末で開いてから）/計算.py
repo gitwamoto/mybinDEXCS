@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/25 5:25:15 PM
+# 2026/7/25 7:06:22 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -252,37 +252,31 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         plt_fig[data_key] = fig
         plt_ax[data_key] = ax
 
+    def set_subplot_data_key(data_key):
+        # ここを変更すると．utilities/rmObjects.pyのremoveLogPlotPngs()も変更する必要があるかも
+        if data_key == "initial_residual":
+            ylabel = "initial residual"
+        elif data_key == "continuity":
+            ylabel = "continuity error"
+        elif data_key == "Courant":
+            ylabel = "Courant number"
+        else:  # data_key == "Diffusion"
+            ylabel = "Diffusion number"
+        set_subplot(
+            data_key=data_key,
+            xlabel="iteration",
+            ylabel=ylabel,
+            window_title=f"iteration histories of {ylabel}s",
+            logscale=True,
+        )
+
     def set_subplots():
-        set_subplot(
-            data_key="initial_residual",
-            xlabel="iteration",
-            ylabel="initial residual",
-            window_title="iteration histories of initial residuals",
-            logscale=True,
-        )
-        set_subplot(
-            data_key="continuity",
-            xlabel="iteration",
-            ylabel="continuity error",
-            window_title="iteration histories of continuity errors",
-            logscale=True,
-        )
+        set_subplot_data_key("initial_residual")
+        set_subplot_data_key("continuity")
         if "Courant" in plot_data:
-            set_subplot(
-                data_key="Courant",
-                xlabel="iteration",
-                ylabel="Courant number",
-                window_title="iteration histories of Courant numbers",
-                logscale=True,
-            )
+            set_subplot_data_key("Courant")
         if "Diffusion" in plot_data:
-            set_subplot(
-                data_key="Diffusion",
-                xlabel="iteration",
-                ylabel="Diffusion number",
-                window_title="iteration histories of Diffusion numbers",
-                logscale=True,
-            )
+            set_subplot_data_key("Diffusion")
 
     start_time = float(start_time)
     history_path = f"{application}_history.txt"
@@ -327,18 +321,13 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
 
     def monitor():
         for data_key in plot_data:
-#            message = ''
+            # 窓が閉じられてしまっていたら新しく作り直す
+            if not plt.fignum_exists(plt_fig[data_key].number):
+                set_subplot_data_key(data_key)
             for k in plot_data[data_key]:
-#                l = len(plot_data[data_key][k])
-#                if l != iteration:
-#                    message += f"(WARNING) iteration = {iteration} != len(['{data_key}']['{k}']) = {l}\n"
-#                plt_line2d[data_key][k].set_data(range(1, l + 1), plot_data[data_key][k]) # 線を更新
                 plt_line2d[data_key][k].set_data(
                     range(1, len(plot_data[data_key][k]) + 1), plot_data[data_key][k]
                 )  # 線を更新
-#            if len(message) > 0:
-#                sys.stdout.write(f'\n{message}\n')
-#                sys.stdout.flush() # リアルタイム反映のため
             plt_ax[data_key].relim()  # 表示範囲の自動調整
             plt_ax[data_key].autoscale_view()
             plt_fig[data_key].canvas.draw()  # 新しいデータを画面に描く
@@ -411,7 +400,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 f_log.write(line)  # ログをファイル保存
                 f_log.flush()  # リアルタイム反映のため
 
-                if line.startswith("Time = ") or line or line.rstrip() == "End":
+                if line.startswith("Time = ") or line.rstrip() == "End":
                     # ここはまだ古いiteration回目の繰り返し
                     if iteration == 1:
                         set_subplots()
@@ -432,7 +421,12 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                         if iteration % plot_freq == 0:
                             monitor()
                     if line.startswith("Time = "):
-                        if relax_delta != 0.0 and iteration > 0 and iteration % res_eval_freq == 0:
+                        if (
+                            relax_delta != 0.0
+                            and iteration > 0
+                            and iteration % res_eval_freq == 0
+                            and final_residual
+                        ):
                             remark = remark_string(f"time = {time}")
                             for k, v in final_residual.items():
                                 if len(v) < res_eval_freq:
