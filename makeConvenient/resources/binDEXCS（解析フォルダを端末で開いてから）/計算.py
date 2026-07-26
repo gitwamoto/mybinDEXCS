@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/25 7:52:21 PM
+# 2026/7/26 2:07:28 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -334,16 +334,16 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             plt.pause(0.01)
             plt_fig[data_key].savefig(f"{data_key}.png")
 
-    res_eval_freq = 10  # 残差評価頻度
+    res_eval_freq = 20  # 残差評価頻度
     res_crit = 0.001  # Final residualがこれよりもが大きいか小さいかで緩和係数の増減基準を切り替える
-    res_flat = 0.01  # これよりもFinal residualの絶対値が小さければ，残差減少が鈍いと見なす
+    res_flat = math.log10(1.05)  # これよりもlog10(Final residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
 
     def relax_delta_sign(recent_residuals):
         recent_residuals = np.array(recent_residuals)
         res_mean = np.mean(recent_residuals)
         res_slope = np.polyfit(
             np.arange(recent_residuals.shape[0]), np.log10(recent_residuals), 1
-        )[0]
+        )[0]  # log10(recent_residuals) = res_slope*iteration + b
         if res_mean > res_crit:
             return -np.heaviside(res_slope, 0.0)
         elif abs(res_slope) < res_flat:
