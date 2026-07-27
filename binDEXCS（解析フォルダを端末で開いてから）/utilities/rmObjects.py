@@ -63,7 +63,7 @@ def removeProcessorDirs(option="", path=os.curdir):
             return
         latest_time = float(latest_time)
         if noLatest and latest_time == 0.0:
-            noZero = False
+            noZero = False  # latest_time = 0は消さない
         pdirs = []
         for p in glob.iglob(os.path.join(path, f"processor[0-9]*{os.sep}")):
             s = pat.match(p)
