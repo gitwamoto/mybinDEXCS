@@ -127,6 +127,7 @@ def recosntructPar():
     for i in tfs[:-pw]:
         shutil.rmtree(i)
 
+
 def restore_zero_folder():
     if os.path.isdir("0_bak"):
         if os.path.isdir("0"):
@@ -334,11 +335,11 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                     if len(stripped) == 0:
                         continue
                     cols = stripped.split("\t")
+                    if float(cols[1]) > start_time:
+                        break
                     if l_data_ord == len(cols) - 2:
                         for (data_key, k), v in zip(data_ord, cols[2:]):
                             plot_data[data_key][k].append(float(v))
-                    if float(cols[1]) > start_time:
-                        break
                     iteration = int(cols[0])
                     f_out.write(line)
             os.remove(old_history_path)
