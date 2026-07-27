@@ -55,7 +55,7 @@ def remark_string(remark):
 
 def handler(signum, frame):
     if domains != 1:
-        recosntructPar()
+        reconstructPar()
         rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
     sys.exit(1)
@@ -95,15 +95,15 @@ def decomposePar():
     print()
 
 
-def recosntructPar():
-    if os.path.isdir("processor0"):
+def reconstructPar():
+    if not os.path.isdir("processor0"):
         return
     command_args = ["reconstructPar", "-newTimes", "-noFunctionObjects"]
     if os.path.exists(regionProperties_path):
         command_args.append("-allRegions")
     misc.execCommand(command_args)
     print()
-    # 並列計算途中でrecosntructParが実行されて，purgeWrite対象外のフォルダが残っていた時に後始末する
+    # 並列計算途中でreconstructParが実行されて，purgeWrite対象外のフォルダが残っていた時に後始末する
     try:
         pw = int(
             subprocess.check_output(
@@ -760,7 +760,7 @@ if __name__ == "__main__":
     shutil.copytree("0", "0_bak")
 
     if os.path.isdir("processor0"):
-        recosntructPar()
+        reconstructPar()
     latest_time = misc.latestTime()
     if latest_time is None:
         print("エラー: 結果フォルダがありません．")
@@ -916,8 +916,8 @@ if __name__ == "__main__":
         )
         # result = "end" | "not enough slots" | "converged" | "floating point error"
         relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
-        if domains != 1 and os.path.isdir("processor0"):
-            recosntructPar()
+        if domains != 1:
+            reconstructPar()
 
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
@@ -932,7 +932,7 @@ if __name__ == "__main__":
         s = -1.0
         if max_relax_factor <= relaxationFactor_lower_limit:
             if float(start_time) != 0.0:
-                rmObjects.removeProcessorDirs()  # すでにrecosntructPar()が行われていると仮定
+                rmObjects.removeProcessorDirs()  # すでにreconstructPar()が行われていると仮定
                 shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
                 s = 1.0
             else:
