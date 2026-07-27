@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 3:23:20 PM
+# 2026/7/27 4:33:29 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -29,6 +29,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import random
 from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects
@@ -383,7 +384,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             np.arange(recent_residuals.shape[0]), log_recent_residuals, 1
         )[0]  # log10(recent_residuals) = res_slope*iteration + b
         if abs(res_slope) < res_flat:
-            return 1.0
+            return random.choice([-1.0, 1.0])
         elif res_slope > res_flat:
             return -1.0
         else:
