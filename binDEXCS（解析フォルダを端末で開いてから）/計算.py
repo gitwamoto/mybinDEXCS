@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 12:05:31 PM
+# 2026/7/27 3:23:20 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -61,6 +61,8 @@ def handler(signum, frame):
 
 
 def decomposePar():
+    if domains == 1:
+        return
     with open(decomposeParDict_path, "w") as f:
         f.write(
             "FoamFile\n"
@@ -335,9 +337,14 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
 
     res_eval_freq = 20  # 残差評価頻度
     res_flat = math.log10(1.05)  # これよりもlog10(residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
-    res_osc = math.log10(2.0)  # これよりもlog10(residual)の標準偏差が大きければ，残差減少が鈍いと見なす
+    res_osc = 0.5*math.log10(2.0)  # これよりもlog10(residual)の標準偏差が大きければ，残差減少が鈍いと見なす
+    cont_crit = 0.01  # これよりも連続の式の誤差が大きければ，緩和係数を引き下げる
 
-    def relax_delta_sign(recent_residuals):
+    def relax_delta_sign(recent_residuals, cont_err):
+        if cont_err > cont_crit:
+            return -1.0
+        if len(recent_residuals) < res_eval_freq:
+            return 0.0
         recent_residuals = np.array(recent_residuals)
         log_recent_residuals = np.log10(recent_residuals)
         if np.std(log_recent_residuals) > res_osc:
@@ -426,10 +433,9 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                             and iteration % res_eval_freq == 0
                         ):
                             remark = remark_string(f"time = {time}")
+                            cont_err = plot_data["continuity"]["sum local"][-1]
                             for k, v in plot_data["initial_residual"].items():
-                                if len(v) < res_eval_freq:
-                                    continue
-                                s = relax_delta_sign(v[-res_eval_freq:])
+                                s = relax_delta_sign(v[-res_eval_freq:], cont_err)
                                 if s == 0.0:
                                     continue
                                 change_relaxationFactor_in_fvSolution(
@@ -730,7 +736,6 @@ if __name__ == "__main__":
 
     if os.path.isdir("processor0"):
         recosntructPar()
-        rmObjects.removeProcessorDirs("noLatest")
     latest_time = misc.latestTime()
     if latest_time is None:
         print("エラー: 結果フォルダがありません．")
@@ -841,7 +846,9 @@ if __name__ == "__main__":
     if change_relaxation_factors:
         reset_relaxationFactors_in_fvSolution()
 
-    if domains != 1:
+    if domains == 1:
+        rmObjects.removeProcessorDirs()
+    else:
         should_rm_processor_dirs = False
         processor_dirs = set()
         for d in glob.iglob(f"processor*{os.sep}"):
@@ -890,7 +897,8 @@ if __name__ == "__main__":
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
             domains -= 1
-            decomposePar()
+            if domains != 1:
+                decomposePar()
             continue
         elif not change_relaxation_factors or result != "floating point error":
             break
