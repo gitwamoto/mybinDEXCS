@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 10:45:57 PM
+# 2026/7/28 8:30:44 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -918,6 +918,7 @@ if __name__ == "__main__":
         relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
         if domains != 1:
             reconstructPar()
+            rmObjects.removeProcessorDirs("noLatest")
 
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
