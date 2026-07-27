@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 6:12:40 PM
+# 2026/7/27 9:48:17 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -58,7 +58,6 @@ def handler(signum, frame):
         recosntructPar()
         rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
-    delete_folders_in_accordance_with_purgeWrite()
     sys.exit(1)
 
 
@@ -92,31 +91,19 @@ def decomposePar():
         command_args.append("-allRegions")
     if misc.execCommand(command_args)[1] != 0:
         restore_zero_folder()
-        delete_folders_in_accordance_with_purgeWrite()
         sys.exit(1)
     print()
 
 
 def recosntructPar():
+    if os.path.isdir("processor0"):
+        return
     command_args = ["reconstructPar", "-newTimes", "-noFunctionObjects"]
     if os.path.exists(regionProperties_path):
         command_args.append("-allRegions")
     misc.execCommand(command_args)
     print()
-
-
-def restore_zero_folder():
-    if os.path.isdir("0_bak"):
-        if os.path.isdir("0"):
-            shutil.rmtree("0")
-        shutil.move("0_bak", "0")
-    rmObjects.removeInessentials()
-
-
-def delete_folders_in_accordance_with_purgeWrite():
-    # 並列計算時に途中でrecosntructParが実行されて，purgeWrite対象外のフォルダが残っていた時に後始末する
-    if domains == 1:
-        return
+    # 並列計算途中でrecosntructParが実行されて，purgeWrite対象外のフォルダが残っていた時に後始末する
     try:
         pw = int(
             subprocess.check_output(
@@ -139,6 +126,13 @@ def delete_folders_in_accordance_with_purgeWrite():
         tfs = tfs[1:]
     for i in tfs[:-pw]:
         shutil.rmtree(i)
+
+def restore_zero_folder():
+    if os.path.isdir("0_bak"):
+        if os.path.isdir("0"):
+            shutil.rmtree("0")
+        shutil.move("0_bak", "0")
+    rmObjects.removeInessentials()
 
 
 def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3):
@@ -955,7 +949,6 @@ if __name__ == "__main__":
 
     rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
-    delete_folders_in_accordance_with_purgeWrite()
 
     if plot_data["continuity"]:
         cont_max = max(
