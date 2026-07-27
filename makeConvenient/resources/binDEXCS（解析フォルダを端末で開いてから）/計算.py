@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/26 2:07:28 PM
+# 2026/7/27 12:05:31 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -226,7 +226,6 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
     plt_fig = {}
     plt_ax = {}
     plt_line2d = {}
-    final_residual = {}  # 緩和係数の調節基準
 
     def set_subplot(data_key, xlabel, ylabel, window_title, logscale=True):
         ncol = math.ceil(len(plot_data[data_key]) / 16.0)
@@ -335,18 +334,18 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             plt_fig[data_key].savefig(f"{data_key}.png")
 
     res_eval_freq = 20  # 残差評価頻度
-    res_crit = 0.001  # Final residualがこれよりもが大きいか小さいかで緩和係数の増減基準を切り替える
-    res_flat = math.log10(1.05)  # これよりもlog10(Final residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
+    res_flat = math.log10(1.05)  # これよりもlog10(residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
+    res_osc = math.log10(2.0)  # これよりもlog10(residual)の標準偏差が大きければ，残差減少が鈍いと見なす
 
     def relax_delta_sign(recent_residuals):
         recent_residuals = np.array(recent_residuals)
-        res_mean = np.mean(recent_residuals)
+        log_recent_residuals = np.log10(recent_residuals)
+        if np.std(log_recent_residuals) > res_osc:
+            return -1.0
         res_slope = np.polyfit(
-            np.arange(recent_residuals.shape[0]), np.log10(recent_residuals), 1
+            np.arange(recent_residuals.shape[0]), log_recent_residuals, 1
         )[0]  # log10(recent_residuals) = res_slope*iteration + b
-        if res_mean > res_crit:
-            return -np.heaviside(res_slope, 0.0)
-        elif abs(res_slope) < res_flat:
+        if abs(res_slope) < res_flat:
             return 1.0
         elif res_slope > res_flat:
             return -1.0
@@ -425,10 +424,9 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                             relax_delta != 0.0
                             and iteration > 0
                             and iteration % res_eval_freq == 0
-                            and final_residual
                         ):
                             remark = remark_string(f"time = {time}")
-                            for k, v in final_residual.items():
+                            for k, v in plot_data["initial_residual"].items():
                                 if len(v) < res_eval_freq:
                                     continue
                                 s = relax_delta_sign(v[-res_eval_freq:])
@@ -467,9 +465,6 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                         plot_data["initial_residual"][par].append(res)  # データの追加
                     else:
                         plot_data["initial_residual"][par][-1] = res  # データの更新
-                    if par not in final_residual:
-                        final_residual[par] = []
-                    final_residual[par].append(res)  # データの追加
                 elif s.lastgroup == "continuity_global":
                     loc_value = float(s.group("continuity_local"))
                     glob_balue = abs(float(s.group("continuity_global")))
