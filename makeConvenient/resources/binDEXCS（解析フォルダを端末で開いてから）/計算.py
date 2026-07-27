@@ -40,8 +40,9 @@ relaxationFactor_lower_limit = 0.3  # 緩和係数の下限値
 relaxationFactor_delta_usual = 0.01  # 通常時における緩和係数の変化量の絶対値
 relaxationFactor_delta_restart = 0.05  # リスタート時における緩和係数の減量量
 domains = 1
-regionProperties_path = os.path.join("constant", "regionProperties")
+controlDict_path = os.path.join("system", "controlDict")
 decomposeParDict_path = os.path.join("system", "decomposeParDict")
+regionProperties_path = os.path.join("constant", "regionProperties")
 pat_residual = re.compile(r"(?P<parameter>\S+)( \((?P<region>[^)]+)\))?")
 pat_remark = re.compile(
     "// .+, [0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{6})?"
@@ -57,6 +58,7 @@ def handler(signum, frame):
         recosntructPar()
         rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
+    delete_folders_in_accordance_with_purgeWrite()
     sys.exit(1)
 
 
@@ -90,6 +92,7 @@ def decomposePar():
         command_args.append("-allRegions")
     if misc.execCommand(command_args)[1] != 0:
         restore_zero_folder()
+        delete_folders_in_accordance_with_purgeWrite()
         sys.exit(1)
     print()
 
@@ -108,6 +111,33 @@ def restore_zero_folder():
             shutil.rmtree("0")
         shutil.move("0_bak", "0")
     rmObjects.removeInessentials()
+
+
+def delete_folders_in_accordance_with_purgeWrite():  # 並列計算時にpurgeWriteが効かないので後始末する
+    if domains == 1:
+        return
+    try:
+        pw = int(
+            subprocess.check_output(
+                [
+                    "foamDictionary",
+                    "-entry",
+                    "purgeWrite",
+                    "-value",
+                    controlDict_path,
+                ],
+                encoding="UTF-8",
+            ).strip()
+        )
+    except subprocess.CalledProcessError:
+        return
+    if pw == 0:
+        return
+    tfs = timesFolders()
+    if float(tfs[0]) == 0.0:
+        tfs = tfs[1:]
+    for i in tfs[:-pw]:
+        shutil.rmtree(i)
 
 
 def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3):
@@ -695,7 +725,6 @@ if __name__ == "__main__":
                 change_relaxation_factors = True
             i += 1
 
-    controlDict_path = os.path.join("system", "controlDict")
     fvSolution_path = os.path.join("system", "fvSolution")
     boundary_path = os.path.join("constant", "polyMesh", "boundary")
     for i in (controlDict_path, fvSolution_path, boundary_path):
@@ -927,6 +956,7 @@ if __name__ == "__main__":
 
     rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
+    delete_folders_in_accordance_with_purgeWrite()
 
     if plot_data["continuity"]:
         cont_max = max(
