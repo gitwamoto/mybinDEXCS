@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 4:33:29 PM
+# 2026/7/27 5:44:18 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -134,7 +134,7 @@ def delete_folders_in_accordance_with_purgeWrite():  # 並列計算時にpurgeWr
         return
     if pw == 0:
         return
-    tfs = timesFolders()
+    tfs = misc.timesFolders()
     if float(tfs[0]) == 0.0:
         tfs = tfs[1:]
     for i in tfs[:-pw]:
