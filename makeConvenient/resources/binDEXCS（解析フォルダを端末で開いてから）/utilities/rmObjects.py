@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/7/25 7:06:11 PM
+# 2026/7/27 9:32:31 PM
 
 import os
 import glob
