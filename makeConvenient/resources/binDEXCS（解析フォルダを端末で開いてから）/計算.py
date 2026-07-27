@@ -29,7 +29,6 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-import random
 from utilities import misc
 from utilities import appendEntries
 from utilities import rmObjects
@@ -114,7 +113,8 @@ def restore_zero_folder():
     rmObjects.removeInessentials()
 
 
-def delete_folders_in_accordance_with_purgeWrite():  # 並列計算時にpurgeWriteが効かないので後始末する
+def delete_folders_in_accordance_with_purgeWrite():
+    # 並列計算時に途中でrecosntructParが実行されて，purgeWrite対象外のフォルダが残っていた時に後始末する
     if domains == 1:
         return
     try:
@@ -384,7 +384,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             np.arange(recent_residuals.shape[0]), log_recent_residuals, 1
         )[0]  # log10(recent_residuals) = res_slope*iteration + b
         if abs(res_slope) < res_flat:
-            return random.choice([-1.0, 1.0])
+            return 1.0
         elif res_slope > res_flat:
             return -1.0
         else:
@@ -881,7 +881,7 @@ if __name__ == "__main__":
     else:
         should_rm_processor_dirs = False
         processor_dirs = set()
-        for d in glob.iglob(f"processor*{os.sep}"):
+        for d in glob.iglob(f"processor[0-9]*{os.sep}"):
             try:
                 processor_dirs.add(int(d[len("processor") : -len(os.sep)]))
             except:
@@ -905,11 +905,11 @@ if __name__ == "__main__":
         if should_rm_processor_dirs:
             for d in processor_dirs:
                 shutil.rmtree(f"processor{d}")
-        if not os.path.isdir("processor0"):
-            decomposePar()
 
     application = misc.getApplication()
     while True:
+        if domains != 1 and not os.path.isdir("processor0"):
+            decomposePar()
         start_time = misc.latestTime()
         result, plot_data = plot_runner(
             application=application,
@@ -927,8 +927,6 @@ if __name__ == "__main__":
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
             domains -= 1
-            if domains != 1:
-                decomposePar()
             continue
         elif not change_relaxation_factors or result != "floating point error":
             break
@@ -939,8 +937,7 @@ if __name__ == "__main__":
         s = -1.0
         if max_relax_factor <= relaxationFactor_lower_limit:
             if float(start_time) != 0.0:
-                for d in glob.iglob(f"processor*{os.sep}"):
-                    shutil.rmtree(os.path.join(d, start_time))
+                rmObjects.removeProcessorDirs()  # すでにrecosntructPar()が行われていると仮定
                 shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
                 s = 1.0
             else:

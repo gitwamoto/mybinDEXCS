@@ -53,7 +53,7 @@ def removeLogPlotPngs():
 def removeProcessorDirs(option="", path=os.curdir):
     noZero, noLatest = "noZero" in option, "noLatest" in option
     pat = re.compile(r"(?:\./)?processor([0-9]+)/$")
-    if not noLatest and not noZero:
+    if not noLatest and not noZero:  # latestも0も消す
         for p in glob.iglob(os.path.join(path, f"processor[0-9]*{os.sep}")):
             if pat.match(p):
                 shutil.rmtree(p)
@@ -62,8 +62,8 @@ def removeProcessorDirs(option="", path=os.curdir):
         if latest_time is None:
             return
         latest_time = float(latest_time)
-        if noLatest and latest_time == 0.0:
-            noZero = False  # latest_time = 0は消さない
+        if noLatest and latest_time == 0.0:  # latestは残す
+            noZero = True  # latest_time = 0はは残す
         pdirs = []
         for p in glob.iglob(os.path.join(path, f"processor[0-9]*{os.sep}")):
             s = pat.match(p)
