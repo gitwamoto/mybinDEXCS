@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 9:48:17 PM
+# 2026/7/27 10:45:57 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -96,7 +96,7 @@ def decomposePar():
 
 
 def reconstructPar():
-    if not os.path.isdir("processor0"):
+    if not os.path.isdir("processor0"):  #processor0がなければ何もすることはない
         return
     command_args = ["reconstructPar", "-newTimes", "-noFunctionObjects"]
     if os.path.exists(regionProperties_path):
