@@ -804,13 +804,13 @@ class DictParser(UserDict):
 
 
 if __name__ == "__main__":
-    #    normalize(file_name = sys.argv[1])
+#    normalize(file_name = sys.argv[1])
     try:
         parser = DictParser(file_name=sys.argv[1])
     except:
         print(sys.exc_info())
 
-    #    print(parser.structure_string())
+#    print(parser.structure_string())
     for element in parser.find_all_elements([{"type": "block|dictionary"}]):
         print(f"'{element['element']['key']}' '|'")
 #    print(parser.file_string(pretty_print = True, commentless = False))
