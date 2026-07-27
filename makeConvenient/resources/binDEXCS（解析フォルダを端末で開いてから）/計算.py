@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 5:44:18 PM
+# 2026/7/27 6:12:40 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -945,10 +945,11 @@ if __name__ == "__main__":
                 s = 1.0
             else:
                 break
+        remark = remark_string(f"restart")
         for k in plot_data["initial_residual"].keys():
             change_relaxationFactor_in_fvSolution(
                 param_name=k,
-                remark=remark_string("restart"),
+                remark=remark,
                 delta=s * relaxationFactor_delta_restart,
                 lower_limit=relaxationFactor_lower_limit,
             )
