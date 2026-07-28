@@ -136,7 +136,10 @@ def restore_zero_folder():
     rmObjects.removeInessentials()
 
 
-def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3):
+def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_limit=0.3):
+    if domains != 1 and not os.path.isdir("processor0"):
+        decomposePar()
+
     # グラフの初期設定
     plt.ion()  # インタラクティブモードON
     line_styles = ["-", "--", "-."]
@@ -309,6 +312,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
     history_path = f"{application}_history.txt"
     history_title_prefix = "# iteration\ttime [s]"
     iteration = 0
+    time = "0"
     if os.path.isfile(history_path):
         if start_time == 0.0:
             os.remove(history_path)
@@ -337,6 +341,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                     cols = stripped.split("\t")
                     if float(cols[1]) > start_time:
                         break
+                    time = cols[1]
                     if l_data_ord == len(cols) - 2:
                         for (data_key, k), v in zip(data_ord, cols[2:]):
                             plot_data[data_key][k].append(float(v))
@@ -390,7 +395,6 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             return 0.0
 
     result = "end"  # 戻り値
-    time = "0"
     region = None
 
     with open(f"{application}.log", "w") as f_log:
@@ -598,6 +602,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             print(s)
             f_log.write(s)
 
+        # result = "end" | "not enough slots" | "converged" | "floating point error"
         if result in ("end", "converged"):
             if any(f in application.lower() for f in ["simplefoam", "potentialfoam"]):
                 if result == "converged":
@@ -608,9 +613,12 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 s = "\n計算が終了しました．"
             if change_relaxation_factors:
                 s += "\n最終的な緩和係数（relaxationFactors）は以下になりました："
-                for i in relax_factors:
+                for i in getRelaxationFactors(plot_data["initial_residual"].keys()):
                     s += f"\n  {i['param']}: {i['value']}"
-        else:
+            print(s)
+            f_log.write(s)
+        elif result == "floating point error":
+            
             if change_relaxation_factors:
                 s = (
                     "\n\033[3;4;5m(ERROR) 緩和係数（relaxationFactors）を下限の"
@@ -622,8 +630,35 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 "\033[3;4;5m「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) "
                 "の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．\033[m"
             )
-        print(s)
-        f_log.write(s)
+            print(s)
+            f_log.write(s)
+
+        relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
+        max_relax_factor = 1.0
+        if len(relax_factors) > 0:
+            max_relax_factor = max([i["value"] for i in relax_factors])
+        s = -1.0
+        if max_relax_factor - relaxationFactor_delta_restart <= relaxationFactor_lower_limit:
+            if float(start_time) != 0.0:
+                rmObjects.removeProcessorDirs()  # すでにreconstructPar()が行われていることを想定
+                shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
+                s = 1.0
+            else:
+                break
+        remark = remark_string(f"restart")
+        for k in plot_data["initial_residual"].keys():
+            change_relaxationFactor_in_fvSolution(
+                param_name=k,
+                remark=remark,
+                delta=s * relaxationFactor_delta_restart,
+                lower_limit=relaxationFactor_lower_limit,
+            )
+        rmObjects.removeLogPlotPngs()
+        os.remove(f"{application}.log")
+
+    if os.path.isdir("processor0"):
+        reconstructPar()
+        rmObjects.removeProcessorDirs("noLatest")
 
     return result, plot_data
 
@@ -1017,11 +1052,10 @@ if __name__ == "__main__":
 
     application = misc.getApplication()
     while True:
-        if domains != 1 and not os.path.isdir("processor0"):
-            decomposePar()
         start_time = misc.latestTime()
         result, plot_data = plot_runner(
             application=application,
+            domains = domains,
             start_time=start_time,
             relax_delta=(
                 relaxationFactor_delta_usual if change_relaxation_factors else 0.0
@@ -1029,39 +1063,10 @@ if __name__ == "__main__":
             relax_lower_limit=relaxationFactor_lower_limit,
         )
         # result = "end" | "not enough slots" | "converged" | "floating point error"
-        relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
-        if domains != 1:
-            reconstructPar()
-            rmObjects.removeProcessorDirs("noLatest")
 
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
             domains -= 1
-            continue
-        elif not change_relaxation_factors or result != "floating point error":
-            break
-
-        max_relax_factor = 1.0
-        if len(relax_factors) > 0:
-            max_relax_factor = max([i["value"] for i in relax_factors])
-        s = -1.0
-        if max_relax_factor <= relaxationFactor_lower_limit:
-            if float(start_time) != 0.0:
-                rmObjects.removeProcessorDirs()  # すでにreconstructPar()が行われていることを想定
-                shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
-                s = 1.0
-            else:
-                break
-        remark = remark_string(f"restart")
-        for k in plot_data["initial_residual"].keys():
-            change_relaxationFactor_in_fvSolution(
-                param_name=k,
-                remark=remark,
-                delta=s * relaxationFactor_delta_restart,
-                lower_limit=relaxationFactor_lower_limit,
-            )
-        rmObjects.removeLogPlotPngs()
-        os.remove(f"{application}.log")
 
     rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
