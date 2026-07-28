@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/28 8:30:44 AM
+# 2026/7/27 10:45:57 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -136,10 +136,7 @@ def restore_zero_folder():
     rmObjects.removeInessentials()
 
 
-def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_limit=0.3):
-    if domains != 1 and not os.path.isdir("processor0"):
-        decomposePar()
-
+def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3):
     # グラフの初期設定
     plt.ion()  # インタラクティブモードON
     line_styles = ["-", "--", "-."]
@@ -341,11 +338,11 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
                     cols = stripped.split("\t")
                     if float(cols[1]) > start_time:
                         break
+                    iteration = int(cols[0])
                     time = cols[1]
                     if l_data_ord == len(cols) - 2:
                         for (data_key, k), v in zip(data_ord, cols[2:]):
                             plot_data[data_key][k].append(float(v))
-                    iteration = int(cols[0])
                     f_out.write(line)
             os.remove(old_history_path)
     iteration_start = iteration + 1
@@ -383,9 +380,9 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
         res_slope = np.polyfit(
             np.arange(recent_residuals.shape[0]), log_recent_residuals, 1
         )[0]  # log10(recent_residuals) = res_slope*iteration + b
-        if abs(res_slope) < res_flat:
-            return 1.0
-        elif res_slope > res_flat:
+#        if abs(res_slope) < res_flat:
+#            return 1.0
+        if res_slope > res_flat:
             return -1.0
         else:
             return 0.0
@@ -566,92 +563,6 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
         print(sys.exc_info())
         process.terminate()
 
-<<<<<<< HEAD
-        finally:
-            if process.poll() is None:  # 子プロセスが終了しているかどうかを調べます
-                process.wait()  # 子プロセスが終了するまで待ちます
-                # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
-            if iteration > 1:
-                monitor()
-            plt.ioff()
-            plt.close("all")
-
-        if plot_data["continuity"]:
-            cont_max = max(
-                [
-                    v[-1]
-                    for k, v in plot_data["continuity"].items()
-                    if k.startswith("sum local")
-                ]
-            )
-            res_max = max([v[-1] for v in plot_data["initial_residual"].values()])
-            s = (
-                "\n最後の計算における\n"
-                f"  連続の式の局所誤差の最大値は{cont_max}\n"
-                f"  残差の最大値は{res_max}\n"
-                "でした．"
-            )
-            print(s)
-            f_log.write(s)
-
-        # result = "end" | "not enough slots" | "converged" | "floating point error"
-        if result in ("end", "converged"):
-            if any(f in application.lower() for f in ["simplefoam", "potentialfoam"]):
-                if result == "converged":
-                    s = "\n収束条件を満足して計算が終了しました．"
-                else:
-                    s = "\n計算が終了しましたが，収束条件を満足していません．"
-            else:
-                s = "\n計算が終了しました．"
-            if change_relaxation_factors:
-                s += "\n最終的な緩和係数（relaxationFactors）は以下になりました："
-                for i in getRelaxationFactors(plot_data["initial_residual"].keys()):
-                    s += f"\n  {i['param']}: {i['value']}"
-            print(s)
-            f_log.write(s)
-        elif result == "floating point error":
-            
-            if change_relaxation_factors:
-                s = (
-                    "\n\033[3;4;5m(ERROR) 緩和係数（relaxationFactors）を下限の"
-                    f"{relaxationFactor_lower_limit}まで下げても計算が発散します．\033[m"
-                )
-            else:
-                s = "\n\033[3;4;5m(ERROR) 計算が発散しました．\033[m"
-            s += (
-                "\033[3;4;5m「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) "
-                "の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．\033[m"
-            )
-            print(s)
-            f_log.write(s)
-
-        relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
-        max_relax_factor = 1.0
-        if len(relax_factors) > 0:
-            max_relax_factor = max([i["value"] for i in relax_factors])
-        s = -1.0
-        if max_relax_factor - relaxationFactor_delta_restart <= relaxationFactor_lower_limit:
-            if float(start_time) != 0.0:
-                rmObjects.removeProcessorDirs()  # すでにreconstructPar()が行われていることを想定
-                shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
-                s = 1.0
-            else:
-                break
-        remark = remark_string(f"restart")
-        for k in plot_data["initial_residual"].keys():
-            change_relaxationFactor_in_fvSolution(
-                param_name=k,
-                remark=remark,
-                delta=s * relaxationFactor_delta_restart,
-                lower_limit=relaxationFactor_lower_limit,
-            )
-        rmObjects.removeLogPlotPngs()
-        os.remove(f"{application}.log")
-
-    if os.path.isdir("processor0"):
-        reconstructPar()
-        rmObjects.removeProcessorDirs("noLatest")
-=======
     finally:
         if process.poll() is None:  # 子プロセスが終了しているかどうかを調べます
             process.wait()  # 子プロセスが終了するまで待ちます
@@ -660,7 +571,6 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
             monitor()
         plt.ioff()
         plt.close("all")
->>>>>>> parent of 68d9b22 (Update 計算.py)
 
     return result, plot_data
 
@@ -994,10 +904,11 @@ if __name__ == "__main__":
 
     application = misc.getApplication()
     while True:
+        if domains != 1 and not os.path.isdir("processor0"):
+            decomposePar()
         start_time = misc.latestTime()
         result, plot_data = plot_runner(
             application=application,
-            domains = domains,
             start_time=start_time,
             relax_delta=(
                 relaxationFactor_delta_usual if change_relaxation_factors else 0.0
@@ -1005,12 +916,14 @@ if __name__ == "__main__":
             relax_lower_limit=relaxationFactor_lower_limit,
         )
         # result = "end" | "not enough slots" | "converged" | "floating point error"
+        relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
+        if domains != 1:
+            reconstructPar()
+            rmObjects.removeProcessorDirs("noLatest")
 
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
             domains -= 1
-<<<<<<< HEAD
-=======
             continue
         elif not change_relaxation_factors or result != "floating point error":
             break
@@ -1036,7 +949,6 @@ if __name__ == "__main__":
             )
         rmObjects.removeLogPlotPngs()
         os.remove(f"{application}.log")
->>>>>>> parent of 68d9b22 (Update 計算.py)
 
     rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
