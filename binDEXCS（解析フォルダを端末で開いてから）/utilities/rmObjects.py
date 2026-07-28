@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # rmObjects.py
 # by Yukiharu Iwamoto
-# 2026/7/27 9:32:31 PM
+# 2026/7/28 9:00:15 AM
 
 import os
 import glob
@@ -63,7 +63,7 @@ def removeProcessorDirs(option="", path=os.curdir):
             return
         latest_time = float(latest_time)
         if noLatest and latest_time == 0.0:  # latestは残す
-            noZero = True  # latest_time = 0はは残す
+            noZero = True  # latest_time = 0は残す
         pdirs = []
         for p in glob.iglob(os.path.join(path, f"processor[0-9]*{os.sep}")):
             s = pat.match(p)
