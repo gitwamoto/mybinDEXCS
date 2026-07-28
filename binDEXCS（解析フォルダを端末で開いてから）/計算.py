@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/28 6:25:43 PM
+# 2026/7/28 7:01:08 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -607,10 +607,7 @@ def reset_parameters_in_fvSolution():
                 comment = i["element"].find_element(
                     [{"type": "line_comment"}], reverse=True
                 )["element"]
-                if (
-                    comment is not None
-                    and pat_remark.search(comment["value"]) is not None
-                ):
+                if comment is not None and pat_remark.search(comment["value"]):
                     del i["parent"][i["index"]]
             block.set_blank_line(number_of_blank_lines=0)
 
@@ -622,10 +619,7 @@ def reset_parameters_in_fvSolution():
                 comment = i["element"].find_element(
                     [{"type": "line_comment"}], reverse=True
                 )["element"]
-                if (
-                    comment is not None
-                    and pat_remark.search(comment["value"]) is not None
-                ):
+                if comment is not None and pat_remark.search(comment["value"]):
                     del i["parent"][i["index"]]
             block.set_blank_line(number_of_blank_lines=0)
 
