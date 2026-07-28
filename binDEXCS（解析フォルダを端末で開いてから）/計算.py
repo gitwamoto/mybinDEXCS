@@ -380,8 +380,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         res_slope = np.polyfit(
             np.arange(recent_residuals.shape[0]), log_recent_residuals, 1
         )[0]  # log10(recent_residuals) = res_slope*iteration + b
-#        if abs(res_slope) < res_flat:
-#            return 1.0
+        if abs(res_slope) < res_flat:
+            return 1.0
         if res_slope > res_flat:
             return -1.0
         else:
@@ -902,6 +902,7 @@ if __name__ == "__main__":
             for d in processor_dirs:
                 shutil.rmtree(f"processor{d}")
 
+    start_time_relaxationFactor_lower_limit = "0"
     application = misc.getApplication()
     while True:
         if domains != 1 and not os.path.isdir("processor0"):
@@ -932,13 +933,15 @@ if __name__ == "__main__":
         if len(relax_factors) > 0:
             max_relax_factor = max([i["value"] for i in relax_factors])
         s = -1.0
-        if max_relax_factor <= relaxationFactor_lower_limit:
-            if float(start_time) != 0.0:
+        if start_time_relaxationFactor_lower_limit == start_time
+            if start_time != "0":
                 rmObjects.removeProcessorDirs()  # すでにreconstructPar()が行われていると仮定
                 shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
                 s = 1.0
             else:
                 break
+        if max_relax_factor - relaxationFactor_delta_restart <= relaxationFactor_lower_limit:
+            start_time_relaxationFactor_lower_limit = start_time
         remark = remark_string(f"restart")
         for k in plot_data["initial_residual"].keys():
             change_relaxationFactor_in_fvSolution(
