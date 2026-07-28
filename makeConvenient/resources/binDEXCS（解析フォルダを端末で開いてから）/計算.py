@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/27 10:45:57 PM
+# 2026/7/28 6:25:43 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -37,8 +37,8 @@ from utilities import dictParse
 # plt.rcParams['figure.figsize'] = (6.0, 3.6) # (width, height), デフォルト値は環境によりますが、多くの場合は (6.4, 4.8) です。
 
 relaxationFactor_lower_limit = 0.3  # 緩和係数の下限値
-relaxationFactor_delta_usual = 0.01  # 通常時における緩和係数の変化量の絶対値
-relaxationFactor_delta_restart = 0.05  # リスタート時における緩和係数の減量量
+relaxationFactor_delta_usual = 0.02  # 通常時における緩和係数の変化量の絶対値
+relaxationFactor_delta_restart = 0.1  # リスタート時における緩和係数の減量量
 domains = 1
 controlDict_path = os.path.join("system", "controlDict")
 decomposeParDict_path = os.path.join("system", "decomposeParDict")
@@ -96,7 +96,7 @@ def decomposePar():
 
 
 def reconstructPar():
-    if not os.path.isdir("processor0"):  #processor0がなければ何もすることはない
+    if not os.path.isdir("processor0"):  # processor0がなければ何もすることはない
         return
     command_args = ["reconstructPar", "-newTimes", "-noFunctionObjects"]
     if os.path.exists(regionProperties_path):
@@ -271,7 +271,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             k: ax.plot([], [], linestyle=line_styles[i % len(line_styles)], label=k)[0]
             for i, k in enumerate(plot_data[data_key])
         }
-#        ax.legend(loc = 'best') # ax.plotを呼び出した後
+        #        ax.legend(loc = 'best') # ax.plotを呼び出した後
         ax.legend(
             bbox_to_anchor=(1.02, 1), loc="upper left", borderaxespad=0, ncol=ncol
         )
@@ -309,6 +309,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
     history_path = f"{application}_history.txt"
     history_title_prefix = "# iteration\ttime [s]"
     iteration = 0
+    time = "0"
     if os.path.isfile(history_path):
         if start_time == 0.0:
             os.remove(history_path)
@@ -337,10 +338,11 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                     cols = stripped.split("\t")
                     if float(cols[1]) > start_time:
                         break
+                    iteration = int(cols[0])
+                    time = cols[1]
                     if l_data_ord == len(cols) - 2:
                         for (data_key, k), v in zip(data_ord, cols[2:]):
                             plot_data[data_key][k].append(float(v))
-                    iteration = int(cols[0])
                     f_out.write(line)
             os.remove(old_history_path)
     iteration_start = iteration + 1
@@ -361,9 +363,13 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             plt.pause(0.01)
             plt_fig[data_key].savefig(f"{data_key}.png")
 
-    res_eval_freq = 20  # 残差評価頻度
-    res_flat = math.log10(1.05)  # これよりもlog10(residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
-    res_osc = 0.5*math.log10(2.0)  # これよりもlog10(residual)の標準偏差が大きければ，残差減少が鈍いと見なす
+    res_eval_freq = 50  # 残差評価頻度
+    res_flat = math.log10(
+        1.05
+    )  # これよりもlog10(residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
+    res_osc = 0.5 * math.log10(
+        2.0
+    )  # これよりもlog10(residual)の標準偏差が大きければ，残差減少が鈍いと見なす
     cont_crit = 0.01  # これよりも連続の式の誤差が大きければ，緩和係数を引き下げる
 
     def relax_delta_sign(recent_residuals, cont_err):
@@ -380,13 +386,12 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         )[0]  # log10(recent_residuals) = res_slope*iteration + b
         if abs(res_slope) < res_flat:
             return 1.0
-        elif res_slope > res_flat:
+        if res_slope > res_flat:
             return -1.0
         else:
             return 0.0
 
     result = "end"  # 戻り値
-    time = "0"
     region = None
 
     try:
@@ -574,10 +579,10 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
     return result, plot_data
 
 
-def reset_relaxationFactors_in_fvSolution():
+def reset_parameters_in_fvSolution():
     processed = []
 
-    def reset_relaxationFactors_in(path):
+    def reset_parameters_in(path):
         fvSolution_path = os.path.abspath(os.path.join(path, "fvSolution"))
         if os.path.islink(fvSolution_path):
             fvSolution_path = os.path.realpath(fvSolution_path)
@@ -586,6 +591,7 @@ def reset_relaxationFactors_in_fvSolution():
         processed.append(fvSolution_path)
 
         fvSolution = dictParse.DictParser(file_name=fvSolution_path)
+
         relaxationFactors = fvSolution.find_element(
             [{"type": "block", "key": "relaxationFactors"}]
         )["element"]
@@ -608,16 +614,30 @@ def reset_relaxationFactors_in_fvSolution():
                     del i["parent"][i["index"]]
             block.set_blank_line(number_of_blank_lines=0)
 
+        for block in fvSolution.find_all_elements(
+            [{"type": "block", "key": "solvers"}, {"type": "block"}]
+        ):
+            block = block["element"]
+            for i in reversed(block.find_all_elements([{"type": "dictionary"}])):
+                comment = i["element"].find_element(
+                    [{"type": "line_comment"}], reverse=True
+                )["element"]
+                if (
+                    comment is not None
+                    and pat_remark.search(comment["value"]) is not None
+                ):
+                    del i["parent"][i["index"]]
+            block.set_blank_line(number_of_blank_lines=0)
+
         string = dictParse.normalize(string=fvSolution.file_string())[0]
         if fvSolution.string != string:
-#            os.rename(fvSolution_path, f'{fvSolution_path}_bak')
             with open(fvSolution_path, "w") as f:
                 f.write(string)
 
     if os.path.isdir("system"):
-        reset_relaxationFactors_in("system")
+        reset_parameters_in("system")
     for r in glob.iglob(os.path.join("system", f"*{os.sep}")):
-        reset_relaxationFactors_in(r)
+        reset_parameters_in(r)
 
 
 def change_relaxationFactor_in_fvSolution(
@@ -641,14 +661,17 @@ def change_relaxationFactor_in_fvSolution(
     if value == new_value:
         return
 
-    # appendEntries.intoFvSolution()を実行していることを想定
     fvSolution = dictParse.DictParser(file_name=fvSolution_path)
     relaxationFactors = fvSolution.find_element(
         [{"type": "block", "key": "relaxationFactors"}]
     )["element"]
+    if relaxationFactors is None:
+        return
     block = relaxationFactors.find_element([{"type": "block", "key": f"{cat}"}])[
         "element"
     ]
+    if block is None:
+        return
     block_end = block.find_element([{"type": "block_end"}], reverse=True)
     i = block.find_element(
         [{"type": "dictionary", "key": param_name}],
@@ -668,6 +691,46 @@ def change_relaxationFactor_in_fvSolution(
     misc.atomic_write(
         fvSolution_path, dictParse.normalize(string=fvSolution.file_string())[0]
     )
+
+
+def change_relTol_in_fvSolution(remark, value):
+    processed = []
+    pat = re.compile('Final[)"]*$')
+
+    def change_relTol_in(path, remark):
+        fvSolution_path = os.path.abspath(os.path.join(path, "fvSolution"))
+        if os.path.islink(fvSolution_path):
+            fvSolution_path = os.path.realpath(fvSolution_path)
+            if fvSolution_path in processed:
+                return
+        processed.append(fvSolution_path)
+
+        fvSolution = dictParse.DictParser(file_name=fvSolution_path)
+        for block in fvSolution.find_all_elements(
+            [{"type": "block", "key": "solvers"}, {"type": "block"}]
+        ):
+            block = block["element"]
+            if pat.search(block["key"]):
+                continue
+            block_end = block.find_element([{"type": "block_end"}], reverse=True)[
+                "index"
+            ]
+            if not remark.startswith("// "):
+                remark = f"// {remark}"
+            block["value"][block_end:block_end] = dictParse.DictParser(
+                string=f"\nrelTol\t{value}; {remark}\n"
+            )["value"]
+            block.set_blank_line(number_of_blank_lines=0)
+
+        string = dictParse.normalize(string=fvSolution.file_string())[0]
+        if fvSolution.string != string:
+            with open(fvSolution_path, "w") as f:
+                f.write(string)
+
+    if os.path.isdir("system"):
+        change_relTol_in("system", remark)
+    for r in glob.iglob(os.path.join("system", f"*{os.sep}")):
+        change_relTol_in(r, remark)
 
 
 def getRelaxationFactors(param_names):
@@ -868,8 +931,7 @@ if __name__ == "__main__":
             == "y"
             else False
         )
-    if change_relaxation_factors:
-        reset_relaxationFactors_in_fvSolution()
+    reset_parameters_in_fvSolution()
 
     if domains == 1:
         rmObjects.removeProcessorDirs()
@@ -901,7 +963,10 @@ if __name__ == "__main__":
             for d in processor_dirs:
                 shutil.rmtree(f"processor{d}")
 
+    start_time_relaxationFactor_lower_limit = "-1"
     application = misc.getApplication()
+    if "simplefoam" in application.lower():
+        change_relTol_in_fvSolution(remark_string(application), 0.5)
     while True:
         if domains != 1 and not os.path.isdir("processor0"):
             decomposePar()
@@ -918,6 +983,7 @@ if __name__ == "__main__":
         relax_factors = getRelaxationFactors(plot_data["initial_residual"].keys())
         if domains != 1:
             reconstructPar()
+            rmObjects.removeProcessorDirs("noLatest")
 
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
@@ -930,14 +996,19 @@ if __name__ == "__main__":
         if len(relax_factors) > 0:
             max_relax_factor = max([i["value"] for i in relax_factors])
         s = -1.0
-        if max_relax_factor <= relaxationFactor_lower_limit:
-            if float(start_time) != 0.0:
+        if start_time_relaxationFactor_lower_limit == start_time:
+            if start_time != "0":
                 rmObjects.removeProcessorDirs()  # すでにreconstructPar()が行われていると仮定
                 shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
                 s = 1.0
             else:
                 break
-        remark = remark_string(f"restart")
+        if (
+            max_relax_factor - relaxationFactor_delta_restart
+            <= relaxationFactor_lower_limit
+        ):
+            start_time_relaxationFactor_lower_limit = start_time
+        remark = remark_string("restart")
         for k in plot_data["initial_residual"].keys():
             change_relaxationFactor_in_fvSolution(
                 param_name=k,

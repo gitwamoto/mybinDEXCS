@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 連続計算雛形.py
 # by Yukiharu Iwamoto
-# 2026/7/22 9:08:31 PM
+# 2026/7/28 6:33:16 PM
 
 import os
 import signal
@@ -59,53 +59,6 @@ if __name__ == "__main__":
             turbulenceProperties,
         )
 
-    # ならし計算
-    for d in ("elbow_vane01_10", "elbow_vane02_10", "elbow_vane03_10", "elbow_wovane"):
-        os.chdir(os.path.join(dir_name, d))
-
-        if os.path.isdir(
-            "dynamicCode"
-        ):  # どうせ作り直すので，dynamicCodeフォルダを削除
-            shutil.rmtree("dynamicCode")
-
-        with open("setting.txt", "r") as f:
-            lines = f.readlines()
-        os.rename("setting.txt", "setting_bak.txt")
-        for i in range(len(lines)):
-            lines[i] = setComment.uncomment(
-                setComment.comment(lines[i], "// accurate"), "// shakedown"
-            )
-            # 行の末尾に// accurateと書かれている行をコメントアウトし，末尾に// shakedownと書かれている行をアンコメントする
-            # '// accurate', '// shakedown'の文字は，スペースの個数を含めて完全に一致する必要あり
-        with open("setting.txt", "w") as f:
-            f.writelines(lines)
-
-        fvSolution = os.path.join("system", "fvSolution")
-        with open(fvSolution, "r") as f:
-            lines = f.readlines()
-        os.rename(fvSolution, f"{fvSolution}_bak")
-        for i in range(len(lines)):
-            lines[i] = setComment.uncomment(
-                setComment.comment(lines[i], "// accurate"), "// shakedown"
-            )
-            # 行の末尾に// accurateと書かれている行をコメントアウトし，末尾に// shakedownと書かれている行をアンコメントする
-            # '// accurate', '// shakedown'の文字は，スペースの個数を含めて完全に一致する必要あり
-        with open(fvSolution, "w") as f:
-            f.writelines(lines)
-
-        subprocess.run(
-            [os.path.join(binDEXCS_path, "計算.py"), "-d", f"{domains}", "-0", "-r"]
-        )
-        # ---- 計算.pyのオプション ----
-        # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
-        # -N -> 非インタラクティブモードで実行
-        # -0 -> 0秒以外のフォルダがある場合，それらを消す．つまり0秒から計算をやり直す
-        # -d domains -> 計算領域をdomains個に分割して並列計算を行う．1だと普通の計算
-        # -f -> system/controlDictに書かれているfunctionsを全て計算中に実行するように，controlDictを書き変える
-        # -p -> paraFoamを実行する
-        # -r -> 残差が落ちにくい時に緩和係数を変化させる
-
-    # 正確な計算
     for d in ("elbow_vane01_10", "elbow_vane02_10", "elbow_vane03_10", "elbow_wovane"):
         os.chdir(os.path.join(dir_name, d))
 
