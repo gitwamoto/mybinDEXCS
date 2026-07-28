@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/28 9:19:25 AM
+# 2026/7/28 8:30:44 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -96,7 +96,7 @@ def decomposePar():
 
 
 def reconstructPar():
-    if not os.path.isdir("processor0"):  # processor0がなければ何もすることはない
+    if not os.path.isdir("processor0"):  #processor0がなければ何もすることはない
         return
     command_args = ["reconstructPar", "-newTimes", "-noFunctionObjects"]
     if os.path.exists(regionProperties_path):
@@ -274,7 +274,7 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
             k: ax.plot([], [], linestyle=line_styles[i % len(line_styles)], label=k)[0]
             for i, k in enumerate(plot_data[data_key])
         }
-        #        ax.legend(loc = 'best') # ax.plotを呼び出した後
+#        ax.legend(loc = 'best') # ax.plotを呼び出した後
         ax.legend(
             bbox_to_anchor=(1.02, 1), loc="upper left", borderaxespad=0, ncol=ncol
         )
@@ -367,12 +367,8 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
             plt_fig[data_key].savefig(f"{data_key}.png")
 
     res_eval_freq = 20  # 残差評価頻度
-    res_flat = math.log10(
-        1.05
-    )  # これよりもlog10(residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
-    res_osc = 0.5 * math.log10(
-        2.0
-    )  # これよりもlog10(residual)の標準偏差が大きければ，残差減少が鈍いと見なす
+    res_flat = math.log10(1.05)  # これよりもlog10(residual)の傾きの絶対値が小さければ，残差減少が鈍いと見なす
+    res_osc = 0.5*math.log10(2.0)  # これよりもlog10(residual)の標準偏差が大きければ，残差減少が鈍いと見なす
     cont_crit = 0.01  # これよりも連続の式の誤差が大きければ，緩和係数を引き下げる
 
     def relax_delta_sign(recent_residuals, cont_err):
@@ -397,184 +393,180 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
     result = "end"  # 戻り値
     region = None
 
-    with open(f"{application}.log", "w") as f_log:
-        try:
-            print()
-            command_args = [
-                "stdbuf",
-                "-oL",
-            ]  # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
-            if domains > 1:
-                command_args.extend(["mpirun", "-np", f"{domains}"])
-                # -u (unbuffered) は、mpirun に対して「出力をバッファリングせずにすぐ吐き出せ」と指示します
-            command_args.append(application)
-            if domains > 1:
-                command_args.append("-parallel")
-            process = subprocess.Popen(  # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
-                command_args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,  # 出力を文字列として扱う
-                bufsize=1,  # Python側でも行単位でバッファリング
-            )
+    try:
+        print()
+        command_args = [
+            "stdbuf",
+            "-oL",
+        ]  # stdbuf -oL はバッファリングを防ぎ、リアルタイム性を高める
+        if domains > 1:
+            command_args.extend(["mpirun", "-np", f"{domains}"])
+            # -u (unbuffered) は、mpirun に対して「出力をバッファリングせずにすぐ吐き出せ」と指示します
+        command_args.append(application)
+        if domains > 1:
+            command_args.append("-parallel")
+        process = subprocess.Popen(  # ソルバーをサブプロセスとして実行（標準出力をパイプで取得）
+            command_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,  # 出力を文字列として扱う
+            bufsize=1,  # Python側でも行単位でバッファリング
+        )
 
-            with open(history_path, "a") as f_history:
-                f_history.write(
-                    f"# {application} {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
-                )  # YYYY/mm/dd HH:MM:SS
-                # iter(process.stdout.readline, '') は readline() を
-                # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
-                for line in iter(process.stdout.readline, ""):
-                    if (
-                        line.startswith("Using #calc at ")
-                        or line.startswith("Using #codeStream with ")
-                        or line.startswith('Creating new library in "dynamicCode/')
-                        or "/dynamicCode/" in line
-                        or "ln: ./lnInclude" in line
-                        or ": codeStreamTemplate.C" in line
-                    ):
-                        continue
-                    sys.stdout.write(line)  # 端末へそのまま表示
-                    sys.stdout.flush()  # リアルタイム反映のため
-                    f_log.write(line)  # ログをファイル保存
-                    f_log.flush()  # リアルタイム反映のため
+        # fmt: off
+        with open(f"{application}.log", "w") as f_log, open(history_path, "a") as f_history:
+        # fmt: on
+            f_history.write(
+                f"# {application} {datetime.now().strftime('%Y/%m/%d %H:%M:%S')}\n"
+            )  # YYYY/mm/dd HH:MM:SS
+            # iter(process.stdout.readline, '') は readline() を
+            # 空文字（プロセス終了）が返るまで繰り返す Pythonic な書き方です
+            for line in iter(process.stdout.readline, ""):
+                if (
+                    line.startswith("Using #calc at ")
+                    or line.startswith("Using #codeStream with ")
+                    or line.startswith('Creating new library in "dynamicCode/')
+                    or "/dynamicCode/" in line
+                    or "ln: ./lnInclude" in line
+                    or ": codeStreamTemplate.C" in line
+                ):
+                    continue
+                sys.stdout.write(line)  # 端末へそのまま表示
+                sys.stdout.flush()  # リアルタイム反映のため
+                f_log.write(line)  # ログをファイル保存
+                f_log.flush()  # リアルタイム反映のため
 
-                    if line.startswith("Time = ") or line.rstrip() == "End":
-                        # ここはまだ古いiteration回目の繰り返し
-                        if iteration == 1:
-                            set_subplots()
-                            f_history.write(history_title_prefix)
-                            for data_key in plot_data:
-                                for k in plot_data[data_key]:
-                                    f_history.write(f"\t{data_key} {k}")
-                            f_history.write("\n")
-                        if iteration >= iteration_start:
-                            f_history.write(f"{iteration}\t{time}")
-                            for data_key in plot_data:
-                                for k in plot_data[data_key]:
-                                    f_history.write(
-                                        f"\t{plot_data[data_key][k][iteration - 1]}"
-                                    )
-                            f_history.write("\n")
-                            f_history.flush()  # リアルタイム反映のため
-                            if iteration % plot_freq == 0:
-                                monitor()
-                        if line.startswith("Time = "):
-                            if (
-                                relax_delta != 0.0
-                                and iteration > 0
-                                and iteration % res_eval_freq == 0
-                            ):
-                                remark = remark_string(f"time = {time}")
-                                cont_err = plot_data["continuity"]["sum local"][-1]
-                                for k, v in plot_data["initial_residual"].items():
-                                    s = relax_delta_sign(v[-res_eval_freq:], cont_err)
-                                    if s == 0.0:
-                                        continue
-                                    change_relaxationFactor_in_fvSolution(
-                                        param_name=k,
-                                        remark=remark,
-                                        delta=s * relax_delta,
-                                        lower_limit=relax_lower_limit,
-                                    )
-                            iteration += 1  # ここから新しいiteration回目の繰り返し
-                            time = line[7:].strip()
-                        continue
-                    elif "not enough slots available in" in line:
-                        result = "not enough slots"
-                        continue
-                    elif "solution converged in" in line:
-                        result = "converged"
-                        continue
-                    elif "Foam::sigFpe::sigHandler(int)" in line:
-                        result = "floating point error"  # 発散
-                        continue
-
-                    s = pat.search(line)
-                    if s is None:
-                        continue
-                    if s.lastgroup == "final_residual":
-                        par = s.group("parameter")
-                        if region is not None:
-                            par += f" ({region})"
-                        res = float(s.group("initial_residual"))
+                if line.startswith("Time = ") or line.rstrip() == "End":
+                    # ここはまだ古いiteration回目の繰り返し
+                    if iteration == 1:
+                        set_subplots()
+                        f_history.write(history_title_prefix)
+                        for data_key in plot_data:
+                            for k in plot_data[data_key]:
+                                f_history.write(f"\t{data_key} {k}")
+                        f_history.write("\n")
+                    if iteration >= iteration_start:
+                        f_history.write(f"{iteration}\t{time}")
+                        for data_key in plot_data:
+                            for k in plot_data[data_key]:
+                                f_history.write(
+                                    f"\t{plot_data[data_key][k][iteration - 1]}"
+                                )
+                        f_history.write("\n")
+                        f_history.flush()  # リアルタイム反映のため
+                        if iteration % plot_freq == 0:
+                            monitor()
+                    if line.startswith("Time = "):
                         if (
-                            par not in plot_data["initial_residual"]
-                        ):  # 初回発見時に辞書を自動構築
-                            plot_data["initial_residual"][par] = []
-                        if len(plot_data["initial_residual"][par]) < iteration:
-                            plot_data["initial_residual"][par].append(
-                                res
-                            )  # データの追加
-                        else:
-                            plot_data["initial_residual"][par][-1] = res  # データの更新
-                    elif s.lastgroup == "continuity_global":
-                        loc_value = float(s.group("continuity_local"))
-                        glob_balue = abs(float(s.group("continuity_global")))
-                        loc_key = "sum local"
-                        glob_key = "abs global"
-                        if region is not None:
-                            loc_key += f" ({region})"
-                            glob_key += f" ({region})"
-                        if iteration == 1:
-                            plot_data["continuity"] = {loc_key: [], glob_key: []}
-                        if len(plot_data["continuity"][loc_key]) < iteration:
-                            plot_data["continuity"][loc_key].append(
-                                loc_value
-                            )  # データの追加
-                            plot_data["continuity"][glob_key].append(glob_balue)
-                        else:
-                            plot_data["continuity"][loc_key][-1] = (
-                                loc_value  # データの更新
-                            )
-                            plot_data["continuity"][glob_key][-1] = glob_balue
-                    elif s.lastgroup == "Courant_max":
-                        mean_value = float(s.group("Courant_mean"))
-                        max_value = float(s.group("Courant_max"))
-                        region = s.group("Courant_region")
-                        mean_key = "mean"
-                        max_key = "max"
-                        iteration2 = iteration
-                        if region is not None:
-                            mean_key += f" ({region})"
-                            max_key += f" ({region})"
-                            iteration2 += 1
-                        if iteration2 == 1:
-                            plot_data.setdefault("Courant", {}).update(
-                                {mean_key: [], max_key: []}
-                            )
-                        if len(plot_data["Courant"][mean_key]) < iteration2:
-                            plot_data["Courant"][mean_key].append(mean_value)
-                            plot_data["Courant"][max_key].append(max_value)
-                        else:
-                            plot_data["Courant"][mean_key][-1] = mean_value
-                            plot_data["Courant"][max_key][-1] = max_value
-                    elif s.lastgroup == "Diffusion_max":
-                        mean_value = float(s.group("Diffusion_max"))
-                        max_value = float(s.group("Diffusion_mean"))
-                        region = s.group("Diffusion_region")
-                        mean_key = f"mean ({region})"
-                        max_key = f"max ({region})"
-                        if iteration == 0:
-                            plot_data.setdefault("Diffusion", {}).update(
-                                {mean_key: [], max_key: []}
-                            )
-                        if len(plot_data["Diffusion"][mean_key]) < iteration + 1:
-                            plot_data["Diffusion"][mean_key].append(mean_value)
-                            plot_data["Diffusion"][max_key].append(max_value)
-                        else:
-                            plot_data["Diffusion"][mean_key][-1] = mean_value
-                            plot_data["Diffusion"][max_key][-1] = max_value
-                    elif s.lastgroup == "region":
-                        region = s.group("region")
+                            relax_delta != 0.0
+                            and iteration > 0
+                            and iteration % res_eval_freq == 0
+                        ):
+                            remark = remark_string(f"time = {time}")
+                            cont_err = plot_data["continuity"]["sum local"][-1]
+                            for k, v in plot_data["initial_residual"].items():
+                                s = relax_delta_sign(v[-res_eval_freq:], cont_err)
+                                if s == 0.0:
+                                    continue
+                                change_relaxationFactor_in_fvSolution(
+                                    param_name=k,
+                                    remark=remark,
+                                    delta=s * relax_delta,
+                                    lower_limit=relax_lower_limit,
+                                )
+                        iteration += 1  # ここから新しいiteration回目の繰り返し
+                        time = line[7:].strip()
+                    continue
+                elif "not enough slots available in" in line:
+                    result = "not enough slots"
+                    continue
+                elif "solution converged in" in line:
+                    result = "converged"
+                    continue
+                elif "Foam::sigFpe::sigHandler(int)" in line:
+                    result = "floating point error"  # 発散
+                    continue
+
+                s = pat.search(line)
+                if s is None:
+                    continue
+                if s.lastgroup == "final_residual":
+                    par = s.group("parameter")
+                    if region is not None:
+                        par += f" ({region})"
+                    res = float(s.group("initial_residual"))
+                    if par not in plot_data["initial_residual"]:  # 初回発見時に辞書を自動構築
+                        plot_data["initial_residual"][par] = []
+                    if len(plot_data["initial_residual"][par]) < iteration:
+                        plot_data["initial_residual"][par].append(res)  # データの追加
+                    else:
+                        plot_data["initial_residual"][par][-1] = res  # データの更新
+                elif s.lastgroup == "continuity_global":
+                    loc_value = float(s.group("continuity_local"))
+                    glob_balue = abs(float(s.group("continuity_global")))
+                    loc_key = "sum local"
+                    glob_key = "abs global"
+                    if region is not None:
+                        loc_key += f" ({region})"
+                        glob_key += f" ({region})"
+                    if iteration == 1:
+                        plot_data["continuity"] = {loc_key: [], glob_key: []}
+                    if len(plot_data["continuity"][loc_key]) < iteration:
+                        plot_data["continuity"][loc_key].append(
+                            loc_value
+                        )  # データの追加
+                        plot_data["continuity"][glob_key].append(glob_balue)
+                    else:
+                        plot_data["continuity"][loc_key][-1] = loc_value  # データの更新
+                        plot_data["continuity"][glob_key][-1] = glob_balue
+                elif s.lastgroup == "Courant_max":
+                    mean_value = float(s.group("Courant_mean"))
+                    max_value = float(s.group("Courant_max"))
+                    region = s.group("Courant_region")
+                    mean_key = "mean"
+                    max_key = "max"
+                    iteration2 = iteration
+                    if region is not None:
+                        mean_key += f" ({region})"
+                        max_key += f" ({region})"
+                        iteration2 += 1
+                    if iteration2 == 1:
+                        plot_data.setdefault("Courant", {}).update(
+                            {mean_key: [], max_key: []}
+                        )
+                    if len(plot_data["Courant"][mean_key]) < iteration2:
+                        plot_data["Courant"][mean_key].append(mean_value)
+                        plot_data["Courant"][max_key].append(max_value)
+                    else:
+                        plot_data["Courant"][mean_key][-1] = mean_value
+                        plot_data["Courant"][max_key][-1] = max_value
+                elif s.lastgroup == "Diffusion_max":
+                    mean_value = float(s.group("Diffusion_max"))
+                    max_value = float(s.group("Diffusion_mean"))
+                    region = s.group("Diffusion_region")
+                    mean_key = f"mean ({region})"
+                    max_key = f"max ({region})"
+                    if iteration == 0:
+                        plot_data.setdefault("Diffusion", {}).update(
+                            {mean_key: [], max_key: []}
+                        )
+                    if len(plot_data["Diffusion"][mean_key]) < iteration + 1:
+                        plot_data["Diffusion"][mean_key].append(mean_value)
+                        plot_data["Diffusion"][max_key].append(max_value)
+                    else:
+                        plot_data["Diffusion"][mean_key][-1] = mean_value
+                        plot_data["Diffusion"][max_key][-1] = max_value
+                elif s.lastgroup == "region":
+                    region = s.group("region")
 
             process.stdout.close()
 
-        except:
-            print()
-            print(sys.exc_info())
-            process.terminate()
+    except:
+        print()
+        print(sys.exc_info())
+        process.terminate()
 
+<<<<<<< HEAD
         finally:
             if process.poll() is None:  # 子プロセスが終了しているかどうかを調べます
                 process.wait()  # 子プロセスが終了するまで待ちます
@@ -659,6 +651,16 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
     if os.path.isdir("processor0"):
         reconstructPar()
         rmObjects.removeProcessorDirs("noLatest")
+=======
+    finally:
+        if process.poll() is None:  # 子プロセスが終了しているかどうかを調べます
+            process.wait()  # 子プロセスが終了するまで待ちます
+            # process.poll()やprocess.wait()でprocess.returncodeにリターンコードを設定する
+        if iteration > 1:
+            monitor()
+        plt.ioff()
+        plt.close("all")
+>>>>>>> parent of 68d9b22 (Update 計算.py)
 
     return result, plot_data
 
@@ -1007,9 +1009,78 @@ if __name__ == "__main__":
         if result == "not enough slots":
             rmObjects.removeProcessorDirs()
             domains -= 1
+<<<<<<< HEAD
+=======
+            continue
+        elif not change_relaxation_factors or result != "floating point error":
+            break
+
+        max_relax_factor = 1.0
+        if len(relax_factors) > 0:
+            max_relax_factor = max([i["value"] for i in relax_factors])
+        s = -1.0
+        if max_relax_factor <= relaxationFactor_lower_limit:
+            if float(start_time) != 0.0:
+                rmObjects.removeProcessorDirs()  # すでにreconstructPar()が行われていると仮定
+                shutil.rmtree(start_time)  # ひとつ前の記録時間に戻ってリスタート
+                s = 1.0
+            else:
+                break
+        remark = remark_string(f"restart")
+        for k in plot_data["initial_residual"].keys():
+            change_relaxationFactor_in_fvSolution(
+                param_name=k,
+                remark=remark,
+                delta=s * relaxationFactor_delta_restart,
+                lower_limit=relaxationFactor_lower_limit,
+            )
+        rmObjects.removeLogPlotPngs()
+        os.remove(f"{application}.log")
+>>>>>>> parent of 68d9b22 (Update 計算.py)
 
     rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
+
+    if plot_data["continuity"]:
+        cont_max = max(
+            [
+                v[-1]
+                for k, v in plot_data["continuity"].items()
+                if k.startswith("sum local")
+            ]
+        )
+        res_max = max([v[-1] for v in plot_data["initial_residual"].values()])
+        print(
+            "\n最後の計算における\n"
+            f"  連続の式の局所誤差の最大値は{cont_max}\n"
+            f"  残差の最大値は{res_max}\n"
+            "でした．"
+        )
+
+    if result in ("end", "converged"):
+        if any(f in application.lower() for f in ["simplefoam", "potentialfoam"]):
+            if result == "converged":
+                print("\n収束条件を満足して計算が終了しました．")
+            else:
+                print("\n計算が終了しましたが，収束条件を満足していません．")
+        else:
+            print("\n計算が終了しました．")
+        if change_relaxation_factors:
+            print("最終的な緩和係数（relaxationFactors）は以下になりました：")
+            for i in relax_factors:
+                print(f"  {i['param']}: {i['value']}")
+    else:
+        if change_relaxation_factors:
+            print(
+                "\n\033[3;4;5m(ERROR) 緩和係数（relaxationFactors）を下限の"
+                f"{relaxationFactor_lower_limit}まで下げても計算が発散します．\033[m"
+            )
+        else:
+            print("\n\033[3;4;5m(ERROR) 計算が発散しました．\033[m")
+        print(
+            "\033[3;4;5m「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) "
+            "の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．\033[m"
+        )
 
     if interactive:
         exec_paraFoam = (
