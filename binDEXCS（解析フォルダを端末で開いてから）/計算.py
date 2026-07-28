@@ -663,10 +663,10 @@ def plot_runner(application, domains, start_time, relax_delta=0.01, relax_lower_
     return result, plot_data
 
 
-def reset_parameters_in_fvSolution(relaxationFactors = True, relTol = True):
+def reset_relaxationFactors_in_fvSolution():
     processed = []
 
-    def reset_parameters_in(path):
+    def reset_relaxationFactors_in(path):
         fvSolution_path = os.path.abspath(os.path.join(path, "fvSolution"))
         if os.path.islink(fvSolution_path):
             fvSolution_path = os.path.realpath(fvSolution_path)
@@ -675,45 +675,27 @@ def reset_parameters_in_fvSolution(relaxationFactors = True, relTol = True):
         processed.append(fvSolution_path)
 
         fvSolution = dictParse.DictParser(file_name=fvSolution_path)
-
-        if relaxationFactors:
-            relaxation = fvSolution.find_element(
-                [{"type": "block", "key": "relaxationFactors"}]
-            )["element"]
-            if relaxation is None:
-                return
-            for k in ("equations", "fields"):
-                block = relaxation.find_element([{"type": "block", "key": k}])[
-                    "element"
-                ]
-                if block is None:
-                    continue
-                for i in reversed(block.find_all_elements([{"type": "dictionary"}])):
-                    comment = i["element"].find_element(
-                        [{"type": "line_comment"}], reverse=True
-                    )["element"]
-                    if (
-                        comment is not None
-                        and pat_remark.search(comment["value"]) is not None
-                    ):
-                        del i["parent"][i["index"]]
-                block.set_blank_line(number_of_blank_lines=0)
-
-        if relTol:
-            solvers = fvSolution.find_element(
-                [{"type": "block", "key": "solvers"}]
-            )["element"]
-            for block in solvers.find_all_elements([{"type": "block"}])["element"]:
-                for i in reversed(block.find_all_elements([{"type": "dictionary"}])):
-                    comment = i["element"].find_element(
-                        [{"type": "line_comment"}], reverse=True
-                    )["element"]
-                    if (
-                        comment is not None
-                        and pat_remark.search(comment["value"]) is not None
-                    ):
-                        del i["parent"][i["index"]]
-                block.set_blank_line(number_of_blank_lines=0)
+        relaxationFactors = fvSolution.find_element(
+            [{"type": "block", "key": "relaxationFactors"}]
+        )["element"]
+        if relaxationFactors is None:
+            return
+        for k in ("equations", "fields"):
+            block = relaxationFactors.find_element([{"type": "block", "key": k}])[
+                "element"
+            ]
+            if block is None:
+                continue
+            for i in reversed(block.find_all_elements([{"type": "dictionary"}])):
+                comment = i["element"].find_element(
+                    [{"type": "line_comment"}], reverse=True
+                )["element"]
+                if (
+                    comment is not None
+                    and pat_remark.search(comment["value"]) is not None
+                ):
+                    del i["parent"][i["index"]]
+            block.set_blank_line(number_of_blank_lines=0)
 
         string = dictParse.normalize(string=fvSolution.file_string())[0]
         if fvSolution.string != string:
@@ -722,9 +704,9 @@ def reset_parameters_in_fvSolution(relaxationFactors = True, relTol = True):
                 f.write(string)
 
     if os.path.isdir("system"):
-        reset_parameters_in("system")
+        reset_relaxationFactors_in("system")
     for r in glob.iglob(os.path.join("system", f"*{os.sep}")):
-        reset_parameters_in(r)
+        reset_relaxationFactors_in(r)
 
 
 def change_relaxationFactor_in_fvSolution(
@@ -748,17 +730,14 @@ def change_relaxationFactor_in_fvSolution(
     if value == new_value:
         return
 
+    # appendEntries.intoFvSolution()を実行していることを想定
     fvSolution = dictParse.DictParser(file_name=fvSolution_path)
     relaxationFactors = fvSolution.find_element(
         [{"type": "block", "key": "relaxationFactors"}]
     )["element"]
-    if relaxationFactors is None:
-        return
     block = relaxationFactors.find_element([{"type": "block", "key": f"{cat}"}])[
         "element"
     ]
-    if block is None:
-        return
     block_end = block.find_element([{"type": "block_end"}], reverse=True)
     i = block.find_element(
         [{"type": "dictionary", "key": param_name}],
@@ -774,46 +753,6 @@ def change_relaxationFactor_in_fvSolution(
         string=f"\n{param_name}\t{new_value}; {remark}\n"
     )["value"]
     block.set_blank_line(number_of_blank_lines=0)
-
-    misc.atomic_write(
-        fvSolution_path, dictParse.normalize(string=fvSolution.file_string())[0]
-    )
-
-
-def change_relTol_in_fvSolution(value = 0.5):
-    processed = []
-
-    def change_relTol_in(path):
-        fvSolution_path = os.path.abspath(os.path.join(path, "fvSolution"))
-        if os.path.islink(fvSolution_path):
-            fvSolution_path = os.path.realpath(fvSolution_path)
-            if fvSolution_path in processed:
-                return
-        processed.append(fvSolution_path)
-
-        fvSolution = dictParse.DictParser(file_name=fvSolution_path)
-        solvers = fvSolution.find_element(
-            [{"type": "block", "key": "solvers"}]
-        )["element"]
-        for block in solvers.find_all_elements([{"type": "block"}])["element"]:
-            if re.search(r'Final[)"]*$', block["key"]):
-                continue
-
-            block_end = block.find_element([{"type": "block_end"}], reverse=True)
-            i = block.find_element(
-                [{"type": "dictionary", "key": param_name}],
-                start=block_end["index"],
-                reverse=True,
-            )["element"]
-            comment = i.find_element([{"type": "line_comment"}], reverse=True)["element"]
-            if comment is not None and comment["value"].endswith(remark):
-                return
-            if not remark.startswith("// "):
-                remark = f"// {remark}"
-            block_end["parent"][block_end["index"] : block_end["index"]] = dictParse.DictParser(
-                string=f"\nrelTol\t{value}; {remark}\n"
-            )["value"]
-            block.set_blank_line(number_of_blank_lines=0)
 
     misc.atomic_write(
         fvSolution_path, dictParse.normalize(string=fvSolution.file_string())[0]
@@ -1018,7 +957,8 @@ if __name__ == "__main__":
             == "y"
             else False
         )
-    reset_parameters_in_fvSolution()
+    if change_relaxation_factors:
+        reset_relaxationFactors_in_fvSolution()
 
     if domains == 1:
         rmObjects.removeProcessorDirs()
