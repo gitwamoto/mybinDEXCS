@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/29 2:14:48 PM
+# 2026/7/29 3:42:52 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -501,8 +501,6 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                         plot_data["initial_residual"][par] = []
                     if len(plot_data["initial_residual"][par]) < iteration:
                         plot_data["initial_residual"][par].append(res)  # データの追加
-                    else:
-                        plot_data["initial_residual"][par][-1] = res  # データの更新
                 elif s.lastgroup == "continuity_global":
                     loc_value = float(s.group("continuity_local"))
                     glob_balue = abs(float(s.group("continuity_global")))
@@ -518,9 +516,6 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                             loc_value
                         )  # データの追加
                         plot_data["continuity"][glob_key].append(glob_balue)
-                    else:
-                        plot_data["continuity"][loc_key][-1] = loc_value  # データの更新
-                        plot_data["continuity"][glob_key][-1] = glob_balue
                 elif s.lastgroup == "Courant_max":
                     mean_value = float(s.group("Courant_mean"))
                     max_value = float(s.group("Courant_max"))
