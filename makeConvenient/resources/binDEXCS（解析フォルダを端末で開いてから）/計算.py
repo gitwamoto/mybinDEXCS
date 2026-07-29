@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/29 1:08:38 PM
+# 2026/7/29 2:07:49 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -279,6 +279,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
         plt_fig[data_key] = fig
         plt_ax[data_key] = ax
 
+    cwd_basename = os.path.basename(os.getcwd())
     def set_subplot_data_key(data_key):
         # ここを変更すると．utilities/rmObjects.pyのremoveLogPlotPngs()も変更する必要があるかも
         if data_key == "initial_residual":
@@ -293,7 +294,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
             data_key=data_key,
             xlabel="iteration",
             ylabel=ylabel,
-            window_title=f"iteration histories of {ylabel}s",
+            window_title=f"{cwd_basename} - iteration histories of {ylabel}s",
             logscale=True,
         )
 
@@ -1016,46 +1017,54 @@ if __name__ == "__main__":
     rmObjects.removeProcessorDirs("noLatest")
     restore_zero_folder()
 
-    if plot_data["continuity"]:
-        cont_max = max(
-            [
-                v[-1]
-                for k, v in plot_data["continuity"].items()
-                if k.startswith("sum local")
-            ]
-        )
-        res_max = max([v[-1] for v in plot_data["initial_residual"].values()])
-        print(
-            "\n最後の計算における\n"
-            f"  連続の式の局所誤差の最大値は{cont_max}\n"
-            f"  残差の最大値は{res_max}\n"
-            "でした．"
-        )
+    with open(f"{application}.log", "a") as f_log:
 
-    if result in ("end", "converged"):
-        if any(f in application.lower() for f in ["simplefoam", "potentialfoam"]):
-            if result == "converged":
-                print("\n収束条件を満足して計算が終了しました．")
-            else:
-                print("\n計算が終了しましたが，収束条件を満足していません．")
-        else:
-            print("\n計算が終了しました．")
-        if change_relaxation_factors:
-            print("最終的な緩和係数（relaxationFactors）は以下になりました：")
-            for i in relax_factors:
-                print(f"  {i['param']}: {i['value']}")
-    else:
-        if change_relaxation_factors:
-            print(
-                "\n\033[3;4;5m(ERROR) 緩和係数（relaxationFactors）を下限の"
-                f"{relaxationFactor_lower_limit}まで下げても計算が発散します．\033[m"
+# あらゆるANSIエスケープシーケンスにマッチする定番の正規表現
+        ansi_escape = re.compile(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        def report(string):
+            print(string)
+            f_log.write(f"{ansi_escape.sub('', string)}\n")
+
+        if plot_data["continuity"]:
+            cont_max = max(
+                [
+                    v[-1]
+                    for k, v in plot_data["continuity"].items()
+                    if k.startswith("sum local")
+                ]
             )
+            res_max = max([v[-1] for v in plot_data["initial_residual"].values()])
+            report(
+                "\n最後の計算における\n"
+                f"  連続の式の局所誤差の最大値は{cont_max}\n"
+                f"  残差の最大値は{res_max}\n"
+                "でした．"
+            )
+
+        if result in ("end", "converged"):
+            if any(f in application.lower() for f in ["simplefoam", "potentialfoam"]):
+                if result == "converged":
+                    report("\n収束条件を満足して計算が終了しました．")
+                else:
+                    report("\n計算が終了しましたが，収束条件を満足していません．")
+            else:
+                report("\n計算が終了しました．")
+            if change_relaxation_factors:
+                report("最終的な緩和係数（relaxationFactors）は以下になりました：")
+                for i in relax_factors:
+                    report(f"  {i['param']}: {i['value']}")
         else:
-            print("\n\033[3;4;5m(ERROR) 計算が発散しました．\033[m")
-        print(
-            "\033[3;4;5m「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) "
-            "の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．\033[m"
-        )
+            if change_relaxation_factors:
+                report(
+                    "\n\033[3;4;5m(ERROR) 緩和係数（relaxationFactors）を下限の"
+                    f"{relaxationFactor_lower_limit}まで下げても計算が発散します．\033[m"
+                )
+            else:
+                report("\n\033[3;4;5m(ERROR) 計算が発散しました．\033[m")
+            report(
+                "\033[3;4;5m「DEXCS OpenFOAM メモ」(0_OpenFOAMメモ.pdf) "
+                "の「発散する場合の対処法」の部分を見れば発散が回避できるかもしれません．\033[m"
+            )
 
     if interactive:
         exec_paraFoam = (
