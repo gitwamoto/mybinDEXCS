@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/28 7:01:08 PM
+# 2026/7/29 1:08:38 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -960,7 +960,7 @@ if __name__ == "__main__":
     start_time_relaxationFactor_lower_limit = "-1"
     application = misc.getApplication()
     if "simplefoam" in application.lower():
-        change_relTol_in_fvSolution(remark_string(application), 0.5)
+        change_relTol_in_fvSolution(remark_string(application), 0.1)
     while True:
         if domains != 1 and not os.path.isdir("processor0"):
             decomposePar()
