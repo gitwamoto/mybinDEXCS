@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/29 2:07:49 PM
+# 2026/7/29 2:14:48 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -1018,8 +1018,7 @@ if __name__ == "__main__":
     restore_zero_folder()
 
     with open(f"{application}.log", "a") as f_log:
-
-# あらゆるANSIエスケープシーケンスにマッチする定番の正規表現
+        # あらゆるANSIエスケープシーケンスにマッチする定番の正規表現
         ansi_escape = re.compile(r'\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
         def report(string):
             print(string)
