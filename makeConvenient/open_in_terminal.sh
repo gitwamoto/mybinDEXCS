@@ -1,7 +1,7 @@
 #!/bin/bash
 # open_in_terminal.sh
 # by Yukiharu Iwamoto
-# 2026/7/23 9:42:16 AM
+# 2026/8/2 2:33:04 PM
 
 # 引数をつけて実行すると，sudoコマンドを行わなくなる．
 
@@ -43,7 +43,7 @@ if [ "$dexcs_version" = "2019" ]; then
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
 		for p in python-numpy python-scipy python-matplotlib python-wxgtk3.0 python-GPyOpt \
-			python-openpyxl python-requests; do
+			python-openpyxl python-requests python-plotly; do
 			if echo "$apt_installed" | grep --quiet "$p/"; then
 				# purge -> 設定ファイルも含めてアンインストール
 				sudo apt purge -y "$p"
@@ -75,7 +75,8 @@ if [ "$dexcs_version" = "2019" ]; then
 	fi
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
-	for p in numpy scipy matplotlib zenhan GPyOpt GPy geomdl openpyxl requests optuna; do
+	for p in numpy scipy matplotlib zenhan GPyOpt GPy geomdl openpyxl requests \
+		optuna plotly; do
 		if [ -e "$HOME/.local/lib/python2.7/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -105,7 +106,8 @@ if [ "$dexcs_version" = "2019" ]; then
 
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
-		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests optuna; do
+		for p in numpy scipy matplotlib zenhan GPyOpt geomdl openpyxl requests \
+			optuna plotly; do
 			if [ ! -e "/usr/local/lib/python2.7/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
@@ -131,7 +133,7 @@ if [ "$dexcs_version" = "2019" ]; then
 else # 2021
 	# aptでインストールして欲しくないもの
 	if $imsudoer; then
-		for p in python3-pyperclip; do
+		for p in python3-pyperclip python3-plotly; do
 			if echo "$apt_installed" | grep --quiet "$p/"; then
 				echo "1: $p"
 				# purge -> 設定ファイルも含めてアンインストール
@@ -165,7 +167,7 @@ else # 2021
 	fi
 
 	# sudo pipでインストールして欲しいので，localのpipでインストールされていたら消しておく
-	for p in zenhan GPyOpt GPy geomdl openpyxl pyperclip optuna; do
+	for p in zenhan GPyOpt GPy geomdl openpyxl pyperclip optuna plotly; do
 		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
@@ -204,7 +206,7 @@ else # 2021
 
 	# sudo pipでインストールして欲しいもの
 	if $imsudoer; then
-		for p in zenhan GPyOpt geomdl pyperclip optuna; do
+		for p in zenhan GPyOpt geomdl pyperclip optuna plotly; do
 			if [ ! -e "/usr/local/lib/python3.8/dist-packages/$p" ]; then
 				sudo pip install "$p"
 			fi
