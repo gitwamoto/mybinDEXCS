@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # dictParse.py
 # by Yukiharu Iwamoto
-# 2026/7/2 6:01:54 PM
+# 2026/8/21 3:34:21 PM
 
 import sys
 import os
@@ -382,10 +382,11 @@ class DictParser(UserDict):
         "|"
         r"(?P<directive>#[^{}][a-zA-Z]*)"
         "|"
-        r"(?P<word>(?:[a-zA-Z_$](?:[a-zA-Z0-9_.:,*]|/(?![/*]))*(?:\([^\s\n;]*\))?)+)"
+        r"(?P<word>(?:[a-zA-Z_$](?:[a-zA-Z0-9_.:,*]|/(?![/*]))*(?:[\(<][^\s\n;]*[\)>])?)+)"
         "|"
         # /(?![/*])で行コメントやブロックコメントの始まりを排除
-        # (?:\[^\s\n;]*\))?でfvSchemesのdiv((nuEff*dev(T(grad(U)))))なども捕獲
+        # (?:[\(<][^\s\n;]*[\)>])?で
+        # fvSchemesのdiv((nuEff*dev(T(grad(U)))))やalpha.waterのList<scalar>なども捕獲
         r"(?P<float>[-+]?\d*(?:\.\d*(?:[eE][-+]?\d+)?|[eE][-+]?\d+))"
         "|"  # integerよりも先！
         r"(?P<integer>[-+]?\d+)"
