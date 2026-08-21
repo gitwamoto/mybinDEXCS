@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/7/29 3:42:52 PM
+# 2026/8/21 4:19:30 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -394,6 +394,7 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
 
     result = "end"  # 戻り値
     region = None
+    time_loop_start = False
 
     try:
         print()
@@ -438,7 +439,11 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                 f_log.write(line)  # ログをファイル保存
                 f_log.flush()  # リアルタイム反映のため
 
-                if line.startswith("Time = ") or line.rstrip() == "End":
+                if not time_loop_start:
+                    if line.startswith("Starting time loop"):
+                        time_loop_start = True
+                    continue
+                elif line.startswith("Time = ") or line.rstrip() == "End":
                     # ここはまだ古いiteration回目の繰り返し
                     if iteration == 1:
                         set_subplots()
@@ -501,6 +506,8 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                         plot_data["initial_residual"][par] = []
                     if len(plot_data["initial_residual"][par]) < iteration:
                         plot_data["initial_residual"][par].append(res)  # データの追加
+                    else:
+                        plot_data["initial_residual"][par][-1] = res  # データの更新
                 elif s.lastgroup == "continuity_global":
                     loc_value = float(s.group("continuity_local"))
                     glob_balue = abs(float(s.group("continuity_global")))
@@ -512,10 +519,11 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                     if iteration == 1:
                         plot_data["continuity"] = {loc_key: [], glob_key: []}
                     if len(plot_data["continuity"][loc_key]) < iteration:
-                        plot_data["continuity"][loc_key].append(
-                            loc_value
-                        )  # データの追加
+                        plot_data["continuity"][loc_key].append(loc_value)  # データの追加
                         plot_data["continuity"][glob_key].append(glob_balue)
+                    else:
+                        plot_data["continuity"][loc_key][-1] = loc_value  # データの更新
+                        plot_data["continuity"][glob_key][-1] = glob_balue
                 elif s.lastgroup == "Courant_max":
                     mean_value = float(s.group("Courant_mean"))
                     max_value = float(s.group("Courant_max"))
@@ -523,19 +531,20 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                     mean_key = "mean"
                     max_key = "max"
                     iteration2 = iteration
-                    if region is not None:
-                        mean_key += f" ({region})"
-                        max_key += f" ({region})"
+                    if application != "pisoFoam": # "Time = "よりも先にクーラン数が表示される
+                        if region is not None:
+                            mean_key += f" ({region})"
+                            max_key += f" ({region})"
                         iteration2 += 1
                     if iteration2 == 1:
                         plot_data.setdefault("Courant", {}).update(
                             {mean_key: [], max_key: []}
                         )
                     if len(plot_data["Courant"][mean_key]) < iteration2:
-                        plot_data["Courant"][mean_key].append(mean_value)
+                        plot_data["Courant"][mean_key].append(mean_value)  # データの追加
                         plot_data["Courant"][max_key].append(max_value)
                     else:
-                        plot_data["Courant"][mean_key][-1] = mean_value
+                        plot_data["Courant"][mean_key][-1] = mean_value  # データの更新
                         plot_data["Courant"][max_key][-1] = max_value
                 elif s.lastgroup == "Diffusion_max":
                     mean_value = float(s.group("Diffusion_max"))
@@ -548,10 +557,10 @@ def plot_runner(application, start_time, relax_delta=0.01, relax_lower_limit=0.3
                             {mean_key: [], max_key: []}
                         )
                     if len(plot_data["Diffusion"][mean_key]) < iteration + 1:
-                        plot_data["Diffusion"][mean_key].append(mean_value)
+                        plot_data["Diffusion"][mean_key].append(mean_value)  # データの追加
                         plot_data["Diffusion"][max_key].append(max_value)
                     else:
-                        plot_data["Diffusion"][mean_key][-1] = mean_value
+                        plot_data["Diffusion"][mean_key][-1] = mean_value  # データの更新
                         plot_data["Diffusion"][max_key][-1] = max_value
                 elif s.lastgroup == "region":
                     region = s.group("region")
