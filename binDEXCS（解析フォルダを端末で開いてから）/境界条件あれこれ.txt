@@ -34,6 +34,15 @@
 	// falseだとdt = ∞（定常）またはCp = 0に相当する．
 }
 {
+	type constantAlphaContactAngle;
+	// alphaに対して，気液界面での静的接触角theta0 [deg]を規定する．
+	// constant/transportPropertiesで表面張力sigma [N/m]を設定する必要がある．
+	theta0 30; // 静的接触角 [deg]
+	limit gradient; // alphaが壁面上で0〜1に収まるように，alphaのこう配を制限する．
+	// 他にnone, alpha, zeroGradientのオプションがある．
+	value $internalField; // 実際には使わないけど必要
+}
+{
 	type cyclic;
 	// 周期境界
 	// constant/polyMesh/boundaryで

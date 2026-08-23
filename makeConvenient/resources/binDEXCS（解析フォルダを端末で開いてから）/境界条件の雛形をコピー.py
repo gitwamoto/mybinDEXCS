@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 境界条件の雛形をコピー.py
 # by Yukiharu Iwamoto
-# 2026/5/15 3:11:57 PM
+# 2026/8/23 3:48:04 PM
 
 import os
 import sys
@@ -11,7 +11,7 @@ import pyperclip
 import tty
 import termios
 
-src = "https://develop.openfoam.com/Development/openfoam/tree/maintenance-v2106/src/"
+src = "https://gitlab.com/openfoam/core/openfoam/-/blob/OpenFOAM-v2106/src/"
 
 # fixedValueFvPatchFieldのデフォルトはvalueが必要
 # zeroGradientFvPatchFieldのデフォルトはvalueが不要
@@ -48,6 +48,16 @@ boundary_conditions = (
         + "thermalInertia false; // 境界付近の温度の時間的変化を考慮に入れるか\n"
         + "// falseだとdt = ∞（定常）またはCp = 0に相当する．",
         f"{src}TurbulenceModels/compressible/turbulentFluidThermoModels/derivedFvPatchFields/turbulentTemperatureRadCoupledMixed",
+    ),
+    (
+        "constantAlphaContactAngle",
+        "alphaに対して，気液界面での静的接触角theta0 [deg]を規定する．\n"
+        + "constant/transportPropertiesで表面張力sigma [N/m]を設定する必要がある．",
+        "theta0 30; // 静的接触角 [deg]\n"
+        + "limit gradient; // alphaが壁面上で0〜1に収まるように，alphaのこう配を制限する．\n"
+        + "// 他にnone, alpha, zeroGradientのオプションがある．\n"
+        + "value $internalField; // 実際には使わないけど必要",
+        f"{src}transportModels/twoPhaseProperties/alphaContactAngle/constantAlphaContactAngle",
     ),
     (
         "cyclic",
