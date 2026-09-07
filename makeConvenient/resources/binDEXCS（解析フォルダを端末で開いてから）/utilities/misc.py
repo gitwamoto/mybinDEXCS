@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/7/24 7:58:18 PM
+# 2026/9/7 9:11:23 AM
 
 import glob
 import os
@@ -382,7 +382,8 @@ def bounding_box_of_calculation_range(points_path):
 
 
 def texteditwx_works_well():
-    process = subprocess.run([os.path.join(binDEXCS_path, "texteditwx.py"), "-h"])
+    process = subprocess.run([os.path.join(binDEXCS_path, "texteditwx.py"), "-h"],
+        stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
     if process.returncode != 0:
         print(
             "\ntexteditwx.pyでエラーが発生しました．おそらく必要なモジュールがないためです．端末で\n"
