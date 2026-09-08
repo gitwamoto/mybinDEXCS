@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # matplotlibwx.py
 # by Yukiharu Iwamoto
-# 2025/9/30 2:11:13 PM
+# 2026/9/8 8:52:48 PM
 
 # Macの場合，文字入力後に引用符が勝手に変わったりしてうまく動かない．
 # 「システム環境設定」→「キーボード」→「ユーザー辞書」→「スマート引用符とスマートダッシュを使用」のチェックを外す．
 
-version = '2025/9/30 2:11:13 PM'
+version = '2026/9/8 8:52:48 PM'
 
 import os
 languages = os.environ.get('LANG')
@@ -602,7 +602,11 @@ def figure_setting(fig_size = None, aspect = None, graph_edges = None, first = F
     if aspect is not None:
         plt.gca().set_aspect(aspect, adjustable = 'box')
     if graph_edges is not None:
-        plt.subplots_adjust(left = graph_edges[0], bottom = graph_edges[1], right = graph_edges[2], top = graph_edges[3])
+        plt.subplots_adjust(
+            left = plt.rcParams['figure.subplot.left'] if graph_edges[0] is None else graph_edges[0],
+            bottom = plt.rcParams['figure.subplot.bottom'] if graph_edges[1] is None else graph_edges[1],
+            right = plt.rcParams['figure.subplot.right'] if graph_edges[2] is None else graph_edges[2],
+            top = plt.rcParams['figure.subplot.top'] if graph_edges[3] is None else graph_edges[3])
 
 def common_setting(data, ranges, ticks, log_scale, fig_size, aspect, graph_edges, title, labels, grids,
     title_size = plt.rcParams['axes.titlesize']):
@@ -1088,6 +1092,7 @@ def plot(dict_lists, show = True):
     global x_max, x_min, y_max, y_min
     x_max = x_min = y_max = y_min = None
     figure_setting(first = True, **dict_lists[0])
+    # 重ね書きの際に，複数の設定にしてはいけないものにNoneを代入しておく
     dict_lists[0]['fig_size'] = dict_lists[0]['aspect'] = dict_lists[0]['graph_edges'] = None
     if 'texts' in dict_lists[0] and dict_lists[0]['texts'] is not None:
         for i in dict_lists[0]['texts']:
@@ -3827,18 +3832,15 @@ class FrameMain(wx.Frame):
             b = self.textCtrl_graph_bottom.GetValue() # unicode
             r = self.textCtrl_graph_right.GetValue() # unicode
             t = self.textCtrl_graph_top.GetValue() # unicode
-            if l == u'' and b == u''and r == u'' and t == u'':
-                s += u"    'graph_edges': None,\n"
-            else:
-                if l != u'' and r != u'' and float(l) > float(r):
-                    l, r = r, l
-                if b != u'' and t != u'' and float(b) > float(t):
-                    b, t = t, b
-                l = u'None' if l == u'' else u'{:g}'.format(float(l))
-                b = u'None' if b == u'' else u'{:g}'.format(float(b))
-                r = u'None' if r == u'' else u'{:g}'.format(float(r))
-                t = u'None' if t == u'' else u'{:g}'.format(float(t))
-                s += u"    'graph_edges': ({}, {}, {}, {}),\n".format(l, b, r, t)
+            if l != u'' and r != u'' and float(l) > float(r):
+                l, r = r, l
+            if b != u'' and t != u'' and float(b) > float(t):
+                b, t = t, b
+            l = u'None' if l == u'' else u'{:g}'.format(float(l))
+            b = u'None' if b == u'' else u'{:g}'.format(float(b))
+            r = u'None' if r == u'' else u'{:g}'.format(float(r))
+            t = u'None' if t == u'' else u'{:g}'.format(float(t))
+            s += u"    'graph_edges': ({}, {}, {}, {}),\n".format(l, b, r, t)
             v = []
             for i in self.grid_text.table.data:
                 if None not in i:
