@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # matplotlibwx.py
 # by Yukiharu Iwamoto
-# 2026/9/8 8:52:48 PM
+# 2026/9/9 11:16:00 AM
 
 # Macの場合，文字入力後に引用符が勝手に変わったりしてうまく動かない．
 # 「システム環境設定」→「キーボード」→「ユーザー辞書」→「スマート引用符とスマートダッシュを使用」のチェックを外す．
 
-version = '2026/9/8 8:52:48 PM'
+version = '2026/9/9 11:16:00 AM'
 
 import os
 languages = os.environ.get('LANG')
@@ -353,9 +353,12 @@ def data_from_file(file_name, columns = (1, 2), every = 1, skip = '#', delimiter
                                 columns1[i][j][1] += 1
                         else:
                             s += columns1[i][j]
-                    data[i].append(float(eval_exc(s, param_dict)))
-                    if data[i][-1] is None:
+                    s = eval_exc(s, param_dict)
+                    if s is None:
                         has_None = True
+                        data[i].append(None)
+                    else:
+                        data[i].append(float(s))
                 except:
                     data[i].append(np.nan)
             if stop or has_None:
@@ -418,9 +421,12 @@ def data_from_file(file_name, columns = (1, 2), every = 1, skip = '#', delimiter
                                 columns1[i][j][2] += 1
                         else:
                             s += columns1[i][j]
-                    data[i].append(float(eval_exc(s, param_dict)))
-                    if data[i][-1] is None:
+                    s = eval_exc(s, param_dict)
+                    if s is None:
                         has_None = True
+                        data[i].append(None)
+                    else:
+                        data[i].append(float(s))
                 except:
 #                    print(sys.exc_info())
                     data[i].append(np.nan)
@@ -481,9 +487,12 @@ def data_from_file(file_name, columns = (1, 2), every = 1, skip = '#', delimiter
                                     s += line[k]
                             else:
                                 s += k
-                        data[i].append(float(eval_exc(s, param_dict)))
-                    if data[i][-1] is None:
-                        has_None = True
+                        s = eval_exc(s, param_dict)
+                        if s is None:
+                            has_None = True
+                            data[i].append(None)
+                        else:
+                            data[i].append(float(s))
                 except:
                     data[i].append(np.nan)
             if stop or has_None:
