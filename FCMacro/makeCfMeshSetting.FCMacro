@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/23 9:55:32 AM
+# 2026/9/18 9:12:29 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -20,6 +20,34 @@ binDEXCS_path = os.path.expanduser(
 if binDEXCS_path not in sys.path:
     sys.path.append(binDEXCS_path)
 from utilities import dictParse
+
+
+#解析フォルダの中にcasesというフォルダを作り，そこに領域ごとに領域名を名前にした領域フォルダを作る．
+#領域フォルダの中には
+#領域名/system/controlDict
+#領域名/system/meshDict
+#があれば良い．
+#
+#mkdir -p cases_for_cfmesh/領域名/system
+#cp -r system/controlDict cases_for_cfmesh/領域名/system
+#cartesianMesh -case cases_for_cfmesh/領域名
+#rm cases_for_cfmesh/領域名/system/controlDict
+#mkdir -p constant/領域名
+#mv cases_for_cfmesh/領域名/constant/polyMesh constant/領域名
+#rm -r cases_for_cfmesh/領域名/constant
+#を全ての領域に対して実行する．
+#
+#constant/領域名/polyMesh/boundaryで
+#領域境界ブロックの中にあるtypeを
+#type mappedWall;
+#に改め，
+#sampleMode nearestPatchFaceAMI;
+#sampleRegion 相手の領域名;
+#samplePatch 相手のパッチ名;
+#を追加する．
+#
+#cartesianMeshを実行.pyの中で，cases_for_cfmeshフォルダがあるかどうかで操作を変えるようにしたいので，
+#cases_for_cfmeshフォルダは残す．
 
 
 class FreeCadFileGrid(QtGui.QTableWidget):
@@ -97,6 +125,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                     "symmetryPlane",
                     "symmetry",
                     "overset",
+                    "mappedWall",
                     "BoxRefine",
                     "CylinderRefine",
                     "SphereRefine",
