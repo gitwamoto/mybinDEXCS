@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/9/19 7:59:44 PM
+# 2026/9/19 10:26:37 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -28,8 +28,10 @@ from utilities import dictParse
 
 cases_path = "cases_for_cfmesh"
 pat_region_boundary = re.compile(  # マルチリージョン解析の時の領域境界名のパターン
-    "(?P<region1>.+)__(?P<patch1>.+)__to__(?P<region2>.+)__(?P<patch2>.+)"
+    "(?P<region_from>.+)__to__(?P<region_to>(?:(?!__).)+)(?P<number>__[0-9]+)?"
 )
+m = pat_region_boundary.match("osaka_senkan_01__to__kyoto_karasuma_1")
+m.groups()
 two_dimensional = False
 meshDict_path = os.path.join("system", "meshDict")
 meshDict_3D_path = meshDict_path + "_3D"
@@ -43,7 +45,7 @@ def handler(signum, frame):
     sys.exit(1)
 
 
-def cartesianMesh(case_path = None):
+def cartesianMesh(case_path=None):
     if case_path is not None:
         os.chdir(case_path)
 
@@ -98,34 +100,33 @@ if __name__ == "__main__":
                 exec_paraFoam = True
             i += 1
 
-    if os path.isdir(cases_path):
+    if os.path.isdir(cases_path):
         for c in glob.iglob(os.path.join(cases_path, "*" + os.sep)):
             cartesianMesh()
     else:
         cartesianMesh()
 
-
-#for i in pipe pipewall
-#do
-#  mkdir -p cases_for_cfmesh/"$i"/system
-#  echo "FoamFile
-#{
-#    version      2.0;
-#    format       ascii;
-#    class        dictionary;
-#    location     \"system\";
-#    object       controlDict;
-#}
-#deltaT         0.001;
-#writeControl   timeStep;
-#writeInterval  1;" > cases_for_cfmesh/"$i"/system/controlDict
-#  cartesianMesh -case cases_for_cfmesh/"$i"
-#  rm cases_for_cfmesh/"$i"/system/controlDict
-#  mkdir -p constant/"$i"
-#  mv cases_for_cfmesh/"$i"/constant/polyMesh constant/"$i"
-#  rm -r cases_for_cfmesh/"$i"/constant
-#  changeDictionary -region $i
-#done
+    # for i in pipe pipewall
+    # do
+    #  mkdir -p cases_for_cfmesh/"$i"/system
+    #  echo "FoamFile
+    # {
+    #    version      2.0;
+    #    format       ascii;
+    #    class        dictionary;
+    #    location     \"system\";
+    #    object       controlDict;
+    # }
+    # deltaT         0.001;
+    # writeControl   timeStep;
+    # writeInterval  1;" > cases_for_cfmesh/"$i"/system/controlDict
+    #  cartesianMesh -case cases_for_cfmesh/"$i"
+    #  rm cases_for_cfmesh/"$i"/system/controlDict
+    #  mkdir -p constant/"$i"
+    #  mv cases_for_cfmesh/"$i"/constant/polyMesh constant/"$i"
+    #  rm -r cases_for_cfmesh/"$i"/constant
+    #  changeDictionary -region $i
+    # done
 
     threads = misc.cpu_count()
     if interactive:
@@ -331,8 +332,8 @@ if __name__ == "__main__":
                 t["parent"][t["index"] + 1 : t["index"] + 1] = dictParse.DictParser(
                     string="\n"
                     "sampleMode\tnearestPatchFaceAMI;\n"
-                    f"sampleRegion\t{m['region2']}; // 相手の領域名\n"
-                    f"samplePatch\t{m['region2']}__{m['patch2']}; // 相手のパッチ名"
+                    f"sampleRegion\t{m['region_to']}; // 相手の領域名\n"
+                    f"samplePatch\t{m['region_to']}__to__{m['region_from']}{'' if m['number'] is None else m['numbnr']}; // 相手のパッチ名"
                 )["value"]
         string = dictParse.normalize(string=boundary.file_string())[0]
         if boundary.string != string:
