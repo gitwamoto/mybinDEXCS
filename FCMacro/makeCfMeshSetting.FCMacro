@@ -1386,7 +1386,7 @@ class MyModel:
 
             f.write(
                 "\n"
-                "anisotropicSources\n"
+                "anisotropicSources // 非等方セルの設定\n"
                 "{\n"
                 "//\tboxExample\n"
                 "//\t{\n"
@@ -1395,9 +1395,9 @@ class MyModel:
                 "//\t\tlengthX\t1000;\n"
                 "//\t\tlengthY\t1000;\n"
                 "//\t\tlengthZ\t200;\n"
-                "//\t\tscaleX\t1;\n"
-                "//\t\tscaleY\t1;\n"
-                "//\t\tscaleZ\t0.3;\n"
+                "//\t\tscaleX\t1; // x方向の倍率．1より大きいと粗くなり，小さいと細かくなる．\n"
+                "//\t\tscaleY\t1; // y方向の倍率．1より大きいと粗くなり，小さいと細かくなる．\n"
+                "//\t\tscaleZ\t0.3; // z方向の倍率．1より大きいと粗くなり，小さいと細かくなる．\n"
                 "//\t}\n"
                 "\n"
                 "//\tplaneExample\n"
@@ -1405,8 +1405,8 @@ class MyModel:
                 "//\t\ttype\tplane;\n"
                 "//\t\tnormal\t(0 0 1);\n"
                 "//\t\torigin\t(0 0 250);\n"
-                "//\t\tscalingDistance\t125;\n"
-                "//\t\tscalingFactor\t0.5;\n"
+                "//\t\tscalingDistance\t125; // normal方向にscalingDistanceまでを非等方にする．\n"
+                "//\t\tscalingFactor\t0.5; // normal方向の倍率．1より大きいと粗くなり，小さいと細かくなる．\n"
                 "//\t}\n"
                 "}\n"
             )
