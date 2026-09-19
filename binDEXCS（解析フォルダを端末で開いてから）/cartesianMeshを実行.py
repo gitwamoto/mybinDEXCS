@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/7/21 9:50:24 PM
+# 2026/9/19 7:59:44 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -19,13 +19,21 @@ import os
 import sys
 import signal
 import shutil
+import re
+import glob
 from utilities import misc
 from utilities import rmObjects
 from utilities import dictParse
 
+
+cases_path = "cases_for_cfmesh"
+pat_region_boundary = re.compile(  # マルチリージョン解析の時の領域境界名のパターン
+    "(?P<region1>.+)__(?P<patch1>.+)__to__(?P<region2>.+)__(?P<patch2>.+)"
+)
 two_dimensional = False
 meshDict_path = os.path.join("system", "meshDict")
 meshDict_3D_path = meshDict_path + "_3D"
+cwd = os.getcwd()
 
 
 def handler(signum, frame):
@@ -33,6 +41,30 @@ def handler(signum, frame):
         os.rename(meshDict_3D_path, meshDict_path)  # can overwrite
     rmObjects.removeInessentials()
     sys.exit(1)
+
+
+def cartesianMesh(case_path = None):
+    if case_path is not None:
+        os.chdir(case_path)
+
+    if not os.path.isfile(meshDict_path):
+        print(f"エラー: {meshDict_path}ファイルがありません．")
+        sys.exit(1)
+
+    if os.path.isdir("dynamicCode"):
+        shutil.rmtree("dynamicCode")
+    rmObjects.removeProcessorDirs()
+    for f in (
+        "cartesianMesh.log",
+        "cartesianMesh.logfile",
+        "cartesian2DMesh.log",
+        "cartesian2DMesh.logfile",
+    ):
+        if os.path.isfile(f):
+            os.remove(f)
+
+    if case_path is not None:
+        os.chdir(cwd)
 
 
 if __name__ == "__main__":
@@ -66,20 +98,34 @@ if __name__ == "__main__":
                 exec_paraFoam = True
             i += 1
 
-    if not os.path.isfile(meshDict_path):
-        print(f"エラー: {meshDict_path}ファイルがありません．")
-        sys.exit(1)
-    if os.path.isdir("dynamicCode"):
-        shutil.rmtree("dynamicCode")
-    rmObjects.removeProcessorDirs()
-    for f in (
-        "cartesianMesh.log",
-        "cartesianMesh.logfile",
-        "cartesian2DMesh.log",
-        "cartesian2DMesh.logfile",
-    ):
-        if os.path.isfile(f):
-            os.remove(f)
+    if os path.isdir(cases_path):
+        for c in glob.iglob(os.path.join(cases_path, "*" + os.sep)):
+            cartesianMesh()
+    else:
+        cartesianMesh()
+
+
+#for i in pipe pipewall
+#do
+#  mkdir -p cases_for_cfmesh/"$i"/system
+#  echo "FoamFile
+#{
+#    version      2.0;
+#    format       ascii;
+#    class        dictionary;
+#    location     \"system\";
+#    object       controlDict;
+#}
+#deltaT         0.001;
+#writeControl   timeStep;
+#writeInterval  1;" > cases_for_cfmesh/"$i"/system/controlDict
+#  cartesianMesh -case cases_for_cfmesh/"$i"
+#  rm cases_for_cfmesh/"$i"/system/controlDict
+#  mkdir -p constant/"$i"
+#  mv cases_for_cfmesh/"$i"/constant/polyMesh constant/"$i"
+#  rm -r cases_for_cfmesh/"$i"/constant
+#  changeDictionary -region $i
+#done
 
     threads = misc.cpu_count()
     if interactive:
@@ -148,9 +194,9 @@ if __name__ == "__main__":
         n = p.find_element(
             [{"type": "dictionary", "key": "newName"}, {"type": "word"}]
         )["element"]["value"]
-        t = p.find_element(
-            [{"type": "dictionary", "key": "type"}, {"type": "word"}]
-        )["element"]["value"]
+        t = p.find_element([{"type": "dictionary", "key": "type"}, {"type": "word"}])[
+            "element"
+        ]["value"]
         patch_types[n] = t
         if t == "empty":
             empty_list.append(n)
@@ -256,12 +302,11 @@ if __name__ == "__main__":
             ]
         ):
             p = p["element"]
-            i = p.find_element(
-                [{"type": "dictionary", "key": "type"}, {"except type": "ignorable"}]
-            )["element"]
-            t = patch_types[p["key"]]
-            if i["value"] != t:
-                i["value"] = t
+            t = p.find_element([{"type": "dictionary", "key": "type"}])
+            i = t["element"].find_element([{"except type": "ignorable"}])["element"]
+            patch_type = patch_types[p["key"]]
+            if i["value"] != patch_type:
+                i["value"] = patch_type
                 i = p.find_element(
                     [
                         {"type": "dictionary", "key": "inGroups"},
@@ -270,10 +315,28 @@ if __name__ == "__main__":
                     ]
                 )["element"]
                 if i is not None:
-                    i["value"] = t
+                    i["value"] = patch_type
+            if (
+                patch_type == "mappedWall"
+                and p.find_element([{"type": "dictionary"}, {"key": "sampleRegion"}])[
+                    "element"
+                ]
+                is None
+                and p.find_element([{"type": "dictionary"}, {"key": "samplePatch"}])[
+                    "element"
+                ]
+                is None
+            ):
+                m = pat_region_boundary.match(p["key"])
+                t["parent"][t["index"] + 1 : t["index"] + 1] = dictParse.DictParser(
+                    string="\n"
+                    "sampleMode\tnearestPatchFaceAMI;\n"
+                    f"sampleRegion\t{m['region2']}; // 相手の領域名\n"
+                    f"samplePatch\t{m['region2']}__{m['patch2']}; // 相手のパッチ名"
+                )["value"]
         string = dictParse.normalize(string=boundary.file_string())[0]
         if boundary.string != string:
-#            os.rename(boundary_path, f'{boundary_path}_bak')
+            #            os.rename(boundary_path, f'{boundary_path}_bak')
             with open(boundary_path, "w") as f:
                 f.write(string)
 
