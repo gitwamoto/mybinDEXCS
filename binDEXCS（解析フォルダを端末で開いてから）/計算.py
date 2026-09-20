@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 計算.py
 # by Yukiharu Iwamoto
-# 2026/8/21 4:19:30 PM
+# 2026/9/20 4:20:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -75,8 +75,8 @@ def decomposePar():
             "\tobject\tdecomposeParDict;\n"
             "}\n"
             f"numberOfSubdomains\t{domains};\n"
-            "method\tscotch;\n"
-        )  # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+            "method\tscotch;\n"  # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+        )
     for d in glob.iglob(os.path.join("system", f"*{os.sep}")):
         if os.path.isfile(os.path.join(d, "fvSolution")):
             os.chdir(d)

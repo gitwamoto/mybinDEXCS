@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/7/21 10:28:38 PM
+# 2026/9/20 5:08:52 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -180,9 +180,6 @@ if __name__ == "__main__":
 
     misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く
     misc.execCheckMesh()
-    sets = os.path.join("constant", "polyMesh", "sets")
-    if os.path.isdir(sets):
-        shutil.rmtree(sets)
 
     if interactive:
         exec_paraFoam = (

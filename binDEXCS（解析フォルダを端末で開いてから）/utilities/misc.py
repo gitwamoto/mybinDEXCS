@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/9/7 9:11:23 AM
+# 2026/9/20 6:43:34 PM
 
 import glob
 import os
@@ -12,6 +12,7 @@ import math
 import subprocess
 import numpy as np
 import tempfile
+import shutil
 
 # このファイルの中の関数を呼び出すプログラムから，このファイルを含むフォルダが見えるようにする．
 if os.path.dirname(__file__) not in sys.path:
@@ -150,6 +151,41 @@ def execCheckMesh():
     for f in ("checkMesh.log", "checkMesh.logfile"):
         if os.path.isfile(f):
             os.remove(f)
+    fvSolution_path = os.path.join("system", "fvSolution")
+    if not os.path.isfile(fvSolution_path):  # fvSolutionがないとcheckMeshが動かない
+        with open(fvSolution_path, "w") as f:
+            f.write(
+                "FoamFile\n"
+                "{\n"
+                "\tversion\t2.0;\n"
+                "\tformat\tascii;\n"
+                "\tclass\tdictionary;\n"
+                '\tlocation\t"system";\n'
+                "\tobject\tfvSolution;\n"
+                "}\n"
+            )
+    fvSchemes_path = os.path.join("system", "fvSchemes")
+    if not os.path.isfile(fvSchemes_path):  # fvSchemesがないとcheckMeshが動かない
+        with open(fvSchemes_path, "w") as f:
+            f.write(
+                "FoamFile\n"
+                "{\n"
+                "\tversion\t2.0;\n"
+                "\tformat\tascii;\n"
+                "\tclass\tdictionary;\n"
+                '\tlocation\t"system";\n'
+                "\tobject\tfvSchemes;\n"
+                "}\n"
+                "gradSchemes\n"
+                "{\n"
+                "}\n"
+                "divSchemes"
+                "{\n"
+                "}\n"
+                "laplacianSchemes"
+                "{\n"
+                "}\n"
+            )
     command, returncode = execCommand(
         ["checkMesh", "-noFunctionObjects"], "checkMesh.log"
     )
@@ -158,6 +194,10 @@ def execCheckMesh():
     print(
         f"\n{command}が終わりました．\033[3;4;5m全ての項目のチェック結果がOKでないとたぶん計算がうまくいきません．\033[m"
     )
+    # checkMeshコマンドがエラーセルや歪んだ面を検出し，それらを視覚化用に出力する設定になっている場合，setsフォルダができることがある．
+    sets_path = os.path.join("constant", "polyMesh", "sets")
+    if os.path.isdir(sets_path):
+        shutil.rmtree(sets_path)
 
 
 def setTimeBeginEnd(action):
@@ -382,8 +422,11 @@ def bounding_box_of_calculation_range(points_path):
 
 
 def texteditwx_works_well():
-    process = subprocess.run([os.path.join(binDEXCS_path, "texteditwx.py"), "-h"],
-        stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+    process = subprocess.run(
+        [os.path.join(binDEXCS_path, "texteditwx.py"), "-h"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     if process.returncode != 0:
         print(
             "\ntexteditwx.pyでエラーが発生しました．おそらく必要なモジュールがないためです．端末で\n"

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/9/19 10:26:37 PM
+# 2026/9/20 7:56:05 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -26,16 +26,18 @@ from utilities import rmObjects
 from utilities import dictParse
 
 
+interactive = False
+two_dimensional = False
+front_name = "front"
+back_name = "back"
+domains = 1
+exec_paraFoam = False
 cases_path = "cases_for_cfmesh"
 pat_region_boundary = re.compile(  # マルチリージョン解析の時の領域境界名のパターン
-    "(?P<region_from>.+)__to__(?P<region_to>(?:(?!__).)+)(?P<number>__[0-9]+)?"
+    "(?P<region_from>(?:(?!__).)+)__to__(?P<region_to>(?:(?!__).)+)(?P<number>__[0-9]+)?"
 )
-m = pat_region_boundary.match("osaka_senkan_01__to__kyoto_karasuma_1")
-m.groups()
-two_dimensional = False
 meshDict_path = os.path.join("system", "meshDict")
 meshDict_3D_path = meshDict_path + "_3D"
-cwd = os.getcwd()
 
 
 def handler(signum, frame):
@@ -45,10 +47,7 @@ def handler(signum, frame):
     sys.exit(1)
 
 
-def cartesianMesh(case_path=None):
-    if case_path is not None:
-        os.chdir(case_path)
-
+def preparation():
     if not os.path.isfile(meshDict_path):
         print(f"エラー: {meshDict_path}ファイルがありません．")
         sys.exit(1)
@@ -65,8 +64,208 @@ def cartesianMesh(case_path=None):
         if os.path.isfile(f):
             os.remove(f)
 
-    if case_path is not None:
-        os.chdir(cwd)
+
+def cartesianMesh():
+    controlDict_path = os.path.join("system", "controlDict")
+    if not os.path.isfile(
+        controlDict_path
+    ):  # controlDictがないとcartesianMeshが動かない
+        with open(controlDict_path, "w") as f:
+            f.write(
+                "FoamFile\n"
+                "{\n"
+                "\tversion\t2.0;\n"
+                "\tformat\tascii;\n"
+                "\tclass\tdictionary;\n"
+                '\tlocation\t"system";\n'
+                "\tobject\tcontrolDict;\n"
+                "}\n"
+                "deltaT\t1;\n"
+                "writeControl\ttimeStep;\n"
+                "writeInterval\t1;\n"
+            )
+
+    meshDict = dictParse.DictParser(file_name=meshDict_path)
+
+    # renameBoundary
+    # {
+    #   newPatchNames
+    #   {
+    #     PATCH_NAME
+    #     {
+    #       newName PATCH_NAME;
+    #       type empty;
+    #     }
+    #     ...
+    empty_list = []
+    for p in meshDict.find_all_elements(
+        [
+            {"type": "block", "key": "renameBoundary"},
+            {"type": "block", "key": "newPatchNames"},
+            {"type": "block"},
+        ]
+    ):
+        p = p["element"]
+        if (
+            p.find_element([{"type": "dictionary", "key": "type"}, {"type": "word"}])[
+                "element"
+            ]["value"]
+            == "empty"
+        ):
+            empty_list.append(
+                p.find_element(
+                    [{"type": "dictionary", "key": "newName"}, {"type": "word"}]
+                )["element"]["value"]
+            )
+
+    if two_dimensional:
+        # surfaceFile "constant/triSurface/FMS_NAME.fms"; // (mandatory)
+        surfaceFile = meshDict.find_element(
+            [{"type": "dictionary", "key": "surfaceFile"}, {"type": "string"}]
+        )["element"]
+        stl_file_name_wo_ext = os.path.splitext(surfaceFile["value"].strip('"'))[
+            0
+        ]  # .fmsを取り除く
+        stl_2D_file_name = f"{stl_file_name_wo_ext}_2D.stl"  # 2次元の場合はfmsファイルでなくても十分であることが多い
+        should_write = True
+        with open(stl_2D_file_name, "w") as f:
+            for line in open(f"{stl_file_name_wo_ext}.stl", "r"):
+                if "endsolid" in line and line.split()[-1] in empty_list:
+                    should_write = True
+                elif "solid" in line and line.split()[-1] in empty_list:
+                    should_write = False
+                elif should_write:
+                    f.write(line)
+        surfaceFile["value"] = f'"{stl_2D_file_name}"'
+        os.rename(meshDict_path, meshDict_3D_path)  # can overwrite
+        with open(meshDict_path, "w") as f:
+            f.write(dictParse.normalize(string=meshDict.file_string())[0])
+
+    def mappedWall_treatment(boundary):
+        for p in boundary.find_all_elements(
+            [
+                {
+                    "type": "list",
+                },
+                {"type": "block"},
+            ]
+        ):
+            p = p["element"]
+            t = p.find_element(
+                [{"type": "dictionary", "key": "type"}, {"except type": "ignorable"}]
+            )["element"]
+            if (
+                t["value"] == "mappedWall"
+                and p.find_element([{"type": "dictionary"}, {"key": "sampleRegion"}])[
+                    "element"
+                ]
+                is None
+                and p.find_element([{"type": "dictionary"}, {"key": "samplePatch"}])[
+                    "element"
+                ]
+                is None
+            ):
+                m = pat_region_boundary.match(p["key"])
+                block_end = p.find_element([{"type": "block_end"}], reverse=True)[
+                    "index"
+                ]
+                p["value"][block_end:block_end] = dictParse.DictParser(
+                    string="sampleMode\tnearestPatchFaceAMI;\n"
+                    f"sampleRegion\t{m['region_to']}; // 相手の領域名\n"
+                    f"samplePatch\t{m['region_to']}__to__{m['region_from']}"
+                    f"{'' if m['number'] is None else m['number']}; // 相手のパッチ名\n"
+                )["value"]
+
+    cfMesh = "cartesian2DMesh" if two_dimensional else "cartesianMesh"
+    if domains != 1:
+        rmObjects.removeProcessorDirs()
+        decomposeParDict_path = os.path.join("system", "decomposeParDict")
+        decomposeParDict_bak_path = f"{decomposeParDict_path}_bak"
+        if os.path.isfile(decomposeParDict_path):
+            os.rename(decomposeParDict_path, decomposeParDict_bak_path)
+        with open(decomposeParDict_path, "w") as f:
+            f.write(
+                "FoamFile\n"
+                "{\n"
+                "\tversion\t2.0;\n"
+                "\tformat\tascii;\n"
+                "\tclass\tdictionary;\n"
+                '\tlocation\t"system";\n'
+                "\tobject\tdecomposeParDict;\n"
+                "}\n"
+                f"numberOfSubdomains\t{domains};\n"
+                "method\tscotch;\n"  # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+            )
+        succeed = misc.execCommand(["preparePar", "-noFunctionObjects"])[1] == 0
+        if succeed:
+            succeed = (
+                misc.execCommand(
+                    [
+                        "mpirun",
+                        "-np",
+                        f"{domains}",
+                        cfMesh,
+                        "-parallel",
+                        "-noFunctionObjects",
+                    ],
+                    f"{cfMesh}.log",
+                )[1]
+                == 0
+            )
+        if succeed:
+            pat = re.compile(r"(?:\./)?processor([0-9]+)/$")
+            for p in glob.iglob(f"processor[0-9]*{os.sep}"):
+                if pat.match(p):
+                    boundary_path = os.path.join(p, "constant", "polyMesh", "boundary")
+                    boundary = dictParse.DictParser(file_name=boundary_path)
+                    mappedWall_treatment(boundary)
+                    string = dictParse.normalize(string=boundary.file_string())[0]
+                    if boundary.string != string:
+#                        os.rename(boundary_path, f'{boundary_path}_bak')
+                        with open(boundary_path, "w") as f:
+                            f.write(string)
+            succeed = (
+                misc.execCommand(
+                    [
+                        "reconstructParMesh",
+                        "-constant",  # -constantは，constantディレクトリ内のファイルも再構築する．
+                        "-mergeTol",
+                        "1.0e-06",
+                        "-noFunctionObjects",
+                    ]
+                )[1]
+                == 0
+            )
+        rmObjects.removeProcessorDirs()
+        if os.path.isfile(decomposeParDict_bak_path):
+            os.rename(decomposeParDict_bak_path, decomposeParDict_path)
+        if not succeed:
+            sys.exit(1)
+    elif misc.execCommand([cfMesh, "-noFunctionObjects"], f"{cfMesh}.log")[1] != 0:
+        sys.exit(1)
+
+    boundary_path = os.path.join("constant", "polyMesh", "boundary")
+    boundary = dictParse.DictParser(file_name=boundary_path)
+    if two_dimensional:
+        os.rename(meshDict_path, meshDict_path + "_2D")  # can overwrite
+        os.rename(meshDict_3D_path, meshDict_path)  # can overwrite
+        boundary.find_element(
+            [{"type": "list"}, {"type": "block", "key": "topEmptyFaces"}]
+        )["element"]["key"] = front_name
+        boundary.find_element(
+            [{"type": "list"}, {"type": "block", "key": "bottomEmptyFaces"}]
+        )["element"]["key"] = back_name
+    mappedWall_treatment(boundary)
+    string = dictParse.normalize(string=boundary.file_string())[0]
+    if boundary.string != string:
+#            os.rename(boundary_path, f'{boundary_path}_bak')
+        with open(boundary_path, "w") as f:
+            f.write(string)
+
+    misc.convertMillimeterIntoMeter()
+    misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く
+    if two_dimensional and misc.execCommand(["flattenMesh"])[1] != 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -76,11 +275,6 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         interactive = True
     else:
-        interactive = False
-        exec_paraFoam = False
-        front_name = "front"
-        back_name = "back"
-        domains = 1
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == "-N":  # Non-interactive
@@ -100,33 +294,15 @@ if __name__ == "__main__":
                 exec_paraFoam = True
             i += 1
 
+    cwd = os.getcwd()  # 絶対パス
     if os.path.isdir(cases_path):
-        for c in glob.iglob(os.path.join(cases_path, "*" + os.sep)):
-            cartesianMesh()
+        # glob.iglob() は、デフォルトでは現在の作業ディレクトリ（カレントディレクトリ）からの相対パスを基準にイテレーターを保持して評価します。
+        for c in glob.iglob(os.path.join(cases_path, f"*{os.sep}")):
+            os.chdir(c)
+            preparation()
+            os.chdir(cwd)
     else:
-        cartesianMesh()
-
-    # for i in pipe pipewall
-    # do
-    #  mkdir -p cases_for_cfmesh/"$i"/system
-    #  echo "FoamFile
-    # {
-    #    version      2.0;
-    #    format       ascii;
-    #    class        dictionary;
-    #    location     \"system\";
-    #    object       controlDict;
-    # }
-    # deltaT         0.001;
-    # writeControl   timeStep;
-    # writeInterval  1;" > cases_for_cfmesh/"$i"/system/controlDict
-    #  cartesianMesh -case cases_for_cfmesh/"$i"
-    #  rm cases_for_cfmesh/"$i"/system/controlDict
-    #  mkdir -p constant/"$i"
-    #  mv cases_for_cfmesh/"$i"/constant/polyMesh constant/"$i"
-    #  rm -r cases_for_cfmesh/"$i"/constant
-    #  changeDictionary -region $i
-    # done
+        preparation()
 
     threads = misc.cpu_count()
     if interactive:
@@ -170,185 +346,32 @@ if __name__ == "__main__":
             )
     domains = min(domains, threads)
 
-    meshDict = dictParse.DictParser(file_name=meshDict_path)
+    if os.path.isdir(cases_path):
+        # glob.iglob() は、デフォルトでは現在の作業ディレクトリ（カレントディレクトリ）からの相対パスを基準にイテレーターを保持して評価します。
+        for c in glob.iglob(os.path.join(cases_path, f"*{os.sep}")):
+            os.chdir(c)
+            cartesianMesh()
+            os.chdir(cwd)
+    else:
+        cartesianMesh()
 
-    # renameBoundary
-    # {
-    #   newPatchNames
-    #   {
-    #     PATCH_NAME
-    #     {
-    #       newName PATCH_NAME;
-    #       type empty;
-    #     }
-    #     ...
-    patch_types = {}
-    empty_list = []
-    for p in meshDict.find_all_elements(
-        [
-            {"type": "block", "key": "renameBoundary"},
-            {"type": "block", "key": "newPatchNames"},
-            {"type": "block"},
-        ]
-    ):
-        p = p["element"]
-        n = p.find_element(
-            [{"type": "dictionary", "key": "newName"}, {"type": "word"}]
-        )["element"]["value"]
-        t = p.find_element([{"type": "dictionary", "key": "type"}, {"type": "word"}])[
-            "element"
-        ]["value"]
-        patch_types[n] = t
-        if t == "empty":
-            empty_list.append(n)
-
-    if two_dimensional:
-        # surfaceFile "constant/triSurface/FMS_NAME.fms"; // (mandatory)
-        surfaceFile = meshDict.find_element(
-            [{"type": "dictionary", "key": "surfaceFile"}, {"type": "string"}]
-        )["element"]
-        stl_file_name_wo_ext = os.path.splitext(surfaceFile["value"].strip('"'))[
-            0
-        ]  # .fmsを取り除く
-        stl_2D_file_name = f"{stl_file_name_wo_ext}_2D.stl"  # 2次元の場合はfmsファイルでなくても十分であることが多い
-        should_write = True
-        with open(stl_2D_file_name, "w") as f:
-            for line in open(f"{stl_file_name_wo_ext}.stl", "r"):
-                if "endsolid" in line and line.split()[-1] in empty_list:
-                    should_write = True
-                elif "solid" in line and line.split()[-1] in empty_list:
-                    should_write = False
-                elif should_write:
-                    f.write(line)
-        surfaceFile["value"] = f'"{stl_2D_file_name}"'
-        os.rename(meshDict_path, meshDict_3D_path)  # can overwrite
-        with open(meshDict_path, "w") as f:
-            f.write(dictParse.normalize(string=meshDict.file_string())[0])
-
-    cfMesh = "cartesian2DMesh" if two_dimensional else "cartesianMesh"
-    if domains != 1:
-        rmObjects.removeProcessorDirs()
-        decomposeParDict_path = os.path.join("system", "decomposeParDict")
-        decomposeParDict_bak_path = f"{decomposeParDict_path}_bak"
-        if os.path.isfile(decomposeParDict_path):
-            os.rename(decomposeParDict_path, decomposeParDict_bak_path)
-        with open(decomposeParDict_path, "w") as f:
-            f.write(
-                "FoamFile\n"
-                "{\n"
-                "\tversion\t2.0;\n"
-                "\tformat\tascii;\n"
-                "\tclass\tdictionary;\n"
-                '\tlocation\t"system";\n'
-                "\tobject\tdecomposeParDict;\n"
-                "}\n"
-                f"numberOfSubdomains\t{domains};\n"
-                "method\tscotch;\n"
-            )  # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
-        succeed = (
-            misc.execCommand(["preparePar", "-noFunctionObjects"])[1] == 0
-            and misc.execCommand(
-                [
-                    "mpirun",
-                    "-np",
-                    f"{domains}",
-                    cfMesh,
-                    "-parallel",
-                    "-noFunctionObjects",
-                ],
-                f"{cfMesh}.log",
-            )[1]
-            == 0
-            and
-            # -constantは，constantディレクトリ内のファイルも再構築する．
-            misc.execCommand(
-                [
-                    "reconstructParMesh",
-                    "-constant",
-                    "-mergeTol",
-                    "1.0e-06",
-                    "-noFunctionObjects",
-                ]
-            )[1]
-            == 0
-        )
-        rmObjects.removeProcessorDirs()
-        if os.path.isfile(decomposeParDict_bak_path):
-            os.rename(decomposeParDict_bak_path, decomposeParDict_path)
-        if not succeed:
-            sys.exit(1)
-    elif misc.execCommand([cfMesh, "-noFunctionObjects"], f"{cfMesh}.log")[1] != 0:
-        sys.exit(1)
-
-    boundary_path = os.path.join("constant", "polyMesh", "boundary")
-    boundary = dictParse.DictParser(file_name=boundary_path)
-    if two_dimensional:
-        os.rename(meshDict_path, meshDict_path + "_2D")  # can overwrite
-        os.rename(meshDict_3D_path, meshDict_path)  # can overwrite
-        boundary.find_element(
-            [{"type": "list"}, {"type": "block", "key": "topEmptyFaces"}]
-        )["element"]["key"] = front_name
-        boundary.find_element(
-            [{"type": "list"}, {"type": "block", "key": "bottomEmptyFaces"}]
-        )["element"]["key"] = back_name
-        with open(boundary_path, "w") as f:
-            f.write(dictParse.normalize(string=boundary.file_string())[0])
-    else:  # not two_dimensional
-        for p in boundary.find_all_elements(
-            [
-                {
-                    "type": "list",
-                },
-                {"type": "block"},
-            ]
-        ):
-            p = p["element"]
-            t = p.find_element([{"type": "dictionary", "key": "type"}])
-            i = t["element"].find_element([{"except type": "ignorable"}])["element"]
-            patch_type = patch_types[p["key"]]
-            if i["value"] != patch_type:
-                i["value"] = patch_type
-                i = p.find_element(
-                    [
-                        {"type": "dictionary", "key": "inGroups"},
-                        {"type": "list"},
-                        {"except type": "ignorable|list_start"},
-                    ]
-                )["element"]
-                if i is not None:
-                    i["value"] = patch_type
-            if (
-                patch_type == "mappedWall"
-                and p.find_element([{"type": "dictionary"}, {"key": "sampleRegion"}])[
-                    "element"
-                ]
-                is None
-                and p.find_element([{"type": "dictionary"}, {"key": "samplePatch"}])[
-                    "element"
-                ]
-                is None
-            ):
-                m = pat_region_boundary.match(p["key"])
-                t["parent"][t["index"] + 1 : t["index"] + 1] = dictParse.DictParser(
-                    string="\n"
-                    "sampleMode\tnearestPatchFaceAMI;\n"
-                    f"sampleRegion\t{m['region_to']}; // 相手の領域名\n"
-                    f"samplePatch\t{m['region_to']}__to__{m['region_from']}{'' if m['number'] is None else m['numbnr']}; // 相手のパッチ名"
-                )["value"]
-        string = dictParse.normalize(string=boundary.file_string())[0]
-        if boundary.string != string:
-            #            os.rename(boundary_path, f'{boundary_path}_bak')
-            with open(boundary_path, "w") as f:
-                f.write(string)
-
-    misc.convertMillimeterIntoMeter()
-    misc.removePatchesHavingNoFaces()  # フェイスを1つも含まないパッチを取り除く
-    if two_dimensional and misc.execCommand(["flattenMesh"])[1] != 0:
-        sys.exit(1)
-    misc.execCheckMesh()
-    sets = os.path.join("constant", "polyMesh", "sets")
-    if os.path.isdir(sets):
-        shutil.rmtree(sets)
+    if os.path.isdir(cases_path):
+        # glob.iglob() は、デフォルトでは現在の作業ディレクトリ（カレントディレクトリ）からの相対パスを基準にイテレーターを保持して評価します。
+        for c in glob.iglob(os.path.join(cases_path, f"*{os.sep}")):
+            os.chdir(c)
+            misc.execCheckMesh()
+            rmObjects.removeInessentials()
+            os.chdir(cwd)
+            dst = os.path.join(cwd, "constant", os.path.basename(os.path.normpath(c)))
+            os.makedirs(dst, exist_ok=True)
+            dst_polyMesh = os.path.join(dst, "polyMesh")
+            if os.path.isdir(dst_polyMesh):
+                shutil.rmtree(dst_polyMesh)
+            shutil.move(os.path.join(cwd, c, "constant", "polyMesh"), dst)
+    else:
+        misc.execCheckMesh()
+        rmObjects.removeInessentials()
+        cartesianMesh()
 
     if interactive:
         exec_paraFoam = (
@@ -357,5 +380,3 @@ if __name__ == "__main__":
             else False
         )
     misc.execParaFoam(touch_only=not exec_paraFoam, ambient=0.0, diffuse=1.0)
-
-    rmObjects.removeInessentials()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:30:39 PM
+# 2026/9/20 5:09:04 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -389,8 +389,8 @@ if __name__ == "__main__":
                 "\tobject\tdecomposeParDict;\n"
                 "}\n"
                 f"numberOfSubdomains\t{domains};\n"
-                "method\tscotch;\n"
-            )  # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+                "method\tscotch;\n"  # 複雑な形状や境界条件がある場合に最適．デフォルトで推奨されることが多い．
+            )
         succeed = (
             misc.execCommand(["decomposePar", "-noZero", "-noFunctionObjects"])[1] == 0
             and misc.execCommand(
@@ -584,9 +584,6 @@ if __name__ == "__main__":
 
     if not two_dimensional:
         misc.execCheckMesh()
-        sets = os.path.join("constant", "polyMesh", "sets")
-        if os.path.isdir(sets):
-            shutil.rmtree(sets)
 
     if interactive:
         exec_paraFoam = (
