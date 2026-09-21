@@ -26,32 +26,32 @@ pat_region_boundary = re.compile(  # マルチリージョン解析の時の領�
     "(?P<region_from>(?:(?!__).)+)__to__(?P<region_to>(?:(?!__).)+)(?P<number>__[0-9]+)?"
 )
 
-#解析フォルダの中にcasesというフォルダを作り，そこに領域ごとに領域名を名前にした領域フォルダを作る．
-#領域フォルダの中には
-#領域名/system/controlDict
-#領域名/system/meshDict
-#があれば良い．
+# 解析フォルダの中にcasesというフォルダを作り，そこに領域ごとに領域名を名前にした領域フォルダを作る．
+# 領域フォルダの中には
+# 領域名/system/controlDict
+# 領域名/system/meshDict
+# があれば良い．
 #
-#mkdir -p cases_for_cfmesh/領域名/system
-#cp -r system/controlDict cases_for_cfmesh/領域名/system
-#cartesianMesh -case cases_for_cfmesh/領域名
-#rm cases_for_cfmesh/領域名/system/controlDict
-#mkdir -p constant/領域名
-#mv cases_for_cfmesh/領域名/constant/polyMesh constant/領域名
-#rm -r cases_for_cfmesh/領域名/constant
-#を全ての領域に対して実行する．
+# mkdir -p cases_for_cfmesh/領域名/system
+# cp -r system/controlDict cases_for_cfmesh/領域名/system
+# cartesianMesh -case cases_for_cfmesh/領域名
+# rm cases_for_cfmesh/領域名/system/controlDict
+# mkdir -p constant/領域名
+# mv cases_for_cfmesh/領域名/constant/polyMesh constant/領域名
+# rm -r cases_for_cfmesh/領域名/constant
+# を全ての領域に対して実行する．
 #
-#constant/領域名/polyMesh/boundaryで
-#領域境界ブロックの中にあるtypeを
-#type mappedWall;
-#に改め，
-#sampleMode nearestPatchFaceAMI;
-#sampleRegion 相手の領域名;
-#samplePatch 相手のパッチ名;
-#を追加する．
+# constant/領域名/polyMesh/boundaryで
+# 領域境界ブロックの中にあるtypeを
+# type mappedWall;
+# に改め，
+# sampleMode nearestPatchFaceAMI;
+# sampleRegion 相手の領域名;
+# samplePatch 相手のパッチ名;
+# を追加する．
 #
-#cartesianMeshを実行.pyの中で，cases_for_cfmeshフォルダがあるかどうかで操作を変えるようにしたいので，
-#cases_for_cfmeshフォルダは残す．
+# cartesianMeshを実行.pyの中で，cases_for_cfmeshフォルダがあるかどうかで操作を変えるようにしたいので，
+# cases_for_cfmeshフォルダは残す．
 
 
 class FreeCadFileGrid(QtGui.QTableWidget):
@@ -80,9 +80,11 @@ class FreeCadFileGrid(QtGui.QTableWidget):
         for obj in freecad_objects:
             try:
                 if (
-                    obj.ViewObject.Visibility and hasattr(obj, "Shape")
-                    and "PartDesign::" not in obj.TypeId # Bodyや押し出しなどのフィーチャーを排除
-                    and not hasattr(obj, "Role") # 軸や原点を排除
+                    obj.ViewObject.Visibility
+                    and hasattr(obj, "Shape")
+                    and "PartDesign::"
+                    not in obj.TypeId  # Bodyや押し出しなどのフィーチャーを排除
+                    and not hasattr(obj, "Role")  # 軸や原点を排除
                 ):
                     if pat.match(obj.Label) is None:
                         QtGui.QMessageBox.critical(
@@ -617,7 +619,8 @@ class MyController:
                 controller=self,
                 freecad_objects=self.doc.Objects,
                 case_dir_path=os.path.dirname(self.doc.FileName),
-                max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)/60.0,
+                max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)
+                / 60.0,
                 feature_angle=MyController.FEATURE_ANGLE,
             )
         except Exception:
@@ -946,7 +949,7 @@ class MyModel:
         feature_angle,
         min_cell_size,
     ):
-        def makeMeshDict_local(case_dir_path, patch_header):
+        def makeMeshDict_local(case_dir_path, region):
             meshDict_path = os.path.join(case_dir_path, "system", "meshDict")
             if os.path.isfile(meshDict_path):
                 meshDict = dictParse.DictParser(file_name=meshDict_path)
@@ -1055,12 +1058,15 @@ class MyModel:
                 boundaryLayers = dictParse.find_element(
                     meshDict, [{"type": "block", "key": "boundaryLayers"}]
                 )["element"]
-    
+
                 f.write("\nboundaryLayers\n{\n")
 
                 e = dictParse.find_element(
                     boundaryLayers,
-                    [{"type": "dictionary", "key": "optimiseLayer"}, {"type": "integer"}],
+                    [
+                        {"type": "dictionary", "key": "optimiseLayer"},
+                        {"type": "integer"},
+                    ],
                 )["element"]
                 f.write(
                     "\t// 境界層の自動整形．デフォルトは0．\n"
@@ -1068,9 +1074,12 @@ class MyModel:
                 )
 
                 for dictionary in dictParse.find_all_elements(
-                    boundaryLayers, [{"type": "dictionary", "except key": "optimiseLayer"}]
+                    boundaryLayers,
+                    [{"type": "dictionary", "except key": "optimiseLayer"}],
                 ):
-                    f.write(f"\n\t{dictionary['element'].file_string(indent_level=1)}\n")
+                    f.write(
+                        f"\n\t{dictionary['element'].file_string(indent_level=1)}\n"
+                    )
 
                 optimisationParameters = dictParse.find_element(
                     boundaryLayers, [{"type": "block", "key": "optimisationParameters"}]
@@ -1112,7 +1121,9 @@ class MyModel:
                         }
                     ],
                 ):
-                    f.write(f"\n\t\t{dictionary['element'].file_string(indent_level=2)}\n")
+                    f.write(
+                        f"\n\t\t{dictionary['element'].file_string(indent_level=2)}\n"
+                    )
 
                 f.write("\t}\n")  # optimisationParameters
 
@@ -1145,7 +1156,8 @@ class MyModel:
                     )
 
                     block = dictParse.find_element(
-                        patchBoundaryLayers, [{"type": "block", "key": i[grid.OBJECT_NAME]}]
+                        patchBoundaryLayers,
+                        [{"type": "block", "key": i[grid.OBJECT_NAME]}],
                     )["element"]
 
                     e = dictParse.find_element(
@@ -1156,7 +1168,9 @@ class MyModel:
                         ],
                     )["element"]
                     if e is None:
-                        f.write("//\t\t\tmaxFirstLayerThickness\t0.5; // 必須ではない．\n")
+                        f.write(
+                            "//\t\t\tmaxFirstLayerThickness\t0.5; // 必須ではない．\n"
+                        )
                     else:
                         f.write(
                             f"\t\t\tmaxFirstLayerThickness\t{e['value']}; // 必須ではない．\n"
@@ -1258,7 +1272,8 @@ class MyModel:
                         ref_level += 1
                         ref_value *= 0.5
                     obj = next(
-                        (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None
+                        (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label),
+                        None,
                     )
                     f.write(f"\t{i[grid.OBJECT_NAME]}\n\t{{\n")
                     if i[grid.TYPE] == "BoxRefine":
@@ -1381,7 +1396,10 @@ class MyModel:
                         )
                 for block in dictParse.find_all_elements(
                     meshDict,
-                    [{"type": "block", "key": "surfaceMeshRefinement"}, {"type": "block"}],
+                    [
+                        {"type": "block", "key": "surfaceMeshRefinement"},
+                        {"type": "block"},
+                    ],
                 ):
                     block = block["element"]
                     if block["key"] not in object_names:
@@ -1489,28 +1507,28 @@ class MyModel:
 
             os.chmod(meshDict_path, 0o0666)
 
-    regions = []
-    for i in grid.table:
-        if i[grid.TYPE] == "mappedWall":
-            m = MyModel.pat_region_boundary.match(i[grid.OBJECT_NAME])
-            if m is None:
-                QtGui.QMessageBox.critical(
-                    None,
-                    "命名規則違反",
-                    "mappedWallの名前は以下のどちらかのルールに従って下さい：\n"
-                    "  自分の領域名__to__相手の領域名\n"
-                    "  自分の領域名__to__相手の領域名__数字\n",
-                    QtGui.QMessageBox.Close,
-                )
-                return
-            regions.append(m["region_from"])
-    if len(regions) == 0:
-        makeMeshDict_local(case_dir_path, None)
-    else:
-        for i in regions:
-            c = os.path.join(case_dir_path, cases_path, i)
-            os.makedirs(os.path.join(c, "stsytem"), exist_ok=True)
-            makeMeshDict_local(c, i)
+        regions = []
+        for i in grid.table:
+            if i[grid.TYPE] == "mappedWall":
+                m = MyModel.pat_region_boundary.match(i[grid.OBJECT_NAME])
+                if m is None:
+                    QtGui.QMessageBox.critical(
+                        None,
+                        "命名規則違反",
+                        "mappedWallの名前は以下のどちらかのルールに従って下さい：\n"
+                        "  自分の領域名__to__相手の領域名\n"
+                        "  自分の領域名__to__相手の領域名__数字\n",
+                        QtGui.QMessageBox.Close,
+                    )
+                    return
+                regions.append(m["region_from"])
+        if len(regions) == 0:
+            makeMeshDict_local(case_dir_path, None)
+        else:
+            for r in regions:
+                c = os.path.join(case_dir_path, cases_path, r)
+                os.makedirs(os.path.join(c, "stsytem"), exist_ok=True)
+                makeMeshDict_local(c, r)
 
     @staticmethod
     def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
