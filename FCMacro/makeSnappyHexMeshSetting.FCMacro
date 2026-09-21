@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/9/21 7:47:19 PM
+# 2026/9/21 9:15:21 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1091,10 +1091,10 @@ class MyModel:
         feature_angle,
         meshDict,
     ):
-        dict_path = os.path.join(case_dir_path, "system", "snappyHexMeshDict")
-        if os.path.isfile(dict_path):
-            shutil.copy(dict_path, f"{dict_path}_bak")
-        with open(dict_path, "w") as f:
+        meshDict_path = os.path.join(case_dir_path, "system", "snappyHexMeshDict")
+        if os.path.isfile(meshDict_path):
+            shutil.copy(meshDict_path, f"{meshDict_path}_bak")
+        with open(meshDict_path, "w") as f:
             f.write(
                 "FoamFile\n"
                 "{\n"
@@ -1971,7 +1971,7 @@ class MyModel:
             ):
                 f.write(f"\n{element['element'].file_string()}\n")
 
-        os.chmod(dict_path, 0o0666)
+        os.chmod(meshDict_path, 0o0666)
 
     @staticmethod
     def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
