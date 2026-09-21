@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/23 9:55:29 AM
+# 2026/9/21 7:47:19 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -48,9 +48,11 @@ class FreeCadFileGrid(QtGui.QTableWidget):
         for obj in freecad_objects:
             try:
                 if (
-                    obj.ViewObject.Visibility and hasattr(obj, "Shape")
-                    and "PartDesign::" not in obj.TypeId # Bodyや押し出しなどのフィーチャーを排除
-                    and not hasattr(obj, "Role") # 軸や原点を排除
+                    obj.ViewObject.Visibility
+                    and hasattr(obj, "Shape")
+                    and "PartDesign::"
+                    not in obj.TypeId  # Bodyや押し出しなどのフィーチャーを排除
+                    and not hasattr(obj, "Role")  # 軸や原点を排除
                 ):
                     if pat.match(obj.Label) is None:
                         QtGui.QMessageBox.critical(
@@ -656,8 +658,9 @@ class MyController:
             self.MeshFrame = MeshFrame(
                 controller=self,
                 freecad_objects=self.doc.Objects,
-                case_dir_path=os.path.dirname(self.doc.FileName),
-                max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)/60.0,
+                case_dir_path=os.path.dirname(self.doc.FileName),  # 絶対パス
+                max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)
+                / 60.0,
                 features_level=1,
                 feature_angle=MyController.FEATURE_ANGLE,
             )
@@ -715,7 +718,7 @@ class MyController:
             == QtGui.QMessageBox.No
         ):
             return  # chtMultiRegionFoam（共役熱伝導解析）ではLocationInMeshが複数ある
-        case_dir_path = self.MeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()  # 絶対パス
         # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
         if not os.path.isdir(os.path.join(case_dir_path, "constant")):
             subprocess.run(
