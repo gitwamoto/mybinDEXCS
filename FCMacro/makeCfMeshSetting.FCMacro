@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/9/21 8:22:49 PM
+# 2026/9/21 9:15:37 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1537,6 +1537,26 @@ class MyModel:
                 f.write(f"\n{element['element'].file_string()}\n")
 
         os.chmod(meshDict_path, 0o0666)
+
+        controlDict_path = os.path.join(case_dir_path, "system", "controlDict")
+        if not os.path.isfile(
+            controlDict_path
+        ):  # controlDictがないとcartesianMeshが動かない
+            with open(controlDict_path, "w") as f:
+                f.write(
+                    "FoamFile\n"
+                    "{\n"
+                    "\tversion\t2.0;\n"
+                    "\tformat\tascii;\n"
+                    "\tclass\tdictionary;\n"
+                    '\tlocation\t"system";\n'
+                    "\tobject\tcontrolDict;\n"
+                    "}\n"
+                    "deltaT\t1;\n"
+                    "writeControl\ttimeStep;\n"
+                    "writeInterval\t1;\n"
+                )
+        os.chmod(controlDict_path, 0o0666)
 
     @staticmethod
     def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
