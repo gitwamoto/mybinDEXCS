@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/9/22 5:41:06 PM
+# 2026/9/22 5:58:23 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -719,6 +719,7 @@ class MyController:
                 for r in self.regions:
                     c = os.path.join(case_dir_path, cases_path, r)
                     os.makedirs(os.path.join(c, "constant"), exist_ok=True)
+                    os.makedirs(os.path.join(c, "system"), exist_ok=True)
                     make_files(c, [f"{i}__" for i in self.regions if i != r])
         except:
             return
