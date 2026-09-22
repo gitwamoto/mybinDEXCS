@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/7/23 9:55:29 AM
+# 2026/9/22 5:41:04 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -48,9 +48,11 @@ class FreeCadFileGrid(QtGui.QTableWidget):
         for obj in freecad_objects:
             try:
                 if (
-                    obj.ViewObject.Visibility and hasattr(obj, "Shape")
-                    and "PartDesign::" not in obj.TypeId # Bodyや押し出しなどのフィーチャーを排除
-                    and not hasattr(obj, "Role") # 軸や原点を排除
+                    obj.ViewObject.Visibility
+                    and hasattr(obj, "Shape")
+                    and "PartDesign::"
+                    not in obj.TypeId  # Bodyや押し出しなどのフィーチャーを排除
+                    and not hasattr(obj, "Role")  # 軸や原点を排除
                 ):
                     if pat.match(obj.Label) is None:
                         QtGui.QMessageBox.critical(
@@ -315,222 +317,191 @@ class MeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParamsFromDictFiles(
-        self, meshDict_path, setFieldsDict_path, topoSetDict_path
-    ):
-        meshDict = dictParse.DictParser(file_name=meshDict_path)
-        if (
-            meshDict.find_element(
+    def setParamsFromDictFiles(self, meshDict, setFieldsDict, topoSetDict):
+        if meshDict is None and setFieldsDict is None and topoSetDict is None:
+            return
+
+        if meshDict is not None:
+            e = meshDict.find_element(
                 [
-                    {"type": "block", "key": "FoamFile"},
-                    {"type": "dictionary", "key": "object"},
-                    {"type": "word", "value": "snappyHexMeshDict"},
+                    {"type": "block", "key": "CUSTOM_OPTIONS"},
+                    {"type": "dictionary", "key": "maxCellSize"},
+                    {"type": "float|integer"},
                 ]
             )["element"]
-            is None
-        ):
-            raise Exception(f"{meshDict_path} is not a snappyHexMeshDict file.")
+            if e is not None:
+                self.maxCellSizeCRL.setText(e["value"])
 
-        e = meshDict.find_element(
-            [
-                {"type": "block", "key": "CUSTOM_OPTIONS"},
-                {"type": "dictionary", "key": "maxCellSize"},
-                {"type": "float|integer"},
-            ]
-        )["element"]
-        if e is not None:
-            self.maxCellSizeCRL.setText(e["value"])
+            castellatedMeshControls = meshDict.find_element(
+                [{"type": "block", "key": "castellatedMeshControls"}]
+            )["element"]
 
-        castellatedMeshControls = meshDict.find_element(
-            [{"type": "block", "key": "castellatedMeshControls"}]
-        )["element"]
+            e = castellatedMeshControls.find_element(
+                [
+                    {"type": "dictionary", "key": "features"},
+                    {"type": "list"},
+                    {"type": "block"},
+                    {"type": "dictionary", "key": "level"},
+                    {"type": "integer"},
+                ]
+            )["element"]
+            if e is not None:
+                self.featuresLevelCRL.setText(e["value"])
 
-        e = castellatedMeshControls.find_element(
-            [
-                {"type": "dictionary", "key": "features"},
-                {"type": "list"},
-                {"type": "block"},
-                {"type": "dictionary", "key": "level"},
-                {"type": "integer"},
-            ]
-        )["element"]
-        if e is not None:
-            self.featuresLevelCRL.setText(e["value"])
+            e = castellatedMeshControls.find_element(
+                [
+                    {"type": "dictionary", "key": "resolveFeatureAngle"},
+                    {"type": "float|integer"},
+                ]
+            )["element"]
+            if e is not None:
+                self.featureAngleCRL.setText(e["value"])
 
-        e = castellatedMeshControls.find_element(
-            [
-                {"type": "dictionary", "key": "resolveFeatureAngle"},
-                {"type": "float|integer"},
-            ]
-        )["element"]
-        if e is not None:
-            self.featureAngleCRL.setText(e["value"])
+            shape_name = None
+            searchableBox_list = []
+            searchableCylinder_list = []
+            searchableSphere_list = []
+            triSurface_list = []
 
-        shape_name = None
-        searchableBox_list = []
-        searchableCylinder_list = []
-        searchableSphere_list = []
-        triSurface_list = []
+            refinementSurfaces = castellatedMeshControls.find_element(
+                [{"type": "block", "key": "refinementSurfaces"}]
+            )["element"]
 
-        refinementSurfaces = castellatedMeshControls.find_element(
-            [{"type": "block", "key": "refinementSurfaces"}]
-        )["element"]
-
-        for block in meshDict.find_all_elements(
-            [{"type": "block", "key": "geometry"}, {"type": "block"}]
-        ):
-            block = block["element"]
-            if block["key"].endswith(".stl"):
-                name = block.find_element(
-                    [{"type": "dictionary", "key": "name"}, {"type": "word"}]
-                )["element"]["value"]
-                if (
-                    refinementSurfaces.find_element([{"type": "block", "key": name}])[
-                        "element"
-                    ]
-                    is not None
-                ):
-                    shape_name = name
+            for block in meshDict.find_all_elements(
+                [{"type": "block", "key": "geometry"}, {"type": "block"}]
+            ):
+                block = block["element"]
+                if block["key"].endswith(".stl"):
+                    name = block.find_element(
+                        [{"type": "dictionary", "key": "name"}, {"type": "word"}]
+                    )["element"]["value"]
+                    if (
+                        refinementSurfaces.find_element(
+                            [{"type": "block", "key": name}]
+                        )["element"]
+                        is not None
+                    ):
+                        shape_name = name
+                    else:
+                        triSurface_list.append(name)
                 else:
-                    triSurface_list.append(name)
-            else:
-                v = block.find_element(
-                    [{"type": "dictionary", "key": "type"}, {"type": "word"}]
-                )["element"]["value"]
-                if v in ("searchableBox", "searchableRotatedBox"):
-                    searchableBox_list.append(block["key"])
-                elif v == "searchableCylinder":
-                    searchableCylinder_list.append(block["key"])
-                elif v == "searchableSphere":
-                    searchableSphere_list.append(block["key"])
+                    v = block.find_element(
+                        [{"type": "dictionary", "key": "type"}, {"type": "word"}]
+                    )["element"]["value"]
+                    if v in ("searchableBox", "searchableRotatedBox"):
+                        searchableBox_list.append(block["key"])
+                    elif v == "searchableCylinder":
+                        searchableCylinder_list.append(block["key"])
+                    elif v == "searchableSphere":
+                        searchableSphere_list.append(block["key"])
 
-        object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
-        remainder_names = object_names[:]
+            object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
+            remainder_names = object_names[:]
 
-        for block in refinementSurfaces.find_all_elements(
-            [
-                {"type": "block", "key": shape_name},
-                {"type": "block", "key": "regions"},
-                {"type": "block"},
-            ]
-        ):
-            block = block["element"]
-            if block["key"] in object_names:
+            for block in refinementSurfaces.find_all_elements(
+                [
+                    {"type": "block", "key": shape_name},
+                    {"type": "block", "key": "regions"},
+                    {"type": "block"},
+                ]
+            ):
+                block = block["element"]
+                if block["key"] in object_names:
+                    i = object_names.index(block["key"])
+                    remainder_names.remove(block["key"])
+                    e = block.find_element(
+                        [
+                            {"type": "dictionary", "key": "level"},
+                            {"type": "list"},
+                            {"type": "integer"},
+                        ]
+                    )["element"]
+                    if e is not None:
+                        self.grid.setCellValue(i, self.grid.LEVEL, e["value"])
+                    e = block.find_element(
+                        [
+                            {"type": "block", "key": "patchInfo"},
+                            {"type": "dictionary", "key": "type"},
+                            {"type": "word"},
+                        ]
+                    )["element"]
+                    if e is not None:
+                        self.grid.setCellValue(i, self.grid.TYPE, e["value"])
+
+            for block in castellatedMeshControls.find_all_elements(
+                [{"type": "block", "key": "refinementRegions"}, {"type": "block"}]
+            ):
+                block = block["element"]
+                if block["key"] not in object_names or (
+                    block["key"] not in searchableBox_list
+                    and block["key"] not in searchableCylinder_list
+                    and block["key"] not in searchableSphere_list
+                    and block["key"] not in triSurface_list
+                ):
+                    continue
                 i = object_names.index(block["key"])
                 remainder_names.remove(block["key"])
-                e = block.find_element(
+                if block["key"] in searchableBox_list:
+                    self.grid.setCellValue(i, self.grid.TYPE, "BoxRefine")
+                elif block["key"] in searchableCylinder_list:
+                    self.grid.setCellValue(i, self.grid.TYPE, "CylinderRefine")
+                elif block["key"] in searchableSphere_list:
+                    self.grid.setCellValue(i, self.grid.TYPE, "SphereRefine")
+                else:
+                    self.grid.setCellValue(i, self.grid.TYPE, "SurfaceRefine")
+                levels = block.find_element(
                     [
-                        {"type": "dictionary", "key": "level"},
+                        {"type": "dictionary", "key": "levels"},
                         {"type": "list"},
-                        {"type": "integer"},
+                        {"type": "list"},
                     ]
                 )["element"]
+                if levels is None:
+                    continue
+                e = levels.find_element([{"type": "integer"}], reverse=True)[
+                    "element"
+                ]  # level
                 if e is not None:
                     self.grid.setCellValue(i, self.grid.LEVEL, e["value"])
-                e = block.find_element(
-                    [
-                        {"type": "block", "key": "patchInfo"},
-                        {"type": "dictionary", "key": "type"},
-                        {"type": "word"},
-                    ]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.TYPE, e["value"])
+                if block["key"] in triSurface_list:
+                    e = levels.find_element([{"type": "float|integer"}])[
+                        "element"
+                    ]  # distance
+                    if e is not None:
+                        self.grid.setCellValue(i, self.grid.RATIO, e["value"])
 
-        for block in castellatedMeshControls.find_all_elements(
-            [{"type": "block", "key": "refinementRegions"}, {"type": "block"}]
-        ):
-            block = block["element"]
-            if block["key"] not in object_names or (
-                block["key"] not in searchableBox_list
-                and block["key"] not in searchableCylinder_list
-                and block["key"] not in searchableSphere_list
-                and block["key"] not in triSurface_list
-            ):
-                continue
-            i = object_names.index(block["key"])
-            remainder_names.remove(block["key"])
-            if block["key"] in searchableBox_list:
-                self.grid.setCellValue(i, self.grid.TYPE, "BoxRefine")
-            elif block["key"] in searchableCylinder_list:
-                self.grid.setCellValue(i, self.grid.TYPE, "CylinderRefine")
-            elif block["key"] in searchableSphere_list:
-                self.grid.setCellValue(i, self.grid.TYPE, "SphereRefine")
-            else:
-                self.grid.setCellValue(i, self.grid.TYPE, "SurfaceRefine")
-            levels = block.find_element(
+            shape_prefix = f"{shape_name}_"
+            len_shape_prefix = len(shape_prefix)
+            for block in meshDict.find_all_elements(
                 [
-                    {"type": "dictionary", "key": "levels"},
-                    {"type": "list"},
-                    {"type": "list"},
+                    {"type": "block", "key": "addLayersControls"},
+                    {"type": "block", "key": "layers"},
+                    {"type": "block"},
                 ]
-            )["element"]
-            if levels is None:
-                continue
-            e = levels.find_element([{"type": "integer"}], reverse=True)[
-                "element"
-            ]  # level
-            if e is not None:
-                self.grid.setCellValue(i, self.grid.LEVEL, e["value"])
-            if block["key"] in triSurface_list:
-                e = levels.find_element([{"type": "float|integer"}])[
-                    "element"
-                ]  # distance
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.RATIO, e["value"])
-
-        shape_prefix = f"{shape_name}_"
-        len_shape_prefix = len(shape_prefix)
-        for block in meshDict.find_all_elements(
-            [
-                {"type": "block", "key": "addLayersControls"},
-                {"type": "block", "key": "layers"},
-                {"type": "block"},
-            ]
-        ):
-            block = block["element"]
-            name = block["key"][len_shape_prefix:]
-            if block["key"].startswith(shape_prefix) and name in object_names:
-                i = object_names.index(name)
-                e = block.find_element(
-                    [
-                        {"type": "dictionary", "key": "nSurfaceLayers"},
-                        {"type": "integer"},
-                    ]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.N_LAYERS, e["value"])
-                    self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-                e = block.find_element(
-                    [
-                        {"type": "dictionary", "key": "expansionRatio"},
-                        {"type": "float|integer"},
-                    ]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.RATIO, e["value"])
-
-        QtGui.QMessageBox.warning(
-            None,
-            "LocationInMesh",
-            "LocationInMeshが正しく指定されているかを確認して下さい．",
-            QtGui.QMessageBox.Close,
-        )
-
-        if os.path.isfile(setFieldsDict_path):
-            setFieldsDict = dictParse.DictParser(file_name=setFieldsDict_path)
-            if (
-                setFieldsDict.find_element(
-                    [
-                        {"type": "block", "key": "FoamFile"},
-                        {"type": "dictionary", "key": "object"},
-                        {"type": "word", "value": "setFieldsDict"},
-                    ]
-                )["element"]
-                is None
             ):
-                raise Exception(f"{setFieldsDict_path} is not a setFieldsDict file.")
+                block = block["element"]
+                name = block["key"][len_shape_prefix:]
+                if block["key"].startswith(shape_prefix) and name in object_names:
+                    i = object_names.index(name)
+                    e = block.find_element(
+                        [
+                            {"type": "dictionary", "key": "nSurfaceLayers"},
+                            {"type": "integer"},
+                        ]
+                    )["element"]
+                    if e is not None:
+                        self.grid.setCellValue(i, self.grid.N_LAYERS, e["value"])
+                        self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
+                    e = block.find_element(
+                        [
+                            {"type": "dictionary", "key": "expansionRatio"},
+                            {"type": "float|integer"},
+                        ]
+                    )["element"]
+                    if e is not None:
+                        self.grid.setCellValue(i, self.grid.RATIO, e["value"])
 
+        if setFieldsDict is not None:
             for block in setFieldsDict.find_all_elements(
                 [
                     {"type": "dictionary", "key": "regions"},
@@ -555,23 +526,8 @@ class MeshFrame(QtGui.QDialog):
                         self.grid.setCellValue(i, self.grid.TYPE, "CylinderSet")
                     else:
                         self.grid.setCellValue(i, self.grid.TYPE, "SphereSet")
-        else:
-            setFieldsDict = None
 
-        if os.path.isfile(topoSetDict_path):
-            topoSetDict = dictParse.DictParser(file_name=topoSetDict_path)
-            if (
-                topoSetDict.find_element(
-                    [
-                        {"type": "block", "key": "FoamFile"},
-                        {"type": "dictionary", "key": "object"},
-                        {"type": "word", "value": "topoSetDict"},
-                    ]
-                )["element"]
-                is None
-            ):
-                raise Exception(f"{topoSetDict_path} is not a topoSetDict file.")
-
+        if topoSetDict is not None:
             for block in topoSetDict.find_all_elements(
                 [
                     {"type": "dictionary", "key": "actions"},
@@ -598,15 +554,18 @@ class MeshFrame(QtGui.QDialog):
                     continue
                 remainder_names.remove(v)
                 self.grid.setCellValue(object_names.index(v), self.grid.TYPE, "BoxTopo")
-        else:
-            topoSetDict = None
 
         for i in remainder_names:
             self.grid.setCellValue(
                 object_names.index(i), self.grid.TYPE, "LocationInMesh"
             )
 
-        return meshDict, setFieldsDict, topoSetDict
+        QtGui.QMessageBox.warning(
+            None,
+            "LocationInMesh",
+            "LocationInMeshが正しく指定されているかを確認して下さい．",
+            QtGui.QMessageBox.Close,
+        )
 
     def actionOnExitButton(self):
         self.close()
@@ -656,8 +615,9 @@ class MyController:
             self.MeshFrame = MeshFrame(
                 controller=self,
                 freecad_objects=self.doc.Objects,
-                case_dir_path=os.path.dirname(self.doc.FileName),
-                max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)/60.0,
+                case_dir_path=os.path.dirname(self.doc.FileName),  # 絶対パス
+                max_cell_size=self.model.sumOfThreeEdgesOfCadObjects(self.doc.Objects)
+                / 60.0,
                 features_level=1,
                 feature_angle=MyController.FEATURE_ANGLE,
             )
@@ -670,7 +630,7 @@ class MyController:
             self.MeshFrame,
             "Choose a directory.",
             os.path.expanduser(os.path.join("~", "Desktop")),
-        )
+        )  # 絶対パス
         if dir_path != "":
             self.MeshFrame.caseDirST.setText(dir_path)
 
@@ -715,7 +675,7 @@ class MyController:
             == QtGui.QMessageBox.No
         ):
             return  # chtMultiRegionFoam（共役熱伝導解析）ではLocationInMeshが複数ある
-        case_dir_path = self.MeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()  # 絶対パス
         # (DEXCS2019を参考に) OpenFOAMのケースフォルダでない場合の処理を追加（2019/9/6）
         if not os.path.isdir(os.path.join(case_dir_path, "constant")):
             subprocess.run(
@@ -917,22 +877,47 @@ class MyController:
             os.chdir(cwd)
 
     def actionOnLoadButton(self):
-        case_dir_path = self.MeshFrame.caseDirST.text()
+        case_dir_path = self.MeshFrame.caseDirST.text()  # 絶対パス
         if not os.path.isdir(case_dir_path):
             return
-        try:
-            self.meshDict, self.setFieldsDict, self.topoSetDict = (
-                self.MeshFrame.setParamsFromDictFiles(
-                    os.path.join(case_dir_path, "system", "snappyHexMeshDict"),
-                    os.path.join(case_dir_path, "system", "setFieldsDict"),
-                    os.path.join(case_dir_path, "system", "topoSetDict"),
+
+        def dictParser(dict_path):
+            if os.path.isfile(dict_path) is None:
+                return None
+            d = dictParse.DictParser(file_name=dict_path)
+            name = os.path.basename(dict_path)
+            if (
+                d.find_element(
+                    [
+                        {"type": "block", "key": "FoamFile"},
+                        {"type": "dictionary", "key": "object"},
+                        {"type": "word", "value": f'"{name}"'},
+                    ]
+                )["element"]
+                is None
+            ):
+                QtGui.QMessageBox.critical(
+                    None,
+                    "Error",
+                    f"{d.file_name} is not a {name} file.",
+                    QtGui.QMessageBox.Close,
                 )
-            )
-        except Exception as e:
-            self.meshDict = None
-            self.setFieldsDict = None
-            self.topoSetDict = None
-            QtGui.QMessageBox.critical(None, "Error", str(e), QtGui.QMessageBox.Close)
+                return None
+            return d
+
+        self.meshDict = dictParser(
+            os.path.join(case_dir_path, "system", "snappyHexMeshDict")
+        )
+        self.setFieldsDict = dictParser(
+            os.path.join(case_dir_path, "system", "setFieldsDict")
+        )
+        self.topoSetDict = dictParser(
+            os.path.join(case_dir_path, "system", "topoSetDict")
+        )
+
+        self.MeshFrame.setParamsFromDictFiles(
+            self.meshDict, self.setFieldsDict, self.topoSetDict
+        )
 
     def actionOnEditButton(self):
         meshDict_path = os.path.join(
@@ -1088,10 +1073,10 @@ class MyModel:
         feature_angle,
         meshDict,
     ):
-        dict_path = os.path.join(case_dir_path, "system", "snappyHexMeshDict")
-        if os.path.isfile(dict_path):
-            shutil.copy(dict_path, f"{dict_path}_bak")
-        with open(dict_path, "w") as f:
+        meshDict_path = os.path.join(case_dir_path, "system", "snappyHexMeshDict")
+        if os.path.isfile(meshDict_path):
+            shutil.copy(meshDict_path, f"{meshDict_path}_bak")
+        with open(meshDict_path, "w") as f:
             f.write(
                 "FoamFile\n"
                 "{\n"
@@ -1968,7 +1953,7 @@ class MyModel:
             ):
                 f.write(f"\n{element['element'].file_string()}\n")
 
-        os.chmod(dict_path, 0o0666)
+        os.chmod(meshDict_path, 0o0666)
 
     @staticmethod
     def makeSetFieldsDict(case_dir_path, freecad_objects, grid, setFieldsDict):
