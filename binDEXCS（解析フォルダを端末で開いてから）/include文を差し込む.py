@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を差し込む.py
 # by Yukiharu Iwamoto
-# 2026/7/21 8:17:49 PM
+# 2026/9/23 11:16:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -20,8 +20,6 @@ from utilities import dictParse
 
 
 def append_include_sentence(dir_name, include_file_name):
-    if not os.path.isdir(dir_name):
-        return
     include_file_name = os.path.relpath(include_file_name, dir_name)
     if (
         re.match(r"[\x20-\x7E]+$", os.path.basename(include_file_name)) is None
@@ -108,7 +106,7 @@ if __name__ == "__main__":
     append_include_sentence(dir_name="constant", include_file_name=include_file)
     append_include_sentence(dir_name="system", include_file_name=include_file)
 
-    for d in glob.iglob(os.path.join("0", f"*{os.sep}")):
+    for d in glob.iglob(os.path.join("0", f"*{os.sep}")):  # マルチリージョン対応
         append_include_sentence(dir_name=d, include_file_name=include_file)
     for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):
         if os.path.isdir(os.path.join(d, "polyMesh")):
