@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/6/2 1:20:43 PM
+# 2026/9/23 11:23:33 PM
 
 # ---- オプションはない ----
 
@@ -16,6 +16,8 @@ from utilities import dictParse
 
 def append_patches(src, dst):
     src = os.path.join(src, "polyMesh", "boundary")
+    if not os.path.isfile(src):
+        return
     os.chmod(
         src, 0o0666
     )  # 誰でも（所有者・グループ・その他全員）読み書きができるが、実行権限（x）はない
@@ -189,16 +191,12 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # Ctrl+Cで終了
     misc.showDirForPresentAnalysis(__file__)
 
-    regions = []
-    for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):
-        if os.path.isdir(d + "polyMesh"):
-            regions.append(os.path.basename(d[: -len(os.sep)]))
-    if len(regions) == 0:
-        append_patches(src="constant", dst="0")
-    else:
-        for i in regions:
-            d = os.path.join("0", i)
-            if os.path.isdir(d):
-                append_patches(src=os.path.join("constant", i), dst=d)
+    append_patches(src="constant", dst="0")
+    for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):  # マルチリージョン対応
+        dst = os.path.join("0", os.path.basename(os.path.normpath(d)))
+        if os.path.isdir(dst):
+            append_patches(src=d, dst=dst)
+        else:
+            os.mkdir(dst)
 
     rmObjects.removeInessentials()
