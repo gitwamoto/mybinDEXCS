@@ -989,9 +989,9 @@ class MyModel:
                     (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None
                 )
                 if i[grid.TYPE] == "SurfaceRefine":
-                    name = os.path.join(os.path.dirname(file_path), i[grid.OBJECT_NAME])
-                    Mesh.export([obj], f"{name}.ast")  # ascii format
-                    os.rename(f"{name}.ast", f"{name}.stl")  # can overwrite
+                    file_name = os.path.join(os.path.dirname(file_path), i[grid.OBJECT_NAME])
+                    Mesh.export([obj], f"{file_name}.ast")  # ascii format
+                    os.rename(f"{file_name}.ast", f"{file_name}.stl")  # can overwrite
                 else:
                     Mesh.export([obj], tmp_stl)
                     # ascii stlフォーマット
