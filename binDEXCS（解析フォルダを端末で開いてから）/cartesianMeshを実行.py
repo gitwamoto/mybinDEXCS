@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/9/20 7:56:05 PM
+# 2026/9/28 12:38:40 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -13,6 +13,8 @@
 # -d domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
 # -f front_name -> 【-2オプションがある時のみ有効】(zが大きい)前側patchの名前をfront_nameにする．
 #                  このオプションがない場合，frontという名前になる．
+# -l 'fluid1 fluid2' -> 【マルチリージョン解析時のみ有効】流体側の領域名全てを'fluid1 fluid2'のように
+#                        引用符で囲んだスペース区切りで指定する．
 # -p -> paraFoamを実行する
 
 import os
@@ -275,6 +277,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         interactive = True
     else:
+        fluid_regions = []
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == "-N":  # Non-interactive
@@ -290,6 +293,9 @@ if __name__ == "__main__":
             elif sys.argv[i] == "-f":
                 i += 1
                 front_name = sys.argv[i]
+            elif sys.argv[i] == "-l":
+                i += 1
+                fluid_regions.extend(sys.argv[i].split())
             elif sys.argv[i] == "-p":
                 exec_paraFoam = True
             i += 1
@@ -357,17 +363,43 @@ if __name__ == "__main__":
 
     if os.path.isdir(cases_path):
         # glob.iglob() は、デフォルトでは現在の作業ディレクトリ（カレントディレクトリ）からの相対パスを基準にイテレーターを保持して評価します。
+        regions = []
         for c in glob.iglob(os.path.join(cases_path, f"*{os.sep}")):
             os.chdir(c)
             misc.execCheckMesh()
             rmObjects.removeInessentials()
             os.chdir(cwd)
-            dst = os.path.join(cwd, "constant", os.path.basename(os.path.normpath(c)))
+            r = os.path.basename(os.path.normpath(c))
+            regions.append(r)
+            dst = os.path.join(cwd, "constant", r)
             os.makedirs(dst, exist_ok=True)
             dst_polyMesh = os.path.join(dst, "polyMesh")
             if os.path.isdir(dst_polyMesh):
                 shutil.rmtree(dst_polyMesh)
             shutil.move(os.path.join(cwd, c, "constant", "polyMesh"), dst)
+        regions = sorted(regions)
+        if interactive:
+            fluid_regions = input(
+                " ".join(regions)
+                + " の中から，流体側の領域名全てをスペース区切りで指定して下さい． > "
+            ).split()
+        solid_regions = sorted(set(regions) - set(fluid_regions))  # list
+        with open(regionProperties_path, "w") as f:
+            f.write(
+                "FoamFile\n"
+                "{\n"
+                "\tversion\t2.0;\n"
+                "\tformat\tascii;\n"
+                "\tclass\tdictionary;\n"
+                '\tlocation\t"constant";\n'
+                "\tobject\tregionProperties;\n"
+                "}\n"
+                "regions\n"
+                "(\n"
+                f"\tsolid\t({' '.join(solid_regions)})\n"
+                f"\tfluid\t({' '.join(fluid_regions)})\n"
+                ");\n"
+            )
     else:
         misc.execCheckMesh()
         rmObjects.removeInessentials()
