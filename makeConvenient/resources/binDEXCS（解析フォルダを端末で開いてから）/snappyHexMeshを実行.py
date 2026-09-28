@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/9/20 5:09:04 PM
+# 2026/9/28 12:22:50 PM
 
 # ---- オプション ----
-# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
+# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
 # -N -> 非インタラクティブモードで実行
-# -2 cartesian2DMeshで2次元メッシュを作る．empty境界はx-y平面に平行でなければならない
+# -2 cartesian2DMeshで2次元メッシュを作る．empty境界はx-y平面に平行でなければならない．
 # -b back_name -> 【-2オプションがある時のみ有効】(zが大きい)後側patchの名前をback_nameにする．
 #                 このオプションがない場合，backという名前になる．
 # -d domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
@@ -16,7 +16,7 @@
 # -l 'fluid1 fluid2' -> 【マルチリージョン解析時のみ有効】流体側の領域名全てを'fluid1 fluid2'のように
 #                        引用符で囲んだスペース区切りで指定する．
 #                        snappyHexMeshDictのlocationsInMeshに書いた名前が領域名になる．
-# -p -> paraFoamを実行する
+# -p -> paraFoamを実行する．
 
 import os
 import sys
@@ -471,7 +471,7 @@ if __name__ == "__main__":
             ]
         )["element"]
         is not None
-    ):
+    ):  # マルチリージョンの場合
         for i in glob.iglob(os.path.join("constant", f"*{os.sep}")):
             i += "polyMesh"  # i/polyMeshというパスのフォルダがあるはず
             if os.path.isdir(i):
@@ -579,7 +579,7 @@ if __name__ == "__main__":
                     )  # can overwrite
                     shutil.copy(os.path.join("system", "fvSchemes"), r)  # can overwrite
         misc.correctLocation()
-    elif os.path.isfile(regionProperties_path):
+    elif os.path.isfile(regionProperties_path):  # マルチリージョンでない場合
         os.remove(regionProperties_path)
 
     if not two_dimensional:

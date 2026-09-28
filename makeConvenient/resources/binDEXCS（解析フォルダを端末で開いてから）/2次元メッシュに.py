@@ -5,13 +5,13 @@
 # 2026/9/20 5:08:52 PM
 
 # ---- オプション ----
-# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
+# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
 # -N -> 非インタラクティブモードで実行
-# -b back_name -> 後側patchの名前をback_nameにする．このオプションがない場合はbackと言う名前になる
-# -f front_name -> 前側patchの名前をfront_nameにする．このオプションがない場合はfrontと言う名前になる
-# -p -> paraFoamを実行する
-# -s -> constant/polyMesh/boundaryに // converted millimeter into meter と書かれていない時にメッシュの長さを1/1000倍する
-# -w -> wedge境界にする
+# -b back_name -> 後側patchの名前をback_nameにする．このオプションがない場合はbackと言う名前になる．
+# -f front_name -> 前側patchの名前をfront_nameにする．このオプションがない場合はfrontと言う名前になる．
+# -p -> paraFoamを実行する．
+# -s -> constant/polyMesh/boundaryに // converted millimeter into meter と書かれていない時にメッシュの長さを1/1000倍する．
+# -w -> wedge境界にする．
 
 import os
 import sys

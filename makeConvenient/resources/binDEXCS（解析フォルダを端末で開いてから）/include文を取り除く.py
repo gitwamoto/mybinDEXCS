@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # include文を取り除く.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:29:58 PM
+# 2026/9/23 11:23:41 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -20,8 +20,6 @@ from utilities import dictParse
 
 
 def remove_include_sentence(dir_name, include_file_name, ignore_path):
-    if not os.path.isdir(dir_name):
-        return
     include_file_name = (
         re.sub(r"^(?:\.\./)+", "", include_file_name)
         if ignore_path
@@ -105,7 +103,7 @@ if __name__ == "__main__":
         dir_name="system", include_file_name=include_file, ignore_path=ignore_path
     )
 
-    for d in glob.iglob(os.path.join("0", f"*{os.sep}")):
+    for d in glob.iglob(os.path.join("0", f"*{os.sep}")):  # マルチリージョン対応
         remove_include_sentence(
             dir_name=d, include_file_name=include_file, ignore_path=ignore_path
         )

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/9/22 5:58:23 PM
+# 2026/9/28 12:26:05 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -25,33 +25,6 @@ cases_path = "cases_for_cfmesh"
 pat_region_boundary = re.compile(  # マルチリージョン解析の時の領域境界名のパターン
     "(?P<region_from>(?:(?!__).)+)__to__(?P<region_to>(?:(?!__).)+)(?P<number>__[0-9]+)?"
 )
-
-# 解析フォルダの中にcasesというフォルダを作り，そこに領域ごとに領域名を名前にした領域フォルダを作る．
-# 領域フォルダの中には
-# 領域名/system/controlDict
-# 領域名/system/meshDict
-# があれば良い．
-#
-# mkdir -p cases_for_cfmesh/領域名/system
-# cp -r system/controlDict cases_for_cfmesh/領域名/system
-# cartesianMesh -case cases_for_cfmesh/領域名
-# rm cases_for_cfmesh/領域名/system/controlDict
-# mkdir -p constant/領域名
-# mv cases_for_cfmesh/領域名/constant/polyMesh constant/領域名
-# rm -r cases_for_cfmesh/領域名/constant
-# を全ての領域に対して実行する．
-#
-# constant/領域名/polyMesh/boundaryで
-# 領域境界ブロックの中にあるtypeを
-# type mappedWall;
-# に改め，
-# sampleMode nearestPatchFaceAMI;
-# sampleRegion 相手の領域名;
-# samplePatch 相手のパッチ名;
-# を追加する．
-#
-# cartesianMeshを実行.pyの中で，cases_for_cfmeshフォルダがあるかどうかで操作を変えるようにしたいので，
-# cases_for_cfmeshフォルダは残す．
 
 
 class FreeCadFileGrid(QtGui.QTableWidget):
@@ -946,15 +919,24 @@ class MyModel:
                     "CylinderTopo",
                     "SphereTopo",
                     "N/A",
-                ) or any(i[grid.OBJECT_NAME].startswith(j) for j in exclusive_headers):
+                ):
                     continue
-                obj = next(
-                    (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None
-                )
+                obj_name = i[grid.OBJECT_NAME]
+                if any(obj_name.startswith(j) for j in exclusive_headers):
+                    m = pat_region_boundary.match(obj_name)
+                    if m is None:
+                        continue
+                    obj_name = (
+                        f"{m['region_to']}__to__{m['region_from']}"
+                        f"{'' if m['number'] is None else m['number']}"
+                    )
+                    if any(obj_name.startswith(j) for j in exclusive_headers):
+                        continue
+                obj = next((j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None)
                 if i[grid.TYPE] == "SurfaceRefine":
-                    name = os.path.join(os.path.dirname(file_path), i[grid.OBJECT_NAME])
-                    Mesh.export([obj], f"{name}.ast")  # ascii format
-                    os.rename(f"{name}.ast", f"{name}.stl")  # can overwrite
+                    file_name = os.path.join(os.path.dirname(file_path), obj_name)
+                    Mesh.export([obj], f"{file_name}.ast")  # ascii format
+                    os.rename(f"{file_name}.ast", f"{file_name}.stl")  # can overwrite
                 else:
                     # ascii stlフォーマット
                     # solid 任意の文字列
@@ -971,9 +953,9 @@ class MyModel:
                     Mesh.export([obj], tmp_stl)
                     for line in open(tmp_stl, "r"):
                         if "endsolid" in line:
-                            f.write(f"endsolid {i[grid.OBJECT_NAME]}\n")
+                            f.write(f"endsolid {obj_name}\n")
                         elif "solid" in line:
-                            f.write(f"solid {i[grid.OBJECT_NAME]}\n")
+                            f.write(f"solid {obj_name}\n")
                         else:
                             f.write(line)
                             if line.lstrip().startswith("vertex"):
@@ -1495,7 +1477,7 @@ class MyModel:
 
             f.write("\nrenameBoundary\n{\n\tnewPatchNames\n\t{\n")
             for i in grid.table:
-                if i[grid.TYPE] not in (
+                if i[grid.TYPE] in (
                     "BoxRefine",
                     "CylinderRefine",
                     "SphereRefine",
@@ -1507,16 +1489,26 @@ class MyModel:
                     "CylinderTopo",
                     "SphereTopo",
                     "N/A",
-                ) and not any(
-                    i[grid.OBJECT_NAME].startswith(j) for j in exclusive_headers
                 ):
-                    f.write(
-                        f"\t\t{i[grid.OBJECT_NAME]}\n"
-                        "\t\t{\n"
-                        f"\t\t\tnewName\t{i[grid.OBJECT_NAME]};\n"
-                        f"\t\t\ttype\t{i[grid.TYPE]};\n"
-                        "\t\t}\n"
+                    continue
+                obj_name = i[grid.OBJECT_NAME]
+                if any(obj_name.startswith(j) for j in exclusive_headers):
+                    m = pat_region_boundary.match(obj_name)
+                    if m is None:
+                        continue
+                    obj_name = (
+                        f"{m['region_to']}__to__{m['region_from']}"
+                        f"{'' if m['number'] is None else m['number']}"
                     )
+                    if any(obj_name.startswith(j) for j in exclusive_headers):
+                        continue
+                f.write(
+                    f"\t\t{obj_name}\n"
+                    "\t\t{\n"
+                    f"\t\t\tnewName\t{obj_name};\n"
+                    f"\t\t\ttype\t{i[grid.TYPE]};\n"
+                    "\t\t}\n"
+                )
             f.write(
                 "\t}\n"  # newPatchNames
                 "}\n"
