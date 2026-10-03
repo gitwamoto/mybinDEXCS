@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/9/20 6:43:34 PM
+# 2026/10/2 3:55:16 PM
 
 import glob
 import os
@@ -455,11 +455,11 @@ def correctLocation():
         if location is not None:
             i = location.find_element([{"except type": "ignorable"}])
             i["parent"][i["index"] : i["index"] + 1] = dictParse.DictParser(
-                string='"' + os.path.dirname(file_name) + '"'
+                string=f'"{os.path.dirname(file_name)}"'
             )["value"]
         string = dictParse.normalize(string=parser.file_string())[0]
         if parser.string != string:
-            #            os.rename(file_name, f'{file_name}_bak')
+#            os.rename(file_name, f'{file_name}_bak')
             with open(file_name, "w") as f:
                 f.write(string)
 
