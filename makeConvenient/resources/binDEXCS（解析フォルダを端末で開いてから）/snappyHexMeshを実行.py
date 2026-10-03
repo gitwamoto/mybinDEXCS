@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/9/28 12:22:50 PM
+# 2026/10/3 7:35:32 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -433,7 +433,7 @@ if __name__ == "__main__":
         os.rename(snappyHexMeshDict_3D_path, snappyHexMeshDict_path)  # can overwrite
 
     if geometry_stl_name is not None:
-        prefix = geometry_stl_name + "_"
+        prefix = f"{geometry_stl_name}_"
         len_prefix = len(prefix)
         boundary_path = os.path.join("constant", "polyMesh", "boundary")
         boundary = dictParse.DictParser(file_name=boundary_path)
@@ -476,10 +476,11 @@ if __name__ == "__main__":
             i += "polyMesh"  # i/polyMeshというパスのフォルダがあるはず
             if os.path.isdir(i):
                 shutil.rmtree(i)
+
         if os.path.isdir("0"):
             shutil.move("0", "0_bak")
         if misc.execCommand(["splitMeshRegions", "-cellZones", "-overwrite"])[1] != 0:
-            # 0/
+            # 0/ <-- 0フォルダがなかったら自動的に作られる．
             # +-- regionA/
             # |   +-- cellToregion
             # +-- regionB/
@@ -487,6 +488,7 @@ if __name__ == "__main__":
             # :
             # +-- cellToregion
             sys.exit(1)
+
         regions = sorted(
             [
                 os.path.basename(os.path.dirname(i))
@@ -516,69 +518,75 @@ if __name__ == "__main__":
                 f"\tfluid\t({' '.join(fluid_regions)})\n"
                 ");\n"
             )
+
         for i0_bak in glob.iglob(os.path.join("0_bak", "*")):
-            i_name = os.path.basename(i0_bak)
-            i0 = os.path.join("0", i_name)
-            if os.path.isfile(i0_bak) and i_name != "cellToRegion":
-                if os.path.isfile(
-                    i0
-                ):  # i0 = 0/i_nameというパスを持つファイルまたはフォルダを消す
+            i0_bak_basename = os.path.basename(i0_bak)
+            i0 = os.path.join("0", i0_bak_basename)
+            if os.path.isfile(i0_bak) and i0_bak_basename != "cellToRegion":
+                if os.path.isfile(i0):
                     os.remove(i0)
                 elif os.path.isdir(i0):
                     os.rmtree(i0)
-                shutil.move(i0_bak, "0")  # can't overwrite, 0_bak/i_name -> 0/i_name
+                shutil.move(i0_bak, "0")  # can't overwrite
                 parser = dictParse.DictParser(file_name=i0)  # i0 is file
                 for i in parser.find_all_elements(
                     [{"type": "directive", "key": "#include"}]
                 ):
                     n = i["element"].find_element([{"type": "string"}])["element"]
                     if n["value"].startswith('"../'):
-                        n["value"] = '"../' + n["value"][1:]
+                        n["value"] = f'"../{n["value"][1:]}'
                 string = dictParse.normalize(string=parser.file_string())[0]
                 for r in regions:
                     if not os.path.isdir(os.path.join("0_bak", r)):
-                        with open(os.path.join("0", r, i_name)) as f:
+                        with open(os.path.join("0", r, i0_bak_basename), "w") as f:
                             f.write(string)
             elif os.path.isdir(i0_bak) and os.path.isdir(i0):
                 for j0_bak in glob.iglob(os.path.join(i0_bak, "*")):
-                    j_name = os.path.basename(j0_bak)
-                    j0 = os.path.join(i0, j_name)
-                    if os.path.isfile(
-                        j0
-                    ):  # j0 = 0_bak/i_name/jnameというパスを持つファイルまたはフォルダを消す
+                    j0_bak_basename = os.path.basename(j0_bak)
+                    j0 = os.path.join(i0, j0_bak_basename)
+                    if os.path.isfile(j0):
                         os.remove(j0)
                     elif os.path.isdir(j0):
                         os.rmtree(j0)
-                    shutil.move(
-                        j0_bak, i0
-                    )  # can't overwrite, 0_bak/i_name/jname -> 0/i_name/j_name
-        shutil.rmtree("0_bak")
-        for r in glob.iglob(os.path.join("system", f"*{os.sep}")):
-            # system/
-            # +-- regionA/
-            # |   +-- fvSolution
-            # |   +-- fvSchemes
-            # +-- regionB/
-            # |   +-- fvSolution
-            # :   +-- fvSchemes
-            fvSolution_path = os.path.join(r, "fvSolution")
-            if os.path.isfile(fvSolution_path):
-                parser = dictParse.DictParser(file_name=fvSolution_path)
-                contents = parser.find_all_elements(
-                    [{"except type": "ignorable|separator"}]
-                )
-                for c in contents:
-                    if (
-                        c["element"]["type"] == "block"
-                        and c["element"]["key"] == "FoamFile"
-                    ):
-                        del c["parent"][c["index"]]
-                if len(contents) == 0:
-                    shutil.copy(
-                        os.path.join("system", "fvSolution"), r
-                    )  # can overwrite
-                    shutil.copy(os.path.join("system", "fvSchemes"), r)  # can overwrite
+                    shutil.move(j0_bak, i0)  # can't overwrite
+        if os.path.isdir("0_bak"):
+            shutil.rmtree("0_bak")
+
+        for fv in ("fvSolution", "fvSchemes"):
+            sfv = os.path.join("system", fv)
+            if os.path.isfile(sfv):
+                parser = dictParse.DictParser(file_name=sfv)
+                for i in parser.find_all_elements(
+                    [{"type": "directive", "key": "#include"}]
+                ):
+                    n = i["element"].find_element([{"type": "string"}])["element"]
+                    if n["value"].startswith('"../'):
+                        n["value"] = f'"../{n["value"][1:]}'
+                string = dictParse.normalize(string=parser.file_string())[0]
+                for r in glob.iglob(os.path.join("system", f"*{os.sep}")):
+                    # system/
+                    # +-- regionA/
+                    # |   +-- fvSolution
+                    # |   +-- fvSchemes
+                    # +-- regionB/
+                    # |   +-- fvSolution
+                    # :   +-- fvSchemes
+                    p = os.path.join(r, fv)
+                    if os.path.isfile(p):
+                        parser = dictParse.DictParser(file_name=p)
+                        contents = parser.find_all_elements(
+                            [{"except type": "ignorable|separator"}]
+                        )
+                        if all(
+                            c["element"]["type"] == "block"
+                            and c["element"]["key"] == "FoamFile"
+                            for c in contents
+                        ):  # 領域フォルダ内のファイルの中身が空の場合
+                            with open(p, "w") as f:
+                                f.write(string)
+
         misc.correctLocation()
+
     elif os.path.isfile(regionProperties_path):  # マルチリージョンでない場合
         os.remove(regionProperties_path)
 

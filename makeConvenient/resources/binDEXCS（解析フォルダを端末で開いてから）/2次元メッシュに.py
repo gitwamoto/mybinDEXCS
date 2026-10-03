@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2次元メッシュに.py
 # by Yukiharu Iwamoto
-# 2026/9/20 5:08:52 PM
+# 2026/10/3 7:33:09 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -163,8 +163,7 @@ if __name__ == "__main__":
                 else False
             )
 
-    if not os.path.isdir("system"):
-        os.mkdir("system")
+    os.makedirs("system", exist_ok=True)
     makeExtrudeMeshDict(z_front - z_back, front_name, back_name, wedge)
 
     if (

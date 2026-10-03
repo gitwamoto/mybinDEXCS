@@ -5,9 +5,9 @@
 # 2026/9/28 12:38:40 PM
 
 # ---- オプション ----
-# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
+# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
 # -N -> 非インタラクティブモードで実行
-# -2 cartesian2DMeshで2次元メッシュを作る．emptyのpatchはx-y平面に平行でなければならない
+# -2 cartesian2DMeshで2次元メッシュを作る．emptyのpatchはx-y平面に平行でなければならない．
 # -b back_name -> 【-2オプションがある時のみ有効】(zが大きい)後側patchの名前をback_nameにする．
 #                 このオプションがない場合，backという名前になる．
 # -d domains -> 計算領域をdomains個に分割して並列計算を行う，1だと普通の計算
@@ -223,7 +223,7 @@ def cartesianMesh():
                     mappedWall_treatment(boundary)
                     string = dictParse.normalize(string=boundary.file_string())[0]
                     if boundary.string != string:
-#                        os.rename(boundary_path, f'{boundary_path}_bak')
+                        #                        os.rename(boundary_path, f'{boundary_path}_bak')
                         with open(boundary_path, "w") as f:
                             f.write(string)
             succeed = (
@@ -260,7 +260,7 @@ def cartesianMesh():
     mappedWall_treatment(boundary)
     string = dictParse.normalize(string=boundary.file_string())[0]
     if boundary.string != string:
-#            os.rename(boundary_path, f'{boundary_path}_bak')
+        #            os.rename(boundary_path, f'{boundary_path}_bak')
         with open(boundary_path, "w") as f:
             f.write(string)
 
@@ -301,7 +301,7 @@ if __name__ == "__main__":
             i += 1
 
     cwd = os.getcwd()  # 絶対パス
-    if os.path.isdir(cases_path):
+    if os.path.isdir(cases_path):  # マルチリージョンの場合
         # glob.iglob() は、デフォルトでは現在の作業ディレクトリ（カレントディレクトリ）からの相対パスを基準にイテレーターを保持して評価します。
         for c in glob.iglob(os.path.join(cases_path, f"*{os.sep}")):
             os.chdir(c)
@@ -352,7 +352,7 @@ if __name__ == "__main__":
             )
     domains = min(domains, threads)
 
-    if os.path.isdir(cases_path):
+    if os.path.isdir(cases_path):  # マルチリージョンの場合
         # glob.iglob() は、デフォルトでは現在の作業ディレクトリ（カレントディレクトリ）からの相対パスを基準にイテレーターを保持して評価します。
         for c in glob.iglob(os.path.join(cases_path, f"*{os.sep}")):
             os.chdir(c)
@@ -361,7 +361,8 @@ if __name__ == "__main__":
     else:
         cartesianMesh()
 
-    if os.path.isdir(cases_path):
+    regionProperties_path = os.path.join("constant", "regionProperties")
+    if os.path.isdir(cases_path):  # マルチリージョンの場合
         # glob.iglob() は、デフォルトでは現在の作業ディレクトリ（カレントディレクトリ）からの相対パスを基準にイテレーターを保持して評価します。
         regions = []
         for c in glob.iglob(os.path.join(cases_path, f"*{os.sep}")):
@@ -378,6 +379,7 @@ if __name__ == "__main__":
                 shutil.rmtree(dst_polyMesh)
             shutil.move(os.path.join(cwd, c, "constant", "polyMesh"), dst)
         regions = sorted(regions)
+
         if interactive:
             fluid_regions = input(
                 " ".join(regions)
@@ -400,10 +402,76 @@ if __name__ == "__main__":
                 f"\tfluid\t({' '.join(fluid_regions)})\n"
                 ");\n"
             )
-    else:
+
+        if os.path.isdir("0"):
+            shutil.move("0", "0_bak")
+        os.mkdir("0")
+        for r in regions:
+            os.path.mkdir(os.path.join("0", r))
+        for i0_bak in glob.iglob(os.path.join("0_bak", "*")):
+            i0_bak_basename = os.path.basename(i0_bak)
+            i0 = os.path.join("0", i0_bak_basename)
+            if os.path.isfile(i0_bak):
+                shutil.move(i0_bak, "0")  # can't overwrite
+                parser = dictParse.DictParser(file_name=i0)  # i0 is file
+                for i in parser.find_all_elements(
+                    [{"type": "directive", "key": "#include"}]
+                ):
+                    n = i["element"].find_element([{"type": "string"}])["element"]
+                    if n["value"].startswith('"../'):
+                        n["value"] = f'"../{n["value"][1:]}'
+                string = dictParse.normalize(string=parser.file_string())[0]
+                for r in regions:
+                    if not os.path.isdir(os.path.join("0_bak", r)):
+                        with open(os.path.join("0", r, i0_bak_basename), "w") as f:
+                            f.write(string)
+            elif os.path.isdir(i0_bak):
+                for j0_bak in glob.iglob(os.path.join(i0_bak, "*")):
+                    j0_bak_basename = os.path.basename(j0_bak)
+                    j0 = os.path.join(i0, j0_bak_basename)
+                    if os.path.isfile(j0):
+                        os.remove(j0)
+                    elif os.path.isdir(j0):
+                        os.rmtree(j0)
+                    shutil.move(j0_bak, i0)  # can't overwrite
+        if os.path.isdir("0_bak"):
+            shutil.rmtree("0_bak")
+
+        for r in regions:
+            os.makedirs(os.path.join("system", r), exist_ok=True)
+        for fv in ("fvSolution", "fvSchemes"):
+            sfv = os.path.join("system", fv)
+            if os.path.isfile(sfv):
+                parser = dictParse.DictParser(file_name=sfv)
+                for i in parser.find_all_elements(
+                    [{"type": "directive", "key": "#include"}]
+                ):
+                    n = i["element"].find_element([{"type": "string"}])["element"]
+                    if n["value"].startswith('"../'):
+                        n["value"] = f'"../{n["value"][1:]}'
+                string = dictParse.normalize(string=parser.file_string())[0]
+                for r in glob.iglob(os.path.join("system", f"*{os.sep}")):
+                    p = os.path.join(r, fv)
+                    if os.path.isfile(p):
+                        parser = dictParse.DictParser(file_name=p)
+                        contents = parser.find_all_elements(
+                            [{"except type": "ignorable|separator"}]
+                        )
+                        if all(
+                            c["element"]["type"] == "block"
+                            and c["element"]["key"] == "FoamFile"
+                            for c in contents
+                        ):  # 領域フォルダ内のファイルの中身が空の場合
+                            with open(p, "w") as f:
+                                f.write(string)
+
+        misc.correctLocation()
+
+    else:  # マルチリージョンでない場合
+        if os.path.isfile(regionProperties_path):
+            os.remove(regionProperties_path)
         misc.execCheckMesh()
         rmObjects.removeInessentials()
-        cartesianMesh()
 
     if interactive:
         exec_paraFoam = (

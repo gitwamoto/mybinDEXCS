@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 時間平均流れ場を作る.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:32:53 PM
+# 2026/10/3 7:35:01 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
@@ -207,8 +207,7 @@ if __name__ == "__main__":
     # https://develop.openfoam.com/Development/openfoam/-/tree/maintenance-v1906/src/functionObjects/field/fieldAverage
     command_string = f"Exec: {misc.execPostProcess(time_begin, time_end, noZero)}\n"
 
-    if not os.path.isdir("postProcessing"):
-        os.mkdir("postProcessing")
+    os.makedirs("postProcessing", exist_ok=True)
     with open(fieldAverage_related_files_txt, "w") as f:
         for properties in properties_list:
             f.write(properties + "\n")
