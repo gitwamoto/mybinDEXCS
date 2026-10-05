@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/9/28 12:26:05 PM
+# 2026/10/5 11:17:55 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -13,6 +13,7 @@ import Mesh
 import re
 import sys
 import subprocess
+import glob
 
 binDEXCS_path = os.path.expanduser(
     "~/Desktop/binDEXCS（解析フォルダを端末で開いてから）"
@@ -247,7 +248,11 @@ class MeshFrame(QtGui.QDialog):
         box_V.addWidget(
             QtGui.QLabel(
                 "※ 上の表は全ての可視オブジェクトを含んでいます.\n"
-                "     可視性（Visibility）を切り替えるには，オブジェクトを選んだ後でスペースキーを押します．"
+                "     可視性（Visibility）を切り替えるには，オブジェクトを選んだ後でスペースキーを押します．\n"
+                "※ マルチリージョン解析の場合，以下のルールでOjbectNameを決めて下さい：\n"
+                "    mappedWall以外で，1つだけの領域に含めたい場合 → 領域名__物体名\n"
+                "    mappedWallの場合 → 自分の領域名__to__相手の領域    または    自分の領域名__to__相手の領域名__数字\n"
+                "       ※ 相手の領域名__to__自分の領域名 の境界は自動で作成されます．"
             )
         )
 
@@ -314,9 +319,9 @@ class MeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParamsFromDictFiles(self, meshDict, setFieldsDict, topoSetDict):
+    def setParamsFromDictFiles(self, meshDict, setFieldsDict, topoSetDict, first=True):
         if meshDict is None and setFieldsDict is None and topoSetDict is None:
-            return
+            return True  # still the first time
 
         if meshDict is not None:
             e = meshDict.find_element(
@@ -348,7 +353,8 @@ class MeshFrame(QtGui.QDialog):
                 self.featureAngleCRL.setText(e["value"])
 
             object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
-            remainder_names = object_names[:]
+            if first:
+                self.remainder_names = object_names[:]
 
             for block in meshDict.find_all_elements(
                 [
@@ -360,7 +366,7 @@ class MeshFrame(QtGui.QDialog):
                 block = block["element"]
                 if block["key"] not in object_names:
                     continue
-                remainder_names.remove(block["key"])
+                self.remainder_names.remove(block["key"])
                 v = block.find_element(
                     [{"type": "dictionary", "key": "type"}, {"type": "word"}]
                 )["element"]["value"]
@@ -417,7 +423,7 @@ class MeshFrame(QtGui.QDialog):
                 [{"type": "block", "key": "objectRefinements"}, {"type": "block"}]
             ):
                 block = block["element"]
-                remainder_names.remove(block["key"])
+                self.remainder_names.remove(block["key"])
                 i = object_names.index(block["key"])
                 e = block.find_element(
                     [
@@ -444,7 +450,7 @@ class MeshFrame(QtGui.QDialog):
                 block = block["element"]
                 if block["key"] not in object_names:
                     continue
-                remainder_names.remove(block["key"])
+                self.remainder_names.remove(block["key"])
                 i = object_names.index(block["key"])
                 e = block.find_element(
                     [
@@ -464,7 +470,7 @@ class MeshFrame(QtGui.QDialog):
                 if e is not None:
                     self.grid.setCellValue(i, self.grid.RATIO, e["value"])
 
-        if setFieldsDict is not None:
+        if first and setFieldsDict is not None:
             for block in setFieldsDict.find_all_elements(
                 [
                     {"type": "dictionary", "key": "regions"},
@@ -481,7 +487,7 @@ class MeshFrame(QtGui.QDialog):
                 for i, obj in enumerate(object_names):
                     if obj not in comment["value"]:
                         continue
-                    remainder_names.remove(obj)
+                    self.remainder_names.remove(obj)
                     if block["key"] == "boxToCell":
                         self.grid.setCellValue(i, self.grid.TYPE, "BoxSet")
                     elif block["key"] == "cylinderToCell":
@@ -489,7 +495,7 @@ class MeshFrame(QtGui.QDialog):
                     else:
                         self.grid.setCellValue(i, self.grid.TYPE, "SphereSet")
 
-        if topoSetDict is not None:
+        if first and topoSetDict is not None:
             for block in topoSetDict.find_all_elements(
                 [
                     {"type": "dictionary", "key": "actions"},
@@ -514,11 +520,13 @@ class MeshFrame(QtGui.QDialog):
                     != "rotatedBoxToCell"
                 ):
                     continue
-                remainder_names.remove(v)
+                self.remainder_names.remove(v)
                 self.grid.setCellValue(object_names.index(v), self.grid.TYPE, "BoxTopo")
 
-        for i in remainder_names:
+        for i in self.remainder_names:
             self.grid.setCellValue(object_names.index(i), self.grid.TYPE, "N/A")
+
+        return False  # not the first time
 
     def actionOnExitButton(self):
         self.close()
@@ -541,7 +549,7 @@ class MyController:
 
         self.doc = App.ActiveDocument
         self.model = MyModel()
-        self.meshDict_loaded = False
+        self.meshDict = {"": None}
         self.setFieldsDict = None
         self.topoSetDict = None
         if self.doc.FileName == "":
@@ -553,7 +561,13 @@ class MyController:
             )
             return
         for obj in self.doc.Objects:
-            if obj.ViewObject.Visibility and hasattr(obj, "Shape"):
+            if (
+                obj.ViewObject.Visibility
+                and hasattr(obj, "Shape")
+                and "PartDesign::"
+                not in obj.TypeId  # Bodyや押し出しなどのフィーチャーを排除
+                and not hasattr(obj, "Role")  # 軸や原点を排除
+            ):
                 obj.Label = obj.Label.strip()
                 l = obj.Label
                 obj.Label = re.sub("^([0-9])", r"_\1", l.replace(" ", "_"))
@@ -573,24 +587,6 @@ class MyController:
                 / 60.0,
                 feature_angle=MyController.FEATURE_ANGLE,
             )
-
-            self.regions = []  # マルチリージョンかの判定
-            for i in self.MeshFrame.grid.table:
-                if i[self.MeshFrame.grid.TYPE] == "mappedWall":
-                    m = MyModel.pat_region_boundary.match(
-                        i[self.MeshFrame.grid.OBJECT_NAME]
-                    )
-                    if m is None:
-                        QtGui.QMessageBox.critical(
-                            None,
-                            "mappedWallの名前の付け方",
-                            "mappedWallの名前の付け方は，以下のどちらかだけが許されます．__は_が2つです：\n"
-                            "  自分の領域名__to__相手の領域名\n"
-                            "  自分の領域名__to__相手の領域名__数字\n",
-                            QtGui.QMessageBox.Close,
-                        )
-                        return
-                    self.regions.append(m["region_from"])
         except Exception:
             return
         self.MeshFrame.show()
@@ -614,7 +610,7 @@ class MyController:
             QtGui.QMessageBox.critical(
                 None,
                 "エラー",
-                f"{self.MeshFrame.caseDirST.text()}はフォルダではありません.",
+                f"{self.MeshFrame.caseDirST.text()}はフォルダではありません．",
                 QtGui.QMessageBox.Close,
             )
             return
@@ -642,7 +638,7 @@ class MyController:
                 os.path.join(case_dir_path, "0"),
             )
 
-        def make_files(case_dir_path, exclusive_headers=[]):
+        def make_files(case_dir_path, meshDict, avail_header=None, unavail_headers=[]):
             triSurface = os.path.join(case_dir_path, "constant", "triSurface")
             if os.path.isdir(triSurface):
                 shutil.rmtree(triSurface)
@@ -654,7 +650,7 @@ class MyController:
                 re.sub("^([0-9])", r"_\1", f"{os.path.basename(case_dir_path)}.stl"),
             )
             self.model.exportStl(
-                self.doc.Objects, self.MeshFrame.grid, stl_file_path, exclusive_headers
+                self.doc.Objects, self.MeshFrame.grid, stl_file_path, unavail_headers
             )
             fms_file_path = f"{stl_file_path[:-3]}fms"
             command = (
@@ -681,19 +677,41 @@ class MyController:
                 grid=self.MeshFrame.grid,
                 feature_angle=self.MeshFrame.featureAngleCRL.text(),
                 min_cell_size=self.MeshFrame.minCellSizeCRL.text(),
-                meshDict_loaded=self.meshDict_loaded,
-                exclusive_headers=exclusive_headers,
+                meshDict=meshDict,
+                avail_header=avail_header,
+                unavail_headers=unavail_headers,
             )
 
+        s = set()  # マルチリージョンかの判定
+        for i in self.MeshFrame.grid.table:
+            if i[self.MeshFrame.grid.TYPE] == "mappedWall":
+                m = pat_region_boundary.match(i[self.MeshFrame.grid.OBJECT_NAME])
+                if m is None:
+                    QtGui.QMessageBox.critical(
+                        None,
+                        "mappedWallの名前の付け方",
+                        "mappedWallの名前の付け方は，以下のどちらかだけが許されます．__は_が2つです：\n"
+                        "  自分の領域名__to__相手の領域名    または    自分の領域名__to__相手の領域名__数字",
+                        QtGui.QMessageBox.Close,
+                    )
+                    return
+                s.update([m["region_from"], m["region_to"]])
+        regions = list(s)
+
         try:
-            if len(self.regions) == 0:
-                make_files(case_dir_path)
+            if len(regions) == 0:
+                make_files(case_dir_path=case_dir_path, meshDict=self.meshDict[""])
             else:
-                for r in self.regions:
+                for r in regions:
                     c = os.path.join(case_dir_path, cases_path, r)
                     os.makedirs(os.path.join(c, "constant"), exist_ok=True)
                     os.makedirs(os.path.join(c, "system"), exist_ok=True)
-                    make_files(c, [f"{i}__" for i in self.regions if i != r])
+                    make_files(
+                        case_dir_path=c,
+                        meshDict=self.meshDict.get(r, None),
+                        avail_header=f"{r}__",
+                        unavail_headers=[f"{i}__" for i in regions if i != r],
+                    )
         except:
             return
 
@@ -807,7 +825,7 @@ class MyController:
         case_dir_path = self.MeshFrame.caseDirST.text()  # 絶対パス
 
         def dictParser(dict_path):
-            if os.path.isfile(dict_path) is None:
+            if not os.path.isfile(dict_path):
                 return None
             d = dictParse.DictParser(file_name=dict_path)
             name = os.path.basename(dict_path)
@@ -816,7 +834,7 @@ class MyController:
                     [
                         {"type": "block", "key": "FoamFile"},
                         {"type": "dictionary", "key": "object"},
-                        {"type": "word", "value": f'"{name}"'},
+                        {"type": "word", "value": name},
                     ]
                 )["element"]
                 is None
@@ -840,21 +858,18 @@ class MyController:
         if os.path.isdir(os.path.join(case_dir_path, cases_path)):
             first = True
             for c in glob.iglob(os.path.join(case_dir_path, cases_path, f"*{os.sep}")):
-                meshDict = dictParser(os.path.join(c, "system", "meshDict"))
-                if first:
-                    self.MeshFrame.setParamsFromDictFiles(
-                        meshDict, self.setFieldsDict, self.topoSetDict
-                    )
-                    first = False
-                else:
-                    self.MeshFrame.setParamsFromDictFiles(meshDict, None, None)
-        elif not os.path.isdir(case_dir_path):
-            meshDict = dictParser(os.path.join(case_dir_path, "system", "meshDict"))
-            self.MeshFrame.setParamsFromDictFiles(
-                meshDict, self.setFieldsDict, self.topoSetDict
+                r = os.path.basename(os.path.normpath(c))
+                self.meshDict[r] = dictParser(os.path.join(c, "system", "meshDict"))
+                first = self.MeshFrame.setParamsFromDictFiles(
+                    self.meshDict[r], self.setFieldsDict, self.topoSetDict, first
+                )
+        elif os.path.isdir(case_dir_path):
+            self.meshDict[""] = dictParser(
+                os.path.join(case_dir_path, "system", "meshDict")
             )
-            if meshDict is not None:
-                self.meshDict_loaded = True
+            self.MeshFrame.setParamsFromDictFiles(
+                self.meshDict[""], self.setFieldsDict, self.topoSetDict, True
+            )
 
     def actionOnEditButton(self):
         meshDict_path = os.path.join(
@@ -864,7 +879,7 @@ class MyController:
             QtGui.QMessageBox.critical(
                 None,
                 "ファイルエラー",
-                "system/meshDictファイルがありません，",
+                "system/meshDictファイルがありません．",
                 QtGui.QMessageBox.Close,
             )
             return
@@ -888,7 +903,13 @@ class MyModel:
         xmax = ymax = zmax = float("-inf")
         for obj in freecad_objects:
             try:
-                if obj.ViewObject.Visibility and obj.Shape is not None:
+                if (
+                    obj.ViewObject.Visibility
+                    and hasattr(obj, "Shape")
+                    and "PartDesign::"
+                    not in obj.TypeId  # Bodyや押し出しなどのフィーチャーを排除
+                    and not hasattr(obj, "Role")  # 軸や原点を排除
+                ):
                     xmin = min(xmin, obj.Shape.BoundBox.XMin)
                     ymin = min(ymin, obj.Shape.BoundBox.YMin)
                     zmin = min(zmin, obj.Shape.BoundBox.ZMin)
@@ -900,7 +921,7 @@ class MyModel:
         return xmax - xmin + ymax - ymin + zmax - zmin
 
     @staticmethod
-    def exportStl(freecad_objects, grid, file_path, exclusive_headers=[]):
+    def exportStl(freecad_objects, grid, file_path, unavail_headers=[]):
         fd, tmp_stl = tempfile.mkstemp(suffix=".ast")
         os.close(fd)
         os.remove(tmp_stl)
@@ -922,7 +943,7 @@ class MyModel:
                 ):
                     continue
                 obj_name = i[grid.OBJECT_NAME]
-                if any(obj_name.startswith(j) for j in exclusive_headers):
+                if any(obj_name.startswith(j) for j in unavail_headers):
                     m = pat_region_boundary.match(obj_name)
                     if m is None:
                         continue
@@ -930,9 +951,11 @@ class MyModel:
                         f"{m['region_to']}__to__{m['region_from']}"
                         f"{'' if m['number'] is None else m['number']}"
                     )
-                    if any(obj_name.startswith(j) for j in exclusive_headers):
+                    if any(obj_name.startswith(j) for j in unavail_headers):
                         continue
-                obj = next((j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None)
+                obj = next(
+                    (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None
+                )
                 if i[grid.TYPE] == "SurfaceRefine":
                     file_name = os.path.join(os.path.dirname(file_path), obj_name)
                     Mesh.export([obj], f"{file_name}.ast")  # ascii format
@@ -982,15 +1005,13 @@ class MyModel:
         grid,
         feature_angle,
         min_cell_size,
-        meshDict_loaded,
-        exclusive_headers=[],
+        meshDict,
+        avail_header=None,
+        unavail_headers=[],
     ):
         meshDict_path = os.path.join(case_dir_path, "system", "meshDict")
-        if meshDict_loaded and os.path.isfile(meshDict_path):
-            meshDict = dictParse.DictParser(file_name=meshDict_path)
+        if os.path.isfile(meshDict_path):
             shutil.copy(meshDict_path, f"{meshDict_path}_bak")
-        else:
-            meshDict = None
         with open(meshDict_path, "w") as f:
             f.write(
                 "FoamFile\n"
@@ -1105,7 +1126,7 @@ class MyModel:
             )["element"]
             f.write(
                 "\t// 境界層の自動整形．デフォルトは0．\n"
-                f"\toptimiseLayer\t{'1' if e is None else e['element']}; // 1 active or 0 inactive\n"
+                f"\toptimiseLayer\t{'1' if e is None else e['value']}; // 1 active or 0 inactive\n"
             )
 
             for dictionary in dictParse.find_all_elements(
@@ -1296,9 +1317,7 @@ class MyModel:
                         "CylinderRefine",
                         "SphereRefine",
                     )
-                    and any(
-                        i[grid.OBJECT_NAME].startswith(j) for j in exclusive_headers
-                    )
+                    and any(i[grid.OBJECT_NAME].startswith(j) for j in unavail_headers)
                 ):
                     continue
                 obj = next(
@@ -1416,7 +1435,7 @@ class MyModel:
                     i[grid.CELL_SIZE] != ""
                     and i[grid.TYPE] == "SurfaceRefine"
                     and not any(
-                        i[grid.OBJECT_NAME].startswith(j) for j in exclusive_headers
+                        i[grid.OBJECT_NAME].startswith(j) for j in unavail_headers
                     )
                 ):
                     ref_thickness = i[grid.CELL_SIZE]
@@ -1492,7 +1511,7 @@ class MyModel:
                 ):
                     continue
                 obj_name = i[grid.OBJECT_NAME]
-                if any(obj_name.startswith(j) for j in exclusive_headers):
+                if any(obj_name.startswith(j) for j in unavail_headers):
                     m = pat_region_boundary.match(obj_name)
                     if m is None:
                         continue
@@ -1500,12 +1519,18 @@ class MyModel:
                         f"{m['region_to']}__to__{m['region_from']}"
                         f"{'' if m['number'] is None else m['number']}"
                     )
-                    if any(obj_name.startswith(j) for j in exclusive_headers):
+                    if any(obj_name.startswith(j) for j in unavail_headers):
                         continue
                 f.write(
                     f"\t\t{obj_name}\n"
                     "\t\t{\n"
-                    f"\t\t\tnewName\t{obj_name};\n"
+                    f"\t\t\tnewName\t{
+                        obj_name[len(avail_header) :]
+                        if i[grid.TYPE] != 'mappedWall'
+                        and avail_header is not None
+                        and obj_name.startswith(avail_header)
+                        else obj_name
+                    };\n"
                     f"\t\t\ttype\t{i[grid.TYPE]};\n"
                     "\t\t}\n"
                 )

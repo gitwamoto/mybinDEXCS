@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/9/28 12:38:40 PM
+# 2026/10/5 8:51:42 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -407,7 +407,7 @@ if __name__ == "__main__":
             shutil.move("0", "0_bak")
         os.mkdir("0")
         for r in regions:
-            os.path.mkdir(os.path.join("0", r))
+            os.mkdir(os.path.join("0", r))
         for i0_bak in glob.iglob(os.path.join("0_bak", "*")):
             i0_bak_basename = os.path.basename(i0_bak)
             i0 = os.path.join("0", i0_bak_basename)
