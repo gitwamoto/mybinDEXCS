@@ -678,7 +678,7 @@ def atomic_write(file_path, content):
     os.replace(temp_path, file_path)
 
 
-def get_region_dirnames(path=os.curdir):
+def regionNameList(path=os.curdir):
     return sorted(
         [
             os.path.basename(os.path.dirname(i))
@@ -688,7 +688,8 @@ def get_region_dirnames(path=os.curdir):
     )
 
 
-def get_patch_names(path=os.curdir):
+def patchNameList(path=os.curdir):
+    # パッチ名 または 領域名__パッチ名 で書かれたパッチを含むリストを作る．
     p = []
     if os.path.isdir(os.path.join(path, "constant", "polyMesh", "boundary")):
         p.extend(
@@ -699,7 +700,7 @@ def get_patch_names(path=os.curdir):
                 ).find_all_elements([{"type": "list"}, {"type": "block"}])
             ]
         )
-    for r in get_region_dirnames(path):
+    for r in regionNameList(path):
         p.extend(
             [
                 f"{r}__{i['element']['key']}"
@@ -708,7 +709,23 @@ def get_patch_names(path=os.curdir):
                 ).find_all_elements([{"type": "list"}, {"type": "block"}])
             ]
         )
-    return " ".join(sorted(p))
+    p.sort()
+    return p
+
+
+def sortPatchesByRegion(patch_list):
+    # パッチ名 または 領域名__パッチ名 で書かれたパッチを含むリストを 領域名: パッチ名のリスト に仕分けた辞書にする．
+    # 領域名がない場合の領域名はNoneである，
+    p = {}
+    for i in patch_list:
+        i = i.split("__", 1)  # '__' で最大1回分割する
+        if len(i) == 1:
+            i = [None, i[0]]
+        if i[0] not in p:
+            p[i[0]] = [i[1]]
+        else:
+            p[i[0]].append(i[1])
+    return p
 
 
 if __name__ == "__main__":
