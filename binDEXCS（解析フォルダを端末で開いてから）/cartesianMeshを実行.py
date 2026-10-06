@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/10/6 9:12:38 AM
+# 2026/10/6 9:57:45 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -382,8 +382,7 @@ if __name__ == "__main__":
 
         if interactive:
             fluid_regions = input(
-                " ".join(regions)
-                + " の中から，流体側の領域名全てをスペース区切りで指定して下さい． > "
+                f"{' '.join(regions)} の中から，流体側の領域名全てをスペース区切りで指定して下さい． > "
             ).split()
         solid_regions = sorted(set(regions) - set(fluid_regions))  # list
         with open(regionProperties_path, "w") as f:

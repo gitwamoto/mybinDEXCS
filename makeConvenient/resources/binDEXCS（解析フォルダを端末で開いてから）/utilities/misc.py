@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/10/2 3:55:16 PM
+# 2026/10/6 11:49:42 AM
 
 import glob
 import os
@@ -109,7 +109,7 @@ def execCommand(command_args, log_file_path=None):
 def execParaFoam(touch_only=False, ambient=1.0, diffuse=0.0):
     for f in glob.iglob("*.OpenFOAM" if dexcs_version == "2019" else "*.foam"):
         os.remove(f)
-    subprocess.run(["paraFoam", "-touch-all"])
+    subprocess.run(["paraFoam", "-touch-all"])  # マルチリージョン対応
     # Usage: paraFoam [OPTION] [--] [PARAVIEW_OPTION]
     # options:
     #   -block            Use blockMesh reader (.blockMesh extension)
@@ -676,6 +676,16 @@ def atomic_write(file_path, content):
             raise
     # 2. 一時ファイルを本来のファイル名にアトミックに置き換える
     os.replace(temp_path, file_path)
+
+
+def get_region_dirnames(path=os.curdir):
+    return sorted(
+        [
+            os.path.basename(os.path.dirname(i))
+            for i in glob.iglob(os.path.join(path, "constant", f"*{os.sep}"))
+            if os.path.isdir(i, os.path.join("polyMesh"))
+        ]
+    )
 
 
 if __name__ == "__main__":
