@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 0秒フォルダにpatchを追加する.py
 # by Yukiharu Iwamoto
-# 2026/9/23 11:23:33 PM
+# 2026/10/6 9:03:20 AM
 
 # ---- オプションはない ----
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
     append_patches(src="constant", dst="0")
     for d in glob.iglob(os.path.join("constant", f"*{os.sep}")):  # マルチリージョン対応
-        dst = os.path.join("0", os.path.basename(os.path.normpath(d)))
+        dst = os.path.join("0", os.path.basename(os.path.dirname(d)))
         if os.path.isdir(dst):
             append_patches(src=d, dst=dst)
         else:

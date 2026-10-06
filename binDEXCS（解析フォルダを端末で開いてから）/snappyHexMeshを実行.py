@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/10/3 7:35:32 PM
+# 2026/10/6 9:12:35 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -477,25 +477,20 @@ if __name__ == "__main__":
             if os.path.isdir(i):
                 shutil.rmtree(i)
 
+        regions_original = misc.get_region_dirnames()
         if os.path.isdir("0"):
             shutil.move("0", "0_bak")
         if misc.execCommand(["splitMeshRegions", "-cellZones", "-overwrite"])[1] != 0:
-            # 0/ <-- 0フォルダがなかったら自動的に作られる．
-            # +-- regionA/
+            # 0/
+            # +-- regionA/ <-- なかったら，splitMeshRegionsが作成する．
             # |   +-- cellToregion
-            # +-- regionB/
+            # +-- regionB/ <-- なかったら，splitMeshRegionsが作成する．
             # |   +-- cellToregion
             # :
             # +-- cellToregion
             sys.exit(1)
 
-        regions = sorted(
-            [
-                os.path.basename(os.path.dirname(i))
-                for i in glob.iglob(os.path.join("constant", f"*{os.sep}"))
-                if os.path.isdir(i + "polyMesh")
-            ]
-        )
+        regions = misc.get_region_dirnames()
         if interactive:
             fluid_regions = input(
                 " ".join(regions)
@@ -565,25 +560,15 @@ if __name__ == "__main__":
                 string = dictParse.normalize(string=parser.file_string())[0]
                 for r in glob.iglob(os.path.join("system", f"*{os.sep}")):
                     # system/
-                    # +-- regionA/
+                    # +-- regionA/ <-- なかったら，splitMeshRegionsが作成する．
                     # |   +-- fvSolution
                     # |   +-- fvSchemes
-                    # +-- regionB/
+                    # +-- regionB/ <-- なかったら，splitMeshRegionsが作成する．
                     # |   +-- fvSolution
                     # :   +-- fvSchemes
-                    p = os.path.join(r, fv)
-                    if os.path.isfile(p):
-                        parser = dictParse.DictParser(file_name=p)
-                        contents = parser.find_all_elements(
-                            [{"except type": "ignorable|separator"}]
-                        )
-                        if all(
-                            c["element"]["type"] == "block"
-                            and c["element"]["key"] == "FoamFile"
-                            for c in contents
-                        ):  # 領域フォルダ内のファイルの中身が空の場合
-                            with open(p, "w") as f:
-                                f.write(string)
+                    if os.path.basename(os.path.dirname(r)) not in regions_original:
+                        with open(os.path.join(r, fv), "w") as f:
+                            f.write(string)
 
         misc.correctLocation()
 

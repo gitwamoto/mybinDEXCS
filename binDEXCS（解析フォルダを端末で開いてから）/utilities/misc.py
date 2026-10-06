@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/10/2 3:55:16 PM
+# 2026/10/6 9:11:04 AM
 
 import glob
 import os
@@ -676,6 +676,16 @@ def atomic_write(file_path, content):
             raise
     # 2. 一時ファイルを本来のファイル名にアトミックに置き換える
     os.replace(temp_path, file_path)
+
+
+def get_region_dirnames(path=os.curdir):
+    return sorted(
+        [
+            os.path.basename(os.path.dirname(i))
+            for i in glob.iglob(os.path.join(path, "constant", f"*{os.sep}"))
+            if os.path.isdir(os.path.join("polyMesh"))
+        ]
+    )
 
 
 if __name__ == "__main__":
