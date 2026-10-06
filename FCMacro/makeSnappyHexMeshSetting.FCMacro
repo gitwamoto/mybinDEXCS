@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/5 11:11:26 PM
+# 2026/10/6 1:55:26 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -99,7 +99,6 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                     "symmetryPlane",
                     "symmetry",
                     "overset",
-                    "mappedWall",
                     "BoxRefine",
                     "CylinderRefine",
                     "SphereRefine",
