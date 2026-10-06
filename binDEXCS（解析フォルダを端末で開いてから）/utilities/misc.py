@@ -459,7 +459,7 @@ def correctLocation():
             )["value"]
         string = dictParse.normalize(string=parser.file_string())[0]
         if parser.string != string:
-#            os.rename(file_name, f'{file_name}_bak')
+            #            os.rename(file_name, f'{file_name}_bak')
             with open(file_name, "w") as f:
                 f.write(string)
 
@@ -683,9 +683,32 @@ def get_region_dirnames(path=os.curdir):
         [
             os.path.basename(os.path.dirname(i))
             for i in glob.iglob(os.path.join(path, "constant", f"*{os.sep}"))
-            if os.path.isdir(i, os.path.join("polyMesh"))
+            if os.path.isdir(os.path.join(i, "polyMesh"))
         ]
     )
+
+
+def get_patch_names(path=os.curdir):
+    p = []
+    if os.path.isdir(os.path.join(path, "constant", "polyMesh", "boundary")):
+        p.extend(
+            [
+                i["element"]["key"]
+                for i in dictParse.DictParser(
+                    file_name=os.path.join(path, "constant", "polyMesh", "boundary")
+                ).find_all_elements([{"type": "list"}, {"type": "block"}])
+            ]
+        )
+    for r in get_region_dirnames(path):
+        p.extend(
+            [
+                f"{r}__{i['element']['key']}"
+                for i in dictParse.DictParser(
+                    file_name=os.path.join(path, "constant", r, "polyMesh", "boundary")
+                ).find_all_elements([{"type": "list"}, {"type": "block"}])
+            ]
+        )
+    return " ".join(sorted(p))
 
 
 if __name__ == "__main__":
