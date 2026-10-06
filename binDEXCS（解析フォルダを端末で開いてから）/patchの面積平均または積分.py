@@ -36,8 +36,8 @@ if __name__ == "__main__":
     misc.showDirForPresentAnalysis(__file__)
 
     just_delete_previous_files = False
-    average = [[], None]
-    integrate = [[], None]
+    average = {"patches": []}
+    integrate = {"patches": []}
     if len(sys.argv) == 1:
         interactive = True
     else:
@@ -46,7 +46,10 @@ if __name__ == "__main__":
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == "-a":
-                average = [sys.argv[i + 1].split(), ",".join(sys.argv[i + 2].split())]
+                average = {
+                    "patches": sys.argv[i + 1].split(),
+                    "parameters": ",".join(sys.argv[i + 2].split()),
+                }
                 i += 2
             elif sys.argv[i] == "-b":
                 i += 1
@@ -57,7 +60,10 @@ if __name__ == "__main__":
             elif sys.argv[i] == "-0":
                 noZero = False
             elif sys.argv[i] == "-i":
-                integrate = [sys.argv[i + 1].split(), ",".join(sys.argv[i + 2].split())]
+                integrate = {
+                    "patches": sys.argv[i + 1].split(),
+                    "parameters": ",".join(sys.argv[i + 2].split()),
+                }
                 i += 2
             elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
@@ -72,7 +78,7 @@ if __name__ == "__main__":
         sys.exit(0)  # 正常終了
 
     if interactive:
-        patches = " ".join(
+        patches = " ".join(  ###これを直すのだよ
             [
                 i["element"]["key"]
                 for i in dictParse.DictParser(
@@ -87,19 +93,17 @@ if __name__ == "__main__":
             else False
         )
         if ans:
-            average = [
+            average["patches"] = [
                 input(
                     "どのパッチに対して面積平均しますか？"
                     f" {patches} の中からスペース区切りで指定して下さい． > "
                 ).split()
             ]
-            average.append(
-                ",".join(
-                    input(
-                        "どのパラメータを面積平均しますか？ "
-                        f" {fields} の中からスペース区切りで指定して下さい． > "
-                    ).split()
-                )
+            average["parameters"] = ",".join(
+                input(
+                    "どのパラメータを面積平均しますか？ "
+                    f" {fields} の中からスペース区切りで指定して下さい． > "
+                ).split()
             )
         ans = (
             True
@@ -107,33 +111,34 @@ if __name__ == "__main__":
             else False
         )
         if ans:
-            integrate = [
+            integrate["patches"] = [
                 input(
                     "どのパッチに対して面積積分しますか？"
                     f" {patches} の中からスペース区切りで指定して下さい． > "
                 ).split()
             ]
-            integrate.append(
-                ",".join(
-                    input(
-                        "どのパラメータを面積積分しますか？"
-                        f" {fields} の中からスペース区切りで指定して下さい． > "
-                    ).split()
-                )
+            integrate["parameters"] = ",".join(
+                input(
+                    "どのパラメータを面積積分しますか？"
+                    f" {fields} の中からスペース区切りで指定して下さい． > "
+                ).split()
             )
         time_begin, time_end, noZero = misc.setTimeBeginEnd("面積平均または面積積分")
 
     # http://penguinitis.g1.xrea.com/study/OpenFOAM/proc_results.html
-    for i in average[0]:
-        misc.execPostProcess(
-            time_begin, time_end, noZero, func=f"patchAverage(name={i},{average[1]})"
-        )
-    for i in integrate[0]:
+    for i in average["patches"]:
         misc.execPostProcess(
             time_begin,
             time_end,
             noZero,
-            func=f"patchIntegrate(name={i},{integrate[1]})",
+            func=f"patchAverage(name={i},{average['parameters']})",
+        )
+    for i in integrate["patches"]:
+        misc.execPostProcess(
+            time_begin,
+            time_end,
+            noZero,
+            func=f"patchIntegrate(name={i},{integrate['parameters']})",
         )
 
     print("\n結果はpostProcessingフォルダに保存されています．")
