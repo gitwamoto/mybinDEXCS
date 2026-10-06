@@ -99,6 +99,7 @@ class FreeCadFileGrid(QtGui.QTableWidget):
                     "symmetryPlane",
                     "symmetry",
                     "overset",
+                    "mappedWall",
                     "BoxRefine",
                     "CylinderRefine",
                     "SphereRefine",
@@ -722,8 +723,10 @@ class MyController:
             triSurface,
             re.sub("^([0-9])", r"_\1", f"{os.path.basename(case_dir_path)}.stl"),
         )
-        box = self.model.exportStl(self.doc.Objects, self.MeshFrame.grid, stl_file_path)
-        self.model.makeSurfaceFeatureExtractDict(
+        box = self.model.exportStl(
+            self.doc.Objects, self.MeshFrame.grid, stl_file_path
+        )
+        self.model.makeSurfaceFeatureExtractDict( # 複数やった方が良い
             case_dir_path=case_dir_path,
             surface_file_path=stl_file_path,
             feature_angle=self.MeshFrame.featureAngleCRL.text(),
