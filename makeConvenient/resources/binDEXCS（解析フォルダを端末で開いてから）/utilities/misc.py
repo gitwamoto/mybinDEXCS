@@ -459,7 +459,7 @@ def correctLocation():
             )["value"]
         string = dictParse.normalize(string=parser.file_string())[0]
         if parser.string != string:
-#            os.rename(file_name, f'{file_name}_bak')
+            #            os.rename(file_name, f'{file_name}_bak')
             with open(file_name, "w") as f:
                 f.write(string)
 
@@ -678,14 +678,54 @@ def atomic_write(file_path, content):
     os.replace(temp_path, file_path)
 
 
-def get_region_dirnames(path=os.curdir):
+def regionNameList(path=os.curdir):
     return sorted(
         [
             os.path.basename(os.path.dirname(i))
             for i in glob.iglob(os.path.join(path, "constant", f"*{os.sep}"))
-            if os.path.isdir(i, os.path.join("polyMesh"))
+            if os.path.isdir(os.path.join(i, "polyMesh"))
         ]
     )
+
+
+def patchNameList(path=os.curdir):
+    # パッチ名 または 領域名__パッチ名 で書かれたパッチを含むリストを作る．
+    p = []
+    if os.path.isdir(os.path.join(path, "constant", "polyMesh", "boundary")):
+        p.extend(
+            [
+                i["element"]["key"]
+                for i in dictParse.DictParser(
+                    file_name=os.path.join(path, "constant", "polyMesh", "boundary")
+                ).find_all_elements([{"type": "list"}, {"type": "block"}])
+            ]
+        )
+    for r in regionNameList(path):
+        p.extend(
+            [
+                f"{r}__{i['element']['key']}"
+                for i in dictParse.DictParser(
+                    file_name=os.path.join(path, "constant", r, "polyMesh", "boundary")
+                ).find_all_elements([{"type": "list"}, {"type": "block"}])
+            ]
+        )
+    p.sort()
+    return p
+
+
+def sortPatchesByRegion(patch_list):
+    # パッチ名 または 領域名__パッチ名 で書かれたパッチを含むリストを 領域名: パッチ名のリスト に仕分けた辞書にする．
+    # 領域名がない場合の領域名はNoneである，
+    p = {}
+    for i in patch_list:
+        i = i.split("__", 1)  # '__' で最大1回分割する
+        if len(i) == 1:
+            i = [None, i[0]]
+        if i[0] not in p:
+            p[i[0]] = [i[1]]
+        else:
+            p[i[0]].append(i[1])
+    return p
 
 
 if __name__ == "__main__":

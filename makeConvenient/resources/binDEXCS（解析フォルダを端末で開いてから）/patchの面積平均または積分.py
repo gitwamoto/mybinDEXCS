@@ -2,19 +2,19 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2026/5/27 7:30:26 PM
+# 2026/10/6 8:40:14 PM
 
 # ---- オプション ----
-# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる
-# -a 'patch1 patch2 ...' 'field1 field2 ...': patch1 patch2 ...に対してパラメータfield1 field2 ...の面積平均を行う
-#                                             patch1 patch2 ...とfield1 field2 ...はスペース区切りで書いたものを'と'でくくる
-# -b time_begin: patchの面積平均または積分を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる
-#                time_beginにlを指定すると，最も大きい値を持つ時間になる
-# -e time_end: patchの面積平均または積分を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる
+# なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
+# -a 'patch1 patch2 ...' 'field1 field2 ...': patch1 patch2 ...に対してパラメータfield1 field2 ...の面積平均を行う．
+#                                             patch1 patch2 ...とfield1 field2 ...はスペース区切りで書いたものを'と'でくくる．
+# -b time_begin: patchの面積平均または積分を開始する時間をtime_beginにする．指定しない場合は最も小さい値を持つ時間になる．
+#                time_beginにlを指定すると，最も大きい値を持つ時間になる．
+# -e time_end: patchの面積平均または積分を終了する時間をtime_endにする．指定しない場合は最も大きい値を持つ時間になる．
 # -0: 0秒のデータを含める
-# -i 'patch1 patch2 ...' 'field1 field2 ...': patch1 patch2 ...に対してパラメータfield1 field2 ...の面積積分を行う
-#                                             patch1 patch2 ...とfield1 field2 ...はスペース区切りで書いたものを'と'でくくる
-# -j: patchの面積平均または積分を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ
+# -i 'patch1 patch2 ...' 'field1 field2 ...': patch1 patch2 ...に対してパラメータfield1 field2 ...の面積積分を行う．
+#                                             patch1 patch2 ...とfield1 field2 ...はスペース区切りで書いたものを'と'でくくる．
+# -j: patchの面積平均または積分を実行せず，postProcessingフォルダ内にある過去の結果を消去するだけ．
 
 import sys
 import signal
@@ -36,17 +36,22 @@ if __name__ == "__main__":
     misc.showDirForPresentAnalysis(__file__)
 
     just_delete_previous_files = False
-    average = [[], None]
-    integrate = [[], None]
+    average = {"patches": []}
+    integrate = {"patches": []}
     if len(sys.argv) == 1:
         interactive = True
     else:
         interactive = False
-        time_begin, time_end, noZero = "-inf", "inf", True
+        time_begin = "-inf"
+        time_end = "inf"
+        noZero = True
         i = 1
         while i < len(sys.argv):
             if sys.argv[i] == "-a":
-                average = [sys.argv[i + 1].split(), ",".join(sys.argv[i + 2].split())]
+                average = {
+                    "patches": misc.sortPatchesByRegion(sys.argv[i + 1].split()),
+                    "parameters": ",".join(sys.argv[i + 2].split()),
+                }
                 i += 2
             elif sys.argv[i] == "-b":
                 i += 1
@@ -57,29 +62,30 @@ if __name__ == "__main__":
             elif sys.argv[i] == "-0":
                 noZero = False
             elif sys.argv[i] == "-i":
-                integrate = [sys.argv[i + 1].split(), ",".join(sys.argv[i + 2].split())]
+                integrate = {
+                    "patches": misc.sortPatchesByRegion(sys.argv[i + 1].split()),
+                    "parameters": ",".join(sys.argv[i + 2].split()),
+                }
                 i += 2
             elif sys.argv[i] == "-j":
                 just_delete_previous_files = True
             i += 1
 
     if os.path.isdir("postProcessing"):
-        for d in glob.iglob(os.path.join("postProcessing", f"patch*{os.sep}")):
-            p = os.path.basename(os.path.dirname(d))
-            if p.startswith("patchAverage(") or p.startswith("patchIntegrate("):
-                shutil.rmtree(d)
+        for p in [
+            os.path.join("postProcessing", f"patch*{os.sep}"),
+            os.path.join("postProcessing", "*", f"patch*{os.sep}"),
+        ]:
+            for d in glob.iglob(p):
+                name = os.path.basename(os.path.dirname(d))
+                if name.startswith(("patchAverage(", "patchIntegrate(")):
+                    shutil.rmtree(d)
+
     if just_delete_previous_files:
         sys.exit(0)  # 正常終了
 
     if interactive:
-        patches = " ".join(
-            [
-                i["element"]["key"]
-                for i in dictParse.DictParser(
-                    file_name=os.path.join("constant", "polyMesh", "boundary")
-                ).find_all_elements([{"type": "list"}, {"type": "block"}])
-            ]
-        )
+        patches = " ".join(misc.patchNameList())
         fields = " ".join(misc.volFieldList(misc.latestTime()))
         ans = (
             True
@@ -87,19 +93,17 @@ if __name__ == "__main__":
             else False
         )
         if ans:
-            average = [
+            average["patches"] = misc.sortPatchesByRegion(
                 input(
                     "どのパッチに対して面積平均しますか？"
                     f" {patches} の中からスペース区切りで指定して下さい． > "
                 ).split()
-            ]
-            average.append(
-                ",".join(
-                    input(
-                        "どのパラメータを面積平均しますか？ "
-                        f" {fields} の中からスペース区切りで指定して下さい． > "
-                    ).split()
-                )
+            )
+            average["parameters"] = ",".join(
+                input(
+                    "どのパラメータを面積平均しますか？ "
+                    f" {fields} の中からスペース区切りで指定して下さい． > "
+                ).split()
             )
         ans = (
             True
@@ -107,34 +111,39 @@ if __name__ == "__main__":
             else False
         )
         if ans:
-            integrate = [
+            integrate["patches"] = misc.sortPatchesByRegion(
                 input(
                     "どのパッチに対して面積積分しますか？"
                     f" {patches} の中からスペース区切りで指定して下さい． > "
                 ).split()
-            ]
-            integrate.append(
-                ",".join(
-                    input(
-                        "どのパラメータを面積積分しますか？"
-                        f" {fields} の中からスペース区切りで指定して下さい． > "
-                    ).split()
-                )
+            )
+            integrate["parameters"] = ",".join(
+                input(
+                    "どのパラメータを面積積分しますか？"
+                    f" {fields} の中からスペース区切りで指定して下さい． > "
+                ).split()
             )
         time_begin, time_end, noZero = misc.setTimeBeginEnd("面積平均または面積積分")
 
     # http://penguinitis.g1.xrea.com/study/OpenFOAM/proc_results.html
-    for i in average[0]:
-        misc.execPostProcess(
-            time_begin, time_end, noZero, func=f"patchAverage(name={i},{average[1]})"
-        )
-    for i in integrate[0]:
-        misc.execPostProcess(
-            time_begin,
-            time_end,
-            noZero,
-            func=f"patchIntegrate(name={i},{integrate[1]})",
-        )
+    for r, p in average["patches"]:
+        for i in p:
+            misc.execPostProcess(
+                time_begin=time_begin,
+                time_end=time_end,
+                noZero=noZero,
+                func=f"patchAverage(name={i},{average['parameters']})",
+                region=r,
+            )
+    for r, p in integrate["patches"]:
+        for i in p:
+            misc.execPostProcess(
+                time_begin=time_begin,
+                time_end=time_end,
+                noZero=noZero,
+                func=f"patchIntegrate(name={i},{integrate['parameters']})",
+                region=r,
+            )
 
     print("\n結果はpostProcessingフォルダに保存されています．")
 

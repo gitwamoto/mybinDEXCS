@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # snappyHexMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/10/6 9:57:47 AM
+# 2026/10/6 7:51:17 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -477,7 +477,7 @@ if __name__ == "__main__":
             if os.path.isdir(i):
                 shutil.rmtree(i)
 
-        regions_original = misc.get_region_dirnames()
+        regions_original = misc.regionNameList()
         if os.path.isdir("0"):
             shutil.move("0", "0_bak")
         if misc.execCommand(["splitMeshRegions", "-cellZones", "-overwrite"])[1] != 0:
@@ -490,7 +490,7 @@ if __name__ == "__main__":
             # +-- cellToregion
             sys.exit(1)
 
-        regions = misc.get_region_dirnames()
+        regions = misc.regionNameList()
         if interactive:
             fluid_regions = input(
                 f"{' '.join(regions)} の中から，流体側の領域名全てをスペース区切りで指定して下さい． > "
