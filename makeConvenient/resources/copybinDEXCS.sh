@@ -1,7 +1,7 @@
 #!/bin/bash
 # copybinDEXCS.sh
 # by Yukiharu Iwamoto
-# 2026/10/6 1:50:29 PM
+# 2026/10/7 10:51:33 AM
 
 # ダブルクリックしても
 #     +-------------------------------------------------------------+
@@ -484,13 +484,17 @@ else # 2021
 	fi
 
 	# aptでインストールして欲しいので，pipでインストールされていたら消しておく
-	for p in pexpect chardet xlrd Pillow urllib3 numpy scipy matplotlib openpyxl \
-		requests pandas; do
+	for p in pexpect chardet xlrd Pillow urllib3 matplotlib openpyxl requests pandas; do
 		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
 			pip uninstall -y "$p"
 		fi
 		if $imsudoer && [ -e "/usr/local/lib/python3.8/dist-packages/$p" ]; then
 			sudo pip uninstall -y "$p"
+		fi
+	done
+	for p in numpy scipy; do
+		if [ -e "$HOME/.local/lib/python3.8/site-packages/$p" ]; then
+			pip uninstall -y "$p"
 		fi
 	done
 	if [ -e "$HOME/.local/lib/python3.8/site-packages/PIL" ]; then

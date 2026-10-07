@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # misc.py
 # by Yukiharu Iwamoto
-# 2026/10/6 11:49:42 AM
+# 2026/10/7 11:38:58 AM
 
 import glob
 import os
@@ -689,7 +689,7 @@ def regionNameList(path=os.curdir):
 
 
 def patchNameList(path=os.curdir):
-    # パッチ名 または 領域名__パッチ名 で書かれたパッチを含むリストを作る．
+    # パッチ名 または 領域名.パッチ名 で書かれたパッチを含むリストを作る．
     p = []
     if os.path.isdir(os.path.join(path, "constant", "polyMesh", "boundary")):
         p.extend(
@@ -703,7 +703,7 @@ def patchNameList(path=os.curdir):
     for r in regionNameList(path):
         p.extend(
             [
-                f"{r}__{i['element']['key']}"
+                f"{r}.{i['element']['key']}"
                 for i in dictParse.DictParser(
                     file_name=os.path.join(path, "constant", r, "polyMesh", "boundary")
                 ).find_all_elements([{"type": "list"}, {"type": "block"}])
@@ -714,11 +714,11 @@ def patchNameList(path=os.curdir):
 
 
 def sortPatchesByRegion(patch_list):
-    # パッチ名 または 領域名__パッチ名 で書かれたパッチを含むリストを 領域名: パッチ名のリスト に仕分けた辞書にする．
+    # パッチ名 または 領域名.パッチ名 で書かれたパッチを含むリストを 領域名: パッチ名のリスト に仕分けた辞書にする．
     # 領域名がない場合の領域名はNoneである，
     p = {}
     for i in patch_list:
-        i = i.split("__", 1)  # '__' で最大1回分割する
+        i = i.split(".", 1)  # '.' で最大1回分割する
         if len(i) == 1:
             i = [None, i[0]]
         if i[0] not in p:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/5 11:17:55 PM
+# 2026/10/7 12:36:37 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -24,7 +24,8 @@ from utilities import dictParse
 
 cases_path = "cases_for_cfmesh"
 pat_region_boundary = re.compile(  # マルチリージョン解析の時の領域境界名のパターン
-    "(?P<region_from>(?:(?!__).)+)__to__(?P<region_to>(?:(?!__).)+)(?P<number>__[0-9]+)?"
+    r"(?P<region_from>(?:(?!\.to\.).)+)\.to\.(?P<region_to>(?:(?!\.[0-9]+$).)+)"
+    r"(?:\.(?P<number>[0-9]+))?$"
 )
 
 
@@ -250,9 +251,9 @@ class MeshFrame(QtGui.QDialog):
                 "※ 上の表は全ての可視オブジェクトを含んでいます.\n"
                 "     可視性（Visibility）を切り替えるには，オブジェクトを選んだ後でスペースキーを押します．\n"
                 "※ マルチリージョン解析の場合，以下のルールでOjbectNameを決めて下さい：\n"
-                "    mappedWall以外で，1つだけの領域に含めたい場合 → 領域名__物体名\n"
-                "    mappedWallの場合 → 自分の領域名__to__相手の領域    または    自分の領域名__to__相手の領域名__数字\n"
-                "       ※ 相手の領域名__to__自分の領域名 の境界は自動で作成されます．"
+                "    mappedWall以外で，1つだけの領域に含めたい場合 → 領域名.物体名\n"
+                "    mappedWallの場合 → 自分の領域名.to.相手の領域    または    自分の領域名.to.相手の領域名.数字\n"
+                "        ※ 相手の領域名.to.自分の領域名 の境界は自動で作成されます．"
             )
         )
 
@@ -690,8 +691,8 @@ class MyController:
                     QtGui.QMessageBox.critical(
                         None,
                         "mappedWallの名前の付け方",
-                        "mappedWallの名前の付け方は，以下のどちらかだけが許されます．__は_が2つです：\n"
-                        "  自分の領域名__to__相手の領域名    または    自分の領域名__to__相手の領域名__数字",
+                        "mappedWallの名前の付け方は，以下のどちらかだけが許されます：\n"
+                        "  自分の領域名.to.相手の領域名    または    自分の領域名.to.相手の領域名.数字",
                         QtGui.QMessageBox.Close,
                     )
                     return
@@ -709,8 +710,8 @@ class MyController:
                     make_files(
                         case_dir_path=c,
                         meshDict=self.meshDict.get(r, None),
-                        avail_header=f"{r}__",
-                        unavail_headers=[f"{i}__" for i in regions if i != r],
+                        avail_header=f"{r}.",
+                        unavail_headers=[f"{i}." for i in regions if i != r],
                     )
         except:
             return
@@ -948,7 +949,7 @@ class MyModel:
                     if m is None:
                         continue
                     obj_name = (
-                        f"{m['region_to']}__to__{m['region_from']}"
+                        f"{m['region_to']}.to.{m['region_from']}"
                         f"{'' if m['number'] is None else m['number']}"
                     )
                     if any(obj_name.startswith(j) for j in unavail_headers):
@@ -1516,21 +1517,22 @@ class MyModel:
                     if m is None:
                         continue
                     obj_name = (
-                        f"{m['region_to']}__to__{m['region_from']}"
+                        f"{m['region_to']}.to.{m['region_from']}"
                         f"{'' if m['number'] is None else m['number']}"
                     )
                     if any(obj_name.startswith(j) for j in unavail_headers):
                         continue
+                new_name = (
+                    obj_name[len(avail_header) :]
+                    if i[grid.TYPE] != "mappedWall"
+                    and avail_header is not None
+                    and obj_name.startswith(avail_header)
+                    else obj_name
+                )
                 f.write(
                     f"\t\t{obj_name}\n"
                     "\t\t{\n"
-                    f"\t\t\tnewName\t{
-                        obj_name[len(avail_header) :]
-                        if i[grid.TYPE] != 'mappedWall'
-                        and avail_header is not None
-                        and obj_name.startswith(avail_header)
-                        else obj_name
-                    };\n"
+                    f"\t\t\tnewName\t{new_name};\n"
                     f"\t\t\ttype\t{i[grid.TYPE]};\n"
                     "\t\t}\n"
                 )

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/10/6 9:57:45 AM
+# 2026/10/7 12:38:59 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -36,7 +36,8 @@ domains = 1
 exec_paraFoam = False
 cases_path = "cases_for_cfmesh"
 pat_region_boundary = re.compile(  # マルチリージョン解析の時の領域境界名のパターン
-    "(?P<region_from>(?:(?!__).)+)__to__(?P<region_to>(?:(?!__).)+)(?P<number>__[0-9]+)?"
+    r"(?P<region_from>(?:(?!\.to\.).)+)\.to\.(?P<region_to>(?:(?!\.[0-9]+$).)+)"
+    r"(?:\.(?P<number>[0-9]+))?$"
 )
 meshDict_path = os.path.join("system", "meshDict")
 meshDict_3D_path = meshDict_path + "_3D"
@@ -171,11 +172,15 @@ def cartesianMesh():
                 block_end = p.find_element([{"type": "block_end"}], reverse=True)[
                     "index"
                 ]
+                p["key"] = (
+                    f"{m['region_from']}_to_{m['region_to']}"
+                    f"{'' if m['number'] is None else '_' + m['number'])}"
+                )
                 p["value"][block_end:block_end] = dictParse.DictParser(
                     string="sampleMode\tnearestPatchFaceAMI;\n"
                     f"sampleRegion\t{m['region_to']}; // 相手の領域名\n"
-                    f"samplePatch\t{m['region_to']}__to__{m['region_from']}"
-                    f"{'' if m['number'] is None else m['number']}; // 相手のパッチ名\n"
+                    f"samplePatch\t{m['region_to']}_to_{m['region_from']}"
+                    f"{'' if m['number'] is None else '_' + m['number']}; // 相手のパッチ名\n"
                 )["value"]
 
     cfMesh = "cartesian2DMesh" if two_dimensional else "cartesianMesh"
