@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/7 12:36:37 PM
+# 2026/10/7 1:52:31 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -252,7 +252,7 @@ class MeshFrame(QtGui.QDialog):
                 "     可視性（Visibility）を切り替えるには，オブジェクトを選んだ後でスペースキーを押します．\n"
                 "※ マルチリージョン解析の場合，以下のルールでOjbectNameを決めて下さい：\n"
                 "    mappedWall以外で，1つだけの領域に含めたい場合 → 領域名.物体名\n"
-                "    mappedWallの場合 → 自分の領域名.to.相手の領域    または    自分の領域名.to.相手の領域名.数字\n"
+                "    mappedWallの場合 → 自分の領域名.to.相手の領域名    または    自分の領域名.to.相手の領域名.数字\n"
                 "        ※ 相手の領域名.to.自分の領域名 の境界は自動で作成されます．"
             )
         )
