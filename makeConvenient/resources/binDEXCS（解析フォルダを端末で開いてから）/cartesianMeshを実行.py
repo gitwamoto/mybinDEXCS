@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # cartesianMeshを実行.py
 # by Yukiharu Iwamoto
-# 2026/10/7 12:38:59 PM
+# 2026/10/7 1:34:48 PM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -174,7 +174,7 @@ def cartesianMesh():
                 ]
                 p["key"] = (
                     f"{m['region_from']}_to_{m['region_to']}"
-                    f"{'' if m['number'] is None else '_' + m['number'])}"
+                    f"{'' if m['number'] is None else '_' + m['number']}"
                 )
                 p["value"][block_end:block_end] = dictParse.DictParser(
                     string="sampleMode\tnearestPatchFaceAMI;\n"
