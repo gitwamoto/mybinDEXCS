@@ -288,9 +288,9 @@ if __name__ == "__main__":
 
     with open(sampling_related_folders_txt, "w") as f:
         for sets_dir in sets_dir_list:
-            f.write(sets_dir + "\n")
+            f.write(f"{sets_dir}\n")
         for surface_dir in surface_dir_list:
-            f.write(surface_dir + "\n")
+            f.write(f"{surface_dir}\n")
 
     print("\n結果はpostProcessingフォルダに保存されています．")
 
