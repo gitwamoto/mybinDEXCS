@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # patchの面積平均または積分.py
 # by Yukiharu Iwamoto
-# 2026/10/6 8:40:14 PM
+# 2026/10/9 11:29:22 AM
 
 # ---- オプション ----
 # なし -> インタラクティブモードで実行．オプションが1つでもあると非インタラクティブモードになる．
@@ -23,7 +23,6 @@ import glob
 import shutil
 from utilities import misc
 from utilities import rmObjects
-from utilities import dictParse
 
 
 def handler(signum, frame):
@@ -50,7 +49,7 @@ if __name__ == "__main__":
             if sys.argv[i] == "-a":
                 average = {
                     "patches": misc.sortPatchesByRegion(sys.argv[i + 1].split()),
-                    "parameters": ",".join(sys.argv[i + 2].split()),
+                    "fields": ",".join(sys.argv[i + 2].split()),
                 }
                 i += 2
             elif sys.argv[i] == "-b":
@@ -64,7 +63,7 @@ if __name__ == "__main__":
             elif sys.argv[i] == "-i":
                 integrate = {
                     "patches": misc.sortPatchesByRegion(sys.argv[i + 1].split()),
-                    "parameters": ",".join(sys.argv[i + 2].split()),
+                    "fields": ",".join(sys.argv[i + 2].split()),
                 }
                 i += 2
             elif sys.argv[i] == "-j":
@@ -99,7 +98,7 @@ if __name__ == "__main__":
                     f" {patches} の中からスペース区切りで指定して下さい． > "
                 ).split()
             )
-            average["parameters"] = ",".join(
+            average["fields"] = ",".join(
                 input(
                     "どのパラメータを面積平均しますか？ "
                     f" {fields} の中からスペース区切りで指定して下さい． > "
@@ -117,7 +116,7 @@ if __name__ == "__main__":
                     f" {patches} の中からスペース区切りで指定して下さい． > "
                 ).split()
             )
-            integrate["parameters"] = ",".join(
+            integrate["fields"] = ",".join(
                 input(
                     "どのパラメータを面積積分しますか？"
                     f" {fields} の中からスペース区切りで指定して下さい． > "
@@ -132,7 +131,7 @@ if __name__ == "__main__":
                 time_begin=time_begin,
                 time_end=time_end,
                 noZero=noZero,
-                func=f"patchAverage(name={i},{average['parameters']})",
+                func=f"patchAverage(name={i},{average['fields']})",
                 region=r,
             )
     for r, p in integrate["patches"]:
@@ -141,7 +140,7 @@ if __name__ == "__main__":
                 time_begin=time_begin,
                 time_end=time_end,
                 noZero=noZero,
-                func=f"patchIntegrate(name={i},{integrate['parameters']})",
+                func=f"patchIntegrate(name={i},{integrate['fields']})",
                 region=r,
             )
 
