@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/7 2:30:15 PM
+# 2026/10/21 9:25:30 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -320,214 +320,212 @@ class MeshFrame(QtGui.QDialog):
         self.exitButton.clicked.connect(self.actionOnExitButton)
         box_H.addWidget(self.exitButton)
 
-    def setParamsFromDictFiles(self, meshDict, setFieldsDict, topoSetDict, first=True):
-        if meshDict is None and setFieldsDict is None and topoSetDict is None:
-            return True  # still the first time
+    def setAllType(self, type_value):
+        for i in range(self.grid.rowCount()):
+            self.grid.setCellValue(i, self.grid.TYPE, type_value)
 
-        if meshDict is not None:
-            e = meshDict.find_element(
+    def setParamsFromMeshDict(self, meshDict):
+        if meshDict is None:
+            return
+
+        e = meshDict.find_element(
+            [
+                {"type": "dictionary", "key": "maxCellSize"},
+                {"type": "float|integer"},
+            ]
+        )["element"]
+        if e is not None:
+            self.maxCellSizeCRL.setText(e["value"])
+
+        e = meshDict.find_element(
+            [
+                {"type": "dictionary", "key": "minCellSize"},
+                {"type": "float|integer"},
+            ]
+        )["element"]
+        if e is not None:
+            self.minCellSizeCRL.setText(e["value"])
+
+        e = meshDict.find_element(
+            [
+                {"type": "block", "key": "CUSTOM_OPTIONS"},
+                {"type": "dictionary", "key": "featureAngle"},
+                {"type": "float|integer"},
+            ]
+        )["element"]
+        if e is not None:
+            self.featureAngleCRL.setText(e["value"])
+
+        object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
+
+        for block in meshDict.find_all_elements(
+            [
+                {"type": "block", "key": "renameBoundary"},
+                {"type": "block", "key": "newPatchNames"},
+                {"type": "block"},
+            ]
+        ):
+            block = block["element"]
+            if block["key"] not in object_names:
+                continue
+            v = block.find_element(
+                [{"type": "dictionary", "key": "type"}, {"type": "word"}]
+            )["element"]["value"]
+            self.grid.setCellValue(object_names.index(block["key"]), self.grid.TYPE, v)
+
+        for block in meshDict.find_all_elements(
+            [{"type": "block", "key": "localRefinement"}, {"type": "block"}]
+        ):
+            block = block["element"]
+            if block["key"] not in object_names:
+                continue
+            r = block.find_element(
                 [
                     {"type": "dictionary", "key": "maxCellSize"},
+                    {"type": "dictionary", "key": "cellSize"},
                     {"type": "float|integer"},
                 ]
             )["element"]
-            if e is not None:
-                self.maxCellSizeCRL.setText(e["value"])
-
-            e = meshDict.find_element(
-                [
-                    {"type": "dictionary", "key": "minCellSize"},
-                    {"type": "float|integer"},
-                ]
-            )["element"]
-            if e is not None:
-                self.minCellSizeCRL.setText(e["value"])
-
-            e = meshDict.find_element(
-                [
-                    {"type": "block", "key": "CUSTOM_OPTIONS"},
-                    {"type": "dictionary", "key": "featureAngle"},
-                    {"type": "float|integer"},
-                ]
-            )["element"]
-            if e is not None:
-                self.featureAngleCRL.setText(e["value"])
-
-            object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
-            if first:
-                self.remainder_names = object_names[:]
-
-            for block in meshDict.find_all_elements(
-                [
-                    {"type": "block", "key": "renameBoundary"},
-                    {"type": "block", "key": "newPatchNames"},
-                    {"type": "block"},
-                ]
-            ):
-                block = block["element"]
-                if block["key"] not in object_names:
-                    continue
-                self.remainder_names.remove(block["key"])
-                v = block.find_element(
-                    [{"type": "dictionary", "key": "type"}, {"type": "word"}]
-                )["element"]["value"]
+            if r is not None:
                 self.grid.setCellValue(
-                    object_names.index(block["key"]), self.grid.TYPE, v
+                    object_names.index(block["key"]),
+                    self.grid.CELL_SIZE,
+                    r["value"],
                 )
 
-            for block in meshDict.find_all_elements(
-                [{"type": "block", "key": "localRefinement"}, {"type": "block"}]
-            ):
-                block = block["element"]
-                if block["key"] not in object_names:
-                    continue
-                r = block.find_element(
-                    [
-                        {"type": "dictionary", "key": "cellSize"},
-                        {"type": "float|integer"},
-                    ]
-                )["element"]
-                if r is not None:
-                    self.grid.setCellValue(
-                        object_names.index(block["key"]),
-                        self.grid.CELL_SIZE,
-                        r["value"],
-                    )
-
-            for block in meshDict.find_all_elements(
+        for block in meshDict.find_all_elements(
+            [
+                {"type": "block", "key": "boundaryLayers"},
+                {"type": "block", "key": "patchBoundaryLayers"},
+                {"type": "block"},
+            ]
+        ):
+            block = block["element"]
+            if block["key"] not in object_names:
+                continue
+            i = object_names.index(block["key"])
+            e = block.find_element(
+                [{"type": "dictionary", "key": "nLayers"}, {"type": "integer"}]
+            )["element"]
+            if e is not None:
+                self.grid.setCellValue(i, self.grid.N_LAYERS, e["value"])
+                self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
+            e = block.find_element(
                 [
-                    {"type": "block", "key": "boundaryLayers"},
-                    {"type": "block", "key": "patchBoundaryLayers"},
-                    {"type": "block"},
+                    {"type": "dictionary", "key": "thicknessRatio"},
+                    {"type": "float|integer"},
                 ]
-            ):
-                block = block["element"]
-                if block["key"] not in object_names:
-                    continue
-                i = object_names.index(block["key"])
-                e = block.find_element(
-                    [{"type": "dictionary", "key": "nLayers"}, {"type": "integer"}]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.N_LAYERS, e["value"])
-                    self.grid.setCellValue(i, self.grid.BOUNDARY_LAYER, True)
-                e = block.find_element(
-                    [
-                        {"type": "dictionary", "key": "thicknessRatio"},
-                        {"type": "float|integer"},
-                    ]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.RATIO, e["value"])
+            )["element"]
+            if e is not None:
+                self.grid.setCellValue(i, self.grid.RATIO, e["value"])
 
-            for block in meshDict.find_all_elements(
-                [{"type": "block", "key": "objectRefinements"}, {"type": "block"}]
-            ):
-                block = block["element"]
-                self.remainder_names.remove(block["key"])
-                i = object_names.index(block["key"])
-                e = block.find_element(
-                    [
-                        {"type": "dictionary", "key": "cellSize"},
-                        {"type": "float|integer"},
-                    ]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.CELL_SIZE, e["value"])
-                e = block.find_element(
-                    [{"type": "dictionary", "key": "type"}, {"type": "word"}]
-                )["element"]
-                if e is not None:
-                    if e["value"] == "box":
-                        self.grid.setCellValue(i, self.grid.TYPE, "BoxRefine")
-                    elif e["value"] == "cone":
-                        self.grid.setCellValue(i, self.grid.TYPE, "CylinderRefine")
-                    elif e["value"] == "sphere":
-                        self.grid.setCellValue(i, self.grid.TYPE, "SphereRefine")
-
-            for block in meshDict.find_all_elements(
-                [{"type": "block", "key": "surfaceMeshRefinement"}, {"type": "block"}]
-            ):
-                block = block["element"]
-                if block["key"] not in object_names:
-                    continue
-                self.remainder_names.remove(block["key"])
-                i = object_names.index(block["key"])
-                e = block.find_element(
-                    [
-                        {"type": "dictionary", "key": "cellSize"},
-                        {"type": "float|integer"},
-                    ]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.CELL_SIZE, e["value"])
-                    self.grid.setCellValue(i, self.grid.TYPE, "SurfaceRefine")
-                e = block.find_element(
-                    [
-                        {"type": "dictionary", "key": "refinementThickness"},
-                        {"type": "float|integer"},
-                    ]
-                )["element"]
-                if e is not None:
-                    self.grid.setCellValue(i, self.grid.RATIO, e["value"])
-
-        if first and setFieldsDict is not None:
-            for block in setFieldsDict.find_all_elements(
+        for block in meshDict.find_all_elements(
+            [{"type": "block", "key": "objectRefinements"}, {"type": "block"}]
+        ):
+            block = block["element"]
+            i = object_names.index(block["key"])
+            e = block.find_element(
                 [
-                    {"type": "dictionary", "key": "regions"},
-                    {"type": "list"},
-                    {"type": "block"},
+                    {"type": "dictionary", "key": "cellSize"},
+                    {"type": "float|integer"},
                 ]
-            ):
-                block = block["element"]
-                comment = block.find_element([{"type": "line_comment|block_comment"}])[
-                    "element"
-                ]
-                if comment is None or "freecad" not in comment["value"].lower():
-                    continue
-                for i, obj in enumerate(object_names):
-                    if obj not in comment["value"]:
-                        continue
-                    self.remainder_names.remove(obj)
-                    if block["key"] == "boxToCell":
-                        self.grid.setCellValue(i, self.grid.TYPE, "BoxSet")
-                    elif block["key"] == "cylinderToCell":
-                        self.grid.setCellValue(i, self.grid.TYPE, "CylinderSet")
-                    else:
-                        self.grid.setCellValue(i, self.grid.TYPE, "SphereSet")
+            )["element"]
+            if e is not None:
+                self.grid.setCellValue(i, self.grid.CELL_SIZE, e["value"])
+            e = block.find_element(
+                [{"type": "dictionary", "key": "type"}, {"type": "word"}]
+            )["element"]
+            if e is not None:
+                if e["value"] == "box":
+                    self.grid.setCellValue(i, self.grid.TYPE, "BoxRefine")
+                elif e["value"] == "cone":
+                    self.grid.setCellValue(i, self.grid.TYPE, "CylinderRefine")
+                elif e["value"] == "sphere":
+                    self.grid.setCellValue(i, self.grid.TYPE, "SphereRefine")
 
-        if first and topoSetDict is not None:
-            for block in topoSetDict.find_all_elements(
+        for block in meshDict.find_all_elements(
+            [{"type": "block", "key": "surfaceMeshRefinement"}, {"type": "block"}]
+        ):
+            block = block["element"]
+            if block["key"] not in object_names:
+                continue
+            i = object_names.index(block["key"])
+            e = block.find_element(
                 [
-                    {"type": "dictionary", "key": "actions"},
-                    {"type": "list"},
-                    {"type": "block"},
+                    {"type": "dictionary", "key": "cellSize"},
+                    {"type": "float|integer"},
                 ]
+            )["element"]
+            if e is not None:
+                self.grid.setCellValue(i, self.grid.CELL_SIZE, e["value"])
+                self.grid.setCellValue(i, self.grid.TYPE, "SurfaceRefine")
+            e = block.find_element(
+                [
+                    {"type": "dictionary", "key": "refinementThickness"},
+                    {"type": "float|integer"},
+                ]
+            )["element"]
+            if e is not None:
+                self.grid.setCellValue(i, self.grid.RATIO, e["value"])
+
+    def setParamsFromSetFieldsDict(self, setFieldsDict):
+        if setFieldsDict is None:
+            return
+
+        object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
+        for block in setFieldsDict.find_all_elements(
+            [
+                {"type": "dictionary", "key": "regions"},
+                {"type": "list"},
+                {"type": "block"},
+            ]
+        ):
+            block = block["element"]
+            comment = block.find_element([{"type": "line_comment|block_comment"}])[
+                "element"
+            ]
+            if comment is None or "freecad" not in comment["value"].lower():
+                continue
+            for i, obj in enumerate(object_names):
+                if obj not in comment["value"]:
+                    continue
+                if block["key"] == "boxToCell":
+                    self.grid.setCellValue(i, self.grid.TYPE, "BoxSet")
+                elif block["key"] == "cylinderToCell":
+                    self.grid.setCellValue(i, self.grid.TYPE, "CylinderSet")
+                else:
+                    self.grid.setCellValue(i, self.grid.TYPE, "SphereSet")
+
+    def setParamsFromTopoSetDict(self, topoSetDict):
+        if topoSetDict is None:
+            return
+
+        object_names = [i[self.grid.OBJECT_NAME] for i in self.grid.table]
+        for block in topoSetDict.find_all_elements(
+            [
+                {"type": "dictionary", "key": "actions"},
+                {"type": "list"},
+                {"type": "block"},
+            ]
+        ):
+            block = block["element"]
+            v = (
+                block.find_element(
+                    [{"type": "dictionary", "key": "name"}, {"type": "word"}]
+                )["element"]["value"]
+                .replace("CellSet", "")
+                .replace()
+            )
+            if v not in object_names:
+                continue
+            if (
+                block.find_element(
+                    [{"type": "dictionary", "key": "source"}, {"type": "word"}]
+                )["element"]["value"]
+                != "rotatedBoxToCell"
             ):
-                block = block["element"]
-                v = (
-                    block.find_element(
-                        [{"type": "dictionary", "key": "name"}, {"type": "word"}]
-                    )["element"]["value"]
-                    .replace("CellSet", "")
-                    .replace()
-                )
-                if v not in object_names:
-                    continue
-                if (
-                    block.find_element(
-                        [{"type": "dictionary", "key": "source"}, {"type": "word"}]
-                    )["element"]["value"]
-                    != "rotatedBoxToCell"
-                ):
-                    continue
-                self.remainder_names.remove(v)
-                self.grid.setCellValue(object_names.index(v), self.grid.TYPE, "BoxTopo")
-
-        for i in self.remainder_names:
-            self.grid.setCellValue(object_names.index(i), self.grid.TYPE, "N/A")
-
-        return False  # not the first time
+                continue
+            self.grid.setCellValue(object_names.index(v), self.grid.TYPE, "BoxTopo")
 
     def actionOnExitButton(self):
         self.close()
@@ -841,28 +839,28 @@ class MyController:
                 return None
             return d
 
-        self.setFieldsDict = dictParser(
-            os.path.join(case_dir_path, "system", "setFieldsDict")
-        )
-        self.topoSetDict = dictParser(
-            os.path.join(case_dir_path, "system", "topoSetDict")
-        )
+        self.MeshFrame.setAllType("N/A")
 
         if os.path.isdir(os.path.join(case_dir_path, cases_path)):
-            first = True
             for c in glob.iglob(os.path.join(case_dir_path, cases_path, f"*{os.sep}")):
                 r = os.path.basename(os.path.normpath(c))
                 self.meshDict[r] = dictParser(os.path.join(c, "system", "meshDict"))
-                first = self.MeshFrame.setParamsFromDictFiles(
-                    self.meshDict[r], self.setFieldsDict, self.topoSetDict, first
-                )
+                self.MeshFrame.setParamsFromMeshDict(self.meshDict[r])
         elif os.path.isdir(case_dir_path):
             self.meshDict[""] = dictParser(
                 os.path.join(case_dir_path, "system", "meshDict")
             )
-            self.MeshFrame.setParamsFromDictFiles(
-                self.meshDict[""], self.setFieldsDict, self.topoSetDict, True
-            )
+            self.MeshFrame.setParamsFromMeshDict(self.meshDict[""])
+
+        self.setFieldsDict = dictParser(
+            os.path.join(case_dir_path, "system", "setFieldsDict")
+        )
+        self.MeshFrame.setParamsFromSetFieldsDict(self.setFieldsDict)
+
+        self.topoSetDict = dictParser(
+            os.path.join(case_dir_path, "system", "topoSetDict")
+        )
+        self.MeshFrame.setParamsFromTopoSetDict(self.topoSetDict)
 
     def actionOnEditButton(self):
         meshDict_path = os.path.join(
@@ -914,6 +912,22 @@ class MyModel:
         return xmax - xmin + ymax - ymin + zmax - zmin
 
     @staticmethod
+    def corr_obj_name(obj_name, unavail_headers=[]):
+        if any(
+            obj_name.startswith(i) for i in unavail_headers
+        ):  # 使わないオブジェクトに対するヘッダがついている時
+            m = pat_region_boundary.match(obj_name)
+            if m is None:
+                return None
+            obj_name = (
+                f"{m['region_to']}.to.{m['region_from']}"
+                f"{'' if m['number'] is None else m['number']}"
+            )  # 領域境界の場合，.to.の前後を入れ替えれば使うオブジェクトになるかもしれない
+            if any(obj_name.startswith(i) for i in unavail_headers):
+                return None
+        return obj_name
+
+    @staticmethod
     def exportStl(freecad_objects, grid, file_path, unavail_headers=[]):
         fd, tmp_stl = tempfile.mkstemp(suffix=".ast")
         os.close(fd)
@@ -935,17 +949,9 @@ class MyModel:
                     "N/A",
                 ):
                     continue
-                obj_name = i[grid.OBJECT_NAME]
-                if any(obj_name.startswith(j) for j in unavail_headers):
-                    m = pat_region_boundary.match(obj_name)
-                    if m is None:
-                        continue
-                    obj_name = (
-                        f"{m['region_to']}.to.{m['region_from']}"
-                        f"{'' if m['number'] is None else m['number']}"
-                    )
-                    if any(obj_name.startswith(j) for j in unavail_headers):
-                        continue
+                obj_name = MyModel.corr_obj_name(i[grid.OBJECT_NAME], unavail_headers)
+                if obj_name is None:
+                    continue
                 obj = next(
                     (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label), None
                 )
@@ -1274,6 +1280,9 @@ class MyModel:
                     "N/A",
                 ):
                     continue
+                obj_name = MyModel.corr_obj_name(i[grid.OBJECT_NAME], unavail_headers)
+                if obj_name is None:
+                    continue
                 ref_thickness = i[grid.CELL_SIZE]
                 ref_level = 0
                 ref_value = float(max_cell_size) / ref_thickness
@@ -1281,7 +1290,7 @@ class MyModel:
                     ref_level += 1
                     ref_value *= 0.5
                 f.write(
-                    f"\t{i[grid.OBJECT_NAME]}\n"
+                    f"\t{obj_name}\n"
                     "\t{\n"
                     f"\t\tcellSize\t{ref_thickness};\n"
                     f"//\t\tadditionalRefinementLevels\t{ref_level}; // Relative to the maximum cell size\n"
@@ -1302,16 +1311,14 @@ class MyModel:
             object_names = [i[grid.OBJECT_NAME] for i in grid.table]
             f.write("\nobjectRefinements\n{\n")
             for i in grid.table:
-                if (
-                    i[grid.CELL_SIZE] == ""
-                    or i[grid.TYPE]
-                    not in (
-                        "BoxRefine",
-                        "CylinderRefine",
-                        "SphereRefine",
-                    )
-                    and any(i[grid.OBJECT_NAME].startswith(j) for j in unavail_headers)
+                if i[grid.CELL_SIZE] == "" or i[grid.TYPE] not in (
+                    "BoxRefine",
+                    "CylinderRefine",
+                    "SphereRefine",
                 ):
+                    continue
+                obj_name = MyModel.corr_obj_name(i[grid.OBJECT_NAME], unavail_headers)
+                if obj_name is None:
                     continue
                 obj = next(
                     (j for j in freecad_objects if i[grid.OBJECT_NAME] == j.Label),
@@ -1323,7 +1330,7 @@ class MyModel:
                 while ref_value > 1.0:
                     ref_level += 1
                     ref_value *= 0.5
-                f.write(f"\t{i[grid.OBJECT_NAME]}\n\t{{\n")
+                f.write(f"\t{obj_name}\n\t{{\n")
                 if i[grid.TYPE] == "BoxRefine":
                     c = obj.Shape.CenterOfMass
                     f.write(
