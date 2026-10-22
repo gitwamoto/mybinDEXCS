@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/21 9:25:30 PM
+# 2026/10/22 8:01:05 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -227,7 +227,7 @@ class MeshFrame(QtGui.QDialog):
         box_H = QtGui.QHBoxLayout()
         box_V.addLayout(box_H)
         box_H.addWidget(QtGui.QLabel("maxCellSize:"))
-        self.maxCellSizeCRL = QtGui.QLineEdit("{:.2f}".format(max_cell_size))
+        self.maxCellSizeCRL = QtGui.QLineEdit(f"{max_cell_size:.2f}")
         self.maxCellSizeCRL.setAlignment(QtCore.Qt.AlignRight)
         self.maxCellSizeCRL.setValidator(QtGui.QDoubleValidator())
         box_H.addWidget(self.maxCellSizeCRL)
@@ -239,7 +239,7 @@ class MeshFrame(QtGui.QDialog):
         box_H.addWidget(self.minCellSizeCRL)
         box_H.addItem(QtGui.QSpacerItem(12, 0))
         box_H.addWidget(QtGui.QLabel("featureAngle:"))
-        self.featureAngleCRL = QtGui.QLineEdit("{}".format(feature_angle))
+        self.featureAngleCRL = QtGui.QLineEdit(f"{feature_angle}")
         self.featureAngleCRL.setAlignment(QtCore.Qt.AlignRight)
         self.featureAngleCRL.setValidator(QtGui.QDoubleValidator())
         box_H.addWidget(self.featureAngleCRL)
@@ -1308,7 +1308,7 @@ class MyModel:
             )  # localRefinement
 
             object_names = [i[grid.OBJECT_NAME] for i in grid.table]
-            f.write("\nobjectRefinements\n{\n")
+            f.write("\nobjectRefinements\n{")
             for i in grid.table:
                 if i[grid.CELL_SIZE] == "" or i[grid.TYPE] not in (
                     "BoxRefine",
@@ -1329,7 +1329,7 @@ class MyModel:
                 while ref_value > 1.0:
                     ref_level += 1
                     ref_value *= 0.5
-                f.write(f"\t{obj_name}\n\t{{\n")
+                f.write(f"\n\t{obj_name}\n\t{{\n")
                 if i[grid.TYPE] == "BoxRefine":
                     c = obj.Shape.CenterOfMass
                     f.write(
