@@ -381,7 +381,6 @@ class MeshFrame(QtGui.QDialog):
                 continue
             r = block.find_element(
                 [
-                    {"type": "dictionary", "key": "maxCellSize"},
                     {"type": "dictionary", "key": "cellSize"},
                     {"type": "float|integer"},
                 ]
