@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/7 2:30:17 PM
+# 2026/10/22 8:01:07 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -221,19 +221,19 @@ class MeshFrame(QtGui.QDialog):
         box_H = QtGui.QHBoxLayout()
         box_V.addLayout(box_H)
         box_H.addWidget(QtGui.QLabel("maxCellSize:"))
-        self.maxCellSizeCRL = QtGui.QLineEdit("{:.2f}".format(max_cell_size))
+        self.maxCellSizeCRL = QtGui.QLineEdit(f"{max_cell_size:.2f}")
         self.maxCellSizeCRL.setAlignment(QtCore.Qt.AlignRight)
         self.maxCellSizeCRL.setValidator(QtGui.QDoubleValidator())
         box_H.addWidget(self.maxCellSizeCRL)
         box_H.addItem(QtGui.QSpacerItem(12, 0))
         box_H.addWidget(QtGui.QLabel("featuresLevel:"))
-        self.featuresLevelCRL = QtGui.QLineEdit("{}".format(features_level))
+        self.featuresLevelCRL = QtGui.QLineEdit(f"{features_level}")
         self.featuresLevelCRL.setAlignment(QtCore.Qt.AlignRight)
         self.featuresLevelCRL.setValidator(QtGui.QIntValidator())
         box_H.addWidget(self.featuresLevelCRL)
         box_H.addItem(QtGui.QSpacerItem(12, 0))
         box_H.addWidget(QtGui.QLabel("featureAngle:"))
-        self.featureAngleCRL = QtGui.QLineEdit("{}".format(feature_angle))
+        self.featureAngleCRL = QtGui.QLineEdit(f"{feature_angle}")
         self.featureAngleCRL.setAlignment(QtCore.Qt.AlignRight)
         self.featureAngleCRL.setValidator(QtGui.QDoubleValidator())
         box_H.addWidget(self.featureAngleCRL)
