@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/23 1:16:24 PM
+# 2026/10/23 1:25:11 PM
+
+VERSION = "2026/10/23 1:25:11 PM"
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -204,7 +206,7 @@ class MeshFrame(QtGui.QDialog):
             raise ValueError("zenkaku path")
 
         super(MeshFrame, self).__init__(parent=None)
-        self.setWindowTitle("cfMesh settings from FreeCAD Model (.fcstd)")
+        self.setWindowTitle(f"cfMesh settings from FreeCAD Model (.fcstd), {VERSION}")
 
         self.controller = controller
 
