@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 # makeSnappyHexMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/22 8:01:07 PM
+# 2026/10/23 1:25:08 PM
+
+VERSION = "2026/10/23 1:25:08 PM"
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -198,7 +200,7 @@ class MeshFrame(QtGui.QDialog):
             raise ValueError("zenkaku path")
 
         super(MeshFrame, self).__init__(parent=None)
-        self.setWindowTitle("snappyHexMesh settings from FreeCAD Model (.fcstd)")
+        self.setWindowTitle(f"snappyHexMesh settings from FreeCAD Model (.fcstd), {VERSION}")
 
         self.controller = controller
 
