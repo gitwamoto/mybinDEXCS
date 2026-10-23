@@ -200,7 +200,9 @@ class MeshFrame(QtGui.QDialog):
             raise ValueError("zenkaku path")
 
         super(MeshFrame, self).__init__(parent=None)
-        self.setWindowTitle(f"snappyHexMesh settings from FreeCAD Model (.fcstd), {VERSION}")
+        self.setWindowTitle(
+            f"snappyHexMesh settings from FreeCAD Model (.fcstd), {VERSION}"
+        )
 
         self.controller = controller
 
