@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # makeCfMeshSetting.FCMacro
 # by Yukiharu Iwamoto
-# 2026/10/22 8:01:05 PM
+# 2026/10/23 1:16:24 PM
 
 from PySide import QtCore, QtGui
 from functools import partial
@@ -1198,8 +1198,11 @@ class MyModel:
                     "N/A",
                 ):
                     continue
+                obj_name = MyModel.corr_obj_name(i[grid.OBJECT_NAME], unavail_headers)
+                if obj_name is None:
+                    continue
                 f.write(
-                    f"\t\t{i[grid.OBJECT_NAME]}\n"
+                    f"\t\t{obj_name}\n"
                     "\t\t{\n"
                     f"\t\t\tnLayers\t{i[grid.N_LAYERS]}; // 必須ではない．\n"
                     f"\t\t\tthicknessRatio\t{i[grid.RATIO]};\n"
@@ -1207,7 +1210,7 @@ class MyModel:
 
                 block = dictParse.find_element(
                     patchBoundaryLayers,
-                    [{"type": "block", "key": i[grid.OBJECT_NAME]}],
+                    [{"type": "block", "key": obj_name}],
                 )["element"]
 
                 e = dictParse.find_element(
